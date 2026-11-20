@@ -12,3 +12,7 @@ build/
 
 # Rust build output
 engine/target/
+
+# The playground's screenshots (game captures show other players' names): drop your own in.
+app/playground/backgrounds/*
+!app/playground/backgrounds/.gitkeep
