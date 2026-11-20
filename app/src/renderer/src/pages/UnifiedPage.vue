@@ -32,7 +32,7 @@ import { formatKina } from '@shared/kina.ts'
 import { CLASS_COLORS, meterRows, NO_METER, timeToKill, type MeterData } from '@shared/meter.ts'
 import { serverTag } from '@shared/servers.ts'
 import { bossPortrait, bossState, nextStart, TIMERS, type TimerDef } from '@shared/timers.ts'
-import { blankPet, canAttack, lastDeath, nextLevelSouls, type Pet } from '@shared/tracker.ts'
+import { blankPet, canAttack, nextLevelSouls, type Pet } from '@shared/tracker.ts'
 
 /** What can be open under the bar: a peek at an overlay, Boss Runs, or what a chip points at. */
 type PanelId = 'meter' | 'map' | 'pvp' | 'pets' | 'runs' | 'timers' | 'cube' | 'death' | 'enemies'
@@ -246,7 +246,7 @@ const cp = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(1)}K` : Str
 useEnemyAlarm(() => cfg.value.replace && store.settings.enemies.enabled)
 
 const death = computed(() => {
-  const d = cfg.value.death ? lastDeath(store.pvp) : null
+  const d = cfg.value.death ? store.pvpStats.death : null
   return d && now.value - d.at < cfg.value.deathMinutes * 60_000 ? d : null
 })
 const deathWorld = computed(() => (death.value && spawns.value ? (spawns.value.worlds[death.value.place.world] ?? null) : null))
@@ -275,20 +275,12 @@ const enemyPins = computed(() =>
   store.enemies.flatMap((e) => (e.position ? [{ name: e.name, position: e.position, threat: canAttack(e, inAbyss.value) }] : [])),
 )
 const deathHere = computed(() => {
-  const d = lastDeath(store.pvp)
+  const d = store.pvpStats.death
   return d && d.place.world === worldId.value ? d.place.position : null
 })
 
-const pvpCounts = computed(() => {
-  const out = { kills: 0, deaths: 0, assists: 0 }
-  for (const k of store.pvp) {
-    if (k.mine) out.kills++
-    else if (k.died) out.deaths++
-    else if (k.fight) out.assists++
-  }
-  return out
-})
-const lastKills = computed(() => store.pvp.slice(-4).reverse())
+const pvpCounts = computed(() => store.pvpStats)
+const lastKills = computed(() => [...store.pvpStats.recent].reverse())
 const lastRift = computed(() => store.rifts[0] ?? null)
 const day = (ms: number): string => new Date(ms).toLocaleDateString(loc(), { day: '2-digit', month: '2-digit' })
 

@@ -34,9 +34,10 @@
  * still be opened from the tray, where the bubble would be. While another program is in front
  * (an alt-tab), every window hides, and comes back with the game (setForeground).
  */
+import { applyGameMap } from './gameMap.ts'
 import { app, BrowserWindow, screen, shell, type Rectangle } from 'electron'
 import { join } from 'node:path'
-import { broadcast, send } from './broadcast.ts'
+import { broadcast, registerWindowRoute, send } from './broadcast.ts'
 import { DISPLAY_NAME } from '../shared/app.ts'
 import { settings } from './settings.ts'
 import { tracker } from './tracker.ts'
@@ -129,6 +130,7 @@ function overlayWindow(options: Electron.BrowserWindowConstructorOptions): Brows
 }
 
 export function load(win: BrowserWindow, route: string): void {
+  registerWindowRoute(win, route)
   const dev = process.env['ELECTRON_RENDERER_URL']
   if (!app.isPackaged && dev) void win.loadURL(`${dev}#/${route}`)
   else void win.loadFile(join(__dirname, '../renderer/index.html'), { hash: `/${route}` })
@@ -1051,6 +1053,7 @@ function restoreHidden(): void {
 /** Alt+Shift+E: every overlay off, or back on. The dashboard is left as it is. True when off. */
 export function toggleOverlays(): boolean {
   overlaysOff = !overlaysOff
+  applyGameMap()
   if (overlaysOff) {
     for (const win of [bubble, hud, merchant, meter, killFeed, timerBar, unified, details, ...measuredWins()]) {
       if (!alive(win) || !win.isVisible()) continue
@@ -1065,6 +1068,7 @@ export function toggleOverlays(): boolean {
 }
 
 export const overlaysHidden = (): boolean => overlaysOff
+export const gameMapHidden = (): boolean => overlaysOff || gameAway
 
 /** What is in front, as the engine sees it (Windows): the game, one of our windows, or neither. */
 export function setForeground(game: boolean, app: boolean): void {
@@ -1076,6 +1080,7 @@ export function setForeground(game: boolean, app: boolean): void {
   if (away) {
     awayTimer = setTimeout(() => {
       gameAway = true
+      applyGameMap()
       for (const win of [bubble, hud, merchant, meter, killFeed, timerBar, unified, details, ...measuredWins()]) {
         if (!alive(win) || !win.isVisible()) continue
         awayHidden.add(win)
@@ -1087,6 +1092,7 @@ export function setForeground(game: boolean, app: boolean): void {
     return
   }
   gameAway = false
+  applyGameMap()
   if (alive(panel)) panel.setAlwaysOnTop(settings.get('panelOnTop'), 'screen-saver')
   restoreHidden()
 }

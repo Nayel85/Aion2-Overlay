@@ -23,7 +23,7 @@ import { currentWorld, nearbyPets, useSpawns } from '@/lib/spawns.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { MINIMAP_HEIGHT, MINIMAP_WIDTH, SETTINGS_DEFAULTS, type Settings } from '@shared/settings.ts'
-import { blankPet, canAttack, lastDeath } from '@shared/tracker.ts'
+import { blankPet, canAttack } from '@shared/tracker.ts'
 
 /** The map overlay follows you rather than fitting anything. */
 const NO_FOCUS: [number, number][] = []
@@ -78,7 +78,7 @@ const enemyPins = computed(() =>
 )
 /** Where you last died, when it was in this zone. */
 const death = computed(() => {
-  const d = lastDeath(store.pvp)
+  const d = store.pvpStats.death
   return d && d.place.world === worldId.value ? d.place.position : null
 })
 const pet = (id: number) => store.pets.find((p) => p.id === id) ?? blankPet(id)

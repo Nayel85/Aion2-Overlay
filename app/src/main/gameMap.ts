@@ -11,10 +11,10 @@
  */
 import { BrowserWindow, desktopCapturer, screen, session, shell } from 'electron'
 import { join } from 'node:path'
-import { broadcast } from './broadcast.ts'
+import { broadcast, send } from './broadcast.ts'
 import { settings } from './settings.ts'
 import { gameMapLogPath, glog } from './gameMapLog.ts'
-import { load } from './windows.ts'
+import { load, gameMapHidden, panelVisible } from './windows.ts'
 import type { GameMapState } from '../shared/gameMap.ts'
 import type { Rect } from '../shared/settings.ts'
 
@@ -44,7 +44,7 @@ export function regionDisplay(): { bounds: Rect; scaleFactor: number } | null {
 
 function createOverlay(): void {
   const { enabled, region } = settings.get('gameMap')
-  if (!awake || !enabled || !region || alive(overlay)) return
+  if (gameMapHidden() || !awake || !enabled || !region || alive(overlay)) return
   const win = new BrowserWindow({
     ...region,
     show: false,
@@ -93,15 +93,18 @@ export function onGameMapStatus(fn: (status: GameMapState['status'], was: GameMa
   return () => statusListeners.delete(fn)
 }
 
-function setState(next: GameMapState): void {
+function setState(next: GameMapState, withPreview = true): void {
   const was = state.status
   state = next
-  broadcast('gamemap:state', state)
+  broadcast('gamemap:state', withPreview && panelVisible() ? state : { ...state, preview: undefined }, ['panel'])
   if (next.status !== was) for (const fn of statusListeners) fn(next.status, was)
 }
 
 export const gameMap = {
   state: (): GameMapState => state,
+  requestPreview(): void {
+    if (panelVisible()) send(overlay, 'gamemap:preview', true)
+  },
 
   /** Drag a box around the game's map: a dimmed layer over the display the pointer is on. */
   pick(): void {
@@ -194,7 +197,8 @@ export const gameMap = {
     const region = settings.get('gameMap').region
     if (!region || !(w >= 16 && h >= 16 && w <= 2048 && h <= 2048)) return null
     const d = screen.getDisplayMatching(region)
-    const size = { width: Math.round(d.bounds.width * d.scaleFactor), height: Math.round(d.bounds.height * d.scaleFactor) }
+    const scale = Math.min(d.scaleFactor, Math.max(w / region.width, h / region.height))
+    const size = { width: Math.ceil(d.bounds.width * scale), height: Math.ceil(d.bounds.height * scale) }
     const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: size })
     const shot = (sources.find((s) => s.display_id === String(d.id)) ?? sources[0])?.thumbnail
     if (!shot || shot.isEmpty()) return null
@@ -204,7 +208,7 @@ export const gameMap = {
       .resize({ width: w, height: h, quality: 'good' })
     const { width, height } = cut.getSize()
     // The bitmap is BGRA: swapped to RGBA, the picture's order.
-    const rgba = new Uint8Array(cut.toBitmap())
+    const rgba = cut.toBitmap()
     for (let i = 0; i < rgba.length; i += 4) {
       const b = rgba[i]!
       rgba[i] = rgba[i + 2]!
@@ -220,7 +224,7 @@ export const gameMap = {
     if (next.error && next.error.at !== state.error?.at) glog(`${next.error.text}`)
     const merged = { ...next, preview: next.preview === undefined ? state.preview : next.preview }
     const changed = next.status !== state.status || next.world !== state.world || next.detail !== state.detail || next.mode !== state.mode || next.capture !== state.capture || next.error?.at !== state.error?.at || Math.abs(next.inliers - state.inliers) > 3 || Math.abs((next.score ?? 0) - (state.score ?? 0)) > 3
-    if (changed || next.preview !== undefined) setState(merged)
+    if (changed || next.preview !== undefined) setState(merged, next.preview !== undefined)
     else state = merged
   },
 }
@@ -235,7 +239,7 @@ export function setGameMapAwake(on: boolean): void {
 /** Settings changed: open, close or move the overlay to match. */
 export function applyGameMap(): void {
   const { enabled, region } = settings.get('gameMap')
-  if (!enabled || !region) return closeOverlay()
+  if (gameMapHidden() || !enabled || !region) return closeOverlay()
   if (alive(overlay)) {
     const b = overlay.getBounds()
     if (b.x !== region.x || b.y !== region.y || b.width !== region.width || b.height !== region.height) overlay.setBounds(region)

@@ -256,6 +256,7 @@ pub fn run(opts: Options) -> Result<(), String> {
     }
     sidecar.set_capture(false);
     frame_tap::set(None);
+    sidecar.tracker.lock().finish_writes();
     Ok(())
 }
 
@@ -419,8 +420,9 @@ impl Sidecar {
                 }
                 let meter = me.meter.clone();
                 let Ok(dps) = tokio::task::spawn_blocking(move || meter.dps()).await else { continue };
+                let dps = event("dps", dps);
                 if last.as_ref().is_none_or(|(prev, at)| *prev != dps || at.elapsed() >= DPS_RESEND) {
-                    emit(&event("dps", dps.clone()));
+                    emit(&dps);
                     last = Some((dps, Instant::now()));
                 }
             }
@@ -578,8 +580,9 @@ impl Sidecar {
                     let target = msg["target"].as_i64().ok_or("no target")? as i32;
                     let actors: Option<Vec<i32>> =
                         msg["actors"].as_array().map(|a| a.iter().filter_map(|v| v.as_i64()).map(|v| v as i32).collect());
-                    let mut details = self.meter.details(target, actors.as_deref());
+                    let mut details = self.meter.details(target, actors.as_deref(), msg["display"].as_bool().unwrap_or(false));
                     details["target"] = json!(target);
+                    details["request"] = msg["request"].clone();
                     details["fightBuffs"] = self.meter.fight_buffs(target);
                     emit(&event("details", details));
                 }

@@ -11,10 +11,10 @@ import { app } from 'electron'
 import { readFileSync, writeFile, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { broadcast } from './broadcast.ts'
-import type { PvpKill } from '../shared/tracker.ts'
+import { PVP_LIMIT, pvpSummary, appendPvpKill, type PvpKill, type PvpSummary } from '../shared/tracker.ts'
 
-/** A siege gave some 3,000 an hour (2026-10-16); this only guards against a list never cleared. */
-const KEEP = 50_000
+const views = ['panel', 'killfeed', 'minimap', 'gamemap', 'unified']
+let summary: PvpSummary | null = null
 const SAVE_AFTER_MS = 3000
 
 let kills: PvpKill[] | null = null
@@ -25,7 +25,7 @@ function list(): PvpKill[] {
   if (kills === null) {
     try {
       const saved = JSON.parse(readFileSync(file(), 'utf8')) as unknown
-      kills = Array.isArray(saved) ? (saved as PvpKill[]).map((k) => ({ ...k, legion: k.legion === true })) : []
+      kills = Array.isArray(saved) ? (saved as PvpKill[]).slice(-PVP_LIMIT).map((k) => ({ ...k, legion: k.legion === true })) : []
     } catch {
       kills = [] // none saved yet, or unreadable: start empty
     }
@@ -42,12 +42,14 @@ function save(): void {
 }
 
 export const pvpLog = {
+  summary: (): PvpSummary => summary ??= pvpSummary(list()),
   all: (): PvpKill[] => list(),
   add(kill: PvpKill): void {
     const all = list()
-    all.push(kill)
-    if (all.length > KEEP) all.splice(0, all.length - KEEP)
-    broadcast('tracker:pvpKill', kill)
+    const s = pvpLog.summary()
+    appendPvpKill(all, s, kill)
+    broadcast('tracker:pvpSummary', s, views)
+    broadcast('tracker:pvpKill', kill, ['panel', 'killfeed'])
     save()
   },
   /** Write a pending save now (the app is quitting). */
@@ -63,7 +65,9 @@ export const pvpLog = {
   },
   clear(): void {
     kills = []
-    broadcast('tracker:pvp', kills)
+    summary = pvpSummary(kills)
+    broadcast('tracker:pvpSummary', summary, views)
+    broadcast('tracker:pvp', kills, ['panel', 'killfeed'])
     save()
   },
 }

@@ -66,12 +66,16 @@ async function restart(): Promise<void> {
   setTimeout(() => (restarting.value = false), 1500)
 }
 
+let previewTimer: ReturnType<typeof setInterval> | null = null
 let off: (() => void) | null = null
 onMounted(async () => {
-  off = api.on('gamemap:state', (s) => (state.value = s))
+  off = api.on('gamemap:state', (s) => {
+    state.value = { ...s, preview: s.preview === undefined && s.status !== 'off' ? state.value.preview : s.preview }
+  })
+  previewTimer = setInterval(() => { if (ready.value && document.visibilityState === 'visible') void api.invoke('gamemap:requestPreview') }, 1000)
   state.value = await api.invoke('gamemap:get')
 })
-onBeforeUnmount(() => off?.())
+onBeforeUnmount(() => { off?.(); if (previewTimer) clearInterval(previewTimer) })
 
 const STEPS = [
   { title: "Open the game's map", body: 'It works with the regular minimap or with the see-through map overlay of Shift+Alt+M (the one with Map Opacity and Path Opacity at its top).', key: 'Shift+Alt+M' },

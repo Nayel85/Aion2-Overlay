@@ -15,7 +15,7 @@
  */
 import { app } from 'electron'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
-import { appendFileSync, existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { createWriteStream, existsSync, mkdirSync, type WriteStream } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { DISPLAY_NAME } from '../shared/app.ts'
 import { broadcast } from './broadcast.ts'
@@ -88,15 +88,39 @@ let status: TrackerStatus = {
 export function logPath(): string {
   return join(app.getPath('userData'), 'logs', 'tracker.log')
 }
-let logReady = false
+let logStream: WriteStream | null = null
+let logClosing = false
+let skippedLines = 0
+
+export function finishLog(): Promise<void> | null {
+  logClosing = true
+  const stream = logStream
+  if (!stream || stream.closed) return null
+  return new Promise((resolve) => {
+    stream.once('close', resolve)
+    stream.end(skippedLines ? `Skipped ${skippedLines} log lines while the disk was busy.\n` : '')
+  })
+}
+
 export function log(line: string): void {
+  if (logClosing) return
   try {
-    if (!logReady) {
+    if (!logStream) {
       mkdirSync(dirname(logPath()), { recursive: true })
-      writeFileSync(logPath(), `${DISPLAY_NAME} ${app.getVersion()} (${app.isPackaged ? 'installed' : 'development'})\n`)
-      logReady = true
+      logStream = createWriteStream(logPath(), { flags: 'w' })
+      logStream.on('error', () => { /* Logging must not interrupt capture. */ })
+      logStream.write(`${DISPLAY_NAME} ${app.getVersion()} (${app.isPackaged ? 'installed' : 'development'})\n`)
     }
-    appendFileSync(logPath(), `${new Date().toISOString()} ${line}\n`)
+    if (logStream.destroyed) return
+    if (logStream.writableLength >= 1_048_576) {
+      skippedLines++
+      return
+    }
+    if (skippedLines) {
+      logStream.write(`Skipped ${skippedLines} log lines while the disk was busy.\n`)
+      skippedLines = 0
+    }
+    logStream.write(`${new Date().toISOString()} ${line}\n`)
   } catch {
     // A log that cannot be written must not stop the tracker.
   }

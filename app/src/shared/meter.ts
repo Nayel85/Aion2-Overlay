@@ -246,6 +246,7 @@ export interface DetailsSkill {
   parry: number
   multi: number
   /** When each hit landed, ms from the fight's start (the Rotation tab). */
+  opening?: number[]
   at: number[]
 }
 
@@ -316,6 +317,7 @@ interface SkillEntry {
   double?: number
   parry?: number
   multiHitCount?: number
+  opening?: number[]
   hitTimestamps?: number[]
 }
 
@@ -377,6 +379,7 @@ export function detailsView(
     double: s.double ?? 0,
     parry: s.parry ?? 0,
     multi: s.multiHitCount ?? 0,
+    opening: s.opening,
     at: s.hitTimestamps ?? [],
   })
   const skills = d.skills.map(entry).sort((a, b) => b.damage - a.damage)

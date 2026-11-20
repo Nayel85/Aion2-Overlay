@@ -9,6 +9,7 @@ import { gameMap, regionDisplay } from './gameMap.ts'
 import { mapDetail } from './gameMapDetail.ts'
 import { lokthar } from './lokthar.ts'
 import { guildEvents } from './guildEvents.ts'
+import { pvpLog } from './pvpLog.ts'
 import { packets } from './packets.ts'
 import { settings } from './settings.ts'
 import { sounds } from './sounds.ts'
@@ -107,7 +108,7 @@ export function registerIpc(): void {
     settings.set(key as SettingKey, value)
   })
 
-  handle('tracker:get', () => ({ status: tracker.status(), pets: tracker.pets(), nearby: tracker.nearby(), shop: tracker.shop(), kina: tracker.kina(), abyss: tracker.abyss(), rifts: tracker.rifts(), fieldBosses: tracker.fieldBosses(), pvp: tracker.pvp(), cubes: tracker.cubes(), enemies: tracker.enemies(), target: tracker.target() }))
+  handle('tracker:get', (fullPvp = true) => ({ status: tracker.status(), pets: tracker.pets(), nearby: tracker.nearby(), shop: tracker.shop(), kina: tracker.kina(), abyss: tracker.abyss(), rifts: tracker.rifts(), fieldBosses: tracker.fieldBosses(), pvp: fullPvp ? tracker.pvp() : [], pvpSummary: pvpLog.summary(), cubes: tracker.cubes(), enemies: tracker.enemies(), target: tracker.target() }))
   handle('tracker:clearPvp', () => tracker.clearPvp())
   handle('timerbar:moveTo', (to) => {
     if (isPoint(to)) moveTimerBar(to)
@@ -147,14 +148,15 @@ export function registerIpc(): void {
   handle('gamemap:report', (state) => {
     if (state && typeof state.status === 'string') gameMap.report(state)
   })
+  handle('gamemap:requestPreview', () => gameMap.requestPreview())
   handle('gamemap:get', () => gameMap.state())
   handle('gamemap:restart', () => gameMap.restart())
   handle('gamemap:log', (line) => gameMap.log(String(line)))
   handle('gamemap:openLog', () => gameMap.openLog())
   handle('gamemap:display', () => regionDisplay())
   handle('gamemap:grab', (w, h) => gameMap.grab(Math.round(Number(w)), Math.round(Number(h))))
-  handle('gamemap:detail', (key, cols, rows) => mapDetail.get(String(key), Number(cols), Number(rows)))
-  handle('gamemap:saveFeatures', (key, data) => mapDetail.saveFeatures(String(key), data))
+  handle('gamemap:detail', (key, cols, rows, col, row) => mapDetail.get(key, cols, rows, col, row))
+  handle('gamemap:saveFeatures', (key, data, col, row) => mapDetail.saveFeatures(key, data, col, row))
   handle('characters:get', () => characterStore.all())
   handle('characters:refresh', (id) => characterStore.refresh(id))
   handle('characters:forget', (id) => characterStore.forget(id))
@@ -303,7 +305,7 @@ export function registerIpc(): void {
   handle('details:get', () => {
     const source = detailsSource()
     if (source?.kind === 'run') return dummy.details(source.id)
-    return source ? meterState.details(source) : null
+    return source ? meterState.details(source, true) : null
   })
   handle('details:close', () => closeDetails())
   handle('details:moveTo', (to) => {

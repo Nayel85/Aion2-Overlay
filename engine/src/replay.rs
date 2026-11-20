@@ -113,5 +113,18 @@ mod tests {
         let row = &dps["map"]["1395"];
         assert_eq!(row["amount"].as_f64(), Some(976.0 * 10.0), "{dps}");
         assert!(row["dps"].as_f64().unwrap() > 0.0, "{dps}");
+
+        // Same decoded hits, attributed to a dummy by its HP pattern or its spawn code.
+        meter.storage.set_local_player_id(Some(1395));
+        meter.storage.set_mob_current_hp(30001, 1);
+        meter.storage.set_mob_current_hp(30001, 10_000);
+        assert_eq!(meter.dps()["train"]["damage"], 9760);
+        meter.storage.append_mob(30001, 2300229);
+        meter.storage.set_local_player_id(Some(1396));
+        assert!(meter.dps()["train"].is_null());
+        meter.storage.set_local_player_id(Some(1395));
+        assert_eq!(meter.dps()["train"]["target"], 30001);
+        meter.reset();
+        assert!(meter.dps()["train"].is_null());
     }
 }

@@ -2,6 +2,7 @@
 
 use std::collections::HashSet;
 use std::sync::{Arc, OnceLock};
+use std::time::{Duration, Instant};
 
 use a2tools_dps_meter_lib::capture::abnormal;
 use a2tools_dps_meter_lib::combat::data_storage::DataStorage;
@@ -23,6 +24,14 @@ const ABNORMALS: &str = include_str!("../data/abnormals.json");
 /// Target modes the calculator knows, by the id the app sends.
 pub const TARGET_MODES: &[&str] = &["bossTargets", "mostDamage", "mostRecent", "lastHitByMe", "allTargets", "trainTargets"];
 
+struct TrainingSnapshot {
+    generation: i64,
+    player: i32,
+    zone_reset: i64,
+    at: Instant,
+    value: serde_json::Value,
+}
+
 pub struct Meter {
     pub storage: Arc<DataStorage>,
     pub port_detector: Arc<CombatPortDetector>,
@@ -33,6 +42,7 @@ pub struct Meter {
     dot_skill_ids: HashSet<i32>,
     /// Where boss fights are saved; none in a replay.
     pub history: OnceLock<FightHistoryManager>,
+    training: Mutex<Option<TrainingSnapshot>>,
 }
 
 impl Meter {
@@ -56,6 +66,7 @@ impl Meter {
             ping,
             dot_skill_ids,
             history: OnceLock::new(),
+            training: Mutex::new(None),
         }
     }
 
@@ -120,43 +131,54 @@ impl Meter {
     pub fn dps(&self) -> serde_json::Value {
         let data = self.calculator.lock().get_dps();
         let mut out = serde_json::to_value(&data).unwrap_or_default();
-        let targets: Vec<i32> = if data.detail_target_ids.is_empty() { vec![data.target_id] } else { data.detail_target_ids.clone() };
-        let fights = self.storage.get_combat_snapshot_light();
         let party = self.storage.get_party_members();
         for (id, row) in &data.map {
             let (crits, hits) = row.analyzed_data.values().fold((0i64, 0i64), |(c, h), s| (c + i64::from(s.crit_times), h + i64::from(s.times)));
-            let taken: i64 = targets.iter().filter_map(|t| fights.get(t)?.actors.get(id)).map(|a| a.damage_received).sum();
             let entry = &mut out["map"][id.to_string()];
             if entry.is_object() {
                 entry["critRate"] = serde_json::json!(if hits > 0 { crits as f64 / hits as f64 } else { 0.0 });
-                entry["taken"] = serde_json::json!(taken);
+                entry["taken"] = serde_json::json!(row.damage_received);
                 entry["party"] = serde_json::json!(party.contains_key(&row.nickname));
             }
         }
-        out["train"] = self.train(&fights);
+        out["train"] = self.train();
         out
     }
 
     /// Your damage (and your summons') on every training dummy fought since
     /// the combat data was last cleared, and the dummy you hit last.
-    fn train(
-        &self,
-        fights: &std::collections::HashMap<i32, a2tools_dps_meter_lib::combat::data_storage::TargetCombatData>,
-    ) -> serde_json::Value {
+    fn train(&self) -> serde_json::Value {
         let Some(me) = self.storage.local_player_id().and_then(|id| i32::try_from(id).ok()) else {
             return serde_json::Value::Null;
         };
+        let generation = self.storage.damage_generation();
+        let zone_reset = self.storage.last_zone_reset_ms();
+        let mut cached = self.training.lock();
+        // Damage invalidates immediately. Recheck quiet fights for late spawn/HP and summon information.
+        if let Some(prev) = cached.as_ref()
+            && prev.generation == generation && prev.player == me && prev.zone_reset == zone_reset
+            && prev.at.elapsed() < Duration::from_secs(1)
+        {
+            return prev.value.clone();
+        }
+        let value = self.dummy_damage(me);
+        *cached = Some(TrainingSnapshot { generation, player: me, zone_reset, at: Instant::now(), value: value.clone() });
+        value
+    }
+
+    fn dummy_damage(&self, me: i32) -> serde_json::Value {
+        let codes = self.storage.get_mob_data();
+        let mut dummies: Vec<i32> = codes.iter().filter_map(|(&id, &code)| self.npcs.is_training_dummy(code).then_some(id)).collect();
+        // A dummy first recognized by its HP reset always has a max-HP entry.
+        dummies.extend(self.storage.get_mob_hp_data().keys().copied().filter(|id| !codes.contains_key(id) && self.storage.is_hp_reset_dummy(*id)));
+        if dummies.is_empty() {
+            return serde_json::Value::Null;
+        }
         let summons = self.storage.get_summon_data();
         let mut damage = 0i64;
         let mut last: Option<(i64, i32)> = None;
-        for (&tid, fight) in fights {
-            let dummy = match self.storage.mob_code(tid) {
-                Some(code) => self.npcs.is_training_dummy(code),
-                None => self.storage.is_hp_reset_dummy(tid),
-            };
-            if !dummy {
-                continue;
-            }
+        for tid in dummies {
+            let Some(fight) = self.storage.get_target_snapshot_light(tid) else { continue };
             for (&actor, a) in &fight.actors {
                 if a2tools_dps_meter_lib::entity::summon_resolver::resolve(actor, &summons) != me || a.total_damage <= 0 {
                     continue;
@@ -175,9 +197,24 @@ impl Meter {
 
     /// One target's breakdown by skill, for the given players (all when none),
     /// with each player's `defense` on it: damage and hits taken, and healing.
-    pub fn details(&self, target: i32, actors: Option<&[i32]>) -> serde_json::Value {
-        let mut out = serde_json::to_value(self.calculator.lock().get_target_details(target, actors)).unwrap_or_default();
-        if let Some(fight) = self.storage.get_combat_snapshot_light().get(&target) {
+    pub fn details(&self, target: i32, actors: Option<&[i32]>, display: bool) -> serde_json::Value {
+        let mut details = self.calculator.lock().get_target_details(target, actors);
+        let mut openings = Vec::new();
+        if display {
+            for skill in &mut details.skills {
+                openings.push(thin_timeline(&mut skill.hit_timestamps));
+            }
+            for heal in &mut details.heal_skills {
+                thin_timeline(&mut heal.hit_timestamps);
+            }
+        }
+        let mut out = serde_json::to_value(details).unwrap_or_default();
+        if let Some(skills) = out["skills"].as_array_mut() {
+            for (skill, opening) in skills.iter_mut().zip(openings) {
+                if let Some(opening) = opening { skill["opening"] = serde_json::json!(opening); }
+            }
+        }
+        if let Some(fight) = self.storage.get_target_snapshot_light(target) {
             let defense: serde_json::Map<String, serde_json::Value> = fight
                 .actors
                 .iter()
@@ -246,5 +283,38 @@ impl Meter {
     pub fn reset(&self) {
         self.save_fights(true);
         self.calculator.lock().restart_target_selection(true);
+        *self.training.lock() = None;
+    }
+}
+
+/// Keep the opening casts and evenly spaced hit indices for the live rotation graph.
+fn thin_timeline(times: &mut Vec<i64>) -> Option<Vec<i64>> {
+    if times.len() <= 512 { return None; }
+    times.sort_unstable();
+    let mut opening = vec![times[0]];
+    opening.extend(times.windows(2).filter(|pair| pair[1] - pair[0] > 300).take(23).map(|pair| pair[1]));
+
+    let last = times.len() - 1;
+    let stride = times.len().div_ceil(384);
+    let mut index = 0;
+    times.retain(|_| {
+        let keep = index % stride == 0 || index == last;
+        index += 1;
+        keep
+    });
+    Some(opening)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn live_graph_keeps_activity_bounds_and_exact_opening_in_dense_fights() {
+        let mut hits: Vec<_> = (0..100).flat_map(|i| (0..200).map(move |j| i * 10_000 + j * 10)).collect();
+        let opening = thin_timeline(&mut hits).unwrap();
+        assert_eq!(opening, (0..24).map(|i| i * 10_000).collect::<Vec<_>>());
+        assert!(hits.len() <= 385);
+        assert_eq!((hits[0], hits.last().copied()), (0, Some(991_990)));
     }
 }

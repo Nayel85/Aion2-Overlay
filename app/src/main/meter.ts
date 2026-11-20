@@ -47,13 +47,16 @@ export function onMeter(fn: (m: MeterData) => void): void {
 /** Requests waiting for the engine's answer, by the answer's type; answered in order. */
 const waiting: { type: string; match: (ev: Record<string, unknown>) => boolean; done: (ev: Record<string, unknown> | null) => void }[] = []
 
+let nextRequest = 0
+
 /** Send `cmd` and wait for the engine's `type` event that `match`es (null if it never comes). */
 function ask(cmd: Record<string, unknown>, type: string, match: (ev: Record<string, unknown>) => boolean = () => true): Promise<Record<string, unknown> | null> {
   if (!tracker.running()) return Promise.resolve(null)
   return new Promise((resolve) => {
-    const w = { type, match, done: resolve }
+    const request = ++nextRequest
+    const w = { type, match: (ev: Record<string, unknown>) => match(ev) && (ev['request'] === undefined || ev['request'] === request), done: resolve }
     waiting.push(w)
-    command(cmd)
+    command(type === 'details' ? { ...cmd, request } : cmd)
     setTimeout(() => {
       const i = waiting.indexOf(w)
       if (i >= 0) waiting.splice(i, 1)[0]!.done(null)
@@ -98,7 +101,7 @@ export function startMeter(): void {
   })
   tracker.onEvent('dps', (ev) => {
     meter = meterData(ev as unknown as DpsEvent, Date.now(), ping)
-    broadcast('meter:dps', meter)
+    broadcast('meter:dps', meter, ['panel', 'meter', 'unified'])
     for (const fn of meterListeners) fn(meter)
   })
   // A player selected (or let go): the meter's target follows.
@@ -114,7 +117,7 @@ export function startMeter(): void {
   tracker.onEvent('ping', (ev) => {
     ping = (ev['ms'] as number | null) ?? null
     meter = { ...meter, ping }
-    broadcast('meter:dps', meter)
+    broadcast('meter:dps', meter, ['panel', 'meter', 'unified'])
   })
   tracker.onEvent('buffs', (ev) => {
     buffs = (ev['buffs'] as Buff[] | undefined) ?? []
@@ -216,9 +219,9 @@ export const meterState = {
     command({ cmd: 'dpsReset' })
   },
   /** A fight's breakdown by player and skill: the live target's, or a saved fight's. */
-  async details(source: DetailsSource): Promise<DetailsView | null> {
+  async details(source: DetailsSource, display = false): Promise<DetailsView | null> {
     if (source.kind === 'live') {
-      const ev = await ask({ cmd: 'details', target: source.target }, 'details', (e) => e['target'] === source.target)
+      const ev = await ask({ cmd: 'details', target: source.target, display }, 'details', (e) => e['target'] === source.target)
       if (!ev) return null
       const title = meter.target?.id === source.target ? meter.target.name : 'Target'
       const live = ev['fightBuffs'] as { durationMs: number; buffs: BuffTrack[] } | null | undefined

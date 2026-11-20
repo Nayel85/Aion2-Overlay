@@ -527,6 +527,10 @@ impl Tracker {
         server.and_then(|s| self.cards.get(&(name.to_string(), s))).and_then(|c| c.cp)
     }
 
+    pub fn finish_writes(&mut self) {
+        self.pvp_fights.finish();
+    }
+
     /// A saved PvP fight, by id.
     pub fn pvp_fight(&self, id: &str) -> Option<pvp::Fight> {
         self.pvp_fights.get(id).cloned()

@@ -29,3 +29,31 @@ export interface GameMapState {
   /** What the overlay sees, now and then: a small JPEG (Map V2 shows it). */
   preview?: string | null
 }
+
+export interface MapTile {
+  c: number
+  r: number
+  data: ArrayBuffer
+}
+
+export type MapDetail =
+  | { kind: 'features'; data: ArrayBuffer; whole: boolean }
+  | { kind: 'tiles'; cols: number; rows: number; tiles: MapTile[] }
+  | null
+
+/** Start of the two-tile group containing the normalized map position on this axis. */
+export function detailGroupAt(position: number, tiles: number, previous?: number): number {
+  const tile = Math.min(tiles - 1, Math.max(0, position * tiles))
+  // Adjacent groups overlap. Small movements at their seam can reuse the current descriptors.
+  if (previous !== undefined && tile >= previous - 0.25 && tile < previous + 2.25) return previous
+  return 2 * Math.floor(tile / 2)
+}
+
+/** Include a one-tile margin around each group, clipped to the zone. */
+export function detailTiles(cols: number, rows: number, col: number, row: number): [number, number][] {
+  const tiles: [number, number][] = []
+  for (let r = Math.max(0, row - 1); r < Math.min(rows, row + 3); r++) {
+    for (let c = Math.max(0, col - 1); c < Math.min(cols, col + 3); c++) tiles.push([c, r])
+  }
+  return tiles
+}

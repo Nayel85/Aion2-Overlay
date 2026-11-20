@@ -8,6 +8,8 @@
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::path::PathBuf;
+use std::sync::{Arc, mpsc};
+use std::thread::{self, JoinHandle};
 
 use a2tools_dps_meter_lib::entity::job_class::JobClass;
 use serde::{Deserialize, Serialize};
@@ -209,29 +211,84 @@ pub fn fight(id: String, at: i64, outcome: &str, me: Side, opponent: Side, hits:
 
 /// The fights saved, newest first.
 pub struct Fights {
-    path: Option<PathBuf>,
-    list: Vec<Fight>,
+    list: Vec<Arc<Fight>>,
+    writer: Option<mpsc::SyncSender<SaveFight>>,
+    thread: Option<JoinHandle<()>>,
+}
+
+struct SaveFight {
+    fight: Arc<Fight>,
+    expired: Option<String>,
+}
+
+impl SaveFight {
+    fn write(self, dir: &std::path::Path) -> std::io::Result<()> {
+        fs::create_dir_all(dir)?;
+        let file = dir.join(format!("{}.json", self.fight.id));
+        let tmp = file.with_extension("tmp");
+        fs::write(&tmp, serde_json::to_vec(self.fight.as_ref())?)?;
+        fs::rename(tmp, file)?;
+        if let Some(id) = self.expired.filter(|id| crate::history::is_plain_name(id)) {
+            let expired = dir.join(format!("{id}.json"));
+            if expired.exists() { fs::remove_file(expired)?; }
+        }
+        Ok(())
+    }
 }
 
 impl Fights {
     pub fn load(path: Option<PathBuf>) -> Self {
-        let list = path.as_ref().and_then(|p| fs::read_to_string(p).ok()).and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
-        Self { path, list }
+        // Older versions stored one JSON array. Read it alongside the individual fight files.
+        let mut list: Vec<Fight> = path.as_ref().and_then(|p| fs::read(p).ok()).and_then(|b| serde_json::from_slice(&b).ok()).unwrap_or_default();
+        let mut writer = None;
+        let mut thread = None;
+        if let Some(path) = path {
+            let dir = path.with_extension("");
+            if let Ok(files) = fs::read_dir(&dir) {
+                for file in files.flatten().map(|entry| entry.path()).filter(|p| p.extension().is_some_and(|s| s == "json")) {
+                    if let Some(fight) = fs::read(file).ok().and_then(|b| serde_json::from_slice(&b).ok()) {
+                        list.push(fight);
+                    }
+                }
+            }
+            let (tx, rx) = mpsc::sync_channel::<SaveFight>(64);
+            writer = Some(tx);
+            thread = Some(thread::spawn(move || {
+                for job in rx {
+                    if let Err(e) = job.write(&dir) {
+                        tracing::warn!("could not save PvP fight: {e}");
+                    }
+                }
+            }));
+        }
+        list.sort_by(|a, b| b.at.cmp(&a.at).then_with(|| a.id.cmp(&b.id)));
+        list.dedup_by(|a, b| a.id == b.id);
+        list.truncate(MAX_FIGHTS);
+        Self { list: list.into_iter().map(Arc::new).collect(), writer, thread }
     }
 
     pub fn add(&mut self, fight: Fight) {
-        self.list.insert(0, fight);
-        self.list.truncate(MAX_FIGHTS);
-        let Some(path) = &self.path else { return };
-        let saved = serde_json::to_string(&self.list).map_err(|e| e.to_string()).and_then(|s| fs::write(path, s).map_err(|e| e.to_string()));
-        if let Err(e) = saved {
-            tracing::warn!("could not save the PvP fights: {e}");
+        let fight = Arc::new(fight);
+        self.list.retain(|old| old.id != fight.id);
+        self.list.insert(0, fight.clone());
+        let expired = if self.list.len() > MAX_FIGHTS { self.list.pop().map(|old| old.id.clone()) } else { None };
+        if let Some(writer) = &self.writer {
+            let _ = writer.send(SaveFight { fight, expired });
         }
     }
 
-    pub fn get(&self, id: &str) -> Option<&Fight> {
-        self.list.iter().find(|f| f.id == id)
+    pub fn finish(&mut self) {
+        self.writer.take();
+        if let Some(thread) = self.thread.take() { let _ = thread.join(); }
     }
+
+    pub fn get(&self, id: &str) -> Option<&Fight> {
+        self.list.iter().find(|f| f.id == id).map(|f| f.as_ref())
+    }
+}
+
+impl Drop for Fights {
+    fn drop(&mut self) { self.finish(); }
 }
 
 #[cfg(test)]
@@ -240,6 +297,26 @@ mod tests {
 
     fn hit(ts: i64, actor: u32, target: u32, skill: i32, damage: i64) -> Hit {
         Hit { ts, actor, target, skill, damage, crit: damage > 1000, dot: false, back: false, perfect: false, double: false, parry: false, multi: 0 }
+    }
+
+    #[test]
+    fn history_reads_legacy_and_drains_individual_writes_on_shutdown() {
+        let dir = std::env::temp_dir().join(format!("lokthar-pvp-{}", std::process::id()));
+        fs::create_dir_all(&dir).unwrap();
+        let file = dir.join("pvp-fights.json");
+        let make = |at| fight(format!("pvp-{at}-2"), at, "kill", Side::default(), Side::default(), &[]);
+        fs::write(&file, serde_json::to_vec(&vec![make(0)]).unwrap()).unwrap();
+        {
+            let mut history = Fights::load(Some(file.clone()));
+            assert!(history.get("pvp-0-2").is_some());
+            for at in 1..=301 { history.add(make(at)); }
+        }
+        let history = Fights::load(Some(file));
+        assert_eq!(history.list.len(), MAX_FIGHTS);
+        assert!(history.get("pvp-0-2").is_none());
+        assert!(history.get("pvp-301-2").is_some());
+        assert_eq!(fs::read_dir(dir.join("pvp-fights")).unwrap().count(), MAX_FIGHTS);
+        fs::remove_dir_all(dir).unwrap();
     }
 
     #[test]

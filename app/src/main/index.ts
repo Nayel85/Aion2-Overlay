@@ -23,7 +23,7 @@ import { startPackets } from './packets.ts'
 import { stopShopScreen, watchShopScreen } from './shopScreen.ts'
 import { startMeter } from './meter.ts'
 import { startTimers } from './timers.ts'
-import { killTrackerNow, log, startNpcapWatch, stopTracker, tracker } from './tracker.ts'
+import { finishLog, killTrackerNow, log, startNpcapWatch, stopTracker, tracker } from './tracker.ts'
 import { tr } from './i18n.ts'
 import { createTray, setTrayTooltip } from './tray.ts'
 import { applyWindowSettings, closeMerchant, markQuitting, merchantBounds, merchantOpen, refreshHud, setForeground, showMerchant, showPanel, startOnTopWatch } from './windows.ts'
@@ -142,5 +142,12 @@ if (!app.requestSingleInstanceLock()) {
     stopTracker()
   })
   // Windows children outlive their parent: make sure the engine goes with us.
-  process.on('exit', () => killTrackerNow())
+  app.once('will-quit', (event) => {
+    const flushed = finishLog()
+    if (flushed) {
+      event.preventDefault()
+      void flushed.then(() => app.quit())
+    }
+  })
+  process.on('exit', killTrackerNow)
 }

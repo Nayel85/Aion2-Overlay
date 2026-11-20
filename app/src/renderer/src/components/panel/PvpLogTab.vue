@@ -6,7 +6,7 @@
 // servers carry their server's tag ([LUM]).
 // Lokthar: the rift farms on top (shared/abyss.ts), each the Abyss Points one character earned in a
 // Spacetime Rift's window, with your kills, deaths and assists in it; picking one lists those.
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, shallowRef, triggerRef } from 'vue'
 import Button from '@/components/Button.vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import SettingRow from '@/components/SettingRow.vue'
@@ -18,12 +18,22 @@ import { loc, plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { serverTag } from '@shared/servers.ts'
 import type { Settings } from '@shared/settings.ts'
-import type { PvpKill } from '@shared/tracker.ts'
+import { PVP_LIMIT, type PvpKill } from '@shared/tracker.ts'
 import { RIFT_MIN_POINTS as RIFT_MIN, RIFT_MS, type RiftFarm } from '@shared/abyss.ts'
 import { formatAmount } from '@shared/earnings.ts'
 
 const store = useApp()
-const kills = computed(() => [...store.pvp].reverse())
+const history = shallowRef<PvpKill[]>([])
+const api = bridge()
+const offHistory = api.on('tracker:pvp', (list) => (history.value = list))
+const offKill = api.on('tracker:pvpKill', (kill) => {
+  if (history.value.length >= PVP_LIMIT) history.value.shift()
+  history.value.push(kill)
+  triggerRef(history)
+})
+void api.invoke('tracker:get', true).then((s) => (history.value = s.pvp))
+onBeforeUnmount(() => { offHistory(); offKill() })
+
 const myServer = computed(() => store.status?.server ?? null)
 /** Combat power as the game rounds it: 115485 → 115.4K. */
 const cp = (v: number): string => `${(Math.floor(v / 100) / 10).toFixed(1)}K`
@@ -58,7 +68,7 @@ function pickRift(f: RiftFarm): void {
 const inRift = (k: PvpKill, f: RiftFarm): boolean => k.at >= f.start && k.at < f.start + RIFT_MS && (k.mine || k.died || isAssist(k))
 const riftCounts = (f: RiftFarm): { kills: number; deaths: number; assists: number } => {
   const out = { kills: 0, deaths: 0, assists: 0 }
-  for (const k of store.pvp) {
+  for (const k of history.value) {
     if (!inRift(k, f)) continue
     if (k.mine) out.kills++
     else if (k.died) out.deaths++
@@ -75,17 +85,22 @@ const riftTitle = (f: RiftFarm): string =>
   t('Abyss Points earned from {from} to {to} (the rift opens, and is over 1 h 10 min later)', { from: time(f.start), to: time(f.start + RIFT_MS) })
 
 const filtered = computed(() => {
-  const f = rift.value
-  if (f) return kills.value.filter((k) => inRift(k, f))
-  return filter.value === 'mine' ? kills.value.filter((k) => k.mine || k.died) : filter.value === 'legion' ? kills.value.filter((k) => k.legion) : kills.value
+  const farm = rift.value
+  if (farm) return history.value.filter((k) => inRift(k, farm))
+  if (filter.value === 'mine') return history.value.filter((k) => k.mine || k.died)
+  if (filter.value === 'legion') return history.value.filter((k) => k.legion)
+  return null
 })
-// The newest rows only (a siege lists thousands); more on request.
+const total = computed(() => (filtered.value ?? history.value).length)
 const PAGE = 200
 const limit = ref(PAGE)
-const shown = computed(() => filtered.value.slice(0, limit.value))
+const shown = computed(() => {
+  const list = filtered.value ?? history.value
+  return list.slice(-limit.value).reverse()
+})
 const counts = computed(() => ({
-  kills: store.pvp.filter((k) => k.mine).length,
-  deaths: store.pvp.filter((k) => k.died).length,
+  kills: store.pvpStats.kills,
+  deaths: store.pvpStats.deaths,
 }))
 
 // "2 min ago": redrawn every 15 s.
@@ -124,7 +139,7 @@ const BACKGROUND_HINT = 'At None the text keeps a dark glow, readable on the gam
     <div class="flex items-center gap-2 text-xs">
       <span class="rounded-md bg-card px-2 py-1"><span class="font-semibold text-green">{{ counts.kills }}</span> kills</span>
       <span class="rounded-md bg-card px-2 py-1"><span class="font-semibold text-danger">{{ counts.deaths }}</span> {{ t('deaths') }}</span>
-      <Button size="sm" class="ml-auto" :disabled="!store.pvp.length" @click="clear">{{ t('Clear') }}</Button>
+      <Button size="sm" class="ml-auto" :disabled="!history.length" @click="clear">{{ t('Clear') }}</Button>
       <Button size="sm" :intent="hudOpen ? 'default' : 'primary'" :title="hudOpen ? t('Close the kill feed over the game') : t('A small kill feed over the game')" @click="toggleHud">
         {{ hudOpen ? t('Close HUD') : t('Open HUD') }}
       </Button>
@@ -188,10 +203,10 @@ const BACKGROUND_HINT = 'At None the text keeps a dark glow, readable on the gam
         {{ t(f.label) }}
       </button>
       <!-- How many kills the list below holds (with the filter). -->
-      <span class="ml-auto rounded-full bg-card px-2 py-0.5 tabular-nums text-dark" :title="plural(filtered.length, '{n} kill in the list', '{n} kills in the list')">{{ filtered.length }}</span>
+      <span class="ml-auto rounded-full bg-card px-2 py-0.5 tabular-nums text-dark" :title="plural(total, '{n} kill in the list', '{n} kills in the list')">{{ total }}</span>
     </div>
 
-    <ul v-if="filtered.length" class="divide-y divide-[color:var(--line)] overflow-hidden rounded-lg border border-card bg-card">
+    <ul v-if="total" class="divide-y divide-[color:var(--line)] overflow-hidden rounded-lg border border-card bg-card">
       <li
         v-for="(k, i) in shown"
         :key="`${k.at}-${i}`"
@@ -221,14 +236,14 @@ const BACKGROUND_HINT = 'At None the text keeps a dark glow, readable on the gam
       </li>
     </ul>
     <button
-      v-if="filtered.length > shown.length"
+      v-if="total > shown.length"
       type="button"
       class="w-full rounded-lg border border-card bg-card py-1.5 text-xs text-darker hover:text-dark"
       @click="limit += PAGE"
     >
-      {{ t('Show older ({n} more)', { n: filtered.length - shown.length }) }}
+      {{ t('Show older ({n} more)', { n: total - shown.length }) }}
     </button>
-    <p v-if="!filtered.length" class="rounded-lg border border-card bg-card px-3 py-6 text-center text-sm text-darker">
+    <p v-if="!total" class="rounded-lg border border-card bg-card px-3 py-6 text-center text-sm text-darker">
       {{ rift ? t('No kills, deaths or assists of yours in this rift.') : t(filters.find((f) => f.id === filter)?.empty ?? 'No player kills seen yet.') }}
     </p>
 

@@ -16,7 +16,7 @@
  * map, is searched little or not at all: most of the time the game's map is closed.
  *
  * The zone map the app ships (3072 px) is matched against first. The game's own tiles, finer,
- * replace it once they are here (main/gameMapDetail.ts downloads them once per zone): they are
+ * replace it once they are here (main/gameMapDetail.ts caches them in tile groups): they are
  * what the map is followed on from then on, while the occasional whole-zone search stays on the
  * shipped map, which is lighter.
  *
@@ -38,6 +38,7 @@
  * an error, or the detail in its place), { type: 'features', key, data } what to keep of the detail,
  * { type: 'scales', key, scales } sizes to keep, and { type: 'result', matrix | null, inliers, ms, mode } per picture.
  */
+import type { MapTile } from '@shared/gameMap.ts'
 import cvModule from '@techstark/opencv-js'
 
 // OpenCV.js is typed loosely and its objects are freed by hand; its own types add nothing here.
@@ -217,13 +218,17 @@ function detect(image: ImageData, n: number, dx = 0, dy = 0): { pts: number[]; d
   return { pts, desc: out }
 }
 
+let zoneGeneration = 0
 async function loadReference(key: string, url: string): Promise<void> {
+  const generation = ++zoneGeneration
   const blob = await (await fetch(url)).blob()
   const bitmap = await createImageBitmap(blob)
+  if (generation !== zoneGeneration) { bitmap.close(); return }
   const canvas = new OffscreenCanvas(bitmap.width, bitmap.height)
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
   ctx.drawImage(bitmap, 0, 0)
   const image = ctx.getImageData(0, 0, bitmap.width, bitmap.height)
+  bitmap.close()
   const { pts, desc } = detect(image, REF_FEATURES)
   const rgba = cv.matFromImageData(image)
   coarseGray?.delete()
@@ -231,8 +236,9 @@ async function loadReference(key: string, url: string): Promise<void> {
   cv.cvtColor(rgba, coarseGray, cv.COLOR_RGBA2GRAY)
   rgba.delete()
   coarse?.descMat.delete()
+  verified = null
   if (ref && ref !== coarse) ref.descMat.delete()
-  coarse = ref = makeReference(key, bitmap.width, bitmap.height, new Float32Array(pts), desc)
+  coarse = ref = makeReference(key, image.width, image.height, new Float32Array(pts), desc)
   last = null
   lastScale = null
   prevGray?.delete()
@@ -248,23 +254,21 @@ async function loadReference(key: string, url: string): Promise<void> {
 }
 
 /** The detail from the game's tiles: each one shrunk to fit DETAIL_PX and searched for keypoints. */
-async function detailFromTiles(key: string, cols: number, rows: number, tiles: ArrayBuffer[]): Promise<Reference> {
+async function detailFromTiles(key: string, cols: number, rows: number, tiles: MapTile[]): Promise<Reference> {
   const size = Math.min(2048, Math.floor(DETAIL_PX / Math.max(cols, rows)))
   const perTile = Math.round(DETAIL_FEATURES_PER_TILE * (size / 1024) ** 2)
   const canvas = new OffscreenCanvas(size, size)
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
   const pts: number[] = []
   const descs: Uint8Array[] = []
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const bitmap = await createImageBitmap(new Blob([tiles[r * cols + c]!]), { resizeWidth: size, resizeHeight: size, resizeQuality: 'high' })
-      ctx.clearRect(0, 0, size, size)
-      ctx.drawImage(bitmap, 0, 0)
-      bitmap.close()
-      const found = detect(ctx.getImageData(0, 0, size, size), perTile, c * size, r * size)
-      pts.push(...found.pts)
-      descs.push(found.desc)
-    }
+  for (const { c, r, data } of tiles) {
+    const bitmap = await createImageBitmap(new Blob([data]), { resizeWidth: size, resizeHeight: size, resizeQuality: 'high' })
+    ctx.clearRect(0, 0, size, size)
+    ctx.drawImage(bitmap, 0, 0)
+    bitmap.close()
+    const found = detect(ctx.getImageData(0, 0, size, size), perTile, c * size, r * size)
+    pts.push(...found.pts)
+    descs.push(found.desc)
   }
   const desc = new Uint8Array(descs.reduce((n, d) => n + d.length, 0))
   let at = 0
@@ -289,7 +293,7 @@ function unpackFeatures(key: string, data: ArrayBuffer): Reference | null {
   if (data.byteLength < 16) return null
   const [magic, width, height, n] = new Uint32Array(data, 0, 4) as unknown as [number, number, number, number]
   if (magic !== FEATURES_MAGIC || data.byteLength !== 16 + n * 40) return null
-  return makeReference(key, width, height, new Float32Array(data.slice(16, 16 + n * 8)), new Uint8Array(data.slice(16 + n * 8)))
+  return makeReference(key, width, height, new Float32Array(data, 16, n * 2), new Uint8Array(data, 16 + n * 8))
 }
 
 /** Follow the map on `next` from now on, carrying where it was over to its pixels. */
@@ -298,6 +302,7 @@ function useReference(next: Reference): void {
     const s = next.width / ref.width
     last = [last[0]! / s, last[1]! / s, last[2]!, last[3]! / s, last[4]! / s, last[5]!]
   }
+  verified = null
   if (ref && ref !== coarse) ref.descMat.delete()
   ref = next
 }
@@ -310,7 +315,14 @@ function inBox(x0: number, y0: number, x1: number, y1: number): number[] | null 
   const cx1 = Math.min(ref.cols - 1, Math.floor(x1 / CELL))
   const cy0 = Math.max(0, Math.floor(y0 / CELL))
   const cy1 = Math.min(Math.ceil(ref.height / CELL) - 1, Math.floor(y1 / CELL))
-  for (let y = cy0; y <= cy1; y++) for (let x = cx0; x <= cx1; x++) out.push(...(ref.cells.get(y * ref.cols + x) ?? []))
+  for (let y = cy0; y <= cy1; y++) {
+    for (let x = cx0; x <= cx1; x++) {
+      const cell = ref.cells.get(y * ref.cols + x)
+      if (!cell) continue
+      if (cell.length + out.length > MAX_SUBSET) return null
+      out.push(...cell)
+    }
+  }
   return out.length >= 40 && out.length <= MAX_SUBSET ? out : null
 }
 
@@ -380,21 +392,28 @@ function solve(frameDesc: Cv, framePts: Float32Array, subset: number[] | null, o
   }
   const matcher = new cv.BFMatcher(cv.NORM_HAMMING, false)
   const knn = new cv.DMatchVectorVector()
-  matcher.knnMatch(frameDesc, train, knn, 2)
   const from: number[] = []
   const to: number[] = []
-  for (let i = 0; i < knn.size(); i++) {
-    const pair = knn.get(i)
-    if (pair.size() < 2) continue
-    const best = pair.get(0)
-    if (best.distance >= RATIO * pair.get(1).distance) continue
-    const idx = subset ? subset[best.trainIdx]! : best.trainIdx
-    from.push(on.pts[idx * 2]!, on.pts[idx * 2 + 1]!)
-    to.push(framePts[best.queryIdx * 2]!, framePts[best.queryIdx * 2 + 1]!)
+  try {
+    matcher.knnMatch(frameDesc, train, knn, 2)
+    for (let i = 0; i < knn.size(); i++) {
+      const pair = knn.get(i)
+      try {
+        if (pair.size() < 2) continue
+        const best = pair.get(0)
+        if (best.distance >= RATIO * pair.get(1).distance) continue
+        const idx = subset ? subset[best.trainIdx]! : best.trainIdx
+        from.push(on.pts[idx * 2]!, on.pts[idx * 2 + 1]!)
+        to.push(framePts[best.queryIdx * 2]!, framePts[best.queryIdx * 2 + 1]!)
+      } finally {
+        pair.delete()
+      }
+    }
+  } finally {
+    knn.delete()
+    matcher.delete()
+    if (subset) train.delete()
   }
-  knn.delete()
-  matcher.delete()
-  if (subset) train.delete()
   const need = subset ? MIN_INLIERS.local : MIN_INLIERS.global
   if (from.length / 2 < need) return null
   const src = cv.matFromArray(from.length / 2, 1, cv.CV_32FC2, from)
@@ -439,10 +458,16 @@ function middleOf(m: number[], width: number, height: number): [number, number] 
  * how well it compares there (normalised cross-correlation, -1 to 1). Both shrunk so the picture
  * is `px` across; the place is found to a fraction of a pixel (a parabola through the scores).
  */
+const frameSizes = new Map<number, Cv>()
+
 function place(gray: Cv, scale: number, at: [number, number], reach: number, px: number): { matrix: number[]; score: number } | null {
-  const k = Math.min(1, px / Math.max(gray.cols, gray.rows))
-  const small = new cv.Mat()
-  cv.resize(gray, small, new cv.Size(Math.max(8, Math.round(gray.cols * k)), Math.max(8, Math.round(gray.rows * k))), 0, 0, cv.INTER_AREA)
+  let small = frameSizes.get(px)
+  if (!small) {
+    const k = Math.min(1, px / Math.max(gray.cols, gray.rows))
+    small = new cv.Mat()
+    frameSizes.set(px, small)
+    cv.resize(gray, small, new cv.Size(Math.max(8, Math.round(gray.cols * k)), Math.max(8, Math.round(gray.rows * k))), 0, 0, cv.INTER_AREA)
+  }
   const kx = small.cols / gray.cols
   const ky = small.rows / gray.rows
   const x0 = Math.max(0, Math.floor(at[0] - (gray.cols / 2 + reach) / scale))
@@ -453,7 +478,6 @@ function place(gray: Cv, scale: number, at: [number, number], reach: number, px:
   const ih = Math.round((y1 - y0) * scale * ky)
   // Off the map's edge.
   if (x1 <= x0 || y1 <= y0 || iw < small.cols + 2 || ih < small.rows + 2) {
-    small.delete()
     return null
   }
   const part = coarseGray.roi(new cv.Rect(x0, y0, x1 - x0, y1 - y0))
@@ -463,7 +487,7 @@ function place(gray: Cv, scale: number, at: [number, number], reach: number, px:
     cv.resize(part, sized, new cv.Size(iw, ih), 0, 0, cv.INTER_AREA)
     cv.matchTemplate(sized, small, scores, cv.TM_CCOEFF_NORMED)
   } catch (err) {
-    for (const mat of [part, small, sized, scores]) mat.delete()
+    for (const mat of [part, sized, scores]) mat.delete()
     throw err
   }
   part.delete()
@@ -479,7 +503,6 @@ function place(gray: Cv, scale: number, at: [number, number], reach: number, px:
     const [l, c, r] = [at2(bu, bv - 1), at2(bu, bv), at2(bu, bv + 1)]
     if (l - 2 * c + r < 0) v += (0.5 * (l - r)) / (l - 2 * c + r)
   }
-  small.delete()
   sized.delete()
   scores.delete()
   // The shipped map's pixel x lands at (x - x0) * sx - u / kx on the picture.
@@ -728,6 +751,14 @@ function match(width: number, height: number, rgba: Uint8ClampedArray<ArrayBuffe
       lastZone = now
       misses = 0
       // On the shipped map (a third of the keypoints of the detail), then in the detail's pixels.
+      if (player && coarse && ref) {
+        const scale = (lastScale ?? known[knownKey]?.[0] ?? 1) * coarse.width / ref.width
+        const dx = width / scale
+        const dy = height / scale
+        const subset = inBox(player[0] - dx, player[1] - dy, player[0] + dx, player[1] + dy)
+        const near = subset && solve(keypoints().desc, keypoints().pts, subset)
+        if (near) return found(near, 'local')
+      }
       const on = coarse ?? ref
       const m = solve(keypoints().desc, keypoints().pts, null, on)
       if (m && on && ref) {
@@ -743,8 +774,38 @@ function match(width: number, height: number, rgba: Uint8ClampedArray<ArrayBuffe
     // Set inside keypoints(), which TypeScript does not follow here.
     ;(kps as { desc: Cv } | null)?.desc.delete()
     ;(thumb as Cv)?.delete()
+    for (const small of frameSizes.values()) small.delete()
+    frameSizes.clear()
     keepForFlow(gray)
   }
+}
+
+// Compare actual RGB samples across the crop before allocating an OpenCV image.
+let verified: { bytes: Uint8Array; player: [number, number] | null; ref: Reference; width: number; height: number; at: number; result: ReturnType<typeof match> } | null = null
+function matchFrame(width: number, height: number, rgba: Uint8ClampedArray<ArrayBuffer>, player: [number, number] | null): ReturnType<typeof match> {
+  const probe = new Uint8Array(Math.ceil(width / 16) * Math.ceil(height / 16) * 3)
+  let i = 0
+  for (let y = 0; y < height; y += 16) {
+    for (let x = 0; x < width; x += 16) {
+      const offset = 4 * (y * width + x)
+      probe[i++] = rgba[offset]!
+      probe[i++] = rgba[offset + 1]!
+      probe[i++] = rgba[offset + 2]!
+    }
+  }
+  const previous = verified
+  if (previous && previous.ref === ref && previous.width === width && previous.height === height) {
+    const positionStable = previous.player?.[0] === player?.[0] && previous.player?.[1] === player?.[1]
+    const validFor = previous.result.matrix ? 1000 : 3000
+    if ((previous.result.matrix || positionStable) && performance.now() - previous.at < validFor &&
+        probe.every((v, n) => previous.bytes[n] === v)) return previous.result
+  }
+  verified = null
+  const result = match(width, height, rgba, player)
+  if (ref && ((result.matrix && result.mode !== 'flow') || (!result.matrix && blank?.zoned))) {
+    verified = { bytes: probe, player, ref, width, height, at: performance.now(), result }
+  }
+  return result
 }
 
 self.onmessage = async (e: MessageEvent): Promise<void> => {
@@ -753,8 +814,8 @@ self.onmessage = async (e: MessageEvent): Promise<void> => {
   const msg = e.data as
     | { type: 'scales'; known: Record<string, number[]> }
     | { type: 'reference'; key: string; url: string }
-    | { type: 'detail'; key: string; features?: ArrayBuffer; cols?: number; rows?: number; tiles?: ArrayBuffer[] }
-    | { type: 'frame'; width: number; height: number; rgba: Uint8ClampedArray<ArrayBuffer>; player: [number, number] | null }
+    | { type: 'detail'; key: string; features?: ArrayBuffer; cols?: number; rows?: number; col: number; row: number; tiles?: MapTile[] }
+    | { type: 'frame'; key: string; width: number; height: number; rgba: Uint8ClampedArray<ArrayBuffer>; player: [number, number] | null }
   if (msg.type === 'scales') {
     known = { ...msg.known, ...known }
     return
@@ -765,12 +826,16 @@ self.onmessage = async (e: MessageEvent): Promise<void> => {
       const fromTiles = !msg.features && msg.tiles && msg.cols && msg.rows
       const detail = msg.features ? unpackFeatures(msg.key, msg.features) : fromTiles ? await detailFromTiles(msg.key, msg.cols!, msg.rows!, msg.tiles!) : null
       // Still the zone it was asked for (a zone change while it was being made drops it).
-      if (!detail || coarse?.key !== msg.key) return
+      if (!detail) throw new Error('invalid cached map features')
+      if (coarse?.key !== msg.key) {
+        detail.descMat.delete()
+        return
+      }
       useReference(detail)
       self.postMessage({ type: 'reference', key: msg.key, width: detail.width, height: detail.height, detail: true })
       if (fromTiles) {
         const data = packFeatures(detail)
-        self.postMessage({ type: 'features', key: msg.key, data }, { transfer: [data] })
+        self.postMessage({ type: 'features', key: msg.key, col: msg.col, row: msg.row, data }, { transfer: [data] })
       }
     } catch (err) {
       // The shipped map goes on being used.
@@ -781,9 +846,9 @@ self.onmessage = async (e: MessageEvent): Promise<void> => {
   if (msg.type === 'reference') {
     try {
       await loadReference(msg.key, msg.url)
+      if (coarse?.key !== msg.key) return
       self.postMessage({ type: 'reference', key: msg.key, width: ref!.width, height: ref!.height })
     } catch (err) {
-      ref = null
       self.postMessage({ type: 'reference', key: msg.key, error: String(err) })
     }
     return
@@ -792,12 +857,12 @@ self.onmessage = async (e: MessageEvent): Promise<void> => {
   // Always answered: the page sends the next picture only once this one is, and a picture OpenCV
   // threw on used to leave it waiting for good (the markers gone until the app restarted).
   try {
-    const out = ref && msg.width >= 16 && msg.height >= 16 ? match(msg.width, msg.height, msg.rgba, msg.player ?? null) : { matrix: null, inliers: 0, mode: 'wait' as const }
-    self.postMessage({ type: 'result', ...out, ms: Math.round(performance.now() - started) })
+    const out = ref?.key === msg.key && msg.width >= 16 && msg.height >= 16 ? matchFrame(msg.width, msg.height, msg.rgba, msg.player ?? null) : { matrix: null, inliers: 0, mode: 'wait' as const }
+    self.postMessage({ type: 'result', key: msg.key, ...out, ms: Math.round(performance.now() - started) })
   } catch (err) {
     last = null
     flowRun = 0
-    self.postMessage({ type: 'result', matrix: null, inliers: 0, mode: 'error', ms: Math.round(performance.now() - started), error: errorText(err) })
+    self.postMessage({ type: 'result', key: msg.key, matrix: null, inliers: 0, mode: 'error', ms: Math.round(performance.now() - started), error: errorText(err) })
   }
 }
 

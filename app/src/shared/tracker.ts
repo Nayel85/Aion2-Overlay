@@ -154,6 +154,36 @@ export function lastDeath(kills: PvpKill[]): (PvpKill & { place: NonNullable<Pvp
   return null
 }
 
+export const PVP_LIMIT = 50_000
+
+export function pvpSummary(log: PvpKill[]) {
+  let kills = 0
+  let deaths = 0
+  let assists = 0
+  for (const k of log) {
+    if (k.mine) kills++
+    if (k.died) deaths++
+    if (k.fight && !k.mine && !k.died) assists++
+  }
+  return { total: log.length, kills, deaths, assists, death: lastDeath(log), recent: log.slice(-4) }
+}
+
+export type PvpSummary = ReturnType<typeof pvpSummary>
+
+/** Maintain the dashboard totals and overlay summary as the oldest kill falls out of history. */
+export function appendPvpKill(log: PvpKill[], summary: PvpSummary, kill: PvpKill): void {
+  const old = log.length === PVP_LIMIT ? log.shift() : undefined
+  log.push(kill)
+  summary.total = log.length
+  summary.kills += Number(kill.mine) - Number(!!old?.mine)
+  summary.deaths += Number(kill.died) - Number(!!old?.died)
+  const assist = (k?: PvpKill): number => Number(!!k?.fight && !k.mine && !k.died)
+  summary.assists += assist(kill) - assist(old)
+  if (kill.died) summary.death = lastDeath([kill])
+  else if (old === summary.death) summary.death = null
+  summary.recent = log.slice(-4)
+}
+
 /** A soul as the HUD toasts it. */
 export interface SoulToast {
   pet: Pet

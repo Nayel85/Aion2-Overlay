@@ -20,7 +20,7 @@ import { displayName } from '@/lib/petDb.ts'
 import { currentWorld, nearbyPets, useSpawns } from '@/lib/spawns.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { blankPet, lastDeath, MAX_LEVEL } from '@shared/tracker.ts'
+import { blankPet, MAX_LEVEL } from '@shared/tracker.ts'
 import { SETTINGS_DEFAULTS } from '@shared/settings.ts'
 
 const PALETTE = ['#f76b15', '#30a46c', '#0090ff', '#e54666', '#12a594', '#ab4aba', '#ffc53d', '#ffffff']
@@ -43,7 +43,7 @@ const zones = computed(() =>
 )
 /** Where you last died, when it was in the zone shown. */
 const death = computed(() => {
-  const d = lastDeath(store.pvp)
+  const d = store.pvpStats.death
   return d && d.place.world === worldId.value ? d.place.position : null
 })
 const inZone = computed(() => worldId.value !== null && worldId.value === here.value)

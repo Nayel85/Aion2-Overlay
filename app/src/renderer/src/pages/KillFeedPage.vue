@@ -20,44 +20,25 @@ import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { serverTag } from '@shared/servers.ts'
 import { KILLFEED_HEIGHT, KILLFEED_WIDTH } from '@shared/settings.ts'
-import { lastDeath, type PvpKill } from '@shared/tracker.ts'
+import { type PvpKill } from '@shared/tracker.ts'
 
 const SHOW_MS = 8000
 const MAX_LINES = 5
 
 const store = useApp()
 const root = ref<HTMLElement | null>(null)
-const counts = computed(() => ({
-  kills: store.pvp.filter((k) => k.mine).length,
-  deaths: store.pvp.filter((k) => k.died).length,
-}))
+const counts = computed(() => store.pvpStats)
 const tag = (server: number | null): string | null =>
   server === null || server === (store.status?.server ?? null) ? null : serverTag(server)
 
 /** The kills on show: each added as it comes, and dropped SHOW_MS later. */
 const lines = ref<PvpKill[]>([])
-let known = -1
-watch(
-  () => store.pvp,
-  (all) => {
-    // Until the store is ready the list is the past (the window just opened), counted below once
-    // ready: only what comes after is shown. A shorter list is a Clear.
-    if (!store.ready || known < 0 || all.length < known) {
-      if (store.ready) known = all.length
-      return
-    }
-    for (const k of all.slice(known)) {
-      // Raw objects on both sides: the store's list and this one hold reactive proxies, and a proxy
-      // never equals its object (the HUD's toasts found this out).
-      const raw = toRaw(k)
-      lines.value = [...lines.value, raw].slice(-MAX_LINES)
-      setTimeout(() => (lines.value = lines.value.filter((x) => toRaw(x) !== raw)), SHOW_MS)
-    }
-    known = all.length
-  },
-  { immediate: true },
-)
-watch(() => store.ready, (ready) => ready && known < 0 && (known = store.pvp.length))
+const offKill = bridge().on('tracker:pvpKill', (k) => {
+  if (!store.ready) return
+  lines.value = [...lines.value, k].slice(-MAX_LINES)
+  setTimeout(() => (lines.value = lines.value.filter((x) => toRaw(x) !== k)), SHOW_MS)
+})
+onBeforeUnmount(offKill)
 
 const drag = windowDrag({ move: 'killfeed:moveTo', end: 'killfeed:dragEnd' })
 const close = (): void => void bridge().invoke('killfeed:close')
@@ -81,7 +62,7 @@ const enemySound = computed(() => store.settings.enemies.sound)
 const toggleSound = (): void => void store.set('enemies', { ...store.settings.enemies, sound: !enemySound.value })
 
 /** Where you last died: the skull opens a small map of it (the zones' data loaded only then). */
-const death = computed(() => lastDeath(store.pvp))
+const death = computed(() => store.pvpStats.death)
 const showDeath = ref(false)
 const spawns = shallowRef<SpawnData | null>(null)
 const deathWorld = computed(() => (death.value && spawns.value ? (spawns.value.worlds[death.value.place.world] ?? null) : null))

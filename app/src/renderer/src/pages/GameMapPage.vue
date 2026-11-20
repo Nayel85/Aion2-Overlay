@@ -10,9 +10,9 @@ import { gatherLayers, useGatherables } from '@/lib/gatherables.ts'
 import { currentWorld, mapImage, nearbyPets, project, useSpawns } from '@/lib/spawns.ts'
 import { useApp } from '@/stores/app.ts'
 import MapVision from '@/workers/mapVision.ts?worker'
-import type { GameMapState } from '@shared/gameMap.ts'
+import { detailGroupAt, type GameMapState } from '@shared/gameMap.ts'
 import type { InvokeResult } from '@shared/ipc.ts'
-import { canAttack, lastDeath } from '@shared/tracker.ts'
+import { canAttack } from '@shared/tracker.ts'
 import { drawSkull } from '@/lib/skull.ts'
 
 /** Pictures are taken at most this often, and one at a time. */
@@ -87,14 +87,21 @@ let cssPerPicture = 1
 
 worker.onmessage = (e: MessageEvent): void => {
   const msg = e.data
+  if (msg.key && ['detailError', 'reference'].includes(msg.type) && msg.key !== world.value?.key) return
   if (msg.type === 'reference') {
+    if (msg.detail && reference.value && placed.value) {
+      const ratio = reference.value.width / msg.width
+      placed.value = { ...placed.value, m: placed.value.m.map((v, i) => i === 2 || i === 5 ? v : v * ratio) }
+    }
     reference.value = msg.error ? null : { key: msg.key, width: msg.width, height: msg.height, detail: !!msg.detail }
     note(msg.error ? `zone map ${msg.key} not loaded: ${msg.error}` : `zone map ${msg.key} ${msg.detail ? 'detail' : 'basic'} ready, ${msg.width}x${msg.height}`)
-    if (msg.detail) detail.value = 'ready'
-    else if (!msg.error) void loadDetail(msg.key)
+    if (msg.detail) {
+      detail.value = 'ready'
+      detailPending = false
+    }
     return
   }
-  if (msg.type === 'features') return void api.invoke('gamemap:saveFeatures', msg.key, msg.data)
+  if (msg.type === 'features') return void api.invoke('gamemap:saveFeatures', msg.key, msg.data, msg.col, msg.row)
   if (msg.type === 'scales') {
     try {
       const all = JSON.parse(localStorage.getItem(SCALES_KEY) ?? '{}') as Record<string, number[]>
@@ -108,12 +115,14 @@ worker.onmessage = (e: MessageEvent): void => {
     return
   }
   if (msg.type === 'detailError') {
+    detailPending = false
     note(`zone map ${msg.key} detail not made: ${msg.error}`)
     detail.value = 'shipped'
     return
   }
   busy = false
   sentAt = 0
+  if (msg.key !== reference.value?.key) return
   lastInliers = msg.inliers
   lastScore = msg.score
   lastMs = msg.ms
@@ -123,13 +132,23 @@ worker.onmessage = (e: MessageEvent): void => {
   if (msg.matrix) {
     const k = cssPerPicture
     const [a, b, c, d, e2, f] = msg.matrix as number[]
-    placed.value = { m: [a! * k, b! * k, c! * k, d! * k, e2! * k, f! * k], at: Date.now() }
+    const m = [a! * k, b! * k, c! * k, d! * k, e2! * k, f! * k]
+    if (placed.value && m.every((v, i) => v === placed.value!.m[i])) placed.value.at = Date.now()
+    else placed.value = { m, at: Date.now() }
   }
 }
+let detailGroup = ''
+let groupOrigin: [number, number] | null = null
+let detailPending = false
+let retryDetailAt = 0
 watch(
   world,
   (w) => {
     if (!w || reference.value?.key === w.key) return
+    detailGroup = ''
+    groupOrigin = null
+    retryDetailAt = 0
+    detailPending = false
     reference.value = null
     placed.value = null
     detail.value = 'shipped'
@@ -139,19 +158,44 @@ watch(
 )
 
 /** The game's own map of the zone at full detail, for the worker to follow the map on instead. */
-async function loadDetail(key: string): Promise<void> {
+async function loadDetail(): Promise<void> {
   const w = world.value
-  if (!w || w.key !== key) return
-  detail.value = 'loading'
+  const ref = reference.value
+  if (!w || !ref || ref.key !== w.key || detailPending || detailGroup === 'whole' || Date.now() < retryDetailAt) return
+  let uv = store.nearby.position ? project(w, store.nearby.position) : null
+  // A map panned away from the player needs detail at the centre of the viewport.
+  if (placed.value && Date.now() - placed.value.at < IDLE_AFTER_MS) {
+    const [a, b, c, d, e, f] = placed.value.m as [number, number, number, number, number, number]
+    const x = innerWidth / 2 - c
+    const y = innerHeight / 2 - f
+    const det = a * e - b * d
+    if (det) uv = [(e * x - b * y) / det / ref.width, (a * y - d * x) / det / ref.height]
+  }
+  if (!uv) return
   const [, , cols, rows] = w.sectors
-  const got = await api.invoke('gamemap:detail', key, cols, rows)
-  if (world.value?.key !== key) return
+  const col = detailGroupAt(uv[0], cols, groupOrigin?.[0])
+  const row = detailGroupAt(uv[1], rows, groupOrigin?.[1])
+  const group = `${w.key}:${col}:${row}`
+  if (group === detailGroup) return
+  detailPending = true
+  detailGroup = group
+  groupOrigin = [col, row]
+  detail.value = 'loading'
+  const got = await api.invoke('gamemap:detail', w.key, cols, rows, col, row).catch(() => null)
+  if (detailGroup !== group) return
   if (!got) {
-    detail.value = 'shipped'
+    detailPending = false
+    detailGroup = ''
+    retryDetailAt = Date.now() + 30_000
+    detail.value = ref.detail ? 'ready' : 'shipped'
     return
   }
-  if (got.kind === 'features') worker.postMessage({ type: 'detail', key, features: got.data }, [got.data])
-  else worker.postMessage({ type: 'detail', key, cols: got.cols, rows: got.rows, tiles: got.tiles }, got.tiles)
+  if (got.kind === 'features') {
+    if (got.whole) detailGroup = 'whole'
+    worker.postMessage({ type: 'detail', key: w.key, features: got.data }, [got.data])
+  } else {
+    worker.postMessage({ type: 'detail', key: w.key, col, row, cols, rows, tiles: got.tiles }, got.tiles.map((t) => t.data))
+  }
 }
 
 // ---- capture ----------------------------------------------------------------------------------
@@ -168,8 +212,22 @@ const picture = new OffscreenCanvas(1, 1)
 const pictureCtx = picture.getContext('2d', { willReadFrequently: true })!
 
 /** A step that never ends (Windows not answering the capture request) is given up on. */
-function within<T>(ms: number, what: string, job: Promise<T>): Promise<T> {
-  return Promise.race([job, new Promise<T>((_, reject) => setTimeout(() => reject(new Error(`${what}: no answer in ${ms / 1000} s`)), ms))])
+function within<T>(ms: number, what: string, job: Promise<T>, releaseLate?: (value: T) => void): Promise<T> {
+  let expired = false
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      expired = true
+      reject(new Error(`${what}: no answer in ${ms / 1000} s`))
+    }, ms)
+    job.then((value) => {
+      clearTimeout(timer)
+      if (expired) releaseLate?.(value)
+      else resolve(value)
+    }, (error) => {
+      clearTimeout(timer)
+      reject(error)
+    })
+  })
 }
 
 /** When the stream last gave a picture: one that stops giving them is started again. */
@@ -198,7 +256,8 @@ async function startCapture(): Promise<void> {
     `capture: asking for the screen; region ${region ? `${region.width}x${region.height} at ${region.x},${region.y}` : 'none'}, ` +
       `display ${display ? `${display.bounds.width}x${display.bounds.height} at ${display.bounds.x},${display.bounds.y}, ${display.scaleFactor * 100}%` : 'none'}, window ${window.innerWidth}x${window.innerHeight} at ${window.devicePixelRatio * 100}%`,
   )
-  stream = await within(8_000, 'the screen capture request', navigator.mediaDevices.getDisplayMedia({ video: { frameRate: FPS.on }, audio: false }))
+  stream = await within(8_000, 'the screen capture request', navigator.mediaDevices.getDisplayMedia({ video: { frameRate: FPS.on }, audio: false }),
+    (late) => late.getTracks().forEach((track) => track.stop()))
   fps = FPS.on
   const track = stream.getVideoTracks()[0]
   const s = track?.getSettings()
@@ -283,6 +342,7 @@ function setFps(want: number): void {
 
 /** This part of the screen, as a picture for the worker. */
 function snap(): void {
+  void loadDetail()
   const region = cfg.value.region
   if (busy && Date.now() - sentAt > WAIT_MS) {
     fail('the worker did not answer: going on without it')
@@ -341,7 +401,7 @@ async function grab(region: { width: number; height: number }): Promise<void> {
     picture.width = got.width
     picture.height = got.height
   }
-  pictureCtx.putImageData(new ImageData(data.slice(), got.width, got.height), 0, 0)
+  pictureCtx.putImageData(new ImageData(data, got.width, got.height), 0, 0)
   if (!pictures++) note(`first picture (slow way): ${got.width}x${got.height}`)
   send(got.width, got.height, data, region.width / got.width)
 }
@@ -355,7 +415,7 @@ function send(w: number, h: number, data: Uint8ClampedArray<ArrayBuffer>, css: n
   const pos = store.nearby.position
   const ref = reference.value
   const player = pos && world.value && ref ? project(world.value, pos).map((v, i) => v * (i ? ref.height : ref.width)) : null
-  worker.postMessage({ type: 'frame', width: w, height: h, rgba: data, player }, [data.buffer])
+  worker.postMessage({ type: 'frame', key: ref?.key, width: w, height: h, rgba: data, player }, [data.buffer])
 }
 
 // ---- drawing ----------------------------------------------------------------------------------
@@ -473,7 +533,7 @@ function draw(): void {
     }
   }
   // Where you last died, in this zone: a skull.
-  const death = lastDeath(store.pvp)
+  const death = store.pvpStats.death
   if (death && death.place.world === worldId.value) {
     const [x, y] = at(death.place.position)
     if (inside([x, y], 20)) drawSkull(ctx, x, y, 22)
@@ -505,7 +565,7 @@ function draw(): void {
     }
   }
 }
-watch([placed, found, gatherables, pets, () => store.cubes, () => store.enemies, () => store.pvp.length, cfg, capture], draw, { deep: true })
+watch([() => placed.value?.m, found, gatherables, pets, () => store.cubes, () => store.enemies, () => store.pvpStats.death, cfg, capture], draw)
 
 // ---- the loop, and what the Map page shows ------------------------------------------------------
 
@@ -525,19 +585,32 @@ function report(): void {
     pictures,
   }
   const key = JSON.stringify(state)
-  // The preview goes along once a second; the rest whenever it changes.
-  const withPreview = Date.now() - previewAt >= 1000
+  // The dashboard requests the preview only while inspecting this map.
+  const withPreview = preview !== null
   if (key === reported && !withPreview) return
   reported = key
-  if (withPreview) previewAt = Date.now()
+
   api.invoke('gamemap:report', withPreview ? { ...state, preview } : state).catch((err: unknown) => {
     // Said once: Map V2 shows nothing new while this fails.
     if (!reportFailed) note(`report to Map V2 failed: ${String(err)}`)
     reportFailed = true
   })
+  preview = null
 }
 let reportFailed = false
-let previewAt = 0
+let encoding = false
+const stopPreview = api.on('gamemap:preview', async () => {
+  if (encoding) return
+  encoding = true
+  try {
+    await makePreview()
+    report()
+  } catch {
+    // Another request follows while visible.
+  } finally {
+    encoding = false
+  }
+})
 
 /** Once a minute in the map log: how it went. */
 const modes = new Map<string, number>()
@@ -554,7 +627,6 @@ onMounted(() => {
   snapTimer = setInterval(snap, FRAME_MS)
   tickTimer = setInterval(() => {
     now.value = Date.now()
-    if (Date.now() - previewAt >= 1000) void makePreview().catch(() => undefined)
     report()
   }, 250)
   note(`overlay opened (${window.innerWidth}x${window.innerHeight})`)
@@ -578,6 +650,7 @@ onBeforeUnmount(() => {
   if (statsTimer) clearInterval(statsTimer)
   if (tickTimer) clearInterval(tickTimer)
   for (const track of stream?.getTracks() ?? []) track.stop()
+  stopPreview()
   worker.terminate()
   video.remove()
 })

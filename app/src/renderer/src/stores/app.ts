@@ -5,7 +5,7 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, toRaw } from 'vue'
 import { SETTINGS_DEFAULTS, type SettingKey, type Settings } from '@shared/settings.ts'
-import { MAX_LEVEL, NO_NEARBY, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type PvpKill, type ShopStock, type SoulToast, type TrackerStatus } from '@shared/tracker.ts'
+import { MAX_LEVEL, pvpSummary, NO_NEARBY, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type ShopStock, type SoulToast, type TrackerStatus } from '@shared/tracker.ts'
 import { kinaPerHour, kinaSeries, NO_KINA, type KinaSession } from '@shared/kina.ts'
 import { NO_ABYSS, type AbyssSession, type RiftFarm } from '@shared/abyss.ts'
 import { perHour, series } from '@shared/earnings.ts'
@@ -41,8 +41,8 @@ export const useApp = defineStore('app', () => {
   /** The Black Cloud Merchant's stock: the tabs opened, until their restock. */
   const shop = ref<ShopStock[]>([])
   /** Player kills around you, oldest first (the PvP Log and the kill feed). */
-  const pvp = ref<PvpKill[]>([])
   /** The Hidden Cubes in view (within about 100 m). */
+  const pvpStats = ref(pvpSummary([]))
   const cubes = ref<Cube[]>([])
   const enemies = ref<Enemy[]>([])
   const target = ref<TargetPlayer | null>(null)
@@ -143,12 +143,14 @@ export const useApp = defineStore('app', () => {
     api.on('tracker:fieldBosses', (b) => (fieldBosses.value = b))
     api.on('characters:changed', (c) => (characters.value = c))
     api.on('guildEvents:state', (g) => (guildEvents.value = g))
-    api.on('tracker:pvp', (k) => (pvp.value = k))
+    api.on('tracker:pvp', (k) => {
+      pvpStats.value = pvpSummary(k)
+    })
+    api.on('tracker:pvpSummary', (s) => (pvpStats.value = s))
     api.on('tracker:cubes', (c) => (cubes.value = c))
     api.on('tracker:enemies', (e) => (enemies.value = e))
     api.on('tracker:target', (t) => (target.value = t))
     api.on('buffs:list', (b) => (buffs.value = b))
-    api.on('tracker:pvpKill', (k) => (pvp.value = [...pvp.value, k]))
     api.on('tracker:kina', (k) => {
       kina.value = k
       now.value = Date.now()
@@ -161,10 +163,10 @@ export const useApp = defineStore('app', () => {
     api.on('timers:alerting', (a) => (alerting.value = a))
     api.on('hud:editing', (e) => (hudEditing.value = e))
     api.on('panel:visible', (v) => (panelVisible.value = v))
-    const [s, t] = await Promise.all([api.invoke('settings:all'), api.invoke('tracker:get')])
-    settings.value = s
+    settings.value = await api.invoke('settings:all')
+    const t = await api.invoke('tracker:get', false)
     status.value = t.status
-    pvp.value = t.pvp
+    pvpStats.value = t.pvpSummary ?? pvpSummary(t.pvp)
     cubes.value = t.cubes
     enemies.value = t.enemies
     target.value = t.target
@@ -208,7 +210,7 @@ export const useApp = defineStore('app', () => {
   }
 
   return {
-    settings, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, guildEvents, pvp, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
+    settings, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, guildEvents, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
     init, set, setHud, togglePin, openPet, hiddenPet,
   }
 })

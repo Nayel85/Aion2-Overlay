@@ -64,8 +64,13 @@ const skillTop = computed(() => Math.max(1, ...skills.value.map((s) => s.damage)
 const healTop = computed(() => Math.max(1, ...heals.value.map((s) => s.damage)))
 /** When the player first and last hit: their time active. */
 const active = computed(() => {
-  const at = skills.value.flatMap((s) => s.at)
-  return at.length ? Math.max(...at) - Math.min(...at) : null
+  let first = Infinity
+  let last = -Infinity
+  for (const skill of skills.value) for (const at of skill.at) {
+    first = Math.min(first, at)
+    last = Math.max(last, at)
+  }
+  return first <= last ? last - first : null
 })
 
 // ---- Hits -----------------------------------------------------------------------------------
@@ -95,7 +100,7 @@ const takenTop = computed(() => Math.max(1, ...takenRanked.value.map((r) => r.ta
 // ---- Rotation -------------------------------------------------------------------------------
 /** Every hit in order, for the cast sequence: one per skill per 300 ms (a multi-hit is one cast). */
 const sequence = computed(() => {
-  const hitsAt = skills.value.filter((s) => !s.dot).flatMap((s) => s.at.map((t) => ({ t, code: s.code, name: s.name })))
+  const hitsAt = skills.value.filter((s) => !s.dot).flatMap((s) => (s.opening ?? s.at).map((t) => ({ t, code: s.code, name: s.name })))
   hitsAt.sort((a, b) => a.t - b.t)
   const out: typeof hitsAt = []
   const lastOf = new Map<number, number>()
@@ -148,13 +153,24 @@ const started = computed(() =>
   view.value?.startedAt ? new Date(view.value.startedAt).toLocaleString(loc(), { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : null,
 )
 
+let pending = false
+let revision = 0
 async function load(): Promise<void> {
-  const next = await api.invoke('details:get')
-  loading.value = false
-  if (!next) return
-  const first = view.value === null || JSON.stringify(view.value.source) !== JSON.stringify(next.source)
-  view.value = next
-  if (first) chosen.value = next.source.actor ?? next.actors[0]?.id ?? null
+  if (pending) return
+  pending = true
+  const source = revision
+  try {
+    const next = await api.invoke('details:get')
+    if (source !== revision) return
+    loading.value = false
+    if (!next) return
+    const first = view.value === null || JSON.stringify(view.value.source) !== JSON.stringify(next.source)
+    view.value = next
+    if (first) chosen.value = next.source.actor ?? next.actors[0]?.id ?? null
+  } finally {
+    pending = false
+    if (source !== revision) void load()
+  }
 }
 
 const drag = windowDrag({ move: 'details:moveTo', end: 'details:dragEnd' })
@@ -165,6 +181,7 @@ let off: (() => void) | null = null
 onMounted(() => {
   void load()
   off = api.on('details:source', () => {
+    revision++
     view.value = null
     loading.value = true
     void load()

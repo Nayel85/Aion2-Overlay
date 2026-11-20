@@ -122,7 +122,7 @@ const nextEvent = computed(() => {
   return on.map((def) => ({ def, at: timerNext(def, now.value) })).sort((a, b) => a.at - b.at)[0] ?? null
 })
 const bossesUp = computed(() => Object.entries(store.fieldBosses).filter(([id, b]) => b.up && bossZone(Number(id)) === 'verteron').length)
-const pvp = computed(() => ({ kills: store.pvp.filter((k) => k.mine).length, deaths: store.pvp.filter((k) => k.died).length }))
+const pvp = computed(() => store.pvpStats)
 const myDps = computed(() => meter.value.rows.find((r) => r.you) ?? null)
 
 const ICONS: Record<string, string> = {
@@ -222,7 +222,7 @@ const ICONS: Record<string, string> = {
           { page: 'map', title: t('Map'), line: zone ? `${zone}${store.cubes.length ? ` · ${plural(store.cubes.length, '{n} Hidden Cube nearby', '{n} Hidden Cubes nearby')}` : ''}` : t('Where you are shows once you enter a zone.') },
           { page: 'pets', title: 'Pets', line: `${plural(store.sessionSouls, '{n} soul this session', '{n} souls this session')} · ${plural(nearbyCount, '{n} pet around you', '{n} pets around you')}` },
           { page: 'buffs', title: 'Buffs', line: store.settings.buffs.enabled ? t('{n} on you now', { n: store.buffs.length }) : t('The buffs overlay is off.') },
-          { page: 'pvp', title: 'PvP', line: t('{n} kills seen · yours {kills}, deaths {deaths}', { n: store.pvp.length, kills: pvp.kills, deaths: pvp.deaths }) },
+          { page: 'pvp', title: 'PvP', line: t('{n} kills seen · yours {kills}, deaths {deaths}', { n: pvp.total, kills: pvp.kills, deaths: pvp.deaths }) },
           { page: 'bosses', title: 'Field Bosses', line: Object.keys(store.fieldBosses).length ? t('{n} alive in Verteron', { n: bossesUp }) : t('Open the map in game to read them.') },
         ]" :key="card.page" type="button" class="group flex items-center gap-4 rounded-xl border border-card bg-card px-4 py-3.5 text-left transition hover:border-light hover:bg-dark" @click="emit('go', card.page)">
           <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-dark text-accent group-hover:bg-light">
