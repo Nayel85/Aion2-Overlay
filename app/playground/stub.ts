@@ -60,6 +60,7 @@ const data: Record<string, () => unknown> = {
   'timers:get': () => [],
   'buffs:get': () => [],
   'meter:get': () => meter,
+  'storage:get': () => ({ dir: 'C:\\Users\\you\\AppData\\Roaming\\Lokthar', items: [{ id: 'tiles', bytes: 182_000_000, clearable: true }, { id: 'browser', bytes: 96_500_000, clearable: true }, { id: 'logs', bytes: 4_200_000, clearable: true }, { id: 'updates', bytes: 0, clearable: true }, { id: 'recordings', bytes: 1_240_000_000, clearable: true }, { id: 'fights', bytes: 58_000_000, clearable: false }] }),
   'history:list': () => {
     const jobs = ['Gladiator', 'Templar', 'Sorcerer', 'Cleric', 'Ranger', 'Chanter']
     const at = now()
@@ -276,3 +277,4 @@ export function pvpFightView() {
   }
 }
 data['details:get'] = pvpFightView
+data['details:view'] = pvpFightView

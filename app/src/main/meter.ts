@@ -14,6 +14,7 @@ import {
   detailsView,
   meterData,
   NO_METER,
+  unmaskName,
   type DetailsActor,
   type DetailsDefense,
   type DetailsSkill,
@@ -101,6 +102,7 @@ export function startMeter(): void {
   })
   tracker.onEvent('dps', (ev) => {
     meter = meterData(ev as unknown as DpsEvent, Date.now(), ping)
+    for (const r of meter.rows) if (!r.name.includes('*') && !r.name.startsWith('#')) knownNames.add(r.name)
     broadcast('meter:dps', meter, ['panel', 'meter', 'unified'])
     for (const fn of meterListeners) fn(meter)
   })
@@ -135,6 +137,9 @@ export function startMeter(): void {
     applySettings()
   })
 }
+
+/** Player names seen on the live meter this session: they restore the names the parser masked in fights saved earlier. */
+const knownNames = new Set<string>()
 
 /** Names and classes for a live fight: the meter's rows. */
 function liveNames(): Map<number, { name: string; className: string | null; combatPower: number; you: boolean }> {
@@ -233,7 +238,7 @@ export const meterState = {
     const ev = await ask({ cmd: 'fight', id: source.id }, 'fight', (e) => e['id'] === source.id)
     const fight = ev?.['fight'] as FightRecord | undefined
     if (!fight) return null
-    const names = new Map(fight.actors.map((a) => [a.actorId, { name: a.nickname || `#${a.actorId}`, className: CLASS_NAMES[a.job] ?? null }]))
+    const names = new Map(fight.actors.map((a) => [a.actorId, { name: a.nickname ? unmaskName(a.nickname, knownNames) : `#${a.actorId}`, className: CLASS_NAMES[a.job] ?? null }]))
     const defense = Object.fromEntries(
       fight.actors.map((a) => [a.actorId, { taken: a.damageReceived ?? 0, hitsTaken: a.hitsReceived ?? 0, heal: a.partyHeal ?? 0 }]),
     )

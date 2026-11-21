@@ -13,8 +13,17 @@ import { buffName } from '@/lib/buffs.ts'
 import { bridge } from '@/lib/bridge.ts'
 import { loc, t } from '@/lib/i18n.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
-import { CLASS_COLORS, type DetailsSkill, type DetailsView } from '@shared/meter.ts'
+import { CLASS_COLORS, type DetailsSkill, type DetailsSource, type DetailsView } from '@shared/meter.ts'
 import { trackSegments, type BuffTrack } from '@shared/buffs.ts'
+
+/**
+ * With a `source` the page is embedded in the panel (History): it asks for that fight itself, has a
+ * Back button instead of the window's drag and X, and takes the width it is given. Without one it
+ * is the Details window, which main points at a fight.
+ */
+const props = defineProps<{ source?: DetailsSource }>()
+const emit = defineEmits<{ back: [] }>()
+const embedded = computed(() => !!props.source)
 
 const LIVE_EVERY_MS = 1000
 type Tab = 'skills' | 'hits' | 'defense' | 'rotation' | 'buffs' | 'healing'
@@ -172,7 +181,7 @@ async function load(): Promise<void> {
   pending = true
   const source = revision
   try {
-    const next = await api.invoke('details:get').catch(() => null)
+    const next = await (props.source ? api.invoke('details:view', props.source) : api.invoke('details:get')).catch(() => null)
     if (source !== revision) return
     loading.value = false
     if (!next) return
@@ -192,7 +201,7 @@ let timer: ReturnType<typeof setInterval> | null = null
 let off: (() => void) | null = null
 onMounted(() => {
   void load()
-  off = api.on('details:source', () => {
+  if (!embedded.value) off = api.on('details:source', () => {
     revision++
     view.value = null
     loading.value = true
@@ -208,8 +217,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="flex h-screen flex-col overflow-hidden rounded-xl border border-card bg-darker shadow-card">
-    <header class="flex cursor-move items-center gap-2 border-b border-card px-3 py-2" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
+  <div :class="['flex flex-col', embedded ? 'rounded-xl border border-card bg-darker' : 'h-screen overflow-hidden rounded-xl border border-card bg-darker shadow-card']">
+    <header :class="['flex items-center gap-2 border-b border-card px-3 py-2', !embedded && 'cursor-move']" :title="embedded ? undefined : t('Drag to move')" @pointerdown="!embedded && drag.onPointerDown($event)">
+      <button v-if="embedded" type="button" class="flex shrink-0 items-center gap-1 rounded-md border border-light px-2 py-1 text-xs text-dark hover:bg-dark hover:text-default" @click="emit('back')">
+        <svg viewBox="0 0 16 16" class="size-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5" /></svg>
+        {{ t('Back') }}
+      </button>
       <span v-if="live" class="size-1.5 shrink-0 rounded-full bg-green" :title="t('Live: follows the fight')" />
       <div class="min-w-0 flex-1">
         <div class="truncate text-sm font-semibold text-default">{{ view?.title ?? t('Details') }}</div>
@@ -218,7 +231,7 @@ onBeforeUnmount(() => {
           ><template v-if="started"> · {{ started }}</template>
         </div>
       </div>
-      <button type="button" class="flex size-6 shrink-0 items-center justify-center rounded text-darker hover:bg-dark hover:text-default" :title="t('Close')" @pointerdown.stop @click="close">
+      <button v-if="!embedded" type="button" class="flex size-6 shrink-0 items-center justify-center rounded text-darker hover:bg-dark hover:text-default" :title="t('Close')" @pointerdown.stop @click="close">
         <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 4l8 8M12 4l-8 8" stroke-linecap="round" /></svg>
       </button>
     </header>
@@ -227,7 +240,7 @@ onBeforeUnmount(() => {
 
     <template v-else>
       <!-- The players: click one for their card (a PvP fight: yours and the enemy's, each side apart). -->
-      <div class="max-h-48 shrink-0 overflow-y-auto px-2 py-2">
+      <div :class="['shrink-0 overflow-y-auto px-2 py-2', embedded ? 'max-h-72' : 'max-h-48']">
         <div v-if="pvp" class="flex items-center gap-1.5 px-1.5 pb-1 text-[10px] text-darkest">
           <span class="flex-1">{{ t('Pick a player to see their log') }}</span><span class="w-14 text-right">{{ t('Dealt') }}</span><span class="w-14 text-right">{{ t('Taken') }}</span><span class="w-11 text-right">DPS</span>
         </div>

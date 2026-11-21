@@ -102,10 +102,20 @@ impl Meter {
         if self.storage.damage_generation() <= 0 {
             return 0;
         }
-        let records = {
+        let mut records = {
             let mut calculator = self.calculator.lock();
             if force { calculator.snapshot_boss_fights_force() } else { calculator.snapshot_boss_fights() }
         };
+        // The parser masks everyone's name but yours in a saved record ("Ch****a", made for the logs
+        // it uploads). This app keeps the fights on this machine only, so they keep the names.
+        let names = self.storage.get_nicknames();
+        for record in &mut records {
+            for actor in &mut record.actors {
+                if let Some(name) = names.get(&actor.actor_id).filter(|n| !n.is_empty()) {
+                    actor.nickname = name.clone();
+                }
+            }
+        }
         records.iter().filter(|r| history.save_fight(r).map_err(|e| tracing::warn!("fight not saved: {e}")).is_ok()).count()
     }
 

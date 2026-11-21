@@ -1,6 +1,7 @@
 /** Every invoke handler, typed against the contract in shared/ipc.ts. */
 import { app, ipcMain, shell } from 'electron'
 import { mkdir } from 'node:fs/promises'
+import { STORAGE_CLEARABLE, type StorageId } from '../shared/storage.ts'
 import { dummy } from './dummy.ts'
 import { updater } from './updater.ts'
 import { meterState } from './meter.ts'
@@ -13,6 +14,7 @@ import { pvpLog } from './pvpLog.ts'
 import { packets } from './packets.ts'
 import { settings } from './settings.ts'
 import { sounds } from './sounds.ts'
+import { clearStorage, storageUsage } from './storage.ts'
 import { timers } from './timers.ts'
 import { logPath, tracker } from './tracker.ts'
 import {
@@ -239,6 +241,11 @@ export function registerIpc(): void {
     if (typeof id === 'string') dummy.remove(id)
   })
   handle('recordings:get', () => meterState.recordings())
+  handle('storage:get', () => storageUsage())
+  handle('storage:clear', async (id) => {
+    if (typeof id === 'string' && STORAGE_CLEARABLE.includes(id as StorageId)) await clearStorage(id as StorageId)
+    return storageUsage()
+  })
   handle('packets:get', () => packets.get())
   handle('packets:set', (on) => packets.set(on === true))
   handle('packets:mark', (text) => packets.mark(typeof text === 'string' ? text : ''))
@@ -306,6 +313,11 @@ export function registerIpc(): void {
     const source = detailsSource()
     if (source?.kind === 'run') return dummy.details(source.id)
     return source ? meterState.details(source, true) : null
+  })
+  handle('details:view', (source) => {
+    const ok = source?.kind === 'live' ? Number.isInteger(source.target) : (source?.kind === 'saved' || source?.kind === 'run' || source?.kind === 'pvp') && isPlainId(source.id)
+    if (!ok) return null
+    return source.kind === 'run' ? dummy.details(source.id) : meterState.details(source)
   })
   handle('details:close', () => closeDetails())
   handle('details:moveTo', (to) => {

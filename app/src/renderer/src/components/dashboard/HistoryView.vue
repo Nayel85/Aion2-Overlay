@@ -3,6 +3,7 @@
 // cleared), newest first. A click opens one in the Details window: each player's damage, skills and
 // buffs. The last 500 are kept.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import DetailsPage from '@/pages/DetailsPage.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -73,7 +74,9 @@ const KINDS = computed(() => [
 async function load(): Promise<void> {
   fights.value = await api.invoke('history:list')
 }
-const open = (id: string): void => void api.invoke('details:open', { kind: 'saved', id })
+/** The fight open in place of the list (its Details, in this page, with the full width of the panel). */
+const opened = ref<string | null>(null)
+const open = (id: string): void => void (opened.value = id)
 function remove(id: string): void {
   void api.invoke('history:delete', id)
   fights.value = (fights.value ?? []).filter((f) => f.id !== id)
@@ -88,8 +91,9 @@ onBeforeUnmount(() => off?.())
 </script>
 
 <template>
-  <div>
-    <PageHeader title="History" about="Boss fights saved as you play, newest first. Open one for each player's damage, skills and buffs." />
+  <DetailsPage v-if="opened" :key="opened" :source="{ kind: 'saved', id: opened }" @back="opened = null" />
+  <div v-show="!opened">
+    <PageHeader title="Combat history" about="Boss fights saved as you play, newest first. Open one for each player's damage, skills and buffs." />
 
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <Segmented v-model="kind" :options="KINDS" size="sm" />

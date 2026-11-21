@@ -252,11 +252,12 @@ const ICONS: Record<string, string> = {
       <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-darker">{{ t('Records') }}</h2>
       <div class="grid grid-cols-2 gap-3">
         <button v-for="card in [
-          { page: 'history', title: t('History'), line: fights === null ? '…' : plural(fights, '{n} boss fight saved', '{n} boss fights saved') },
+          { page: 'history', title: t('Combat history'), line: fights === null ? '…' : plural(fights, '{n} boss fight saved', '{n} boss fights saved') },
           { page: 'session', title: t('Session'), line: store.kinaRate !== null ? t('{kina} Kina per hour · {n} souls', { kina: formatKina(store.kinaRate), n: store.sessionSouls }) : t('{n} souls so far', { n: store.sessionSouls }) },
         ]" :key="card.page" type="button" class="group flex items-center gap-4 rounded-xl border border-card bg-card px-4 py-3.5 text-left transition hover:border-light hover:bg-dark" @click="emit('go', card.page)">
           <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-dark text-accent group-hover:bg-light">
-            <svg viewBox="0 0 16 16" class="size-5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS[card.page]" /></svg>
+            <span v-if="card.page === 'history'" class="text-xl leading-none" aria-hidden="true">💪</span>
+            <svg v-else viewBox="0 0 16 16" class="size-5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS[card.page]" /></svg>
           </span>
           <span class="min-w-0 flex-1">
             <span class="block text-sm font-semibold">{{ card.title }}</span>

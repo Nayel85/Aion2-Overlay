@@ -10,6 +10,7 @@ import type { DummyState } from './dummy.ts'
 import type { UpdateState } from './update.ts'
 import type { KinaSession } from './kina.ts'
 import type { AbyssSession, RiftFarm } from './abyss.ts'
+import type { StorageId, StorageUsage } from './storage.ts'
 import type { DetailsSource, DetailsView, FightSummary, MeterData, PacketLog, PersonalView, Recordings } from './meter.ts'
 import type { SyncResult } from './lokthar.ts'
 import type { GuildEventDetail, GuildEventsState, Rsvp } from './guildEvents.ts'
@@ -121,6 +122,8 @@ export interface InvokeChannels {
   'overlays:hidden': { args: []; result: boolean }
   /** The engine's recordings of the game's traffic: the list, start or stop, and their folder. */
   'recordings:get': { args: []; result: Recordings }
+  'storage:get': { args: []; result: StorageUsage }
+  'storage:clear': { args: [id: StorageId]; result: StorageUsage }
   'recordings:set': { args: [on: boolean]; result: void }
   'recordings:open': { args: []; result: void }
   /** The packet log (Settings → Developer): its state, start or stop, a mark, its file shown. */
@@ -178,6 +181,8 @@ export interface InvokeChannels {
   /** Open the Details window on a fight (a meter row, a saved fight), or what it shows now. */
   'details:open': { args: [source: DetailsSource]; result: void }
   'details:get': { args: []; result: DetailsView | null }
+  /** A fight's breakdown for a page of the panel (History opens it in place, not in the Details window). */
+  'details:view': { args: [source: DetailsSource]; result: DetailsView | null }
   'details:close': { args: []; result: void }
   'details:moveTo': { args: [to: Point]; result: void }
   'details:dragEnd': { args: []; result: void }
@@ -287,8 +292,8 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'meter:get', 'meter:reset', 'meter:moveTo', 'meter:dragEnd', 'meter:resize',
   'minimap:moveTo', 'minimap:dragEnd', 'minimap:resize',
   'skills:get', 'skills:moveTo', 'skills:dragEnd', 'skills:resize',
-  'buffs:get', 'buffs:moveTo', 'buffs:dragEnd', 'buffs:resize', 'cc:moveTo', 'cc:dragEnd', 'cc:resize', 'enemies:moveTo', 'enemies:dragEnd', 'enemies:resize', 'bossruns:moveTo', 'bossruns:dragEnd', 'bossruns:resize', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'eventtoast:resize', 'training:moveTo', 'training:dragEnd', 'training:resize', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'packets:resize', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
-  'details:open', 'details:get', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:delete',
+  'buffs:get', 'buffs:moveTo', 'buffs:dragEnd', 'buffs:resize', 'cc:moveTo', 'cc:dragEnd', 'cc:resize', 'enemies:moveTo', 'enemies:dragEnd', 'enemies:resize', 'bossruns:moveTo', 'bossruns:dragEnd', 'bossruns:resize', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'eventtoast:resize', 'training:moveTo', 'training:dragEnd', 'training:resize', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'packets:resize', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
+  'details:open', 'details:get', 'details:view', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:delete',
 ]
 
 export const EVENT_CHANNELS: readonly EventChannel[] = [

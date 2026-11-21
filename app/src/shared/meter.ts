@@ -358,6 +358,25 @@ export interface FightSummary {
   memberJobs: string[]
 }
 
+/**
+ * The parser masked every other player's name in the fights it saved ("Ch****a": the first two
+ * letters, up to four stars, the last letter; shorter names less). Same rule as the parser's.
+ */
+export function obscureName(name: string): string {
+  const c = [...name]
+  if (c.length <= 1) return c.length ? '*' : ''
+  if (c.length === 2) return `${c[0]}*`
+  if (c.length === 3) return `${c[0]}*${c[2]}`
+  return `${c[0]}${c[1]}${'*'.repeat(Math.min(4, c.length - 3))}${c[c.length - 1]}`
+}
+
+/** A masked name's real one, when exactly one of the names seen in this session fits it. */
+export function unmaskName(name: string, known: Iterable<string>): string {
+  if (!name.includes('*')) return name
+  const fits = [...new Set(known)].filter((k) => obscureName(k) === name)
+  return fits.length === 1 ? fits[0]! : name
+}
+
 /** Every player's skills and totals, from the engine's breakdown; names from `names`. */
 export function detailsView(
   source: DetailsSource,
