@@ -96,6 +96,7 @@ impl Hits {
 
     /// The fight around player `x` that ended by `end`: every hit they dealt or took, back from
     /// the last one before it to the first pause longer than `GAP_MS`.
+    #[cfg(test)]
     pub fn around(&self, x: u32, end: i64) -> Vec<Hit> {
         self.around_any(&[x], end)
     }

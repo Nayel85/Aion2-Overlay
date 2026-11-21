@@ -126,9 +126,10 @@ function ago(ms: number): string {
 const rowClass = (k: PvpKill): string =>
   k.mine ? 'bg-green/10 border-l-2 border-green' : k.died ? 'bg-danger/10 border-l-2 border-danger' : 'border-l-2 border-transparent'
 const clear = (): void => void bridge().invoke('tracker:clearPvp')
-/** A kill you took part in, its fight in the Details window: each side's damage and skills. */
+/** A kill you took part in: its fight, in place of the list (the page shows its Details). */
+const emit = defineEmits<{ open: [fight: string] }>()
 const openFight = (k: PvpKill): void => {
-  if (k.fight) void bridge().invoke('details:open', { kind: 'pvp', id: k.fight })
+  if (k.fight) emit('open', k.fight)
 }
 const fightTitle = (k: PvpKill): string | undefined =>
   k.fight ? t('Show the fight: damage and skills, yours and theirs') : k.mine || k.died ? t('No hits between you were seen before this one') : undefined

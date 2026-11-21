@@ -14,6 +14,7 @@ import BuffsView from '@/components/dashboard/BuffsView.vue'
 import EventsView from '@/components/dashboard/EventsView.vue'
 import GatherablesView from '@/components/dashboard/GatherablesView.vue'
 import HistoryView from '@/components/dashboard/HistoryView.vue'
+import DetailsPage from '@/pages/DetailsPage.vue'
 import StorageView from '@/components/dashboard/StorageView.vue'
 import HomeView from '@/components/dashboard/HomeView.vue'
 import MapView from '@/components/dashboard/MapView.vue'
@@ -32,6 +33,7 @@ import { t } from '@/lib/i18n.ts'
 import { timerNext } from '@/lib/timerView.ts'
 import { useApp } from '@/stores/app.ts'
 import { DISPLAY_NAME } from '@shared/app.ts'
+import { CHANGELOG } from '@shared/changelog.ts'
 import { serverName } from '@shared/servers.ts'
 import { needsAnswer } from '@shared/guildEvents.ts'
 import { TIMERS, type TimerId } from '@shared/timers.ts'
@@ -101,14 +103,12 @@ watch(
 const main = ref<HTMLElement | null>(null)
 watch(page, () => main.value?.scrollTo({ top: 0 }))
 
-/** A page's "New" tag in the sidebar stays until it is opened once (kept in this browser profile). */
-const SEEN_KEY = 'panel.seen.unified'
-const seenUnified = ref(((): boolean => { try { return localStorage.getItem(SEEN_KEY) === '1' } catch { return false } })())
-watch(page, (p) => {
-  if (p !== 'unified' || seenUnified.value) return
-  seenUnified.value = true
-  try { localStorage.setItem(SEEN_KEY, '1') } catch { /* private window */ }
-})
+/** A page's "New" tag in the sidebar stays for the version that brought it: until the changelog has a newer one. */
+const NEW_IN: Partial<Record<PageId, string>> = { unified: '0.3.13' }
+const isNew = (id: PageId): boolean => NEW_IN[id] !== undefined && CHANGELOG[0]?.version === NEW_IN[id]
+
+/** The PvP fight open in the PvP page (its id), if any. */
+const pvpFight = ref<string | null>(null)
 
 const maximized = ref(false)
 /**
@@ -147,7 +147,7 @@ const badge = computed<Partial<Record<PageId, string>>>(() => {
     events: nextAlert.value ?? undefined,
     bosses: up ? String(up) : undefined,
     guild: toAnswer.value ? String(toAnswer.value) : undefined,
-    unified: seenUnified.value ? undefined : t('New'),
+    unified: isNew('unified') ? t('New') : undefined,
     pets: store.sessionSouls ? `+${store.sessionSouls}` : undefined,
     updates:
       update.value?.status === 'downloading' ? `${update.value.percent}%` : update.value && ['available', 'ready'].includes(update.value.status) ? t('New') : undefined,
@@ -304,7 +304,7 @@ onBeforeUnmount(() => {
       </nav>
 
       <main ref="main" class="min-w-0 flex-1 overflow-y-auto">
-        <div :class="['mx-auto px-8 py-7', ['settings', 'updates', 'changes'].includes(page) ? 'max-w-4xl' : page === 'history' ? 'max-w-[1700px]' : 'max-w-6xl']">
+        <div :class="['mx-auto px-8 py-7', ['settings', 'updates', 'changes'].includes(page) ? 'max-w-4xl' : page === 'history' || (page === 'pvp' && pvpFight) ? 'max-w-[1700px]' : 'max-w-6xl']">
           <div v-if="!store.ready" class="py-6 text-center text-sm text-darker">{{ t('Loading…') }}</div>
           <HomeView v-else-if="page === 'home'" @go="go" />
           <CharactersView v-else-if="page === 'characters'" />
@@ -329,9 +329,13 @@ onBeforeUnmount(() => {
           <UpdatesView v-else-if="page === 'updates'" @go="go" />
           <ChangelogView v-else-if="page === 'changes'" :version="version" />
           <template v-else>
-            <PageHeader :title="PAGES[page].label" :about="ABOUT[page]" />
-            <PvpLogTab v-if="page === 'pvp'" class="-mx-3" />
-            <SessionTab v-else class="-mx-3" />
+            <!-- A PvP fight opens in place of the list, like a saved fight in Combat history. -->
+            <DetailsPage v-if="page === 'pvp' && pvpFight" :key="pvpFight" :source="{ kind: 'pvp', id: pvpFight }" @back="pvpFight = null" />
+            <div v-show="!(page === 'pvp' && pvpFight)">
+              <PageHeader :title="PAGES[page].label" :about="ABOUT[page]" />
+              <PvpLogTab v-if="page === 'pvp'" class="-mx-3" @open="pvpFight = $event" />
+              <SessionTab v-else class="-mx-3" />
+            </div>
           </template>
         </div>
       </main>
