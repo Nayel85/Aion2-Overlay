@@ -294,7 +294,7 @@ onBeforeUnmount(() => {
             <span class="w-12 text-right">{{ cfg.stat === 'taken' ? t('Taken') : cfg.stat === 'healing' ? t('Healed') : t('Damage') }}</span>
             <span v-if="cfg.style === 'flat' && cfg.stat === 'damage'" class="w-8 text-right">Crit</span>
           </div>
-          <ul :class="['space-y-0.5 px-1.5 pb-1.5', lean && 'pt-1.5', height !== null && 'min-h-0 flex-1 overflow-y-auto']">
+          <ul :class="['space-y-0.5 px-1.5 pb-1.5', lean ? 'pt-1.5' : 'pt-1', height !== null && 'min-h-0 flex-1 overflow-y-auto']">
             <li
               v-for="r in rows"
               :key="r.id"
@@ -313,7 +313,7 @@ onBeforeUnmount(() => {
                 <span v-else :class="['shrink-0', cfg.style === 'bold' ? 'size-6' : 'size-4']" />
                 <span class="flex min-w-0 flex-1 flex-col">
                   <span class="flex min-w-0 items-baseline gap-1.5">
-                    <span :class="['truncate', lean ? 'font-semibold' : 'font-medium', r.you ? 'text-accent' : 'text-default']">{{ r.name }}</span>
+                    <span :class="['truncate', lean ? 'font-semibold' : 'font-medium', r.you ? 'text-[#ffc53d] [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_0_4px_rgba(0,0,0,0.85)]' : 'text-default']">{{ r.name }}</span>
                     <span v-if="cfg.power === 'beside' && r.combatPower > 0" class="shrink-0 text-[9px] tabular-nums text-default/75" :title="t('Combat power')">{{ short(r.combatPower) }}</span>
                   </span>
                   <span v-if="cfg.power === 'below' && r.combatPower > 0" class="-mt-0.5 text-[9px] leading-tight tabular-nums text-default/75" :title="t('Combat power')">{{ r.combatPower.toLocaleString() }}</span>
