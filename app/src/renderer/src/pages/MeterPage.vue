@@ -319,8 +319,8 @@ onBeforeUnmount(() => {
                   <span v-if="cfg.power === 'below' && r.combatPower > 0" class="-mt-0.5 text-[9px] leading-tight tabular-nums text-default/75" :title="t('Combat power')">{{ r.combatPower.toLocaleString() }}</span>
                 </span>
                 <span class="w-12 text-right font-semibold tabular-nums text-default">{{ short(r.perSecond) }}</span>
-                <span v-if="!lean" class="w-10 text-right tabular-nums text-dark">{{ r.part.toFixed(1) }}%</span>
-                <span v-if="!lean" class="w-12 text-right tabular-nums text-dark">{{ short(r.value) }}</span>
+                <span class="w-10 text-right tabular-nums text-dark">{{ r.part.toFixed(1) }}%</span>
+                <span class="w-12 text-right tabular-nums text-dark">{{ short(r.value) }}</span>
                 <span v-if="!lean && cfg.style === 'flat' && cfg.stat === 'damage'" :class="['w-8 text-right tabular-nums', r.you ? 'text-green' : 'text-dark']">{{ Math.round(r.critRate * 100) }}%</span>
               </div>
             </li>

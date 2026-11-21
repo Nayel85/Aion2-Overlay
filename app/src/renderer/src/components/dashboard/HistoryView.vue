@@ -2,22 +2,28 @@
 // History: the boss fights the engine saved (every 30 s while one goes on, and before the meter is
 // cleared), newest first. A click opens one in the Details window: each player's damage, skills and
 // buffs. The last 500 are kept.
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import { bridge } from '@/lib/bridge.ts'
-import { loc, t } from '@/lib/i18n.ts'
+import { loc, plural, t } from '@/lib/i18n.ts'
+import { dungeonFor, DUNGEON_KINDS, type Dungeon } from '@shared/dungeons.ts'
 import { CLASS_NAMES, type FightSummary } from '@shared/meter.ts'
 
 const api = bridge()
 const fights = ref<FightSummary[] | null>(null)
 const kind = ref<'bosses' | 'dummy' | 'all'>('bosses')
 const query = ref('')
+/** Fights grouped under their dungeon (the newest dungeon first), or one flat list. */
+const grouped = ref(((): boolean => { try { return localStorage.getItem('history.grouped') !== '0' } catch { return true } })())
+watch(grouped, (v) => { try { localStorage.setItem('history.grouped', v ? '1' : '0') } catch { /* private window */ } })
+const folded = ref(new Set<string>())
+const toggle = (key: string): void => void (folded.value.has(key) ? folded.value.delete(key) : folded.value.add(key), (folded.value = new Set(folded.value)))
 
 const icons = import.meta.glob<string>('@/assets/classes/*.png', { eager: true, import: 'default' })
 const icon = (job: string): string | null => {
   const name = CLASS_NAMES[job]
-  return name ? (icons[`/src/assets/classes/${name.toLowerCase()}.png`] ?? null) : null
+  return name ? (Object.entries(icons).find(([k]) => k.endsWith(`/classes/${name.toLowerCase()}.png`))?.[1] ?? null) : null
 }
 function short(n: number): string {
   if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`
@@ -37,6 +43,23 @@ const shown = computed(() => {
     (f) => (kind.value === 'all' || (kind.value === 'dummy') === f.isTrain) && (!q || (f.bossName || '').toLowerCase().includes(q)),
   )
 })
+interface Group { key: string; name: string; kind: string | null; fights: FightSummary[]; last: number }
+const groups = computed<Group[]>(() => {
+  const where = dungeonFor(shown.value)
+  const by = new Map<string, Group>()
+  for (const f of shown.value) {
+    const d: Dungeon | null = where.get(f.id) ?? null
+    const key = d?.name ?? ''
+    const g = by.get(key) ?? { key, name: d?.name ?? '', kind: d ? (DUNGEON_KINDS.find((k) => k.id === d.kind)?.label ?? null) : null, fights: [], last: 0 }
+    g.fights.push(f)
+    g.last = Math.max(g.last, f.startTimeMs)
+    by.set(key, g)
+  }
+  // The dungeon played most recently first; the fights outside any dungeon last.
+  return [...by.values()].sort((a, b) => (a.key === '' ? 1 : b.key === '' ? -1 : b.last - a.last))
+})
+/** What the table lists: the dungeons' groups, or everything as one. */
+const sections = computed<Group[]>(() => (grouped.value ? groups.value : [{ key: '*', name: String(), kind: null, fights: shown.value, last: 0 }]))
 const KINDS = computed(() => [
   { id: 'bosses' as const, label: 'Bosses', count: (fights.value ?? []).filter((f) => !f.isTrain).length },
   { id: 'dummy' as const, label: 'Training dummy', count: (fights.value ?? []).filter((f) => f.isTrain).length },
@@ -66,6 +89,10 @@ onBeforeUnmount(() => off?.())
 
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <Segmented v-model="kind" :options="KINDS" size="sm" />
+      <label class="flex cursor-pointer items-center gap-2 text-sm text-dark">
+        <input v-model="grouped" type="checkbox" class="size-3.5 accent-[color:var(--accent)]" />
+        {{ t('Group by dungeon') }}
+      </label>
       <input
         v-model="query"
         type="search"
@@ -93,7 +120,20 @@ onBeforeUnmount(() => off?.())
           </tr>
         </thead>
         <tbody class="divide-y divide-[color:var(--line)]">
-          <tr v-for="f in shown" :key="f.id" class="group cursor-pointer hover:bg-card" @click="open(f.id)">
+          <template v-for="g in sections" :key="g.key">
+          <tr v-if="grouped" class="cursor-pointer bg-card/60 hover:bg-card" @click="toggle(g.key)">
+            <td colspan="7" class="px-4 py-1.5">
+              <div class="flex items-center gap-2 text-xs">
+                <svg viewBox="0 0 16 16" :class="['size-3 shrink-0 text-darker transition-transform', folded.has(g.key) ? '-rotate-90' : '']" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4" /></svg>
+                <span class="text-sm font-semibold">{{ g.name || t('Other fights') }}</span>
+                <span v-if="g.kind" class="rounded border border-light px-1 text-[10px] text-darker">{{ t(g.kind) }}</span>
+                <span class="text-darker">{{ plural(g.fights.length, '1 fight', '{n} fights') }}</span>
+                <span v-if="g.last" class="ml-auto text-darker">{{ when(g.last) }}</span>
+              </div>
+            </td>
+          </tr>
+          <template v-if="!grouped || !folded.has(g.key)">
+          <tr v-for="f in g.fights" :key="f.id" class="group cursor-pointer hover:bg-card" @click="open(f.id)">
             <td class="py-2 pl-4">
               <div class="flex items-center gap-2">
                 <span class="truncate font-medium">{{ f.bossName || t('Unknown target') }}</span>
@@ -122,6 +162,8 @@ onBeforeUnmount(() => off?.())
               </button>
             </td>
           </tr>
+          </template>
+          </template>
         </tbody>
       </table>
     </div>
