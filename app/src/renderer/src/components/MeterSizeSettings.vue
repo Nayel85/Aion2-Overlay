@@ -23,6 +23,12 @@ const defaultSize = computed(() => cfg.value.width === SETTINGS_DEFAULTS.meter.w
   <SettingRow label="Row style" hint="Flat: the classic bars, with the crit column. Compact: small rounded rows with a gradient. Bold: large rows with big class icons.">
     <SelectBox size="sm" :model-value="cfg.style" :options="STYLES.map((o) => ({ id: o.id, label: t(o.label) }))" @update:model-value="set({ style: $event })" />
   </SettingRow>
+  <SettingRow label="Bars only until hovered" hint="Shows just the DPS bars, with no background, so it covers as little of the game as possible. Hover it to see the whole meter.">
+    <Toggle :model-value="cfg.barsOnly" @update:model-value="set({ barsOnly: $event })" />
+  </SettingRow>
+  <SettingRow v-if="cfg.barsOnly" label="Bars background" hint="How dark it is behind the bars while only the bars show; 0% is none.">
+    <Slider :model-value="Math.round(cfg.barsBackground * 100)" :min="0" :max="100" :step="5" :format="(v: number) => `${v}%`" @update:model-value="set({ barsBackground: $event / 100 })" />
+  </SettingRow>
   <SettingRow label="Combat power" hint="Each player's combat power, next to the name or in small type under it.">
     <SelectBox size="sm" :model-value="cfg.power" :options="POWER.map((o) => ({ id: o.id, label: t(o.label) }))" @update:model-value="set({ power: $event })" />
   </SettingRow>

@@ -260,6 +260,10 @@ export interface Settings {
     power: 'off' | 'beside' | 'below'
     /** The rows' look: 'flat' (bars), 'compact' (small pills with gradient) or 'bold' (big pills, big icons). */
     style: 'flat' | 'compact' | 'bold'
+    /** Only the DPS bars, with no background, until the pointer is over the meter (then all of it). */
+    barsOnly: boolean
+    /** The bars' background, 0 (none) to 1, while it shows bars only. */
+    barsBackground: number
   }
 
   /** Hide every overlay window from screenshots, OBS and Discord (WDA_EXCLUDEFROMCAPTURE). */
@@ -381,7 +385,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   skills: { enabled: true, position: null, rows: 6, opacity: 0.92 },
   dummy: { overlay: true, position: null, autoStart: true, goal: 'time', limitMs: 60_000, damageGoal: 10e6, collapsed: false },
   buffs: { enabled: true, position: null, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: null, ccDebuffs: false },
-  meter: { enabled: true, position: null, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'off', style: 'flat' },
+  meter: { enabled: true, position: null, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'off', style: 'compact', barsOnly: false, barsBackground: 0 },
   hideFromCapture: false,
   language: 'es',
   faction: 'elyos',
@@ -663,7 +667,9 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         hideIdle: bool(v.hideIdle, d.meter.hideIdle),
         idleSeconds: Math.round(num(v.idleSeconds, 5, 300, d.meter.idleSeconds)),
         power: v.power === 'beside' || v.power === 'below' ? v.power : 'off',
-        style: v.style === 'compact' || v.style === 'bold' ? v.style : 'flat',
+        style: v.style === 'flat' || v.style === 'bold' ? v.style : 'compact',
+        barsOnly: bool(v.barsOnly, false),
+        barsBackground: num(v.barsBackground, 0, 1, 0),
       } as Settings[K]
     }
     case 'language':

@@ -12,14 +12,14 @@ installStub()
 const set = (patch: Record<string, unknown>): void => setSetting('meter', { ...getSettings().meter, enabled: true, opacity: 0.95, width: 440, rows: 8, ...patch })
 const q = new URLSearchParams(location.search).get('power')
 const st = new URLSearchParams(location.search).get('style')
-set({ power: q === 'off' || q === 'below' ? q : 'beside', style: st === 'compact' || st === 'bold' ? st : 'flat' })
+set({ power: q === 'off' || q === 'below' ? q : 'beside', style: st === 'flat' || st === 'bold' ? st : 'compact', barsOnly: new URLSearchParams(location.search).has('bars') })
 sim.party()
 const pinia = createPinia()
 createApp(MeterPage).use(pinia).mount('#playground')
 void useApp(pinia).init()
 
 const box = document.getElementById('controls')!
-for (const [label, patch] of [['Style: flat', { style: 'flat' }], ['Style: compact', { style: 'compact' }], ['Style: bold', { style: 'bold' }], ['Power: off', { power: 'off' }], ['Power: beside', { power: 'beside' }], ['Power: under', { power: 'below' }]] as const) {
+for (const [label, patch] of [['Style: flat', { style: 'flat' }], ['Style: compact', { style: 'compact' }], ['Style: bold', { style: 'bold' }], ['Bars only: on', { barsOnly: true }], ['Bars only: off', { barsOnly: false }], ['Bars bg: 0%', { barsBackground: 0 }], ['Bars bg: 40%', { barsBackground: 0.4 }], ['Power: off', { power: 'off' }], ['Power: beside', { power: 'beside' }], ['Power: under', { power: 'below' }]] as const) {
   const b = document.createElement('button')
   b.textContent = label
   b.style.cssText = 'padding: 6px 10px; background: #2a3336; color: #ddd; border: 1px solid #455; border-radius: 6px; cursor: pointer'

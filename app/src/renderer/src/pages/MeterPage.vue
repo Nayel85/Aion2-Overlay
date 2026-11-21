@@ -105,6 +105,12 @@ const empty = computed(() => {
   return t(STATUS_TEXT[status.value.state])
 })
 
+/** The pointer is over the meter: in bars-only mode that is when all of it shows. */
+const over = ref(false)
+const lean = computed(() => cfg.value.barsOnly && !over.value && !cfg.value.collapsed && rows.value.length > 0)
+/** The bars' own background while it is lean: none unless the setting gives it one. */
+const leanBg = computed(() => `rgba(9, 9, 11, ${cfg.value.barsBackground})`)
+
 const drag = windowDrag({ move: 'meter:moveTo', end: 'meter:dragEnd' })
 const reset = (): void => void api.invoke('meter:reset')
 /** A row's skills, in the Details window: the live target's, following the fight. */
@@ -186,10 +192,12 @@ onBeforeUnmount(() => {
       <div
         v-if="!idle"
         ref="card"
-        class="group relative m-1.5 flex flex-col rounded-xl border border-card bg-darker/95 shadow-card"
+        @pointerenter="over = true"
+        @pointerleave="over = false"
+        :class="['group relative m-1.5 flex flex-col rounded-xl border', lean ? 'border-transparent' : 'border-card bg-darker/95 shadow-card']"
         :style="{ opacity: cfg.opacity, width: `${width}px`, height: height === null ? undefined : `${height}px` }"
       >
-        <header :class="['cursor-move px-3', cfg.collapsed ? 'py-1.5' : 'pb-1.5 pt-2.5']" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
+        <header v-if="!lean" :class="['cursor-move px-3', cfg.collapsed ? 'py-1.5' : 'pb-1.5 pt-2.5']" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
           <div class="flex items-center gap-2">
             <span :class="['size-1.5 shrink-0 rounded-full', statusDot]" :title="status.detail ?? t(STATUS_TEXT[status.state])" />
             <span class="min-w-0 flex-1 truncate text-[13px] font-semibold text-default">
@@ -230,7 +238,7 @@ onBeforeUnmount(() => {
 
         <div v-if="!cfg.collapsed" class="flex min-h-0 flex-1 flex-col">
         <!-- The switches, while the pointer is over the meter. -->
-        <div class="hidden flex-wrap gap-1 px-3 pb-1.5 text-[10px] group-hover:flex" @pointerdown.stop>
+        <div v-if="!lean" class="hidden flex-wrap gap-1 px-3 pb-1.5 text-[10px] group-hover:flex" @pointerdown.stop>
           <div class="flex rounded-md bg-dark p-0.5">
             <button
               v-for="m in MAIN_TARGET_MODES"
@@ -269,7 +277,7 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
-        <div v-if="hpShare !== null" class="px-3 pb-1.5">
+        <div v-if="hpShare !== null && !lean" class="px-3 pb-1.5">
           <div class="relative h-3.5 overflow-hidden rounded bg-dark">
             <div class="h-full bg-danger/70" :style="{ width: `${hpShare * 100}%` }" />
             <span class="absolute inset-0 flex items-center justify-center gap-1.5 text-[9px] font-semibold tabular-nums text-default">
@@ -279,18 +287,19 @@ onBeforeUnmount(() => {
         </div>
 
         <template v-if="rows.length">
-          <div class="flex items-center gap-1.5 px-3 pb-1 text-[10px] text-darkest">
+          <div v-if="!lean" class="flex items-center gap-1.5 px-3 pb-1 text-[10px] text-darkest">
             <span :class="['min-w-0 flex-1', cfg.style === 'bold' ? 'pl-9' : cfg.style === 'compact' ? 'pl-6' : 'pl-6']">{{ t('Player') }}</span>
             <span class="w-12 text-right">{{ STAT_TITLE[cfg.stat][2] }}</span>
             <span class="w-10 text-right">{{ t('Share') }}</span>
             <span class="w-12 text-right">{{ cfg.stat === 'taken' ? t('Taken') : cfg.stat === 'healing' ? t('Healed') : t('Damage') }}</span>
             <span v-if="cfg.style === 'flat' && cfg.stat === 'damage'" class="w-8 text-right">Crit</span>
           </div>
-          <ul :class="['space-y-0.5 px-1.5 pb-1.5', height !== null && 'min-h-0 flex-1 overflow-y-auto']">
+          <ul :class="['space-y-0.5 px-1.5 pb-1.5', lean && 'pt-1.5', height !== null && 'min-h-0 flex-1 overflow-y-auto']">
             <li
               v-for="r in rows"
               :key="r.id"
-              :class="['relative cursor-pointer overflow-hidden bg-dark', cfg.style === 'flat' ? 'rounded-md' : 'rounded-full', r.you ? 'ring-1 ring-accent' : 'hover:ring-1 hover:ring-light']"
+              :class="['relative cursor-pointer overflow-hidden', !lean && 'bg-dark', cfg.style === 'flat' ? 'rounded-md' : 'rounded-full', r.you ? 'ring-1 ring-accent' : 'hover:ring-1 hover:ring-light']"
+              :style="lean ? { background: leanBg, textShadow: '0 1px 3px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.9)' } : undefined"
               :title="t('{class} · click for the details', { class: r.className ?? t('Unknown class') })"
               @click="showDetails(r.id)"
             >
@@ -310,9 +319,9 @@ onBeforeUnmount(() => {
                   <span v-if="cfg.power === 'below' && r.combatPower > 0" class="-mt-0.5 text-[9px] leading-tight tabular-nums text-darker" :title="t('Combat power')">{{ r.combatPower.toLocaleString() }}</span>
                 </span>
                 <span class="w-12 text-right font-semibold tabular-nums text-default">{{ short(r.perSecond) }}</span>
-                <span class="w-10 text-right tabular-nums text-dark">{{ r.part.toFixed(1) }}%</span>
-                <span class="w-12 text-right tabular-nums text-dark">{{ short(r.value) }}</span>
-                <span v-if="cfg.style === 'flat' && cfg.stat === 'damage'" :class="['w-8 text-right tabular-nums', r.you ? 'text-green' : 'text-dark']">{{ Math.round(r.critRate * 100) }}%</span>
+                <span v-if="!lean" class="w-10 text-right tabular-nums text-dark">{{ r.part.toFixed(1) }}%</span>
+                <span v-if="!lean" class="w-12 text-right tabular-nums text-dark">{{ short(r.value) }}</span>
+                <span v-if="!lean && cfg.style === 'flat' && cfg.stat === 'damage'" :class="['w-8 text-right tabular-nums', r.you ? 'text-green' : 'text-dark']">{{ Math.round(r.critRate * 100) }}%</span>
               </div>
             </li>
           </ul>
@@ -320,7 +329,7 @@ onBeforeUnmount(() => {
         <p v-else class="px-3 pb-2.5 text-[11px] text-darker">{{ empty }}</p>
 
         <div v-if="height !== null && !rows.length" class="flex-1" />
-        <footer v-if="meter.ping !== null || all.length > rows.length" class="mt-auto flex gap-2 border-t border-card px-3 py-1 text-[10px] tabular-nums text-darkest">
+        <footer v-if="!lean && (meter.ping !== null || all.length > rows.length)" class="mt-auto flex gap-2 border-t border-card px-3 py-1 text-[10px] tabular-nums text-darkest">
           <span>{{ t(TARGET_MODE_LABELS[meter.mode]) }}</span>
           <span v-if="all.length > rows.length">{{ t('+{n} more', { n: all.length - rows.length }) }}</span>
           <span v-if="meter.ping !== null" class="ml-auto" :title="t('Your ping to the game server')">
