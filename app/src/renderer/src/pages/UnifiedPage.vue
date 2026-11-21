@@ -60,6 +60,7 @@ function enter(): void {
   hover.value = true
 }
 function leave(): void {
+  forget()
   if (leaveTimer) clearTimeout(leaveTimer)
   leaveTimer = setTimeout(() => {
     hover.value = false
@@ -68,6 +69,22 @@ function leave(): void {
 }
 const shown = computed<PanelId | null>(() => panel.value ?? (cfg.value.runsPinned ? 'runs' : null))
 const show = (id: PanelId): void => void (panel.value = id)
+/**
+ * The first peek after the mouse enters waits this long: the buttons appear and the bar widens
+ * under a mouse that has not moved, so the button it lands on is chance. Once a peek is open, the
+ * next button's is instant (the bar no longer changes width, so nothing slides under the mouse).
+ */
+const PEEK_DELAY_MS = 120
+let peekTimer: ReturnType<typeof setTimeout> | null = null
+function intend(id: PanelId): void {
+  if (peekTimer) clearTimeout(peekTimer)
+  if (panel.value) return show(id)
+  peekTimer = setTimeout(() => show(id), PEEK_DELAY_MS)
+}
+function forget(): void {
+  if (peekTimer) clearTimeout(peekTimer)
+  peekTimer = null
+}
 const tools = computed(() => hover.value || cfg.value.buttons === 'always')
 
 // ---- the overlays' buttons ---------------------------------------------------------------------
@@ -95,18 +112,12 @@ function toggleOverlay(id: Peek): void {
   else if (id === 'pvp') void api.invoke(s.killFeed.open ? 'killfeed:close' : 'killfeed:open')
   else void store.set('hud', { ...s.hud, enabled: !s.hud.enabled })
 }
-/** One click peeks at it under the bar; a second folds the peek and opens (or closes) the overlay. */
-function press(id: Peek): void {
-  if (panel.value !== id) return show(id)
-  toggleOverlay(id)
-  panel.value = null
-}
 const peekTitle = (p: { id: Peek; label: string }): string =>
-  panel.value !== p.id ? t(p.label) : overlayOn(p.id) ? t('Click again to close its overlay') : t('Click again to open it as its own overlay')
+  overlayOn(p.id) ? t('{name}: click to close its overlay', { name: t(p.label) }) : t('{name}: click to open it as its own overlay', { name: t(p.label) })
 const peekHint = computed(() => {
   const id = shown.value
   if (id !== 'meter' && id !== 'map' && id !== 'pvp' && id !== 'pets') return null
-  return overlayOn(id) ? t('Click the button again to close its overlay.') : t('Click the button again to open it as its own overlay.')
+  return overlayOn(id) ? t('Click its button to close the overlay.') : t('Click its button to open it as its own overlay.')
 })
 
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('unified', { ...cfg.value, ...patch })
@@ -366,7 +377,7 @@ onBeforeUnmount(() => {
   <div class="inline-block w-max">
     <div ref="root" class="inline-block w-max">
       <div
-        class="mx-1.5 mb-1.5 mt-0 flex w-max flex-col overflow-hidden rounded-[14px] border text-default"
+        :class="['mx-1.5 mb-1.5 mt-0 flex w-max flex-col overflow-hidden rounded-[14px] border text-default', (tools || shown) && 'min-w-[440px]']"
         :style="{ ...panelStyle(cfg.opacity), boxShadow: 'none', textShadow: cfg.opacity < 0.6 ? '0 1px 3px rgb(0 0 0 / 0.9), 0 0 2px rgb(0 0 0 / 0.8)' : 'none', zoom: cfg.scale }"
         @pointerenter="enter"
         @pointerleave="leave"
@@ -475,20 +486,22 @@ onBeforeUnmount(() => {
 
           <!-- The overlays' buttons, the speaker and the cog: while hovered (or always). -->
           <template v-if="tools">
-            <span class="h-4 w-px bg-light" />
-            <div class="flex items-center gap-0.5">
+            <span class="unfold h-4 w-px bg-light" />
+            <div class="unfold flex items-center gap-0.5">
               <button
                 v-for="p in PEEKS"
                 :key="p.id"
                 type="button"
-                :class="['relative flex h-7 w-[30px] items-center justify-center rounded-lg transition-colors hover:bg-light hover:text-default', shown === p.id ? 'bg-light text-default' : overlayOn(p.id) ? 'text-default' : 'text-darker']"
+                :class="['relative flex h-7 w-[30px] items-center justify-center rounded-lg transition-colors hover:text-default', overlayOn(p.id) ? 'bg-accent/15 text-accent' : 'text-darker', shown === p.id && 'ring-1 ring-light']"
                 :aria-label="t(p.label)"
                 :title="peekTitle(p)"
                 @pointerdown.stop
-                @click="press(p.id)"
+                @pointerenter="intend(p.id)"
+                @pointerleave="forget"
+                @click="toggleOverlay(p.id)"
               >
                 <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS[p.id]" /></svg>
-                <span v-if="overlayOn(p.id)" class="absolute bottom-0.5 left-3 h-0.5 w-1.5 rounded-full bg-accent" />
+                <span v-if="overlayOn(p.id)" class="absolute bottom-0.5 left-[11px] h-0.5 w-2 rounded-full bg-accent" />
               </button>
               <button
                 type="button"
@@ -503,7 +516,7 @@ onBeforeUnmount(() => {
               </button>
             </div>
             <span class="h-4 w-px bg-light" />
-            <div class="flex items-center gap-0.5">
+            <div class="unfold flex items-center gap-0.5">
               <button
                 type="button"
                 :class="['flex h-7 w-[30px] items-center justify-center rounded-lg transition-colors hover:bg-light', store.settings.muted ? 'text-red' : 'text-darker hover:text-default']"
@@ -535,7 +548,7 @@ onBeforeUnmount(() => {
                     <button
                       v-if="targetOn && cfg.targetStyle === 'inline'"
                       type="button"
-                      class="flex h-6 items-center gap-1.5 rounded-lg px-1.5 text-xs"
+                      class="unfold flex h-6 items-center gap-1.5 rounded-lg px-1.5 text-xs"
                       :title="store.settings.meter.enabled ? '' : t('Click to open the DPS meter')"
                       @click="targetClick"
                       @pointerdown.stop
@@ -611,7 +624,8 @@ onBeforeUnmount(() => {
         </button>
 
         <!-- Under the bar: a peek at an overlay, Boss Runs, or what a chip points at. -->
-        <div v-if="shown" class="border-t border-card px-3.5 py-2.5">
+        <!-- w-0 min-w-full: it fills the bar but never widens it, so opening or changing a peek does not move the buttons under the mouse. -->
+        <div v-if="shown" class="unfold w-0 min-w-full border-t border-card px-3.5 py-2.5">
           <!-- Boss Runs: pinned until folded. -->
           <div v-if="shown === 'runs'" class="min-w-[280px]">
             <div class="flex items-center gap-2">

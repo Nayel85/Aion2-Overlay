@@ -97,9 +97,15 @@ impl Hits {
     /// The fight around player `x` that ended by `end`: every hit they dealt or took, back from
     /// the last one before it to the first pause longer than `GAP_MS`.
     pub fn around(&self, x: u32, end: i64) -> Vec<Hit> {
+        self.around_any(&[x], end)
+    }
+
+    /// The same around several players at once: every hit any of them dealt or took (your death
+    /// has the hits of everyone who attacked you, not only the one who landed the blow).
+    pub fn around_any(&self, players: &[u32], end: i64) -> Vec<Hit> {
         let mut out: Vec<Hit> = Vec::new();
         for h in self.list.iter().rev() {
-            if h.ts > end || (h.actor != x && h.target != x) {
+            if h.ts > end || !(players.contains(&h.actor) || players.contains(&h.target)) {
                 continue;
             }
             if out.last().is_some_and(|later| later.ts - h.ts > GAP_MS) {
@@ -350,5 +356,18 @@ mod tests {
         hits.push(hit(2_000, 3, 4, 30, 999)); // the ally on someone else: another fight
         let around = hits.around(2, 3_000);
         assert_eq!(around.iter().map(|h| h.ts).collect::<Vec<_>>(), vec![0, 1_000, 1_500]);
+    }
+
+    #[test]
+    fn a_death_has_the_hits_of_everyone_who_attacked_you() {
+        let mut hits = Hits::default();
+        hits.push(hit(0, 2, 1, 10, 500)); // the one who killed you, on you
+        hits.push(hit(1_000, 3, 1, 30, 700)); // another enemy, on you
+        hits.push(hit(1_500, 1, 3, 20, 400)); // you on that other enemy
+        hits.push(hit(2_000, 4, 5, 40, 999)); // two strangers: not this fight
+        let around = hits.around_any(&[1, 2], 3_000);
+        assert_eq!(around.iter().map(|h| h.ts).collect::<Vec<_>>(), vec![0, 1_000, 1_500]);
+        // Around the killer alone, the other enemy's hits on you are missing.
+        assert_eq!(hits.around(2, 3_000).iter().map(|h| h.ts).collect::<Vec<_>>(), vec![0]);
     }
 }

@@ -19,3 +19,19 @@ there too, and the other way round.
 
 Not simulated: the Spacetime Rift farm and the next-event icons (they follow the real clock), and the
 window behaviour of the real overlay (click-through, resizing).
+
+## Details window
+
+`http://localhost:5199/details.html` shows the real Details window on a made-up PvP fight (a death with
+two sides and several players: `pvpFightView` in `stub.ts`). `?tab=3` opens the Rotation tab and
+`?who=Ksix` picks a player.
+
+## Videos
+
+With `npm run playground` up, from `app/`:
+
+    node playground/record-hud.mjs [out.mp4]     # the HUD alone, small, no captions (for Discord)
+    node playground/record-promo.mjs [out.mp4]   # the whole screen, with a title, captions and an outro
+
+They drive a real headless Chromium (its own temp profile) with a real mouse over the promo page, with
+the page's clock slowed to a quarter so the frames come out smooth (`slowmo.ts`, `recorder.mjs`).

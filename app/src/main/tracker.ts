@@ -563,10 +563,10 @@ export const tracker = {
   },
 }
 
-/** Ask the sidecar to quit, and make sure it is gone. Safe to call from `process.on('exit')`. */
+/** Ask the sidecar to quit, and make sure it is gone. */
 export function stopTracker(): void {
   stopping = true
-  pvpLog.flush()
+  void pvpLog.flush()
   abyss.flush()
   if (restartTimer) clearTimeout(restartTimer)
   restartTimer = null
@@ -586,7 +586,6 @@ export function stopTracker(): void {
 /** For process exit, where timers never fire. */
 export function killTrackerNow(): void {
   stopping = true
-  pvpLog.flush()
   abyss.flush()
   if (child && child.exitCode === null) child.kill()
   child = null

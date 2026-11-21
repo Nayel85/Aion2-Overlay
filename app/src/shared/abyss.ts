@@ -71,6 +71,8 @@ export interface RiftFarm {
   /** The window's first and last gain. */
   first: number
   last: number
+  /** Each gain in it, as [when, how much] (the PvP page lists what each kill or assist earned). */
+  gains: [number, number][]
 }
 
 const RIFT = TIMERS.find((t) => t.id === 'rift')!.schedule
@@ -96,7 +98,36 @@ export function riftFarms(gains: readonly AbyssGain[]): RiftFarm[] {
       farm.points += gained
       farm.first = Math.min(farm.first, at)
       farm.last = Math.max(farm.last, at)
-    } else farms.set(key, { start, name, points: gained, first: at, last: at })
+      farm.gains.push([at, gained])
+    } else farms.set(key, { start, name, points: gained, first: at, last: at, gains: [[at, gained]] })
   }
   return [...farms.values()].filter((f) => f.points >= RIFT_MIN_POINTS).sort((a, b) => b.start - a.start)
+}
+
+/** The Abyss Points follow a kill's credit by a moment: how long after it, and how long before (clocks drift). */
+export const AP_AFTER_MS = 6_000
+export const AP_BEFORE_MS = 1_500
+
+/**
+ * What each kill or assist earned: every gain goes to the nearest event it follows within a few
+ * seconds. Gains no event explains (a quest, a monster) come back as `other`.
+ */
+export function attributeGains<T extends { at: number }>(gains: readonly [number, number][], events: readonly T[]): { byEvent: Map<T, number>; other: number } {
+  const byEvent = new Map<T, number>()
+  let other = 0
+  for (const [at, gained] of gains) {
+    let best: T | null = null
+    let bestGap = Infinity
+    for (const e of events) {
+      const gap = at - e.at
+      if (gap < -AP_BEFORE_MS || gap > AP_AFTER_MS) continue
+      if (Math.abs(gap) < bestGap) {
+        best = e
+        bestGap = Math.abs(gap)
+      }
+    }
+    if (best) byEvent.set(best, (byEvent.get(best) ?? 0) + gained)
+    else other += gained
+  }
+  return { byEvent, other }
 }

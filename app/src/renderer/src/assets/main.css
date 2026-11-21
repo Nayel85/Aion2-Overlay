@@ -85,3 +85,13 @@
     filter: drop-shadow(0 0 1.5px rgb(0 0 0 / 0.95)) drop-shadow(0 0 3px rgb(0 0 0 / 0.8));
   }
 }
+
+/* What the Unified HUD unfolds (its buttons, a peek, your target) fades in rather than appearing at once. */
+@keyframes unfold {
+  from {
+    opacity: 0;
+  }
+}
+.unfold {
+  animation: unfold 0.16s ease-out;
+}

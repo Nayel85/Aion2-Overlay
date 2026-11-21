@@ -90,7 +90,7 @@ const BUTTON_ICONS = [
         <SettingRow label="Ping" hint="Your ping to the game server.">
           <Toggle :model-value="cfg.ping" @update:model-value="set({ ping: $event })" />
         </SettingRow>
-        <SettingRow label="Overlay buttons" hint="DPS meter, Map, Kill feed, Pets: one click peeks under the bar, a second opens the overlay itself. Boss Runs stay open under the bar until you fold them. With them, the speaker that mutes every sound and the cog that opens the app.">
+        <SettingRow label="Overlay buttons" hint="DPS meter, Map, Kill feed, Pets: hover one to peek at it under the bar, click it to turn its own overlay on or off (a mark under the icon says it is on). Boss Runs stay open under the bar until you fold them. With them, the speaker that mutes every sound and the cog that opens the app.">
           <Segmented size="sm" :model-value="cfg.buttons" :options="BUTTONS" @update:model-value="set({ buttons: $event })" />
         </SettingRow>
       </Section>

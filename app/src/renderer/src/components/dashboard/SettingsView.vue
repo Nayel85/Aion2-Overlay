@@ -275,6 +275,13 @@ const lastPacket = computed(() => {
         <span class="min-w-0 truncate text-darker" :title="packetLog.path">{{ t('Last: {file} · {n} messages', { file: fileName(packetLog.path), n: packetLog.count.toLocaleString('en-US') }) }}</span>
         <Button size="sm" @click="bridge().invoke('packets:show')">{{ t('Show in folder') }}</Button>
       </div>
+      <SettingRow label="Field-boss diagnostics" hint="Searches other game messages for possible boss data and writes matches to the developer log.">
+        <Toggle
+          :aria-label="t('Field-boss diagnostics')"
+          :model-value="store.settings.tracker.bossDiagnostics"
+          @update:model-value="store.set('tracker', { ...store.settings.tracker, bossDiagnostics: $event })"
+        />
+      </SettingRow>
     </Section>
 
     <Section title="Engine" icon="M5.5 1.5v2M10.5 1.5v2M5.5 12.5v2M10.5 12.5v2M1.5 5.5h2M1.5 10.5h2M12.5 5.5h2M12.5 10.5h2M3.5 3.5h9v9h-9zM6 6h4v4H6z">

@@ -133,6 +133,8 @@ pub struct Tracker {
     field_bosses: Option<(u32, Vec<p::FieldBoss>)>,
     /// When a field boss list last could not be read (logged at most once a minute).
     field_bosses_unread: i64,
+    /// Scan unknown messages for possible field-boss records while debugging.
+    boss_diagnostics: bool,
     /// Other messages naming field bosses, by opcode: when each was last logged.
     boss_messages: HashMap<[u8; 2], i64>,
 
@@ -220,6 +222,7 @@ impl Tracker {
             me_stats: None,
             field_bosses: None,
             field_bosses_unread: 0,
+            boss_diagnostics: false,
             boss_messages: HashMap::new(),
             visible: HashMap::new(),
             world: None,
@@ -246,6 +249,10 @@ impl Tracker {
             self_entity: None,
             pvp_seen: HashMap::new(),
         }
+    }
+
+    pub fn set_boss_diagnostics(&mut self, on: bool) {
+        self.boss_diagnostics = on;
     }
 
     fn save(&self) {
@@ -559,11 +566,12 @@ impl Tracker {
         if opponent == me {
             return None;
         }
-        // A fight you took part in: hits between you two. Then all of it: everyone's on them, theirs on anyone.
+        // A fight you took part in: hits between you two. Then all of it: everyone's on either of you, and yours and theirs on anyone.
         if self.pvp_hits.between(me, opponent, ts).is_empty() {
             return None;
         }
-        let hits = self.pvp_hits.around(opponent, ts);
+        // Everyone's hits on either of you, and yours and theirs on anyone: your own log in it too.
+        let hits = self.pvp_hits.around_any(&[me, opponent], ts);
         let them = if died {
             self.pvp_side(opponent, &credit.name, Some(credit.server), credit.legion.clone().or_else(|| self.legions.get(&opponent).cloned()))
         } else {
@@ -719,13 +727,15 @@ impl Tracker {
         // Looking for where else the game sends field bosses (the map's list comes at login, but
         // not always with the map open): any other message naming two of them is logged, once a
         // minute for each kind, with its bytes.
-        if op != p::OP_FIELD_BOSSES && f.len() <= 8192 && p::boss_ids_in(f) >= 2 {
-            let last = self.boss_messages.entry(op).or_insert(0);
-            if ts - *last > 60_000 {
-                *last = ts;
-                let hex: String = f.iter().take(600).map(|b| format!("{b:02x}")).collect();
-                tracing::info!("field bosses in message {:02x} {:02x} ({} bytes): {hex}", op[0], op[1], f.len());
-            }
+        if self.boss_diagnostics
+            && op != p::OP_FIELD_BOSSES
+            && f.len() <= 8192
+            && self.boss_messages.get(&op).is_none_or(|&last| ts - last > 60_000)
+            && p::boss_ids_in(f) >= 2
+        {
+            self.boss_messages.insert(op, ts);
+            let hex: String = f.iter().take(600).map(|b| format!("{b:02x}")).collect();
+            tracing::info!("field bosses in message {:02x} {:02x} ({} bytes): {hex}", op[0], op[1], f.len());
         }
 
         for credit in p::kill_credits(f) {
@@ -1525,6 +1535,41 @@ mod tests {
         t.frame(1200, &frame(p::OP_DEATH, &[79, 0, 3]));
         let kills: Vec<_> = events.lock().unwrap().iter().filter(|e| e["type"] == "bossKilled").cloned().collect();
         assert_eq!(kills, vec![json!({ "type": "bossKilled", "ts": 1000, "npc": 2_100_003 })]);
+    }
+
+    #[test]
+    fn field_boss_diagnostics_only_logs_unknown_messages() {
+        let unknown_op = [0x10, 0x20];
+        // 101001 as a varint, followed by 101021 as a u32.
+        let unknown = frame(unknown_op, &[0x89, 0x95, 0x06, 0x00, 0x9d, 0x8a, 0x01, 0x00]);
+        let respawn = 1_794_010_200_000u64;
+        let mut list = vec![0, 0, 20, 0, 0, 0, 1, 0, 0x9d, 0x95, 0x06];
+        list.extend(respawn.to_le_bytes());
+        let list = frame(p::OP_FIELD_BOSSES, &list);
+
+        for enabled in [false, true] {
+            let (mut t, events) = tracker();
+            t.frame(60_000, &unknown);
+            assert!(t.boss_messages.is_empty(), "scan must be off by default");
+            t.set_boss_diagnostics(enabled);
+            t.frame(61_000, &unknown);
+            t.frame(62_000, &unknown);
+            assert_eq!(t.boss_messages.get(&unknown_op).copied(), enabled.then_some(61_000));
+            assert!(events.lock().unwrap().is_empty());
+
+            t.mob_code.insert(77, 2_100_003);
+            t.frame(63_000, &list);
+            t.frame(64_000, &frame(p::OP_DEATH, &[77, 0, 3]));
+            assert_eq!(*events.lock().unwrap(), vec![
+                json!({ "type": "fieldBosses", "ts": 63_000, "world": 20,
+                    "bosses": [{ "id": 101021, "up": false, "at": respawn }] }),
+                json!({ "type": "bossKilled", "ts": 64_000, "npc": 2_100_003 }),
+            ]);
+
+            t.set_boss_diagnostics(false);
+            t.frame(130_000, &unknown);
+            assert_eq!(t.boss_messages.get(&unknown_op).copied(), enabled.then_some(61_000));
+        }
     }
 
     fn tracker() -> (Tracker, Arc<std::sync::Mutex<Vec<Value>>>) {

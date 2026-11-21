@@ -9,6 +9,7 @@ import { globalShortcut, shell } from 'electron'
 import { basename, dirname } from 'node:path'
 import { broadcast } from './broadcast.ts'
 import { meterState } from './meter.ts'
+import { settings } from './settings.ts'
 import { closePacketsHud, createPacketsHud } from './windows.ts'
 import { command, log, tracker } from './tracker.ts'
 import { NO_PACKET_LOG, type PacketLog } from '../shared/meter.ts'
@@ -43,6 +44,9 @@ function markKey(on: boolean): void {
 }
 
 export function startPackets(): void {
+  settings.onChanged((all, key) => {
+    if (key === 'tracker') command({ cmd: 'bossDiagnostics', on: all.tracker.bossDiagnostics })
+  })
   tracker.onEvent('packets', (ev) => {
     const on = ev['on'] === true
     const path = typeof ev['path'] === 'string' ? ev['path'] : state.path
@@ -56,6 +60,7 @@ export function startPackets(): void {
   })
   // The engine started again: its log, if one ran, ended with it.
   tracker.onEvent('ready', () => {
+    if (settings.get('tracker').bossDiagnostics) command({ cmd: 'bossDiagnostics', on: true })
     if (!state.on) return
     state = { ...state, on: false, startedAt: null }
     markKey(false)

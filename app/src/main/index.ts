@@ -20,6 +20,7 @@ import { startHotkeys, stopHotkeys } from './hotkeys.ts'
 import { startDummy } from './dummy.ts'
 import { startUpdater } from './updater.ts'
 import { startPackets } from './packets.ts'
+import { pvpLog } from './pvpLog.ts'
 import { stopShopScreen, watchShopScreen } from './shopScreen.ts'
 import { startMeter } from './meter.ts'
 import { startTimers } from './timers.ts'
@@ -141,13 +142,14 @@ if (!app.requestSingleInstanceLock()) {
     stopHotkeys()
     stopTracker()
   })
-  // Windows children outlive their parent: make sure the engine goes with us.
   app.once('will-quit', (event) => {
-    const flushed = finishLog()
-    if (flushed) {
+    const saved = pvpLog.flush()
+    const logged = finishLog()
+    if (saved || logged) {
       event.preventDefault()
-      void flushed.then(() => app.quit())
+      void Promise.all([saved, logged]).then(() => app.quit())
     }
   })
+  // Windows children outlive their parent: make sure the engine goes with us.
   process.on('exit', killTrackerNow)
 }

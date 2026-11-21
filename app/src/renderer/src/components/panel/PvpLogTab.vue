@@ -19,7 +19,7 @@ import { useApp } from '@/stores/app.ts'
 import { serverTag } from '@shared/servers.ts'
 import type { Settings } from '@shared/settings.ts'
 import { PVP_LIMIT, type PvpKill } from '@shared/tracker.ts'
-import { RIFT_MIN_POINTS as RIFT_MIN, RIFT_MS, type RiftFarm } from '@shared/abyss.ts'
+import { attributeGains, RIFT_MIN_POINTS as RIFT_MIN, RIFT_MS, type RiftFarm } from '@shared/abyss.ts'
 import { formatAmount } from '@shared/earnings.ts'
 
 const store = useApp()
@@ -91,6 +91,15 @@ const filtered = computed(() => {
   if (filter.value === 'legion') return history.value.filter((k) => k.legion)
   return null
 })
+/** The picked rift's Abyss Points by kill or assist (your deaths earn none), and what no kill explains. */
+const riftAp = computed(() => {
+  const farm = rift.value
+  if (!farm) return null
+  const events = history.value.filter((k) => inRift(k, farm) && (k.mine || isAssist(k)))
+  const { byEvent, other } = attributeGains(farm.gains ?? [], events)
+  return { byEvent, other, fromKills: farm.points - other }
+})
+const apOf = (k: PvpKill): number => riftAp.value?.byEvent.get(k) ?? 0
 const total = computed(() => (filtered.value ?? history.value).length)
 const PAGE = 200
 const limit = ref(PAGE)
@@ -206,6 +215,11 @@ const BACKGROUND_HINT = 'At None the text keeps a dark glow, readable on the gam
       <span class="ml-auto rounded-full bg-card px-2 py-0.5 tabular-nums text-dark" :title="plural(total, '{n} kill in the list', '{n} kills in the list')">{{ total }}</span>
     </div>
 
+    <p v-if="riftAp" class="flex flex-wrap gap-x-3 px-1 text-[11px] text-darker">
+      <span><span class="font-semibold tabular-nums text-blue">+{{ formatAmount(riftAp.fromKills) }}</span> {{ t('Abyss Points from your kills and assists') }}</span>
+      <span v-if="riftAp.other > 0"><span class="font-semibold tabular-nums text-dark">+{{ formatAmount(riftAp.other) }}</span> {{ t('from other things (quests, monsters)') }}</span>
+    </p>
+
     <ul v-if="total" class="divide-y divide-[color:var(--line)] overflow-hidden rounded-lg border border-card bg-card">
       <li
         v-for="(k, i) in shown"
@@ -230,6 +244,7 @@ const BACKGROUND_HINT = 'At None the text keeps a dark glow, readable on the gam
           </div>
           <div v-if="k.killer.guild" class="truncate text-[11px] text-darker">{{ k.killer.guild }}</div>
         </div>
+        <span v-if="riftAp && (k.mine || isAssist(k))" :class="['shrink-0 text-[11px] font-semibold tabular-nums', apOf(k) ? 'text-blue' : 'text-darkest']" :title="t('Abyss Points this earned (the points that came in right after it)')">{{ apOf(k) ? `+${formatAmount(apOf(k))} AP` : '- AP' }}</span>
         <span v-if="k.fight && !k.mine && !k.died" class="shrink-0 rounded bg-accent/15 px-1.5 text-[10px] font-semibold text-accent" :title="t('You fought this player before someone else took the kill')">Assist</span>
         <span v-if="k.fight" class="shrink-0 text-[11px] font-medium text-accent">{{ t('Details') }} ›</span>
         <span class="shrink-0 text-[11px] tabular-nums text-darker" :title="time(k.at)">{{ ago(k.at) }}</span>

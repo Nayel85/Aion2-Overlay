@@ -65,6 +65,7 @@
 //!   {"cmd": "record", "on": true}      record the game's traffic (<data folder>/recordings), or stop
 //!   {"cmd": "recordings"}              the recordings kept
 //!   {"cmd": "packets", "on": true}     write every game message to a text file (<data folder>/recordings), or stop
+//!   {"cmd": "bossDiagnostics", "on": true}   look for possible field-boss data in unknown messages and log it
 //!   {"cmd": "mark", "text": "..."}     a line in that file between the messages: what you just did
 //!   {"cmd": "quit"}                    (closing stdin quits too)
 //!
@@ -488,6 +489,7 @@ impl Sidecar {
                 "meter" => self.meter_on.store(msg["on"].as_bool().ok_or("no on")?, Ordering::SeqCst),
                 "buffs" => self.buffs_on.store(msg["on"].as_bool().ok_or("no on")?, Ordering::SeqCst),
                 "training" => self.training_on.store(msg["on"].as_bool().ok_or("no on")?, Ordering::SeqCst),
+                "bossDiagnostics" => self.tracker.lock().set_boss_diagnostics(msg["on"].as_bool().ok_or("no on")?),
                 "dpsReset" => self.meter.reset(),
                 "record" => {
                     if msg["on"].as_bool().ok_or("no on")? {
@@ -525,41 +527,47 @@ impl Sidecar {
                 "pvpFight" => {
                     let id = msg["id"].as_str().ok_or("no id")?;
                     let fight = self.tracker.lock().pvp_fight(id);
-                    let mut fight = serde_json::to_value(fight).unwrap_or(Value::Null);
-                    // A side whose class was not known then (no card, no skill seen before the
-                    // fight): the class its skills in the fight say.
-                    let skills = fight["skills"].clone();
-                    let class_of = |entity: &Value| {
-                        let codes = skills.as_array().into_iter().flatten().filter(|s| &s["actor"] == entity).filter_map(|s| s["code"].as_i64().map(|c| c as i32));
-                        json!(crate::tracker::pvp::class_of_skills(codes))
-                    };
-                    for side in ["me", "opponent"] {
-                        if fight[side]["className"].is_null() {
-                            fight[side]["className"] = class_of(&fight[side]["entity"]);
-                        }
-                    }
-                    for side in fight.get_mut("others").and_then(Value::as_array_mut).into_iter().flatten() {
-                        if side["className"].is_null() {
-                            side["className"] = class_of(&side["entity"]);
-                        }
-                    }
-                    // Each skill as the meter names it: a skill's variants folded into it, as
-                    // upstream's parser does (the PvP reader keeps raw ids), and its name.
-                    if let Some(skills) = fight.get_mut("skills").and_then(Value::as_array_mut) {
-                        let mut merged: Vec<Value> = Vec::new();
-                        for mut s in skills.drain(..) {
-                            let code = self.meter.normalize_skill(s["code"].as_i64().unwrap_or(0) as i32);
-                            s["code"] = json!(code);
-                            s["name"] = json!(self.meter.skill_name(code));
-                            match merged.iter_mut().find(|m| m["actor"] == s["actor"] && m["code"] == s["code"]) {
-                                Some(m) => merge_skill_line(m, &s),
-                                None => merged.push(s),
+                    // Gone (older than the 300 kept, or saved by another version): say so, rather than
+                    // build a fight out of nothing for the window to choke on.
+                    if fight.is_none() {
+                        emit(&event("pvpFight", json!({ "id": id, "fight": Value::Null })));
+                    } else {
+                        let mut fight = serde_json::to_value(fight).unwrap_or(Value::Null);
+                        // A side whose class was not known then (no card, no skill seen before the
+                        // fight): the class its skills in the fight say.
+                        let skills = fight["skills"].clone();
+                        let class_of = |entity: &Value| {
+                            let codes = skills.as_array().into_iter().flatten().filter(|s| &s["actor"] == entity).filter_map(|s| s["code"].as_i64().map(|c| c as i32));
+                            json!(crate::tracker::pvp::class_of_skills(codes))
+                        };
+                        for side in ["me", "opponent"] {
+                            if fight[side]["className"].is_null() {
+                                fight[side]["className"] = class_of(&fight[side]["entity"]);
                             }
                         }
-                        merged.sort_by_key(|s| std::cmp::Reverse(s["damage"].as_i64().unwrap_or(0)));
-                        *skills = merged;
-                    }
+                        for side in fight.get_mut("others").and_then(Value::as_array_mut).into_iter().flatten() {
+                            if side["className"].is_null() {
+                                side["className"] = class_of(&side["entity"]);
+                            }
+                        }
+                        // Each skill as the meter names it: a skill's variants folded into it, as
+                        // upstream's parser does (the PvP reader keeps raw ids), and its name.
+                        if let Some(skills) = fight.get_mut("skills").and_then(Value::as_array_mut) {
+                            let mut merged: Vec<Value> = Vec::new();
+                            for mut s in skills.drain(..) {
+                                let code = self.meter.normalize_skill(s["code"].as_i64().unwrap_or(0) as i32);
+                                s["code"] = json!(code);
+                                s["name"] = json!(self.meter.skill_name(code));
+                                match merged.iter_mut().find(|m| m["actor"] == s["actor"] && m["code"] == s["code"]) {
+                                    Some(m) => merge_skill_line(m, &s),
+                                    None => merged.push(s),
+                                }
+                            }
+                            merged.sort_by_key(|s| std::cmp::Reverse(s["damage"].as_i64().unwrap_or(0)));
+                            *skills = merged;
+                        }
                     emit(&event("pvpFight", json!({ "id": id, "fight": fight })));
+                    }
                 }
                 "fight" => {
                     let id = msg["id"].as_str().ok_or("no id")?;

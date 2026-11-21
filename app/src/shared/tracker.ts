@@ -170,18 +170,16 @@ export function pvpSummary(log: PvpKill[]) {
 
 export type PvpSummary = ReturnType<typeof pvpSummary>
 
-/** Maintain the dashboard totals and overlay summary as the oldest kill falls out of history. */
-export function appendPvpKill(log: PvpKill[], summary: PvpSummary, kill: PvpKill): void {
-  const old = log.length === PVP_LIMIT ? log.shift() : undefined
-  log.push(kill)
-  summary.total = log.length
+/** Maintain the overlay summary when a kill comes in and the oldest may fall out of history. */
+export function addToPvpSummary(summary: PvpSummary, kill: PvpKill, old?: PvpKill): void {
+  if (!old) summary.total++
   summary.kills += Number(kill.mine) - Number(!!old?.mine)
   summary.deaths += Number(kill.died) - Number(!!old?.died)
   const assist = (k?: PvpKill): number => Number(!!k?.fight && !k.mine && !k.died)
   summary.assists += assist(kill) - assist(old)
   if (kill.died) summary.death = lastDeath([kill])
   else if (old === summary.death) summary.death = null
-  summary.recent = log.slice(-4)
+  summary.recent = [...summary.recent.slice(-3), kill]
 }
 
 /** A soul as the HUD toasts it. */

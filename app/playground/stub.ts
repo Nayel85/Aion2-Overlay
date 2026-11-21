@@ -28,6 +28,10 @@ let kina = { earned: 0, activeMs: 0, lastAt: null as number | null, gains: [] as
 let gains: AbyssGain[] = []
 let abyssPoints = 5000
 let meter: MeterData = idleMeter()
+const pets = [
+  { id: 1002, name: 'Krall Armed Soldier', souls: 17, level: 1, levelEstimated: false, crystals: 0, session: 12 },
+  { id: 1003, name: 'Canyon Vine Spirit', souls: 2, level: 0, levelEstimated: false, crystals: 0, session: 5 },
+]
 
 function row(id: number, name: string, className: string, damage: number, dps: number, you = false): MeterRow {
   return { id, name, className, dps, damage, share: 0, hps: 0, heal: 0, taken: 0, critRate: 0.3, combatPower: 100000, you, party: true, others: false } as MeterRow
@@ -43,14 +47,15 @@ const abyss = () => {
 
 const tracker = () => ({
   status: { state: 'locked', detail: null, lastPacketAgo: 1, gameActive: true, replay: false, synced: null, dataFile: null, character: ME, server: 1104, level: 45, npcapMissing: false },
-  pets: [], nearby: { world: null, position: [1000, 1000], positionAt: now(), monsters: [] }, shop: [], kina, abyss: abyss(), rifts: [],
+  pets, nearby: { world: 1010, position: [-5000, -8000], positionAt: now(), monsters: [{ npc: 2100075, count: 6 }, { npc: 2100601, count: 3 }] }, shop: [], kina, abyss: abyss(), rifts: [],
   fieldBosses, pvp, cubes, enemies, target,
 })
 
 const data: Record<string, () => unknown> = {
   'settings:all': () => settings,
   'tracker:get': tracker,
-  'characters:get': () => ({}),
+  // Odyle energy 610 (+45 charged) as of an hour ago: what the HUD's energy figure works from.
+  'characters:get': () => ({ [`1104:${ME}`]: { counters: { at: now() - 3_600_000, values: { '60000001': [610, 45] } } } }),
   'guildEvents:get': () => ({ state: 'ok', message: null, member: null, events: guildEvents, live: false, dismissed: [], at: now() }),
   'timers:get': () => [],
   'buffs:get': () => [],
@@ -61,6 +66,10 @@ export function installStub(): void {
   ;(window as unknown as { a2t: unknown }).a2t = {
     invoke: async (channel: string, ...args: unknown[]) => {
       if (channel === 'settings:set') return void setSetting(args[0] as SettingKey, args[1])
+      if (channel === 'killfeed:open' || channel === 'killfeed:close') {
+        settings.killFeed.open = channel === 'killfeed:open'
+        return void emit('settings:changed', JSON.parse(JSON.stringify(settings)))
+      }
       if (channel === 'unified:resize' || channel === 'unified:moveTo' || channel === 'unified:dragEnd') return undefined
       const read = data[channel]
       if (read) return read()
@@ -117,8 +126,28 @@ function tick(): void {
 const KYUNE: TargetPlayer = { name: 'Kyune', server: 2104, level: 45, gearScore: 4210, pvp: true, combatPower: 115_400, className: 'Gladiator', legion: 'Black Wings', enemy: true, at: 0 }
 
 export const sim = {
-  hitMonster(): void {
-    fight = { name: 'Ancient Guardian', boss: true, maxHp: 1_000_000, hp: 960_000, damage: 0, start: now(), until: now() + 12_000, player: false }
+  /** A meter with a fight in it, standing still (no hit follows, so no target card). */
+  staticMeter(): void {
+    const mk = (id: number, name: string, className: string, damage: number, you = false) => row(id, name, className, damage, damage / 55, you)
+    meter = { ...idleMeter(), battleTime: 55_000, target: { id: 5, name: 'Ancient Guardian', boss: true, maxHp: 1_000_000, hp: 640_000 }, rows: [mk(2, 'Wolves', 'Sorcerer', 6_920_000), mk(3, 'Stoopzz', 'Cleric', 6_510_000), mk(1, ME, 'Templar', 3_080_000, true)] } as MeterData
+  },
+  /** The party from the DPS meter screenshot, each with a combat power. */
+  party(): void {
+    const mk = (id: number, name: string, className: string, damage: number, power: number, you = false) => ({ ...row(id, name, className, damage, damage / 120, you), combatPower: power })
+    meter = { ...idleMeter(), battleTime: 120_000, target: { id: 5, name: 'Isolation Specialist Rahu', boss: true, maxHp: 1_000_000, hp: 640_000 }, rows: [mk(2, 'MarceUY', 'Templar', 26_550_000, 118_240), mk(3, 'Nasher', 'Sorcerer', 24_200_000, 112_900), mk(1, 'Ksix', 'Gladiator', 18_690_000, 109_350, true), mk(4, 'Enfas', 'Gladiator', 11_490_000, 96_800), mk(5, 'Shiggly', 'Cleric', 4_720_000, 91_200), mk(6, 'Awaeken', 'Chanter', 0, 88_450)] } as MeterData
+  },
+  /** A long fight, for a meter that keeps moving. */
+  longFight(): void {
+    sim.hitMonster(600_000, 100_000_000)
+  },
+  /** Kills in the feed, yours and others'. */
+  kills(): void {
+    const k = (at: number, killer: string, victim: string, mine: boolean, died: boolean) => ({ at: now() - at, killer: { name: killer, server: 2104, guild: 'Black Wings', className: 'Gladiator', combatPower: 112_000 }, victim: { name: victim, server: 1104, className: 'Sorcerer', combatPower: 105_000 }, mine, died, legion: false }) as unknown as PvpKill
+    pvp = [k(300_000, 'Nasher', 'VicTao', false, false), k(120_000, 'Kyune', ME, false, true), k(40_000, ME, 'Saladin', true, false), k(8_000, ME, 'Ertec', true, false)]
+    emit('tracker:pvp', pvp)
+  },
+  hitMonster(ms = 12_000, hp = 1_000_000): void {
+    fight = { name: 'Ancient Guardian', boss: true, maxHp: hp, hp: hp * 0.96, damage: 0, start: now(), until: now() + ms, player: false }
     loop ??= setInterval(tick, 1000)
     tick()
   },
@@ -143,8 +172,8 @@ export const sim = {
   },
   enemies(): void {
     enemies = [
-      { entity: 1, name: 'Kyune', server: 2104, legion: 'Black Wings', pvp: true, combatPower: 115_400, className: 'Gladiator' },
-      { entity: 2, name: 'Saladin', server: 2104, legion: 'Black Wings', pvp: true, combatPower: 109_800, className: 'Sorcerer' },
+      { entity: 1, name: 'Kyune', server: 2104, legion: 'Black Wings', pvp: true, combatPower: 115_400, className: 'Gladiator', position: [-4200, -7600] },
+      { entity: 2, name: 'Saladin', server: 2104, legion: 'Black Wings', pvp: true, combatPower: 109_800, className: 'Sorcerer', position: [-6100, -8700] },
       { entity: 3, name: 'Nasher', server: 2104, legion: null, pvp: true, combatPower: 98_200, className: 'Assassin' },
       { entity: 4, name: 'Calm', server: 2104, legion: null, pvp: false },
     ] as Enemy[]
@@ -159,11 +188,15 @@ export const sim = {
     emit('tracker:fieldBosses', fieldBosses)
   },
   cube(): void {
-    cubes = [{ id: 1, template: 1, position: [1050, 1040], height: 0, createdAt: null, seenAt: now() }]
+    cubes = [{ id: 1, template: 1, position: [-5600, -8900], height: 0, createdAt: null, seenAt: now() }]
+    emit('tracker:cubes', cubes)
+  },
+  noCube(): void {
+    cubes = []
     emit('tracker:cubes', cubes)
   },
   died(): void {
-    pvp = [...pvp, { at: now(), killer: { name: 'Kyune', server: 2104, guild: 'Black Wings' }, victim: { name: ME, server: 1104 }, mine: false, died: true, legion: false, place: { world: 1, position: [980, 1030] } } as PvpKill]
+    pvp = [...pvp, { at: now(), killer: { name: 'Kyune', server: 2104, guild: 'Black Wings' }, victim: { name: ME, server: 1104 }, mine: false, died: true, legion: false, place: { world: 1010, position: [-4800, -7000] } } as PvpKill]
     emit('tracker:pvp', pvp)
   },
   kina(): void {
@@ -193,3 +226,44 @@ export const sim = {
     emit('guildEvents:state', { state: 'ok', message: null, member: null, events: [], live: false, dismissed: [], at: now() })
   },
 }
+
+// ---- a PvP fight for the Details window ---------------------------------------------------------
+
+/** A tiny seeded generator, so the same fight draws the same every time. */
+function seeded(seed: number): () => number {
+  let s = seed
+  return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 32)
+}
+
+/** A skill that hits every `every` ms from `from`, with a little jitter. */
+function line(actor: number, code: number, name: string, every: number, from: number, until: number, dmg: number, rnd: () => number) {
+  const at: number[] = []
+  for (let t = from; t < until; t += every * (0.85 + rnd() * 0.3)) at.push(Math.round(t))
+  const damage = Math.round(at.length * dmg * (0.8 + rnd() * 0.4))
+  return { actor, code, name, damage, hits: at.length, crits: Math.round(at.length * 0.3), maxHit: Math.round(dmg * 1.6), dot: false, back: 0, perfect: 0, double: 0, parry: 0, multi: 0, opening: at, at }
+}
+
+/** Ksix died to Ertec while Kyune and Saladin also hit; Saphy fought beside you. */
+export function pvpFightView() {
+  const rnd = seeded(7)
+  const D = 49_000
+  const skills = [
+    line(2, 15010001, 'Hellfire', 2100, 600, D, 3100, rnd), line(2, 15020001, 'Ice Chain', 3200, 1200, D, 1900, rnd), line(2, 15030001, 'Cold Wave', 4800, 2000, D, 2400, rnd),
+    line(2, 15040001, 'Blaze', 5200, 900, D, 2200, rnd), line(2, 15050001, 'Firestorm', 9000, 4000, 30_000, 5200, rnd), line(2, 15060001, 'Fire Mark', 6500, 300, D, 900, rnd),
+    line(2, 15080001, 'Flame Arrow', 7000, 100, D, 1200, rnd), line(2, 15090001, 'Burst', 9800, 3100, D, 2800, rnd),
+    line(3, 11010001, 'Rending Strike', 1500, 800, D, 2600, rnd), line(3, 11020001, 'Smash', 3400, 1500, D, 3400, rnd), line(3, 11030001, 'Charge', 8000, 400, D, 1800, rnd),
+    line(4, 14010001, 'Soul Bolt', 1800, 1000, 38_000, 1500, rnd), line(4, 14020001, 'Spirit Wave', 4000, 2200, 38_000, 2100, rnd),
+    line(1, 13010001, 'Divine Punishment', 1700, 5000, 21_000, 1700, rnd), line(1, 13020001, 'Judgment', 2600, 6000, 21_000, 2000, rnd),
+    line(5, 12010001, 'Shadow Strike', 2200, 9000, 40_000, 1900, rnd),
+  ]
+  const dealt = (id: number): number => skills.filter((s) => s.actor === id).reduce((n, s) => n + s.damage, 0)
+  const total = skills.reduce((n, s) => n + s.damage, 0)
+  const actor = (id: number, name: string, className: string, you: boolean, enemy: boolean, cp: number) => ({ id, name, className, damage: dealt(id), dps: dealt(id) / (D / 1000), share: (dealt(id) / total) * 100, heal: 0, combatPower: cp, you, enemy })
+  return {
+    source: { kind: 'pvp', id: 'pvp-demo' }, buffs: null, title: 'Ksix vs Ertec · you died', startedAt: Date.now() - 600_000, battleTime: D, totalDamage: total, maxHp: 0,
+    actors: [actor(1, 'Ksix', 'Templar', true, false, 209_800), actor(5, 'Saphy', 'Assassin', false, false, 188_000), actor(2, 'Ertec', 'Sorcerer', false, true, 195_000), actor(3, 'Kyune', 'Gladiator', false, true, 115_400), actor(4, 'Saladin', 'Spiritmaster', false, true, 109_800)].sort((a, b) => b.damage - a.damage),
+    skills, heals: [],
+    defense: { 1: { taken: 118_000, hitsTaken: 88, heal: 0 }, 5: { taken: 41_000, hitsTaken: 30, heal: 0 }, 2: { taken: 36_000, hitsTaken: 40, heal: 0 }, 3: { taken: 9_000, hitsTaken: 8, heal: 0 }, 4: { taken: 0, hitsTaken: 0, heal: 0 } },
+  }
+}
+data['details:get'] = pvpFightView

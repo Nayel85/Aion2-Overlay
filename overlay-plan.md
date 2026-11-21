@@ -166,7 +166,7 @@ Logic (Nyerk's `_pvp_kill`):
 - Your legion is learnt from `33 8A` for your entity or from your own kill credit, and saved with the character.
 
 App:
-- Main process keeps the log in `<userData>/pvp.json`: up to 50,000 kills (a siege gave ~3,000/h), written 3 s after the last kill so a burst is one write, flushed on quit; Clear empties it.
+- The main process keeps the latest 50,000 kills in `<userData>/pvp.jsonl` and imports any existing `pvp.json` on first use. New kills are appended in batches every 3 s during a burst. The journal is compacted periodically, flushed on quit, and emptied by Clear.
 - IPC: `tracker:pvpKill` per kill, `tracker:pvp` for the whole list on open/clear.
 - A PvP Log tab in the panel (filters: mine, my legion) and a kill feed overlay window (`#/killfeed`, same window rules as the others).
 - Server tags: id → short name (`1104` KAI, `2104` LUM), learnt as we see them; unknown ids show as numbers.

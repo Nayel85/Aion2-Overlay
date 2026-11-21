@@ -256,6 +256,8 @@ export interface Settings {
     /** Hidden while no damage (or healing, or damage taken) has come in for `idleSeconds`. */
     hideIdle: boolean
     idleSeconds: number
+    /** Each player's combat power: hidden, beside the name, or in small type under it. */
+    power: 'off' | 'beside' | 'below'
   }
 
   /** Hide every overlay window from screenshots, OBS and Discord (WDA_EXCLUDEFROMCAPTURE). */
@@ -322,6 +324,8 @@ export interface Settings {
   tracker: {
     /** The collection file; empty = <userData>/collection.json. */
     dataFile: string
+    /** Scan unknown game messages for possible field-boss data and log matches. */
+    bossDiagnostics: boolean
   }
 }
 
@@ -375,7 +379,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   skills: { enabled: true, position: null, rows: 6, opacity: 0.92 },
   dummy: { overlay: true, position: null, autoStart: true, goal: 'time', limitMs: 60_000, damageGoal: 10e6, collapsed: false },
   buffs: { enabled: true, position: null, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: null, ccDebuffs: false },
-  meter: { enabled: true, position: null, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15 },
+  meter: { enabled: true, position: null, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'off' },
   hideFromCapture: false,
   language: 'es',
   faction: 'elyos',
@@ -394,7 +398,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   hideWhenGameAway: true,
   lokthar: { sync: false, url: 'https://lokthar.com', token: '' },
   guildEvents: { enabled: true, popup: true },
-  tracker: { dataFile: '' },
+  tracker: { dataFile: '', bossDiagnostics: false },
 }
 
 const num = (v: unknown, lo: number, hi: number, fallback: number): number =>
@@ -656,6 +660,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         height: v.height === null || v.height === undefined ? null : Math.round(num(v.height, METER_HEIGHT[0], METER_HEIGHT[1], METER_HEIGHT[0])),
         hideIdle: bool(v.hideIdle, d.meter.hideIdle),
         idleSeconds: Math.round(num(v.idleSeconds, 5, 300, d.meter.idleSeconds)),
+        power: v.power === 'beside' || v.power === 'below' ? v.power : 'off',
       } as Settings[K]
     }
     case 'language':
@@ -680,6 +685,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       const v = (value ?? {}) as Partial<Settings['tracker']>
       return {
         dataFile: typeof v.dataFile === 'string' ? v.dataFile.trim() : '',
+        bossDiagnostics: bool(v.bossDiagnostics, d.tracker.bossDiagnostics),
       } as Settings[K]
     }
   }
