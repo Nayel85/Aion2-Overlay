@@ -258,6 +258,8 @@ export interface Settings {
     idleSeconds: number
     /** Each player's combat power: hidden, beside the name, or in small type under it. */
     power: 'off' | 'beside' | 'below'
+    /** The rows' look: 'flat' (bars), 'compact' (small pills with gradient) or 'bold' (big pills, big icons). */
+    style: 'flat' | 'compact' | 'bold'
   }
 
   /** Hide every overlay window from screenshots, OBS and Discord (WDA_EXCLUDEFROMCAPTURE). */
@@ -379,7 +381,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   skills: { enabled: true, position: null, rows: 6, opacity: 0.92 },
   dummy: { overlay: true, position: null, autoStart: true, goal: 'time', limitMs: 60_000, damageGoal: 10e6, collapsed: false },
   buffs: { enabled: true, position: null, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: null, ccDebuffs: false },
-  meter: { enabled: true, position: null, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'off' },
+  meter: { enabled: true, position: null, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'off', style: 'flat' },
   hideFromCapture: false,
   language: 'es',
   faction: 'elyos',
@@ -661,6 +663,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         hideIdle: bool(v.hideIdle, d.meter.hideIdle),
         idleSeconds: Math.round(num(v.idleSeconds, 5, 300, d.meter.idleSeconds)),
         power: v.power === 'beside' || v.power === 'below' ? v.power : 'off',
+        style: v.style === 'compact' || v.style === 'bold' ? v.style : 'flat',
       } as Settings[K]
     }
     case 'language':

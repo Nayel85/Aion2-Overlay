@@ -280,24 +280,28 @@ onBeforeUnmount(() => {
 
         <template v-if="rows.length">
           <div class="flex items-center gap-1.5 px-3 pb-1 text-[10px] text-darkest">
-            <span class="min-w-0 flex-1 pl-9">{{ t('Player') }}</span>
+            <span :class="['min-w-0 flex-1', cfg.style === 'bold' ? 'pl-9' : cfg.style === 'compact' ? 'pl-6' : 'pl-6']">{{ t('Player') }}</span>
             <span class="w-12 text-right">{{ STAT_TITLE[cfg.stat][2] }}</span>
             <span class="w-10 text-right">{{ t('Share') }}</span>
             <span class="w-12 text-right">{{ cfg.stat === 'taken' ? t('Taken') : cfg.stat === 'healing' ? t('Healed') : t('Damage') }}</span>
+            <span v-if="cfg.style === 'flat' && cfg.stat === 'damage'" class="w-8 text-right">Crit</span>
           </div>
           <ul :class="['space-y-0.5 px-1.5 pb-1.5', height !== null && 'min-h-0 flex-1 overflow-y-auto']">
             <li
               v-for="r in rows"
               :key="r.id"
-              :class="['relative cursor-pointer overflow-hidden rounded-full bg-dark', r.you ? 'ring-1 ring-accent' : 'hover:ring-1 hover:ring-light']"
+              :class="['relative cursor-pointer overflow-hidden bg-dark', cfg.style === 'flat' ? 'rounded-md' : 'rounded-full', r.you ? 'ring-1 ring-accent' : 'hover:ring-1 hover:ring-light']"
               :title="t('{class} · click for the details', { class: r.className ?? t('Unknown class') })"
               @click="showDetails(r.id)"
             >
-              <div class="absolute inset-y-0 left-0" :style="{ width: `${(r.value / top) * 100}%`, background: barGradient(r.className) }" />
-              <div class="absolute inset-y-0 left-0 w-14" style="background: linear-gradient(90deg, rgba(9, 9, 11, 0.8), rgba(9, 9, 11, 0))" />
-              <div class="relative flex items-center gap-1.5 py-1 pl-1.5 pr-3 text-[12px]">
-                <img v-if="icon(r.className)" :src="icon(r.className)!" class="size-6 shrink-0 drop-shadow-[0_0_3px_rgba(0,0,0,0.8)]" alt="" />
-                <span v-else class="size-6 shrink-0" />
+              <div v-if="cfg.style === 'flat'" class="absolute inset-y-0 left-0 opacity-50" :style="{ width: `${(r.value / top) * 100}%`, background: CLASS_COLORS[r.className ?? ''] ?? '#787b8a' }" />
+              <template v-else>
+                <div class="absolute inset-y-0 left-0" :style="{ width: `${(r.value / top) * 100}%`, background: barGradient(r.className) }" />
+                <div :class="['absolute inset-y-0 left-0', cfg.style === 'bold' ? 'w-14' : 'w-9']" style="background: linear-gradient(90deg, rgba(9, 9, 11, 0.8), rgba(9, 9, 11, 0))" />
+              </template>
+              <div :class="['relative flex items-center gap-1.5 text-[12px]', cfg.style === 'bold' ? 'py-1 pl-1.5 pr-3' : cfg.style === 'compact' ? 'py-0.5 pl-1 pr-2.5' : 'px-1.5 py-1']">
+                <img v-if="icon(r.className)" :src="icon(r.className)!" :class="['shrink-0', cfg.style === 'bold' ? 'size-6' : 'size-4', cfg.style !== 'flat' && 'drop-shadow-[0_0_3px_rgba(0,0,0,0.8)]']" alt="" />
+                <span v-else :class="['shrink-0', cfg.style === 'bold' ? 'size-6' : 'size-4']" />
                 <span class="flex min-w-0 flex-1 flex-col">
                   <span class="flex min-w-0 items-baseline gap-1.5">
                     <span :class="['truncate font-medium', r.you ? 'text-accent' : 'text-default']">{{ r.name }}</span>
@@ -308,6 +312,7 @@ onBeforeUnmount(() => {
                 <span class="w-12 text-right font-semibold tabular-nums text-default">{{ short(r.perSecond) }}</span>
                 <span class="w-10 text-right tabular-nums text-dark">{{ r.part.toFixed(1) }}%</span>
                 <span class="w-12 text-right tabular-nums text-dark">{{ short(r.value) }}</span>
+                <span v-if="cfg.style === 'flat' && cfg.stat === 'damage'" :class="['w-8 text-right tabular-nums', r.you ? 'text-green' : 'text-dark']">{{ Math.round(r.critRate * 100) }}%</span>
               </div>
             </li>
           </ul>

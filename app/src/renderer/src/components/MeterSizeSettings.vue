@@ -4,12 +4,15 @@
 import { computed } from 'vue'
 import Button from '@/components/Button.vue'
 import SettingRow from '@/components/SettingRow.vue'
+import SelectBox from '@/components/ui/SelectBox.vue'
 import Slider from '@/components/Slider.vue'
 import Toggle from '@/components/Toggle.vue'
 import { t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { SETTINGS_DEFAULTS, type Settings } from '@shared/settings.ts'
 
+const STYLES = [{ id: 'flat', label: 'Flat' }, { id: 'compact', label: 'Compact' }, { id: 'bold', label: 'Bold' }] as const
+const POWER = [{ id: 'off', label: 'Hidden' }, { id: 'beside', label: 'Next to the name' }, { id: 'below', label: 'Under the name' }] as const
 const store = useApp()
 const cfg = computed(() => store.settings.meter)
 const set = (patch: Partial<Settings['meter']>): void => void store.set('meter', { ...cfg.value, ...patch })
@@ -17,6 +20,12 @@ const defaultSize = computed(() => cfg.value.width === SETTINGS_DEFAULTS.meter.w
 </script>
 
 <template>
+  <SettingRow label="Row style" hint="Flat: the classic bars, with the crit column. Compact: small rounded rows with a gradient. Bold: large rows with big class icons.">
+    <SelectBox size="sm" :model-value="cfg.style" :options="STYLES.map((o) => ({ id: o.id, label: t(o.label) }))" @update:model-value="set({ style: $event })" />
+  </SettingRow>
+  <SettingRow label="Combat power" hint="Each player's combat power, next to the name or in small type under it.">
+    <SelectBox size="sm" :model-value="cfg.power" :options="POWER.map((o) => ({ id: o.id, label: t(o.label) }))" @update:model-value="set({ power: $event })" />
+  </SettingRow>
   <SettingRow label="Size" hint="Drag the meter's bottom-right corner to resize it; a double-click there resets it.">
     <div class="flex items-center gap-3">
       <span class="text-sm tabular-nums text-dark">{{ cfg.width }} × {{ cfg.height ?? t('fits its rows') }}</span>
