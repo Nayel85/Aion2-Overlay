@@ -385,7 +385,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   skills: { enabled: true, position: null, rows: 6, opacity: 0.92 },
   dummy: { overlay: true, position: null, autoStart: true, goal: 'time', limitMs: 60_000, damageGoal: 10e6, collapsed: false },
   buffs: { enabled: true, position: null, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: null, ccDebuffs: false },
-  meter: { enabled: true, position: null, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'off', style: 'compact', barsOnly: false, barsBackground: 0.4 },
+  meter: { enabled: true, position: null, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'off', style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
   language: 'es',
   faction: 'elyos',

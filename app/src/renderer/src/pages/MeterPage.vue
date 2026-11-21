@@ -63,7 +63,7 @@ const STAT_TITLE: Record<MeterStat, [string, string, string]> = {
 /** A row's bar: the class colour, fading out to the right. */
 function barGradient(className: string | null, solid = false): string {
   const c = CLASS_COLORS[className ?? ''] ?? '#787b8a'
-  return solid ? `linear-gradient(90deg, ${c}b8 0%, ${c}78 100%)` : `linear-gradient(90deg, ${c}a0 0%, ${c}38 100%)`
+  return solid ? `linear-gradient(90deg, ${c}f0 0%, ${c}b0 45%, ${c}50 100%), linear-gradient(rgba(9, 9, 11, 0.75), rgba(9, 9, 11, 0.75))` : `linear-gradient(90deg, ${c}a0 0%, ${c}38 100%)`
 }
 
 function short(n: number): string {
@@ -299,7 +299,7 @@ onBeforeUnmount(() => {
               v-for="r in rows"
               :key="r.id"
               :class="['relative cursor-pointer overflow-hidden', !lean && 'bg-dark', cfg.style === 'flat' ? 'rounded-md' : 'rounded-full', r.you ? 'ring-1 ring-accent' : 'hover:ring-1 hover:ring-light']"
-              :style="lean ? { background: leanBg, textShadow: '0 1px 3px rgba(0, 0, 0, 0.95), 0 0 2px rgba(0, 0, 0, 0.9)' } : undefined"
+              :style="lean ? { background: leanBg, textShadow: '0 1px 2px rgba(0, 0, 0, 0.95), 0 0 3px rgba(0, 0, 0, 0.8)' } : undefined"
               :title="t('{class} · click for the details', { class: r.className ?? t('Unknown class') })"
               @click="showDetails(r.id)"
             >
@@ -308,15 +308,15 @@ onBeforeUnmount(() => {
                 <div class="absolute inset-y-0 left-0" :style="{ width: `${(r.value / top) * 100}%`, background: barGradient(r.className, lean) }" />
                 <div :class="['absolute inset-y-0 left-0', cfg.style === 'bold' ? 'w-14' : 'w-9']" style="background: linear-gradient(90deg, rgba(9, 9, 11, 0.8), rgba(9, 9, 11, 0))" />
               </template>
-              <div :class="['relative flex items-center gap-1.5 text-[12px]', cfg.style === 'bold' ? 'py-1 pl-1.5 pr-3' : cfg.style === 'compact' ? 'py-0.5 pl-1 pr-2.5' : 'px-1.5 py-1']">
+              <div :class="['relative flex items-center gap-1.5 text-[12px]', cfg.style === 'bold' ? 'py-1 pl-1.5 pr-4' : cfg.style === 'compact' ? 'py-0.5 pl-1 pr-4' : 'px-1.5 py-1']">
                 <img v-if="icon(r.className)" :src="icon(r.className)!" :class="['shrink-0', cfg.style === 'bold' ? 'size-6' : 'size-4', cfg.style !== 'flat' && 'drop-shadow-[0_0_3px_rgba(0,0,0,0.8)]']" alt="" />
                 <span v-else :class="['shrink-0', cfg.style === 'bold' ? 'size-6' : 'size-4']" />
                 <span class="flex min-w-0 flex-1 flex-col">
                   <span class="flex min-w-0 items-baseline gap-1.5">
-                    <span :class="['truncate font-medium', r.you ? 'text-accent' : 'text-default']">{{ r.name }}</span>
-                    <span v-if="cfg.power === 'beside' && r.combatPower > 0" class="shrink-0 text-[9px] tabular-nums text-darker" :title="t('Combat power')">{{ short(r.combatPower) }}</span>
+                    <span :class="['truncate', lean ? 'font-semibold' : 'font-medium', r.you ? 'text-accent' : 'text-default']">{{ r.name }}</span>
+                    <span v-if="cfg.power === 'beside' && r.combatPower > 0" class="shrink-0 text-[9px] tabular-nums text-default/75" :title="t('Combat power')">{{ short(r.combatPower) }}</span>
                   </span>
-                  <span v-if="cfg.power === 'below' && r.combatPower > 0" class="-mt-0.5 text-[9px] leading-tight tabular-nums text-darker" :title="t('Combat power')">{{ r.combatPower.toLocaleString() }}</span>
+                  <span v-if="cfg.power === 'below' && r.combatPower > 0" class="-mt-0.5 text-[9px] leading-tight tabular-nums text-default/75" :title="t('Combat power')">{{ r.combatPower.toLocaleString() }}</span>
                 </span>
                 <span class="w-12 text-right font-semibold tabular-nums text-default">{{ short(r.perSecond) }}</span>
                 <span v-if="!lean" class="w-10 text-right tabular-nums text-dark">{{ r.part.toFixed(1) }}%</span>
