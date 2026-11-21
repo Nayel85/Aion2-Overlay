@@ -65,7 +65,7 @@ const data: Record<string, () => unknown> = {
     const at = now()
     const mk = (i: number, boss: string, minsAgo: number, secs: number, dmg: number) => ({ id: `f${i}`, bossName: boss, isTrain: false, startTimeMs: at - minsAgo * 60_000, durationMs: secs * 1000, totalDamage: dmg, memberJobs: jobs.slice(0, 3 + (i % 4)) })
     return [
-      mk(1, 'Eternal Ludra', 20, 310, 91_000_000), mk(2, 'Eternal Ludra', 50, 280, 85_000_000), mk(3, 'Isolation Specialist Rahu', 95, 150, 40_000_000), mk(4, 'Abyssal Wings Ketu', 130, 200, 52_000_000),
+      mk(1, 'Eternal Ludra', 20, 310, 91_000_000), mk(2, 'Eternal Ludra', 50, 280, 85_000_000), mk(9, 'Vakron', 70, 200, 50_000_000), mk(3, 'Isolation Specialist Rahu', 95, 150, 40_000_000), mk(4, 'Abyssal Wings Ketu', 130, 200, 52_000_000),
       mk(5, 'Afflicted Bakarma', 1500, 240, 61_000_000), mk(6, 'Phantasmal Lakshmi', 1530, 200, 49_000_000), mk(7, 'Nazarak', 3000, 180, 33_000_000), mk(8, 'Some Unknown Boss', 3200, 90, 12_000_000),
     ]
   },

@@ -44,19 +44,23 @@ const shown = computed(() => {
   )
 })
 interface Group { key: string; name: string; kind: string | null; fights: FightSummary[]; last: number }
+/** The timeline cut into runs: consecutive fights in the same dungeon share a group, and the same dungeon again later is a new one. */
 const groups = computed<Group[]>(() => {
-  const where = dungeonFor(shown.value)
-  const by = new Map<string, Group>()
-  for (const f of shown.value) {
+  const newest = [...shown.value].sort((a, b) => b.startTimeMs - a.startTimeMs)
+  const where = dungeonFor(newest)
+  const out: Group[] = []
+  for (const f of newest) {
     const d: Dungeon | null = where.get(f.id) ?? null
-    const key = d?.name ?? ''
-    const g = by.get(key) ?? { key, name: d?.name ?? '', kind: d ? (DUNGEON_KINDS.find((k) => k.id === d.kind)?.label ?? null) : null, fights: [], last: 0 }
+    const name = d?.name ?? ''
+    let g = out.at(-1)
+    if (!g || g.name !== name) {
+      g = { key: f.id, name, kind: d ? (DUNGEON_KINDS.find((k) => k.id === d.kind)?.label ?? null) : null, fights: [], last: 0 }
+      out.push(g)
+    }
     g.fights.push(f)
     g.last = Math.max(g.last, f.startTimeMs)
-    by.set(key, g)
   }
-  // The dungeon played most recently first; the fights outside any dungeon last.
-  return [...by.values()].sort((a, b) => (a.key === '' ? 1 : b.key === '' ? -1 : b.last - a.last))
+  return out
 })
 /** What the table lists: the dungeons' groups, or everything as one. */
 const sections = computed<Group[]>(() => (grouped.value ? groups.value : [{ key: '*', name: String(), kind: null, fights: shown.value, last: 0 }]))
