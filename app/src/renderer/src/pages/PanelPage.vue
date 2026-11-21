@@ -97,6 +97,15 @@ watch(
 const main = ref<HTMLElement | null>(null)
 watch(page, () => main.value?.scrollTo({ top: 0 }))
 
+/** A page's "New" tag in the sidebar stays until it is opened once (kept in this browser profile). */
+const SEEN_KEY = 'panel.seen.unified'
+const seenUnified = ref(((): boolean => { try { return localStorage.getItem(SEEN_KEY) === '1' } catch { return false } })())
+watch(page, (p) => {
+  if (p !== 'unified' || seenUnified.value) return
+  seenUnified.value = true
+  try { localStorage.setItem(SEEN_KEY, '1') } catch { /* private window */ }
+})
+
 const maximized = ref(false)
 /**
  * An update found (main/updater.ts looks now and then): a yellow pill by the app's name and the
@@ -134,6 +143,7 @@ const badge = computed<Partial<Record<PageId, string>>>(() => {
     events: nextAlert.value ?? undefined,
     bosses: up ? String(up) : undefined,
     guild: toAnswer.value ? String(toAnswer.value) : undefined,
+    unified: seenUnified.value ? undefined : t('New'),
     pets: store.sessionSouls ? `+${store.sessionSouls}` : undefined,
     updates:
       update.value?.status === 'downloading' ? `${update.value.percent}%` : update.value && ['available', 'ready'].includes(update.value.status) ? t('New') : undefined,
@@ -256,7 +266,7 @@ onBeforeUnmount(() => {
               v-if="badge[id]"
               :class="[
                 'shrink-0 rounded-full px-1.5 text-[10px] font-semibold tabular-nums',
-                id === 'updates' && newer ? 'bg-yellow/20 text-yellow' : page === id ? 'bg-accent/20 text-accent' : 'bg-dark text-darker',
+                id === 'updates' && newer ? 'bg-yellow/20 text-yellow' : id === 'unified' ? 'bg-accent text-[#0b1220]' : page === id ? 'bg-accent/20 text-accent' : 'bg-dark text-darker',
               ]"
             >{{ badge[id] }}</span>
           </button>

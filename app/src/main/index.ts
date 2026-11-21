@@ -10,7 +10,7 @@ import { applyGameMap, onGameMapStatus, startGameMap } from './gameMap.ts'
 import { startFieldBosses } from './fieldBosses.ts'
 import { startHealthWatch } from './health.ts'
 import { registerIpc } from './ipc.ts'
-import { settings } from './settings.ts'
+import { applyLayoutUpdates, settings } from './settings.ts'
 import { startIdleWatch } from './idle.ts'
 import { startLokthar } from './lokthar.ts'
 import { startGuildEvents } from './guildEvents.ts'
@@ -47,6 +47,7 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(() => {
     if (migrated) log(`data folder: ${migrated}`)
+    applyLayoutUpdates()
     blockNetwork()
     startHealthWatch()
     startFieldBosses()

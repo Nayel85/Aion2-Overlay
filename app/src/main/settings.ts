@@ -42,3 +42,24 @@ export const settings = {
     return db().path
   },
 }
+
+/**
+ * One-time layout updates, run at start before any window opens; each is numbered in
+ * `layoutVersion` so it runs once.
+ *   1: the Unified HUD takes over: it is turned on and the other widgets are closed (the DPS meter
+ *      and the pets HUD keep whatever the player set). They are still a click away on the HUD.
+ */
+export function applyLayoutUpdates(): void {
+  if (settings.get('layoutVersion') >= 1) return
+  settings.set('unified', { ...settings.get('unified'), enabled: true })
+  settings.set('minimap', { ...settings.get('minimap'), enabled: false })
+  settings.set('gameMap', { ...settings.get('gameMap'), enabled: false })
+  settings.set('timerBar', { ...settings.get('timerBar'), enabled: false })
+  settings.set('bossRuns', { ...settings.get('bossRuns'), enabled: false })
+  settings.set('killFeed', { ...settings.get('killFeed'), open: false })
+  settings.set('enemies', { ...settings.get('enemies'), enabled: false })
+  settings.set('skills', { ...settings.get('skills'), enabled: false })
+  settings.set('dummy', { ...settings.get('dummy'), overlay: false })
+  settings.set('buffs', { ...settings.get('buffs'), enabled: false, cc: false })
+  settings.set('layoutVersion', 1)
+}

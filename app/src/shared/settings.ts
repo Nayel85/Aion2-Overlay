@@ -269,6 +269,9 @@ export interface Settings {
   /** Hide every overlay window from screenshots, OBS and Discord (WDA_EXCLUDEFROMCAPTURE). */
   hideFromCapture: boolean
 
+  /** Which one-time layout updates were applied to these settings (main/settings.ts `applyLayoutUpdates`). */
+  layoutVersion: number
+
   /** The app's language (shared/i18n.ts): Spanish unless changed. */
   language: Lang
 
@@ -365,28 +368,29 @@ export const SETTINGS_DEFAULTS: Settings = {
     cubeVolume: 0.6,
     cubeCustomName: null,
   },
-  minimap: { enabled: true, position: null, size: 260, height: null, opacity: 0.92, zoom: 6, collapsed: false, gatherables: false },
+  minimap: { enabled: false, position: null, size: 260, height: null, opacity: 0.92, zoom: 6, collapsed: false, gatherables: false },
   mapPage: { needed: false, cubes: true, gatherables: false, hiddenPets: [] },
   gatherables: { pinned: [] },
   gameMap: { enabled: false, region: null, gatherables: true, pets: true, cubes: true, enemies: true, showArea: false },
   merchantWindow: null,
   detailsWindow: null,
-  timerBar: { enabled: true, position: null, opacity: 0.92 },
+  timerBar: { enabled: false, position: null, opacity: 0.92 },
   unified: {
-    enabled: false, position: null, opacity: 0.94, scale: 1, buttons: 'hover',
+    enabled: true, position: null, opacity: 0.94, scale: 1, buttons: 'hover',
     events: true, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always',
     kina: false, abyssRate: false, season: true, earningsMinutes: 10, rift: true, cubes: true, death: true, deathMinutes: 10,
-    enemies: true, bosses: true, guild: true, clock: false, odyle: false, runsPinned: false, replace: true,
+    enemies: true, bosses: true, guild: true, clock: false, odyle: true, runsPinned: false, replace: true,
   },
   muted: false,
-  bossRuns: { enabled: true, position: null, opacity: 0.85, windowMinutes: 15, rows: 5, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: DEFAULT_LOW_PRIORITY },
+  bossRuns: { enabled: false, position: null, opacity: 0.85, windowMinutes: 15, rows: 5, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: DEFAULT_LOW_PRIORITY },
   killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null },
-  enemies: { enabled: true, position: null, opacity: 0.75, collapsed: false, mapPins: true, sound: true, pvpOnly: true, soundId: 'enemy-spotted', volume: 0.7, customName: null },
-  skills: { enabled: true, position: null, rows: 6, opacity: 0.92 },
-  dummy: { overlay: true, position: null, autoStart: true, goal: 'time', limitMs: 60_000, damageGoal: 10e6, collapsed: false },
-  buffs: { enabled: true, position: null, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: null, ccDebuffs: false },
+  enemies: { enabled: false, position: null, opacity: 0.75, collapsed: false, mapPins: true, sound: true, pvpOnly: true, soundId: 'enemy-spotted', volume: 0.7, customName: null },
+  skills: { enabled: false, position: null, rows: 6, opacity: 0.92 },
+  dummy: { overlay: false, position: null, autoStart: true, goal: 'time', limitMs: 60_000, damageGoal: 10e6, collapsed: false },
+  buffs: { enabled: false, position: null, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: false, ccPosition: null, ccDebuffs: false },
   meter: { enabled: true, position: null, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'off', style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
+  layoutVersion: 0,
   language: 'es',
   faction: 'elyos',
   playerLevel: null,
@@ -676,6 +680,8 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       return (value === 'en' ? 'en' : 'es') as Settings[K]
     case 'faction':
       return (value === 'asmodians' ? 'asmodians' : 'elyos') as Settings[K]
+    case 'layoutVersion':
+      return Math.round(num(value, 0, 99, 0)) as Settings[K]
     case 'playerLevel':
       return (typeof value === 'number' && Number.isFinite(value) ? Math.round(num(value, 1, 99, 1)) : null) as Settings[K]
     case 'guildEvents': {

@@ -79,24 +79,32 @@ const BUTTON_ICONS = [
       <span class="text-xs text-[#c4d0d3]">{{ t('A sample: at rest, with Kina coming in and an event 8 minutes away. Drag the real one in game to place it.') }}</span>
     </div>
 
-    <template v-if="cfg.enabled">
+    <p v-if="!cfg.enabled" class="rounded-xl border border-dashed border-card px-4 py-6 text-center text-sm text-darker">{{ t('The Unified HUD is off. Turn it on (top right) to choose what it shows.') }}</p>
+
+    <template v-else>
       <Section title="Always on the bar">
-        <SettingRow label="Next events" hint="The next two timers with their alert on, as icons: grey while far, yellow within half an hour, then orange with a countdown. Hover them for the whole list.">
+        <SettingRow label="Next events" hint="The next two timers that have an alert on, as small icons: grey while far away, yellow within half an hour, orange with a countdown when close. Hover them for the whole list.">
           <div class="flex items-center gap-3">
             <SelectBox v-if="cfg.events" size="sm" :model-value="cfg.countdownMinutes" :options="minutes(COUNTDOWN)" @update:model-value="set({ countdownMinutes: $event })" />
             <Toggle :model-value="cfg.events" @update:model-value="set({ events: $event })" />
           </div>
         </SettingRow>
+        <SettingRow label="Odyle Energy" hint="The Odyle Energy of the character you are playing.">
+          <Toggle :model-value="cfg.odyle" @update:model-value="set({ odyle: $event })" />
+        </SettingRow>
         <SettingRow label="Ping" hint="Your ping to the game server.">
           <Toggle :model-value="cfg.ping" @update:model-value="set({ ping: $event })" />
         </SettingRow>
-        <SettingRow label="Overlay buttons" hint="DPS meter, Map, Kill feed, Pets: hover one to peek at it under the bar, click it to turn its own overlay on or off (a mark under the icon says it is on). Boss Runs stay open under the bar until you fold them. With them, the speaker that mutes every sound and the cog that opens the app.">
+        <SettingRow label="Local time" hint="A clock, for when you play full screen.">
+          <Toggle :model-value="cfg.clock" @update:model-value="set({ clock: $event })" />
+        </SettingRow>
+        <SettingRow label="Overlay buttons" hint="When the buttons for the DPS meter, Map, Kill feed and Pets are visible. Hover one to peek at it inside the bar; click it to turn that overlay on or off.">
           <Segmented size="sm" :model-value="cfg.buttons" :options="BUTTONS" @update:model-value="set({ buttons: $event })" />
         </SettingRow>
       </Section>
 
-      <Section title="Shows up when it matters">
-        <SettingRow label="Your target" hint="Unfolds when you hit something: its health, your damage and DPS; for a player you target, class, legion, combat power and gear score. Folds this long after your last hit.">
+      <Section title="Your target">
+        <SettingRow label="Show my target" hint="When you hit something, the bar unfolds with its health, your damage and your DPS. For a player you select: class, legion, combat power and gear score. It folds away this long after your last hit.">
           <div class="flex items-center gap-3">
             <SelectBox v-if="cfg.target" size="sm" :model-value="cfg.targetSeconds" :options="SECONDS.map((s) => ({ id: s, label: t('{n} s', { n: s }) }))" @update:model-value="set({ targetSeconds: $event })" />
             <Toggle :model-value="cfg.target" @update:model-value="set({ target: $event })" />
@@ -105,10 +113,13 @@ const BUTTON_ICONS = [
         <SettingRow v-if="cfg.target" label="Target style" hint="In the bar: one short segment (name, combat power, health, DPS) that covers nothing under the bar, like the game's own target frame. Two lines under the bar: more detail, but it opens over what is below.">
           <SelectBox size="sm" :model-value="cfg.targetStyle" :options="TARGET_STYLES.map((o) => ({ id: o.id, label: t(o.label) }))" @update:model-value="set({ targetStyle: $event })" />
         </SettingRow>
-        <SettingRow v-if="cfg.target" label="Follow my last hit" hint="What the DPS meter follows while this is on: your last hit, a player or a boss, so hitting a player shows at once. This changes the meter overlay too. 'While a player is selected' keeps the meter's own mode otherwise.">
+        <SettingRow v-if="cfg.target" label="Follow my last hit" hint="Which target the DPS meter shows, here and in its own overlay. Always: the last thing you hit, a player or a boss, so hitting a player shows at once. While a player is selected: only then, and the meter's own setting the rest of the time.">
           <SelectBox size="sm" :model-value="cfg.targetMode" :options="TARGET_MODES.map((o) => ({ id: o.id, label: t(o.label) }))" @update:model-value="set({ targetMode: $event })" />
         </SettingRow>
-        <SettingRow label="Abyss Points this season" hint="The Abyss Points you earn in a season, with the coin icon, to the left of the bar. A season ends after 15 minutes without earning any; the next gain starts a new one. Apart from the rift farms.">
+      </Section>
+
+      <Section title="Kina and Abyss Points">
+        <SettingRow label="Abyss Points this season" hint="The Abyss Points you earn, with a coin, to the left of the bar. The count restarts after 15 minutes without earning any. Rift farms are counted apart (see Rift farm).">
           <Toggle :model-value="cfg.season" @update:model-value="set({ season: $event })" />
         </SettingRow>
         <SettingRow label="Kina per hour" hint="This session's Kina per hour, to the left of the bar while it comes in.">
@@ -117,56 +128,53 @@ const BUTTON_ICONS = [
         <SettingRow label="Abyss Points per hour" hint="This session's Abyss Points per hour, to the left of the bar while they come in.">
           <Toggle :model-value="cfg.abyssRate" @update:model-value="set({ abyssRate: $event })" />
         </SettingRow>
-        <SettingRow v-if="cfg.kina || cfg.abyssRate" label="Hide the per hour figures after" hint="Hidden this long after the last gain.">
+        <SettingRow v-if="cfg.kina || cfg.abyssRate" label="Hide the per hour figures after" hint="They disappear this long after the last gain.">
           <SelectBox size="sm" :model-value="cfg.earningsMinutes" :options="minutes(STAY)" @update:model-value="set({ earningsMinutes: $event })" />
         </SettingRow>
-        <SettingRow label="Rift farm" hint="During a Spacetime Rift, the Abyss Points show that rift's total instead of the hourly rate.">
+        <SettingRow label="Rift farm" hint="During a Spacetime Rift, show that rift's total Abyss Points instead of the hourly rate.">
           <Toggle :model-value="cfg.rift" @update:model-value="set({ rift: $event })" />
         </SettingRow>
-        <SettingRow label="Enemies nearby" hint="A red count of the players in view who can attack you (PvP on, or anyone in the Abyss); hover it for the list.">
+      </Section>
+
+      <Section title="Shows up when it matters">
+        <SettingRow label="Enemies nearby" hint="A red count of the players in view who can attack you (PvP on, or anyone in the Abyss). Hover it for the list.">
           <Toggle :model-value="cfg.enemies" @update:model-value="set({ enemies: $event })" />
         </SettingRow>
-        <SettingRow label="Field boss alive" hint="A boss with its alert on stays on the bar as its portrait while it lives.">
+        <SettingRow label="Field boss alive" hint="A field boss you have an alert for stays on the bar, as its portrait, while it is alive.">
           <Toggle :model-value="cfg.bosses" @update:model-value="set({ bosses: $event })" />
         </SettingRow>
-        <SettingRow label="Hidden Cube" hint="A cube in view, with how far and which way; hover it for the map.">
+        <SettingRow label="Hidden Cube" hint="A cube in view, with how far away it is and which way. Hover it for the map.">
           <Toggle :model-value="cfg.cubes" @update:model-value="set({ cubes: $event })" />
         </SettingRow>
-        <SettingRow label="Your last death" hint="A skull on the bar; hover it for where you died. Gone this long after.">
+        <SettingRow label="Your last death" hint="A skull on the bar; hover it to see where you died. It goes away this long after.">
           <div class="flex items-center gap-3">
             <SelectBox v-if="cfg.death" size="sm" :model-value="cfg.deathMinutes" :options="minutes(STAY)" @update:model-value="set({ deathMinutes: $event })" />
             <Toggle :model-value="cfg.death" @update:model-value="set({ death: $event })" />
           </div>
         </SettingRow>
-        <SettingRow label="Guild events" hint="A line under the bar 5 minutes before one starts, and again as it does.">
+        <SettingRow label="Guild events" hint="A line under the bar 5 minutes before an event starts, and again when it does.">
           <Toggle :model-value="cfg.guild" @update:model-value="set({ guild: $event })" />
         </SettingRow>
       </Section>
 
-      <Section title="Optional">
-        <SettingRow label="Local time" hint="The clock, for full-screen play.">
-          <Toggle :model-value="cfg.clock" @update:model-value="set({ clock: $event })" />
-        </SettingRow>
-        <SettingRow label="Odyle Energy" hint="The energy of the character you're playing.">
-          <Toggle :model-value="cfg.odyle" @update:model-value="set({ odyle: $event })" />
-        </SettingRow>
-      </Section>
-
       <Section title="Look">
-        <SettingRow label="Opacity">
+        <SettingRow label="Opacity" hint="0% removes the background and leaves only the text, with a soft shadow.">
           <Slider :model-value="cfg.opacity" :min="0" :max="1" :step="0.02" :format="pct" @update:model-value="set({ opacity: $event })" />
         </SettingRow>
         <SettingRow label="Size">
           <Slider :model-value="cfg.scale" :min="0.75" :max="1.75" :step="0.05" :format="pct" @update:model-value="set({ scale: $event })" />
         </SettingRow>
-        <SettingRow label="Hide the widgets it replaces" hint="The timer bar, Enemies nearby and the Boss Runs list stay closed while the Unified HUD is on. The enemy sound still plays.">
+        <SettingRow label="Position" hint="Drag the bar in game to move it. This puts it back at the top centre of the screen.">
+          <button type="button" class="rounded-md border border-light px-2.5 py-1 text-xs text-dark hover:bg-dark" @click="set({ position: null })">{{ t('Reset') }}</button>
+        </SettingRow>
+      </Section>
+
+      <Section title="Widgets and sound">
+        <SettingRow label="Hide the widgets it replaces" hint="Keeps the timer bar, the Enemies overlay and the Boss Runs list closed while the Unified HUD is on, since the bar shows the same things. The enemy sound still plays.">
           <Toggle :model-value="cfg.replace" @update:model-value="set({ replace: $event })" />
         </SettingRow>
         <SettingRow label="Mute every sound" hint="Cubes, enemies and the timers' chime: the same switch as the speaker on the bar.">
           <Toggle :model-value="store.settings.muted" @update:model-value="store.set('muted', $event)" />
-        </SettingRow>
-        <SettingRow label="Position" hint="Drag the bar in game to move it. This puts it back at the top centre of the screen.">
-          <button type="button" class="rounded-md border border-light px-2.5 py-1 text-xs text-dark hover:bg-dark" @click="set({ position: null })">{{ t('Reset') }}</button>
         </SettingRow>
       </Section>
     </template>
