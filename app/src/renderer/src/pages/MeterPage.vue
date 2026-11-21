@@ -61,9 +61,9 @@ const STAT_TITLE: Record<MeterStat, [string, string, string]> = {
 
 /** 1234 → 1.2K, 1234567 → 1.23M */
 /** A row's bar: the class colour, fading out to the right. */
-function barGradient(className: string | null): string {
+function barGradient(className: string | null, solid = false): string {
   const c = CLASS_COLORS[className ?? ''] ?? '#787b8a'
-  return `linear-gradient(90deg, ${c}a0 0%, ${c}38 100%)`
+  return solid ? `linear-gradient(90deg, ${c}b8 0%, ${c}78 100%)` : `linear-gradient(90deg, ${c}a0 0%, ${c}38 100%)`
 }
 
 function short(n: number): string {
@@ -305,7 +305,7 @@ onBeforeUnmount(() => {
             >
               <div v-if="cfg.style === 'flat'" class="absolute inset-y-0 left-0 opacity-50" :style="{ width: `${(r.value / top) * 100}%`, background: CLASS_COLORS[r.className ?? ''] ?? '#787b8a' }" />
               <template v-else>
-                <div class="absolute inset-y-0 left-0" :style="{ width: `${(r.value / top) * 100}%`, background: barGradient(r.className) }" />
+                <div class="absolute inset-y-0 left-0" :style="{ width: `${(r.value / top) * 100}%`, background: barGradient(r.className, lean) }" />
                 <div :class="['absolute inset-y-0 left-0', cfg.style === 'bold' ? 'w-14' : 'w-9']" style="background: linear-gradient(90deg, rgba(9, 9, 11, 0.8), rgba(9, 9, 11, 0))" />
               </template>
               <div :class="['relative flex items-center gap-1.5 text-[12px]', cfg.style === 'bold' ? 'py-1 pl-1.5 pr-3' : cfg.style === 'compact' ? 'py-0.5 pl-1 pr-2.5' : 'px-1.5 py-1']">
