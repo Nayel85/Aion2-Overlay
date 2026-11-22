@@ -6,6 +6,7 @@ import { dummy } from './dummy.ts'
 import { updater } from './updater.ts'
 import { meterState } from './meter.ts'
 import { applicantStore } from './applicants.ts'
+import { guild } from './guild.ts'
 import { characterStore } from './characters.ts'
 import { gameMap, regionDisplay } from './gameMap.ts'
 import { mapDetail } from './gameMapDetail.ts'
@@ -163,6 +164,8 @@ export function registerIpc(): void {
   handle('gamemap:grab', (w, h) => gameMap.grab(Math.round(Number(w)), Math.round(Number(h))))
   handle('gamemap:detail', (key, cols, rows, col, row) => mapDetail.get(key, cols, rows, col, row))
   handle('gamemap:saveFeatures', (key, data, col, row) => mapDetail.saveFeatures(key, data, col, row))
+  handle('guild:get', () => guild.get())
+  handle('guild:refresh', () => guild.refresh())
   handle('applicants:get', () => applicantStore.all())
   handle('applicants:dismiss', (character) => {
     if (Number.isInteger(character)) applicantStore.dismiss(character)

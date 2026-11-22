@@ -54,7 +54,36 @@ const tracker = () => ({
 /** Join requests, as main keeps them (the Applicants widget). */
 let applicants: { list: unknown[]; lastAt: number } = { list: [], lastAt: 0 }
 
+/** A roster for the Guild page: members with their main and alts. */
+function guildSample(): unknown {
+  const classes = ['gladiator', 'templar', 'assassin', 'ranger', 'sorcerer', 'summoner', 'cleric', 'chanter']
+  const people: [string, string[]][] = [
+    ['Ksix', ['Ksix', 'Ksixx', 'TremendoHeal', 'Ksixxx']], ['Shiggly', ['Shiggly', 'Shigglypuff']], ['Bombon', ['Bombon', 'Bomboncito']], ['Athraia', ['Athraia']],
+    ['Notsky', ['Notsky', 'Notskyy', 'Notskyyy']], ['YIYATESANO', ['YIYATESANO']], ['Vellari', ['Vellari', 'iVellari']], ['Hine', ['Hine']], ['Tadalafila', ['Tadalafila', 'Tadalafilo']],
+    ['Clerigod', ['Clerigod']], ['Lezadinha', ['Lezadinha', 'Lezado']], ['Orenjikun', ['Orenjikun']],
+  ]
+  let n = 3
+  const rnd = (): number => ((n = (n * 9301 + 49297) % 233280) / 233280)
+  const at = now()
+  const members = people.map(([name, chars], i) => ({
+    name,
+    you: i === 0,
+    characters: chars.map((c, j) => {
+      const base = 2600 - j * 380 - Math.round(rnd() * 250)
+      const energy = rnd() > 0.15 ? Math.round(rnd() * 56) * 15 : null
+      return {
+        name: c, server: 1406, className: classes[Math.floor(rnd() * classes.length)], level: 45, gearScore: base, combatPower: Math.round(base * (38 + rnd() * 16)),
+        main: j === 0, portraitUrl: null, legion: 'Lokthar', reportedAt: at,
+        energy: energy === null ? null : { value: energy, extra: rnd() > 0.6 ? Math.round(rnd() * 150) : 0, max: 840, per: 15, nextAt: at + 3_600_000, fullAt: at + 86_400_000, readAt: at },
+        nightmare: null, ascension: null,
+      }
+    }),
+  }))
+  return { state: 'ok', message: null, roster: 'Main', main: { name: 'Ksix', server: 1406 }, members, at }
+}
+
 const data: Record<string, () => unknown> = {
+  'guild:get': guildSample,
   'applicants:get': () => applicants,
   'settings:all': () => settings,
   'tracker:get': tracker,

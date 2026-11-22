@@ -7,6 +7,7 @@ import { DISPLAY_NAME } from '../shared/app.ts'
 import { broadcast } from './broadcast.ts'
 import { startApplicants } from './applicants.ts'
 import { startCharacters } from './characters.ts'
+import { startGuild } from './guild.ts'
 import { applyGameMap, onGameMapStatus, startGameMap } from './gameMap.ts'
 import { startFieldBosses } from './fieldBosses.ts'
 import { startHealthWatch } from './health.ts'
@@ -54,6 +55,7 @@ if (!app.requestSingleInstanceLock()) {
     startFieldBosses()
     startCharacters()
     startApplicants()
+    startGuild()
     startGameMap()
     startLokthar()
     startGuildEvents()

@@ -5,6 +5,7 @@
 import { broadcast } from './broadcast.ts'
 import { settings } from './settings.ts'
 import { log, tracker } from './tracker.ts'
+import { createApplicants } from './windows.ts'
 import { NO_APPLICANTS, type Applicant, type Applicants } from '../shared/applicants.ts'
 
 let state: Applicants = NO_APPLICANTS
@@ -59,6 +60,8 @@ export function startApplicants(): void {
     const list = had ? state.list.map((x) => (x.character === a.character ? { ...a, at: x.at } : x)) : [...state.list, a]
     state = { list, lastAt: at }
     if (!had) log(`applicant: ${a.name} (${a.className ?? '?'}, CP ${a.combatPower ?? '?'}, GS ${a.gearScore ?? '?'})`)
+    // The widget's window should be there already; if it was never opened (or was lost), this opens it.
+    createApplicants()
     rearm()
     changed()
   })

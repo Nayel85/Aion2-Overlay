@@ -5,6 +5,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BossesView from '@/components/dashboard/BossesView.vue'
 import ApplicantsView from '@/components/dashboard/ApplicantsView.vue'
+import GuildView from '@/components/dashboard/GuildView.vue'
 import BossRunsView from '@/components/dashboard/BossRunsView.vue'
 import GuildEventsView from '@/components/dashboard/GuildEventsView.vue'
 import ChangelogView from '@/components/dashboard/ChangelogView.vue'
@@ -40,7 +41,7 @@ import { needsAnswer } from '@shared/guildEvents.ts'
 import { TIMERS, type TimerId } from '@shared/timers.ts'
 import type { UpdateState } from '@shared/update.ts'
 
-type PageId = 'home' | 'characters' | 'guild' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'bossRuns' | 'applicants' | 'history' | 'session' | 'cache' | 'settings' | 'updates' | 'changes'
+type PageId = 'home' | 'characters' | 'roster' | 'guild' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'bossRuns' | 'applicants' | 'history' | 'session' | 'cache' | 'settings' | 'updates' | 'changes'
 interface Page {
   id: PageId
   label: string
@@ -53,6 +54,7 @@ interface Page {
 const PAGES: Record<PageId, Page> = {
   home: { id: 'home', label: 'Home', icon: 'M2.5 7 8 2.5 13.5 7v6.5h-3.5v-4H6v4H2.5z' },
   characters: { id: 'characters', label: 'Characters', icon: 'M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M11 7a2 2 0 1 0 0-4M12.5 9.7c1.2.6 2 1.9 2 3.3' },
+  roster: { id: 'roster', label: 'Guild', icon: 'M8 1.5 2.5 3.5v4c0 3.2 2.3 5.6 5.5 7 3.2-1.4 5.5-3.8 5.5-7v-4zM5.5 8h5M8 5.5v5' },
   guild: { id: 'guild', label: 'Guild Events', icon: 'M2 3.5h12v10.5H2zM2 6.5h12M5.5 1.5v3M10.5 1.5v3M5.5 10l1.8 1.8 3.2-3.3' },
   unified: { id: 'unified', label: 'Unified HUD', icon: 'M2 5.5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zM5 6h.01M8 6h3M4.5 11h7M6 13.5h4' },
   meter: { id: 'meter', label: 'Combat Meter', icon: 'M2.5 13.5h11M4.5 11V8M8 11V4.5M11.5 11V6.5' },
@@ -75,7 +77,7 @@ const PAGES: Record<PageId, Page> = {
   settings: { id: 'settings', label: 'Settings', icon: 'M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM13 8a5 5 0 0 0-.1-.9l1.4-1.1-1.4-2.4-1.7.6a5 5 0 0 0-1.5-.9L9.4 1.5H6.6l-.3 1.8a5 5 0 0 0-1.5.9l-1.7-.6-1.4 2.4 1.4 1.1a5 5 0 0 0 0 1.8l-1.4 1.1 1.4 2.4 1.7-.6a5 5 0 0 0 1.5.9l.3 1.8h2.8l.3-1.8a5 5 0 0 0 1.5-.9l1.7.6 1.4-2.4-1.4-1.1c.1-.3.1-.6.1-.9Z' },
 }
 const SECTIONS: { title: string | null; pages: PageId[] }[] = [
-  { title: null, pages: ['home', 'characters', 'guild'] },
+  { title: null, pages: ['home', 'characters', 'roster', 'guild'] },
   { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'bossRuns', 'applicants'] },
   { title: 'Records', pages: ['history', 'session', 'cache'] },
   { title: 'App', pages: ['updates', 'changes'] },
@@ -325,6 +327,7 @@ onBeforeUnmount(() => {
           <BossesView v-else-if="page === 'bosses'" />
           <BossRunsView v-else-if="page === 'bossRuns'" />
           <ApplicantsView v-else-if="page === 'applicants'" />
+          <GuildView v-else-if="page === 'roster'" />
           <GuildEventsView v-else-if="page === 'guild'" />
           <HistoryView v-else-if="page === 'history'" />
           <StorageView v-else-if="page === 'cache'" />
