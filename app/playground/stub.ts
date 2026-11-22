@@ -66,6 +66,7 @@ function guildSample(): unknown {
   const rnd = (): number => ((n = (n * 9301 + 49297) % 233280) / 233280)
   const at = now()
   const members = people.map(([name, chars], i) => ({
+    id: i + 1,
     name,
     you: i === 0,
     characters: chars.map((c, j) => {

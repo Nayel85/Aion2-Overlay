@@ -37,6 +37,8 @@ export interface GuildCharacter {
 }
 
 export interface GuildMember {
+  /** The site's id for the member (two can share a name). */
+  id: number
   /** Their main's name. */
   name: string
   /** You. */

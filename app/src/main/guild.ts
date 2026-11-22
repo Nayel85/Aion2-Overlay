@@ -175,7 +175,8 @@ function sync(force = false): Promise<void> {
         return schedule(NOT_MEMBER_MS)
       }
       if (guild.status !== 200) throw new Error(`the site answered ${guild.status}`)
-      const members: GuildMember[] = ((guild.json['members'] as Record<string, unknown>[] | undefined) ?? []).map((m) => ({
+      const members: GuildMember[] = ((guild.json['members'] as Record<string, unknown>[] | undefined) ?? []).map((m, i) => ({
+        id: num(m['id']) ?? -i - 1,
         name: String(m['name'] ?? ''),
         you: m['you'] === true,
         characters: ((m['characters'] as Record<string, unknown>[] | undefined) ?? []).map(toCharacter),

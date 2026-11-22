@@ -85,10 +85,10 @@ const cards = computed<Card[]>(() => {
   }
   return out.sort((a, b) => (sort.value === 'name' ? a.member.name.localeCompare(b.member.name) : b.best - a.best))
 })
-interface Flat { c: GuildCharacter; owner: string; you: boolean }
+interface Flat { c: GuildCharacter; owner: string; you: boolean; id: number }
 const flat = computed<Flat[]>(() => {
   const rows: Flat[] = []
-  for (const member of guild.value.members) for (const c of member.characters) if (matches(c, member.name)) rows.push({ c, owner: member.name, you: member.you })
+  for (const member of guild.value.members) for (const c of member.characters) if (matches(c, member.name)) rows.push({ c, owner: member.name, you: member.you, id: member.id })
   return rows.sort((a, b) => (sort.value === 'name' ? a.c.name.localeCompare(b.c.name) : sortKey(b.c) - sortKey(a.c)))
 })
 const total = computed(() => guild.value.members.reduce((n, m) => n + m.characters.length, 0))
@@ -192,7 +192,7 @@ const busy = computed(() => guild.value.state === 'loading' && !guild.value.memb
       <TransitionGroup v-else-if="view === 'members'" tag="div" name="g" class="relative grid items-start gap-3 xl:grid-cols-2">
         <section
           v-for="card in cards"
-          :key="card.member.name"
+          :key="card.member.id"
           :class="['overflow-hidden rounded-2xl border bg-card/70', card.member.you ? 'border-accent/60 shadow-[0_0_0_1px_rgba(139,92,246,0.18)]' : 'border-card']"
         >
           <header class="flex items-center gap-2 px-4 pb-1.5 pt-3">
@@ -204,7 +204,7 @@ const busy = computed(() => guild.value.state === 'loading' && !guild.value.memb
             <li v-for="c in card.rows" :key="c.name" class="guild-row group relative overflow-hidden rounded-lg">
               <div class="absolute inset-0" :style="{ background: bar(c.className) }" />
               <div class="absolute inset-y-0 left-0 w-14" style="background: linear-gradient(90deg, rgba(9, 9, 11, 0.8), rgba(9, 9, 11, 0))" />
-              <div class="relative grid grid-cols-[28px_minmax(0,1fr)_62px_48px_104px] items-center gap-2.5 py-1.5 pl-2 pr-3">
+              <div class="relative grid grid-cols-[28px_minmax(0,1fr)_84px_66px_156px] items-center gap-2.5 py-1.5 pl-2 pr-3">
                 <img v-if="iconOf(c.className)" :src="iconOf(c.className)!" alt="" draggable="false" class="size-7 object-contain drop-shadow-[0_0_3px_rgba(0,0,0,0.8)]" />
                 <span v-else class="size-7" />
                 <span class="flex min-w-0 flex-col leading-tight">
@@ -214,11 +214,12 @@ const busy = computed(() => guild.value.state === 'loading' && !guild.value.memb
                   </span>
                   <span class="truncate text-[10px] text-default/70 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{{ [display(c.className), c.level ? `Lv ${c.level}` : null].filter(Boolean).join(' · ') }}</span>
                 </span>
-                <span class="text-right text-[14px] font-bold tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_0_3px_rgba(0,0,0,0.8)]" :title="t('Combat power')">{{ short(c.combatPower) }}</span>
-                <span class="text-right text-[12px] tabular-nums text-default/80 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]" :title="t('Gear score')">{{ c.gearScore ?? '–' }}</span>
+                <span class="text-right [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_0_3px_rgba(0,0,0,0.8)]" :title="t('Combat power')"><img src="items/combat-power.png" alt="" draggable="false" class="mr-1 inline-block size-4 align-[-3px]" /><span class="text-[14px] font-bold tabular-nums">{{ short(c.combatPower) }}</span></span>
+                <span class="text-right [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]" :title="t('Gear score')"><img src="items/gear-score.png" alt="" draggable="false" class="mr-1 inline-block h-4 w-[11px] align-[-3px]" /><span class="text-[12px] tabular-nums text-default/85">{{ c.gearScore ?? '–' }}</span></span>
                 <span v-if="c.energy" class="flex items-center justify-end gap-1.5" :title="t('Odyle Energy')">
-                  <span class="h-1.5 w-10 overflow-hidden rounded-full bg-black/45"><span class="block h-full rounded-full bg-[#ffc53d] transition-[width] duration-700" :style="{ width: `${pct(c)}%` }" /></span>
+                  <span class="h-1.5 w-20 overflow-hidden rounded-full bg-black/45"><span class="block h-full rounded-full bg-[#ffc53d] transition-[width] duration-700" :style="{ width: `${pct(c)}%` }" /></span>
                   <span class="w-[42px] text-right text-[11px] font-semibold tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">{{ energyNow(c) }}<span v-if="c.energy.extra" class="block text-[9px] leading-none" :style="{ color: CHARGED }">+{{ c.energy.extra }}</span></span>
+                  <img src="items/odyle-energy.webp" alt="" draggable="false" class="size-4 shrink-0" />
                 </span>
                 <span v-else class="text-right text-[11px] text-default/30">–</span>
               </div>
@@ -229,13 +230,13 @@ const busy = computed(() => guild.value.state === 'loading' && !guild.value.memb
 
       <!-- Every character on its own, in one list. -->
       <div v-else class="overflow-hidden rounded-2xl border border-card bg-card/70">
-        <div class="grid grid-cols-[28px_minmax(0,1.2fr)_minmax(0,1fr)_74px_56px_130px] items-center gap-3 border-b border-card px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-darkest">
-          <span /><span>{{ t('Character') }}</span><span>{{ t('Member') }}</span><span class="text-right">CP</span><span class="text-right">GS</span><span class="text-right">{{ t('Energy') }}</span>
+        <div class="grid grid-cols-[28px_minmax(0,1.2fr)_minmax(0,1fr)_74px_56px_190px] items-center gap-3 border-b border-card px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-darkest">
+          <span /><span>{{ t('Character') }}</span><span>{{ t('Member') }}</span><span class="flex justify-end" :title="t('Combat power')"><img src="items/combat-power.png" alt="CP" draggable="false" class="size-4" /></span><span class="flex justify-end" :title="t('Gear score')"><img src="items/gear-score.png" alt="GS" draggable="false" class="h-4 w-[11px]" /></span><span class="text-right">{{ t('Energy') }}</span>
         </div>
         <TransitionGroup tag="ul" name="g" class="relative">
-          <li v-for="r in flat" :key="r.owner + r.c.name" class="guild-row group relative overflow-hidden border-b border-card/60 last:border-0">
+          <li v-for="r in flat" :key="r.id + r.c.name" class="guild-row group relative overflow-hidden border-b border-card/60 last:border-0">
             <div class="absolute inset-y-0 left-0 w-1/2" :style="{ background: fade(r.c.className) }" />
-            <div class="relative grid grid-cols-[28px_minmax(0,1.2fr)_minmax(0,1fr)_74px_56px_130px] items-center gap-3 px-4 py-1.5">
+            <div class="relative grid grid-cols-[28px_minmax(0,1.2fr)_minmax(0,1fr)_74px_56px_190px] items-center gap-3 px-4 py-1.5">
               <img v-if="iconOf(r.c.className)" :src="iconOf(r.c.className)!" alt="" draggable="false" class="size-7 object-contain" />
               <span v-else class="size-7" />
               <span class="flex min-w-0 flex-col leading-tight">
@@ -249,8 +250,9 @@ const busy = computed(() => guild.value.state === 'loading' && !guild.value.memb
               <span class="text-right text-[14px] font-bold tabular-nums">{{ short(r.c.combatPower) }}</span>
               <span class="text-right text-[12px] tabular-nums text-dark">{{ r.c.gearScore ?? '–' }}</span>
               <span v-if="r.c.energy" class="flex items-center justify-end gap-2">
-                <span class="h-1.5 w-16 overflow-hidden rounded-full bg-dark"><span class="block h-full rounded-full bg-[#ffc53d] transition-[width] duration-700" :style="{ width: `${pct(r.c)}%` }" /></span>
+                <span class="h-1.5 w-24 overflow-hidden rounded-full bg-dark"><span class="block h-full rounded-full bg-[#ffc53d] transition-[width] duration-700" :style="{ width: `${pct(r.c)}%` }" /></span>
                 <span class="w-12 text-right text-[12px] font-semibold tabular-nums">{{ energyNow(r.c) }}<span v-if="r.c.energy.extra" class="ml-0.5 text-[10px]" :style="{ color: CHARGED }">+{{ r.c.energy.extra }}</span></span>
+                <img src="items/odyle-energy.webp" alt="" draggable="false" class="size-4 shrink-0" />
               </span>
               <span v-else class="text-right text-[11px] text-darkest">–</span>
             </div>
