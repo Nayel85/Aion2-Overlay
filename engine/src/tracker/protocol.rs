@@ -515,11 +515,15 @@ fn counter_at(b: &[u8], start: usize) -> Option<(u32, Vec<u64>, usize)> {
 /// you are there (the owner's 2026-11-01 logs).
 pub fn counter(frame: &[u8]) -> Option<(u32, Vec<u64>)> {
     let b = body(frame, OP_COUNTER)?;
-    if b.first() != Some(&0) {
-        return None;
-    }
+    // 0: changed by the game or a run spent, then a u8; 1: given by an item, then a u8 and the
+    // amount u32 (energy +10: 575 to 585, the owner's 2026-11-22 log).
+    let tail = match b.first()? {
+        0 => 1,
+        1 => 5,
+        _ => return None,
+    };
     let (id, values, n) = counter_at(b, 1)?;
-    (1 + n + 1 == b.len()).then_some((id, values))
+    (1 + n + tail == b.len()).then_some((id, values))
 }
 
 /// `AB FF <points u64> <limit u64>`: the week's Abyss Points and their weekly limit, at a login
@@ -1037,6 +1041,9 @@ mod tests {
         assert_eq!(read("000801b4c4040403"), Some((80_000_001, vec![0, 4])), "the first value left out");
         assert_eq!(read("000001b4c40403"), Some((80_000_001, vec![])), "Ascension Trial: none left");
         assert_eq!(read("000c0187930389021903"), Some((60_000_001, vec![265, 25])), "energy");
+        assert_eq!(read("010c01879303c2038701010a000000"), Some((60_000_001, vec![450, 135])), "energy +10 from an item: 575 to 585");
+        assert_eq!(read("010801879303280128000000"), Some((60_000_001, vec![0, 40])), "energy +40 from an item: 0 to 40");
+        assert_eq!(read("000801879303820103"), Some((60_000_001, vec![0, 130])), "energy spent opening a dungeon chest: 210 to 130 (2026-11-21)");
     }
 
     /// The Abyss's list as you enter it (2026-11-03): one boss with no time.
