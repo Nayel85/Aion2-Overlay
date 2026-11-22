@@ -11,6 +11,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.14',
+    items: [
+      'New Guild page: every member of your Lokthar roster with all their characters, their gear score, combat power and Odyle energy, by member or as one list, filtered by class and name.',
+      'Your characters sync with lokthar.com: it shows them on its dashboard with their energy and entries, your main is starred on the Characters page, and characters it has no alt for become your alts there (only if one of your characters is on an Aion 2 roster).',
+      'New Join requests widget: everyone who asks to join your party, with class, combat power and gear score (the game shows only the first), up while people apply and hidden after a time you set.',
+      'Odyle Energy updates the moment you open a chest or use a recharge item.',
+      'Abyssal Forge: Ludra Easy and Hard fights are recorded, and the Combat history tells the difficulty (and the other dungeons\') apart.',
+    ],
+  },
+  {
     version: '0.3.13',
     items: [
       'New Unified HUD (its own page): one small bar at the top of the game with the next two events and your ping, which unfolds on hover into buttons for the DPS meter, map, kill feed, pets and Boss Runs, a speaker that mutes every sound, and a cog that opens the app. It shows what you are hitting, Kina and Abyss Points per hour while they come in (a rift\'s total during a Spacetime Rift), a Hidden Cube in view, the enemies who can attack you, a field boss alive, a guild event about to start and where you last died, each only while it matters.',
