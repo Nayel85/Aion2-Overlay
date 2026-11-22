@@ -1216,4 +1216,7 @@ export const ES: Record<string, string> = {
   'Hidden this long after the last gain.': 'Se ocultan este tiempo después de la última ganancia.',
   'Hide My skills (the DPS meter\'s Skills button brings it back)': 'Ocultar Mis skills (el botón Skills del DPS meter lo trae de vuelta)',
   'Abyss Points count from your balance, so corridor kills show; My skills has an X.': 'Los Abyss Points se cuentan desde tu saldo, así que se ven los kills del corredor; Mis skills tiene una X.',
+  'Easy': 'Fácil',
+  'Normal': 'Normal',
+  'Hard': 'Difícil',
 }

@@ -97,3 +97,32 @@ export function dungeonFor(fights: { id: string; bossName: string | null; startT
   }
   return out
 }
+
+export type Difficulty = 'easy' | 'normal' | 'hard'
+
+/**
+ * The difficulty a fight's `dungeonId` says (the parser's instance ids: the last digit is 1 easy
+ * ("exploration"), 2 normal, 3 hard, in the dungeons that have the three). From the parser's
+ * dungeon table; Abyssal Forge: Ludra is 600081-600083 (Hard 600083, its table note of 2026-11-04;
+ * the easy one is read by the same pattern).
+ */
+const DIFFICULTY: Record<number, Difficulty> = {}
+for (const base of [600091, 600121, 600131, 600141, 600151, 600161, 600081]) {
+  DIFFICULTY[base] = 'easy'
+  DIFFICULTY[base + 1] = 'normal'
+  DIFFICULTY[base + 2] = 'hard'
+}
+for (const id of [600001, 600025, 600074, 600192]) DIFFICULTY[id] = 'normal'
+for (const id of [600004, 610044, 600193]) DIFFICULTY[id] = 'hard'
+DIFFICULTY[600002] = 'easy'
+
+/** A guess, never an error: null for anything that is not a known id (a missing, odd or unlisted one). */
+export function difficultyOf(dungeonId: unknown): Difficulty | null {
+  try {
+    return typeof dungeonId === 'number' && Number.isInteger(dungeonId) ? (DIFFICULTY[dungeonId] ?? null) : null
+  } catch {
+    return null
+  }
+}
+
+export const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: 'Easy', normal: 'Normal', hard: 'Hard' }
