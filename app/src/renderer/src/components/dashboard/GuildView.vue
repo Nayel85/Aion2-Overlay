@@ -21,6 +21,8 @@ const ticker = setInterval(() => (now.value = Date.now()), 30_000)
 onMounted(() => void api.invoke('guild:refresh'))
 onBeforeUnmount(() => clearInterval(ticker))
 
+/** The game's item icons, in public/items (bound, not written in the template: the compiler would turn a literal path into an import). */
+const ICONS = { energy: 'items/odyle-energy.webp', power: 'items/combat-power.png', gear: 'items/gear-score.png' }
 /** The game's colour for charged energy (as the Characters page). */
 const CHARGED = '#3ce0d0'
 const CLASSES = ['gladiator', 'templar', 'assassin', 'ranger', 'sorcerer', 'spiritmaster', 'cleric', 'chanter'] as const
@@ -214,12 +216,12 @@ const busy = computed(() => guild.value.state === 'loading' && !guild.value.memb
                   </span>
                   <span class="truncate text-[10px] text-default/70 [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]">{{ [display(c.className), c.level ? `Lv ${c.level}` : null].filter(Boolean).join(' · ') }}</span>
                 </span>
-                <span class="text-right [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_0_3px_rgba(0,0,0,0.8)]" :title="t('Combat power')"><img src="items/combat-power.png" alt="" draggable="false" class="mr-1 inline-block size-4 align-[-3px]" /><span class="text-[14px] font-bold tabular-nums">{{ short(c.combatPower) }}</span></span>
-                <span class="text-right [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]" :title="t('Gear score')"><img src="items/gear-score.png" alt="" draggable="false" class="mr-1 inline-block h-4 w-[11px] align-[-3px]" /><span class="text-[12px] tabular-nums text-default/85">{{ c.gearScore ?? '–' }}</span></span>
+                <span class="text-right [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_0_3px_rgba(0,0,0,0.8)]" :title="t('Combat power')"><img :src="ICONS.power" alt="" draggable="false" class="mr-1 inline-block size-4 align-[-3px]" /><span class="text-[14px] font-bold tabular-nums">{{ short(c.combatPower) }}</span></span>
+                <span class="text-right [text-shadow:0_1px_2px_rgba(0,0,0,0.9)]" :title="t('Gear score')"><img :src="ICONS.gear" alt="" draggable="false" class="mr-1 inline-block h-4 w-[11px] align-[-3px]" /><span class="text-[12px] tabular-nums text-default/85">{{ c.gearScore ?? '–' }}</span></span>
                 <span v-if="c.energy" class="flex items-center justify-end gap-1.5" :title="t('Odyle Energy')">
                   <span class="h-1.5 w-20 overflow-hidden rounded-full bg-black/45"><span class="block h-full rounded-full bg-[#ffc53d] transition-[width] duration-700" :style="{ width: `${pct(c)}%` }" /></span>
                   <span class="w-[42px] text-right text-[11px] font-semibold tabular-nums [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">{{ energyNow(c) }}<span v-if="c.energy.extra" class="block text-[9px] leading-none" :style="{ color: CHARGED }">+{{ c.energy.extra }}</span></span>
-                  <img src="items/odyle-energy.webp" alt="" draggable="false" class="size-4 shrink-0" />
+                  <img :src="ICONS.energy" alt="" draggable="false" class="size-4 shrink-0" />
                 </span>
                 <span v-else class="text-right text-[11px] text-default/30">–</span>
               </div>
@@ -231,7 +233,7 @@ const busy = computed(() => guild.value.state === 'loading' && !guild.value.memb
       <!-- Every character on its own, in one list. -->
       <div v-else class="overflow-hidden rounded-2xl border border-card bg-card/70">
         <div class="grid grid-cols-[28px_minmax(0,1.2fr)_minmax(0,1fr)_74px_56px_190px] items-center gap-3 border-b border-card px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-darkest">
-          <span /><span>{{ t('Character') }}</span><span>{{ t('Member') }}</span><span class="flex justify-end" :title="t('Combat power')"><img src="items/combat-power.png" alt="CP" draggable="false" class="size-4" /></span><span class="flex justify-end" :title="t('Gear score')"><img src="items/gear-score.png" alt="GS" draggable="false" class="h-4 w-[11px]" /></span><span class="text-right">{{ t('Energy') }}</span>
+          <span /><span>{{ t('Character') }}</span><span>{{ t('Member') }}</span><span class="flex justify-end" :title="t('Combat power')"><img :src="ICONS.power" alt="CP" draggable="false" class="size-4" /></span><span class="flex justify-end" :title="t('Gear score')"><img :src="ICONS.gear" alt="GS" draggable="false" class="h-4 w-[11px]" /></span><span class="text-right">{{ t('Energy') }}</span>
         </div>
         <TransitionGroup tag="ul" name="g" class="relative">
           <li v-for="r in flat" :key="r.id + r.c.name" class="guild-row group relative overflow-hidden border-b border-card/60 last:border-0">
@@ -252,7 +254,7 @@ const busy = computed(() => guild.value.state === 'loading' && !guild.value.memb
               <span v-if="r.c.energy" class="flex items-center justify-end gap-2">
                 <span class="h-1.5 w-24 overflow-hidden rounded-full bg-dark"><span class="block h-full rounded-full bg-[#ffc53d] transition-[width] duration-700" :style="{ width: `${pct(r.c)}%` }" /></span>
                 <span class="w-12 text-right text-[12px] font-semibold tabular-nums">{{ energyNow(r.c) }}<span v-if="r.c.energy.extra" class="ml-0.5 text-[10px]" :style="{ color: CHARGED }">+{{ r.c.energy.extra }}</span></span>
-                <img src="items/odyle-energy.webp" alt="" draggable="false" class="size-4 shrink-0" />
+                <img :src="ICONS.energy" alt="" draggable="false" class="size-4 shrink-0" />
               </span>
               <span v-else class="text-right text-[11px] text-darkest">–</span>
             </div>
