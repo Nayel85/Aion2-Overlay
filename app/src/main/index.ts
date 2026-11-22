@@ -5,6 +5,7 @@
 import { app, session } from 'electron'
 import { DISPLAY_NAME } from '../shared/app.ts'
 import { broadcast } from './broadcast.ts'
+import { startApplicants } from './applicants.ts'
 import { startCharacters } from './characters.ts'
 import { applyGameMap, onGameMapStatus, startGameMap } from './gameMap.ts'
 import { startFieldBosses } from './fieldBosses.ts'
@@ -52,6 +53,7 @@ if (!app.requestSingleInstanceLock()) {
     startHealthWatch()
     startFieldBosses()
     startCharacters()
+    startApplicants()
     startGameMap()
     startLokthar()
     startGuildEvents()

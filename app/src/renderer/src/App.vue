@@ -3,6 +3,7 @@
 // than a router, so a window never flashes another window's page (a marnis-app lesson).
 import { onMounted } from 'vue'
 import BossRunsPage from './pages/BossRunsPage.vue'
+import ApplicantsPage from './pages/ApplicantsPage.vue'
 import EventToastPage from './pages/EventToastPage.vue'
 import BubblePage from './pages/BubblePage.vue'
 import BuffsPage from './pages/BuffsPage.vue'
@@ -45,6 +46,7 @@ onMounted(() => void store.init())
   <EnemiesPage v-else-if="page === 'enemies'" />
   <BossRunsPage v-else-if="page === 'bossruns'" />
   <EventToastPage v-else-if="page === 'eventtoast'" />
+  <ApplicantsPage v-else-if="page === 'applicants'" />
   <TrainingPage v-else-if="page === 'training'" />
   <PacketsPage v-else-if="page === 'packets'" />
   <GameMapPage v-else-if="page === 'gamemap'" />

@@ -4,6 +4,7 @@
 // Settings at the bottom), and the page. Each page says what it is, and holds its overlay's settings.
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BossesView from '@/components/dashboard/BossesView.vue'
+import ApplicantsView from '@/components/dashboard/ApplicantsView.vue'
 import BossRunsView from '@/components/dashboard/BossRunsView.vue'
 import GuildEventsView from '@/components/dashboard/GuildEventsView.vue'
 import ChangelogView from '@/components/dashboard/ChangelogView.vue'
@@ -39,7 +40,7 @@ import { needsAnswer } from '@shared/guildEvents.ts'
 import { TIMERS, type TimerId } from '@shared/timers.ts'
 import type { UpdateState } from '@shared/update.ts'
 
-type PageId = 'home' | 'characters' | 'guild' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'bossRuns' | 'history' | 'session' | 'cache' | 'settings' | 'updates' | 'changes'
+type PageId = 'home' | 'characters' | 'guild' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'bossRuns' | 'applicants' | 'history' | 'session' | 'cache' | 'settings' | 'updates' | 'changes'
 interface Page {
   id: PageId
   label: string
@@ -65,6 +66,7 @@ const PAGES: Record<PageId, Page> = {
   events: { id: 'events', label: 'Event Alerts', icon: 'M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11zM6.5 14h3' },
   bosses: { id: 'bosses', label: 'Field Bosses', icon: 'M8 2a5 5 0 0 0-3.5 8.5V13h7v-2.5A5 5 0 0 0 8 2zM6 8.5h.01M10 8.5h.01M7 13v-1.5M9 13v-1.5' },
   bossRuns: { id: 'bossRuns', label: 'Boss Runs', icon: 'M2.5 4h2M2.5 8h2M2.5 12h2M6.5 4h7M6.5 8h7M6.5 12h4' },
+  applicants: { id: 'applicants', label: 'Join requests', icon: 'M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M12 4.5v4M10 6.5h4' },
   history: { id: 'history', label: 'Combat history', icon: 'M2 8a6 6 0 1 0 1.8-4.3M2 2.5v3h3M8 5v3l2 1.5', emoji: '💪' },
   cache: { id: 'cache', label: 'Cache', icon: 'M2.5 4.5C2.5 3.4 5 2.5 8 2.5s5.5.9 5.5 2S11 6.5 8 6.5 2.5 5.6 2.5 4.5ZM2.5 4.5v7c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-7M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2' },
   session: { id: 'session', label: 'Session', icon: 'M2.5 11.5 6 8l2.5 2.5 5-5M10 5.5h3.5V9' },
@@ -74,7 +76,7 @@ const PAGES: Record<PageId, Page> = {
 }
 const SECTIONS: { title: string | null; pages: PageId[] }[] = [
   { title: null, pages: ['home', 'characters', 'guild'] },
-  { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'bossRuns'] },
+  { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'bossRuns', 'applicants'] },
   { title: 'Records', pages: ['history', 'session', 'cache'] },
   { title: 'App', pages: ['updates', 'changes'] },
 ]
@@ -322,6 +324,7 @@ onBeforeUnmount(() => {
           <EventsView v-else-if="page === 'events'" />
           <BossesView v-else-if="page === 'bosses'" />
           <BossRunsView v-else-if="page === 'bossRuns'" />
+          <ApplicantsView v-else-if="page === 'applicants'" />
           <GuildEventsView v-else-if="page === 'guild'" />
           <HistoryView v-else-if="page === 'history'" />
           <StorageView v-else-if="page === 'cache'" />

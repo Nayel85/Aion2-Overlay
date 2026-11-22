@@ -5,6 +5,7 @@
  */
 import type { Buff } from './buffs.ts'
 import type { Characters } from './characters.ts'
+import type { Applicants } from './applicants.ts'
 import type { GameMapState, MapDetail } from './gameMap.ts'
 import type { DummyState } from './dummy.ts'
 import type { UpdateState } from './update.ts'
@@ -52,6 +53,13 @@ export interface InvokeChannels {
   'gamemap:grab': { args: [w: number, h: number]; result: { width: number; height: number; rgba: Uint8Array } | null }
   /** Your characters (the Characters page). */
   'characters:get': { args: []; result: Characters }
+  /** Join requests to your party (the Applicants widget). */
+  'applicants:get': { args: []; result: Applicants }
+  'applicants:dismiss': { args: [character: number]; result: void }
+  'applicants:clear': { args: []; result: void }
+  'applicants:moveTo': { args: [to: Point]; result: void }
+  'applicants:dragEnd': { args: []; result: void }
+  'applicants:resize': { args: [size: { width: number; height: number }]; result: void }
   /** Ask NCSoft for a character's combat power and portrait again. */
   'characters:refresh': { args: [id: string]; result: void }
   /** Stop tracking a character. */
@@ -231,6 +239,8 @@ export interface EventChannels {
   'gamemap:state': GameMapState
   /** Your characters, whenever one changes. */
   'characters:changed': Characters
+  /** The join requests, whenever one comes, goes or the list clears. */
+  'applicants:changed': Applicants
   /** A timer started alerting (once per start: the chime). */
   'timers:alert': TimerAlert
   /** Every timer alerting now (the bubble shakes while there are any). */
@@ -292,10 +302,10 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'meter:get', 'meter:reset', 'meter:moveTo', 'meter:dragEnd', 'meter:resize',
   'minimap:moveTo', 'minimap:dragEnd', 'minimap:resize',
   'skills:get', 'skills:moveTo', 'skills:dragEnd', 'skills:resize',
-  'buffs:get', 'buffs:moveTo', 'buffs:dragEnd', 'buffs:resize', 'cc:moveTo', 'cc:dragEnd', 'cc:resize', 'enemies:moveTo', 'enemies:dragEnd', 'enemies:resize', 'bossruns:moveTo', 'bossruns:dragEnd', 'bossruns:resize', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'eventtoast:resize', 'training:moveTo', 'training:dragEnd', 'training:resize', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'packets:resize', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
+  'buffs:get', 'buffs:moveTo', 'buffs:dragEnd', 'buffs:resize', 'cc:moveTo', 'cc:dragEnd', 'cc:resize', 'enemies:moveTo', 'enemies:dragEnd', 'enemies:resize', 'applicants:get', 'applicants:dismiss', 'applicants:clear', 'applicants:moveTo', 'applicants:dragEnd', 'applicants:resize', 'bossruns:moveTo', 'bossruns:dragEnd', 'bossruns:resize', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'eventtoast:resize', 'training:moveTo', 'training:dragEnd', 'training:resize', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'packets:resize', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
   'details:open', 'details:get', 'details:view', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:delete',
 ]
 
 export const EVENT_CHANNELS: readonly EventChannel[] = [
-  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', 'guildEvents:state', 'guildEvents:changed',
+  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', 'guildEvents:state', 'guildEvents:changed',
 ]

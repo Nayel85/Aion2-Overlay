@@ -30,6 +30,9 @@ pub const OP_OBJECT_REMOVED: [u8; 2] = [0x35, 0x36];
 /// `35 38 <entity varint> ...`: what you select (target), as the game sends it the moment you do.
 pub const OP_SELECTION: [u8; 2] = [0x35, 0x38];
 pub const OP_PLAYER_CARD: [u8; 2] = [0x30, 0x97];
+pub const OP_APPLICANT: [u8; 2] = [0x07, 0x97];
+pub const OP_APPLICANT_GONE: [u8; 2] = [0x25, 0x97];
+pub const OP_MEMBER_JOINED: [u8; 2] = [0x0B, 0x97];
 pub const OP_TARGET_INFO: [u8; 2] = [0x50, 0x36];
 pub const OP_PVP_SWITCH: [u8; 2] = [0x54, 0x36];
 pub const OP_CHARACTER_LIST: [u8; 2] = [0x15, 0x36];
@@ -842,13 +845,41 @@ pub struct PlayerCard {
 /// name and server.
 pub fn player_card(frame: &[u8]) -> Option<PlayerCard> {
     let b = body(frame, OP_PLAYER_CARD)?;
+    card_at(b).map(|(_, card)| card)
+}
+
+/// A card's fields from `character u32` on, as `player_card` lays them out: the character id and the card.
+fn card_at(b: &[u8]) -> Option<(u32, PlayerCard)> {
     let server = u16_at(b, 6)?;
     let level = u32_at(b, 12)?;
     let gear_score = u32_at(b, 16)?;
     let name = name_at(b, 20)?;
     let end = 21 + name.len();
     let valid = (1000..=9999).contains(&server) && (1..=99).contains(&level) && gear_score < 100_000 && u16_at(b, end) == Some(server);
-    valid.then_some(PlayerCard { name, server, class: u32_at(b, 8)?, level, gear_score, combat_power: u32_at(b, end + 6)? })
+    valid.then_some((u32_at(b, 0)?, PlayerCard { name, server, class: u32_at(b, 8)?, level, gear_score, combat_power: u32_at(b, end + 6)? }))
+}
+
+/// Someone asking to join your party: `07 97 <group u32>` and then the same card as `30 97`
+/// (the character id first). Sent for every applicant as they apply, though the game shows only
+/// the first until it is answered (the owner's 2026-11-22 logs: Tadalafila, CP 66513, GS 1446,
+/// while the game showed another).
+pub fn applicant(frame: &[u8]) -> Option<(u32, PlayerCard)> {
+    card_at(body(frame, OP_APPLICANT)?.get(4..)?)
+}
+
+/// `25 97 <character u32> 00 00 <server u16>`: an application gone (seen once, an applicant
+/// 15 s after applying; a cancel is assumed). Accepting or rejecting one sends none, and the
+/// ones who cancelled (Hasagi, Biaa) left no message in the 2026-11-22 log.
+pub fn applicant_gone(frame: &[u8]) -> Option<u32> {
+    let b = body(frame, OP_APPLICANT_GONE)?;
+    (b.len() == 8 && u16_at(b, 4)? == 0 && (1000..=9999).contains(&u16_at(b, 6)?)).then(|| u32_at(b, 0))?
+}
+
+/// `0B 97 0C <slot u8> <character u32> ...`: a member who joined your party (the same character
+/// id an application carries).
+pub fn member_joined(frame: &[u8]) -> Option<u32> {
+    let b = body(frame, OP_MEMBER_JOINED)?;
+    (b.first() == Some(&0x0C)).then(|| u32_at(b, 2))?
 }
 
 /// The entity you selected (`35 38 <entity varint> 00 ...`, 4 to 6 bytes after the opcode). It
@@ -1008,6 +1039,18 @@ mod tests {
         assert_eq!(list[4].key, 395753817255505632);
         assert_eq!(list[0].legion.as_deref(), Some("Lokthar"));
         assert_eq!(list[1].legion.as_deref(), Some("Lokthar\u{30c3}"));
+    }
+
+    /// The applications of 2026-11-22 (4d6ad426 log), and the join of one of them.
+    #[test]
+    fn an_application_reads_as_a_card_and_joins_by_character() {
+        let (id, c) = applicant(&frame(OP_APPLICANT, &hex("2def0300 504e0400 0000 6409 20000000 2d000000 ae080000 08 6956656c6c617269 6409 00000000 35910100 00000000 01"))).unwrap();
+        assert_eq!((id, c.name.as_str(), c.server, c.class, c.level, c.gear_score, c.combat_power), (0x44e50, "iVellari", 2404, 32, 45, 2222, 102_709));
+        assert_eq!(applicant(&frame(OP_APPLICANT, &hex("2def0300 504e0400"))), None);
+        assert_eq!(applicant_gone(&frame(OP_APPLICANT_GONE, &hex("33480500 0000 7905"))), Some(0x54833));
+        assert_eq!(applicant_gone(&frame(OP_APPLICANT_GONE, &hex("33480500 0001 7905"))), None);
+        assert_eq!(member_joined(&frame(OP_MEMBER_JOINED, &hex("0c03 504e0400 0000 6409 08 6956656c6c617269"))), Some(0x44e50));
+        assert_eq!(member_joined(&frame(OP_MEMBER_JOINED, &hex("0d03 504e0400"))), None);
     }
 
     #[test]
