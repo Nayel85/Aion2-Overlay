@@ -3,6 +3,8 @@
 //! Meter's packet log (one line per segment, `TIMESTAMP|Client:<client
 //! port>:<server port>|HEX`), which `recording::read` reads back and A2Tools
 //! DPS Meter's own replay reads too. Files go to `<data folder>/recordings`.
+//! What your client sent the game goes beside it, in `<name>-out.txt`, the same way: for reading
+//! the client's messages (your movement), which neither meter parses.
 
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};
@@ -15,11 +17,13 @@ pub struct Recorder {
     dir: PathBuf,
     /// The file being written, and how many segments so far.
     open: Option<(BufWriter<File>, PathBuf, u64)>,
+    /// What your client sent, beside it.
+    out: Option<BufWriter<File>>,
 }
 
 impl Recorder {
     pub fn new(dir: PathBuf) -> Self {
-        Self { dir, open: None }
+        Self { dir, open: None, out: None }
     }
 
     pub fn recording(&self) -> Option<&PathBuf> {
@@ -35,6 +39,10 @@ impl Recorder {
         let path = self.dir.join(format!("{}.log", chrono::Local::now().format("%Y-%m-%d_%H-%M-%S")));
         let mut file = BufWriter::new(File::create(&path).map_err(|e| e.to_string())?);
         writeln!(file, "# Lokthar recording: the game's traffic after the lock (A2Tools DPS Meter's packet log)").map_err(|e| e.to_string())?;
+        // Not `.log`, so the recordings' list (and a replay) leaves it out.
+        let mut out = BufWriter::new(File::create(path.with_file_name(format!("{}-out.txt", path.file_stem().unwrap_or_default().to_string_lossy()))).map_err(|e| e.to_string())?);
+        writeln!(out, "# Lokthar recording: what your client sent the game, after the lock").map_err(|e| e.to_string())?;
+        self.out = Some(out);
         self.open = Some((file, path.clone(), 0));
         Ok(path)
     }
@@ -43,17 +51,29 @@ impl Recorder {
     pub fn stop(&mut self) -> Option<(PathBuf, u64)> {
         let (mut file, path, n) = self.open.take()?;
         let _ = file.flush();
+        if let Some(mut out) = self.out.take() {
+            let _ = out.flush();
+        }
         Some((path, n))
     }
 
     /// Keep one segment, if it came from the game's port (`port`, once locked).
     pub fn note(&mut self, p: &CapturedPayload, port: Option<u16>) {
         let Some((file, _, n)) = self.open.as_mut() else { return };
-        if port != Some(p.src_port) || p.data.is_empty() {
+        if port.is_none() || p.data.is_empty() {
             return;
         }
         let at = chrono::DateTime::from_timestamp_millis(p.captured_at_ms).unwrap_or_default();
         let hex: String = p.data.iter().map(|b| format!("{b:02x}")).collect();
+        if port == Some(p.dst_port) {
+            if let Some(out) = self.out.as_mut() {
+                let _ = writeln!(out, "{}|Client:{}:{}|{hex}", at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true), p.src_port, p.dst_port);
+            }
+            return;
+        }
+        if port != Some(p.src_port) {
+            return;
+        }
         if writeln!(file, "{}|Client:{}:{}|{hex}", at.to_rfc3339_opts(chrono::SecondsFormat::Millis, true), p.dst_port, p.src_port).is_ok() {
             *n += 1;
         }
