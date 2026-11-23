@@ -39,6 +39,8 @@ test("an equipment's window as the game shows it: base stats with the enchantmen
   assert.deepEqual(arcanaStatLine(0x0b, 21), { label: 'Time [Siel]', value: '21' })
   // Nayoul's Wisdom Guard: Weapon Damage Boost 4.65%, Multi-hit Chance 4.81%; Holy Spirit Knife's Might.
   assert.deepEqual([soulLine(0x20, 465), soulLine(0x92, 481), soulLine(0x1, 18).label], [{ label: 'Weapon Damage Boost', value: '4.65%' }, { label: 'Multi-hit Chance', value: '4.81%' }, 'Might'])
+  // Nayel's Vakron Greaves: Endurance 2.68%, Natural MP Regen 20.
+  assert.deepEqual([soulLine(0x1bd, 268), soulLine(0xc8, 20)], [{ label: 'Endurance', value: '2.68%' }, { label: 'Natural MP Regen', value: '20' }])
   // His Rupture Longbow's Theostone: Zikel's Vestige.
   assert.equal(theostoneOf(19950011)?.name, "Theostone: Zikel's Vestige")
   assert.equal(soulLine(0x3ff, 1).label, 'Stat 0x3ff')

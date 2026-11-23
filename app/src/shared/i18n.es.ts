@@ -136,6 +136,8 @@ export const ES: Record<string, string> = {
   'All characters': 'Todos los personajes',
   '{n} in all': '{n} en total',
   'Runs': 'Partidas',
+  'Endurance': 'Aguante',
+  'Natural MP Regen': 'Regeneración natural de PM',
   'Might': 'Poder',
   'Precision': 'Precisión ofensiva',
   'Weapon Damage Boost': 'Aumento de daño de arma',

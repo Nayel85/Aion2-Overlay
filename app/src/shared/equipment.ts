@@ -17,7 +17,8 @@
  * 0x1BD Iron Wall), the base stats in their usual order. Then checked on Nayoul's windows: Wisdom
  * Guard (Weapon Damage Boost 0x20 4.6%, Multi-hit Chance 0x92 4.8%), High Commander Lagta Helm
  * (Double Chance 0x1BB 1.6%), Holy Spirit Spellbook (Critical Attack 0x26, Status Effect Chance 0x9E
- * 15.8%), Holy Spirit Knife (Might 0x1), Wisdom Bow (Precision 0x5): `~` where not yet.
+ * 15.8%), Holy Spirit Knife (Might 0x1), Wisdom Bow (Precision 0x5); Nayel's Vakron Greaves
+ * (Endurance 0x1BD 2.7%, Natural MP Regen 0xC8 20).
  */
 import { ITEMS } from './items.ts'
 import { SKILLS } from './skills.ts'
@@ -38,7 +39,7 @@ export const STAT_CODES: Record<number, string> = {
   0x1ba: 'perfect',
   0x1bb: 'hardhit',
   0x1bc: 'restoration',
-  0x1bd: 'ironwall', // ~
+  0x1bd: 'ironwall',
   0x1be: 'perfectresist',
   0x24b: 'frontattackdamage',
   0x2: 'dex',
@@ -76,7 +77,7 @@ const STATS: Record<string, { label: string; pct?: boolean }> = {
   block: { label: 'Block' },
   hpmax: { label: 'HP' },
   mpmax: { label: 'MP' },
-  mpregen: { label: 'MP Recovery' },
+  mpregen: { label: 'Natural MP Regen' },
   fpmax: { label: 'Flight Time' },
   str: { label: 'Might' },
   dex: { label: 'Dexterity' },
@@ -99,7 +100,7 @@ const STATS: Record<string, { label: string; pct?: boolean }> = {
   perfect: { label: 'Perfect' },
   perfectresist: { label: 'Perfect Resist' },
   hardhit: { label: 'Double Chance', pct: true },
-  ironwall: { label: 'Iron Wall' },
+  ironwall: { label: 'Endurance', pct: true },
   restoration: { label: 'Restoration' },
   combatspeed: { label: 'Combat Speed', pct: true },
   weaponaccuracy: { label: 'Accuracy' },
