@@ -679,12 +679,12 @@ pub fn loot(frame: &[u8]) -> Option<(u8, Vec<(u32, u32)>)> {
 /// A gathering starting (`31 8D 00 00 <node varint> <try u32> <outcome u8> ...`), about 7 s before its
 /// outcome (`33 8D`), which it already says, as flags: 1 gathered, 2 and 4 a better grade rolled. So 0
 /// failed, 1 gathered, 7 ranked up, 6 a rank up rolled but failed (a Pure Diamond on 2026-11-23). Its doubling too: a
-/// record `01 58 15 01 00 01 5a 15 01 00` among those that follow is in the start of every gathering
-/// that doubled, and of no other. All 17 of the owner's gatherings of 2026-11-22 (3 failed, 4 ranked
+/// roll firing Plentiful Harvest (action 71000, its level in the second id: Nayel's Lv. 3 71002;
+/// Nayoul's another, so not a fixed run of bytes) is in the start of every gathering that doubled,
+/// and of no other. All 17 of the owner's gatherings of 2026-11-22 (3 failed, 4 ranked
 /// up, 6 doubled) had what their start said. The grade rolled follows: 1 plain, 2 ranked up...
 /// (node, try, outcome, grade, doubled, how long it takes in ms, its rolls).
 pub fn gather_start(frame: &[u8]) -> Option<(u32, u32, u8, u8, bool, u32, Vec<GatherRoll>)> {
-    const DOUBLED: [u8; 10] = [0x01, 0x58, 0x15, 0x01, 0x00, 0x01, 0x5a, 0x15, 0x01, 0x00];
     let b = body(frame, OP_GATHER_START)?;
     let (node, n) = varint(b, 2)?;
     let at = 2 + n;
@@ -692,10 +692,11 @@ pub fn gather_start(frame: &[u8]) -> Option<(u32, u32, u8, u8, bool, u32, Vec<Ga
     let outcome = *b.get(at + 4)?;
     // The grade rolled: 1 the plain item, 2 ranked up (Fine), 3, 4 (questlog's drop groups).
     let grade = *b.get(at + 7)?;
-    let doubled = b[at..].windows(DOUBLED.len()).any(|w| w == DOUBLED);
+    let rolls = gather_rolls(&b[at..]);
+    let doubled = rolls.iter().any(|r| r.doubled);
     let ms = gather_ms(&b[at..], grade);
     // Outcomes other than 0, 1 and 7 come too (a Fine Odyle on 2026-11-23 had one): told as they are.
-    (grade >= 1 && grade <= 9).then(|| (node, tries, outcome, grade, doubled, ms, gather_rolls(&b[at..])))
+    (grade >= 1 && grade <= 9).then_some((node, tries, outcome, grade, doubled, ms, rolls))
 }
 
 /// A supply request handed in (`3F E2 <u32> <request u32> <u32> <n u8> (<item u32> <amount u32>)×n`, the
