@@ -6,6 +6,8 @@ import { dummy } from './dummy.ts'
 import { updater } from './updater.ts'
 import { meterState } from './meter.ts'
 import { applicantStore } from './applicants.ts'
+import { partyStore } from './party.ts'
+import { flightStore } from './flight.ts'
 import { guild } from './guild.ts'
 import { characterStore } from './characters.ts'
 import { sessionStore } from './sessions.ts'
@@ -31,6 +33,12 @@ import {
   resizeBossRuns,
   ccDragEnded,
   applicantsDragEnded,
+  moveParty,
+  moveFlight,
+  flightDragEnded,
+  resizeFlight,
+  partyDragEnded,
+  resizeParty,
   enemiesDragEnded,
   moveTraining,
   resizeTraining,
@@ -172,6 +180,22 @@ export function registerIpc(): void {
   handle('guild:get', () => guild.get())
   handle('guild:refresh', () => guild.refresh())
   handle('applicants:get', () => applicantStore.all())
+  handle('party:get', () => partyStore.all())
+  handle('flight:get', () => flightStore.get())
+  handle('flight:moveTo', (to) => {
+    if (isPoint(to)) moveFlight(to)
+  })
+  handle('flight:dragEnd', () => flightDragEnded())
+  handle('flight:resize', (size) => {
+    if (isPoint({ x: size?.width, y: size?.height })) resizeFlight(size)
+  })
+  handle('party:moveTo', (to) => {
+    if (isPoint(to)) moveParty(to)
+  })
+  handle('party:dragEnd', () => partyDragEnded())
+  handle('party:resize', (size) => {
+    if (isPoint({ x: size?.width, y: size?.height })) resizeParty(size)
+  })
   handle('applicants:dismiss', (character) => {
     if (Number.isInteger(character)) applicantStore.dismiss(character)
   })

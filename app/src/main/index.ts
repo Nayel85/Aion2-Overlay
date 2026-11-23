@@ -6,6 +6,8 @@ import { app, session } from 'electron'
 import { DISPLAY_NAME, LOKTHAR_FOLDER } from '../shared/app.ts'
 import { broadcast } from './broadcast.ts'
 import { startApplicants } from './applicants.ts'
+import { startParty } from './party.ts'
+import { startFlight } from './flight.ts'
 import { startCharacters } from './characters.ts'
 import { startSessions } from './sessions.ts'
 import { startInventory } from './inventory.ts'
@@ -66,6 +68,8 @@ if (!app.requestSingleInstanceLock()) {
     startSessions()
     startInventory()
     startApplicants()
+    startParty()
+    startFlight()
     startGuild()
     startGameMap()
     startLokthar()

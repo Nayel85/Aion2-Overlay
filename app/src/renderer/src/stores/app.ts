@@ -15,6 +15,8 @@ import type { Characters } from '@shared/characters.ts'
 import { NO_SESSIONS, type Sessions } from '@shared/sessions.ts'
 import { NO_INVENTORIES, type Inventories } from '@shared/inventory.ts'
 import { NO_APPLICANTS, type Applicants } from '@shared/applicants.ts'
+import { NO_PARTY, type Party } from '@shared/party.ts'
+import type { FlightPower } from '@shared/flight.ts'
 import { NO_GUILD, type GuildState } from '@shared/guild.ts'
 import { NO_GUILD_EVENTS, type GuildEventsState } from '@shared/guildEvents.ts'
 import { bridge } from '@/lib/bridge.ts'
@@ -44,6 +46,10 @@ export const useApp = defineStore('app', () => {
   const inventories = ref<Inventories>(NO_INVENTORIES)
   /** Join requests to your party (the Applicants widget). */
   const applicants = ref<Applicants>(NO_APPLICANTS)
+  /** Your party and its members' HP (the party frames). */
+  const party = ref<Party>(NO_PARTY)
+  /** Your flight power (the flight timer). */
+  const flight = ref<FlightPower | null>(null)
   /** The guild as the Lokthar site has it, and your main there (the Guild page). */
   const guild = ref<GuildState>(NO_GUILD)
   /** The Lokthar site's guild events that ask who comes, and your answers (main/guildEvents.ts). */
@@ -157,6 +163,8 @@ export const useApp = defineStore('app', () => {
     api.on('sessions:changed', (s) => (sessions.value = s))
     api.on('inventory:changed', (i) => (inventories.value = i))
     api.on('applicants:changed', (a) => (applicants.value = a))
+    api.on('party:changed', (p) => (party.value = p))
+    api.on('flight:changed', (f) => (flight.value = f))
     api.on('guild:changed', (g) => (guild.value = g))
     api.on('guildEvents:state', (g) => (guildEvents.value = g))
     api.on('tracker:pvp', (k) => {
@@ -197,6 +205,8 @@ export const useApp = defineStore('app', () => {
     sessions.value = await api.invoke('sessions:get')
     inventories.value = await api.invoke('inventory:get')
     applicants.value = await api.invoke('applicants:get')
+    party.value = await api.invoke('party:get')
+    flight.value = await api.invoke('flight:get')
     guild.value = await api.invoke('guild:get')
     guildEvents.value = await api.invoke('guildEvents:get')
     alerting.value = await api.invoke('timers:get')
@@ -230,7 +240,7 @@ export const useApp = defineStore('app', () => {
   }
 
   return {
-    settings, applicants, guild, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, inventories, guildEvents, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
+    settings, applicants, party, flight, guild, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, inventories, guildEvents, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
     init, set, setHud, togglePin, openPet, hiddenPet,
   }
 })

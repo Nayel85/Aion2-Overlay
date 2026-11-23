@@ -49,6 +49,9 @@
 //!   {"type": "shop", "tab": 104, "nextAt": ms | null, "items": [{"slot", "item", "quantity", "currency", "base", "price"}]}
 //!   {"type": "fieldBosses", "world": 1010, "bosses": [{"id": 101021, "up": false, "at": ms}]}
 //!   {"type": "bossKilled", "npc": 2100003}   a field boss died in view (its monster code)
+//!   {"type": "party", "members": [{"name", "slot", "level", "combatPower", "server", "className", "entity"}]}   the party as it changes
+//!   {"type": "flight", "fp": {"current", "max", "ratePerS", "flying", "drainPerS", "atMs"} | null}   your flight power (hundredths), as it changes
+//!   {"type": "partyVitals", "entity", "hp", "maxHp", "flight", "maxFlight"}   a member's vitals (`1B 92`, about once a second each)
 //!   {"type": "inventory", "name", "server", "items": [{"storage", "slot", "item", "amount", "enchant", "stones"}]}   a login's whole item list (1 bag, 2 account warehouse, 11 worn, 14 Arcana, 15 own warehouse)
 //!   {"type": "inventorySlots", "name", "server", "slots": [...]}   slots said anew as items move (amount 0: emptied)
 //!   {"type": "dutyDone", "quest", "rewards": [{"item", "amount"}], "offered": [{"item", "amount", "chance", "got"}]}   a duty mission handed in: what it gave, of its list
@@ -271,6 +274,7 @@ pub fn run(opts: Options) -> Result<(), String> {
     }
     sidecar.publish();
     sidecar.heartbeat();
+    sidecar.flight();
     crate::focus::watch(opts.app_pid);
 
     // Commands, until stdin closes (the app quit) or says quit.
@@ -458,6 +462,28 @@ impl Sidecar {
                 if last.as_ref().is_none_or(|(prev, at)| *prev != dps || at.elapsed() >= DPS_RESEND) {
                     emit(&dps);
                     last = Some((dps, Instant::now()));
+                }
+            }
+        });
+    }
+
+    /// Your flight power (A2Tools' `capture::flight_power`) when it changes, looked at 4 times a
+    /// second while capturing, for the flight timer: in hundredths, with how fast it refills and
+    /// drains and whether you are in the air.
+    fn flight(self: &Arc<Self>) {
+        let me = self.clone();
+        self.runtime.spawn(async move {
+            let mut tick = tokio::time::interval(Duration::from_millis(250));
+            let mut told = None;
+            loop {
+                tick.tick().await;
+                if !me.capturing.load(Ordering::SeqCst) {
+                    continue;
+                }
+                let now = me.meter.storage.flight_power();
+                if now != told {
+                    told = now;
+                    emit(&event("flight", json!({ "fp": now })));
                 }
             }
         });

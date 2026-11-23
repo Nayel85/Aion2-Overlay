@@ -193,6 +193,9 @@ pub struct Tracker {
     duty: HashMap<u32, (u32, Vec<p::DutyReward>)>,
     /// Missions handed in before their place was known (the board follows them): (place, indexes, when).
     duty_pending: Vec<(u32, Vec<u32>, i64)>,
+    /// The party as last told the app (its members' names, classes and entities), and when checked.
+    party_told: Value,
+    party_checked: i64,
 }
 
 /// An item where it lies, as the app keeps it (shared/inventory.ts).
@@ -275,6 +278,35 @@ impl Tracker {
             pvp_seen: HashMap::new(),
             duty: HashMap::new(),
             duty_pending: Vec::new(),
+            party_told: json!([]),
+            party_checked: 0,
+        }
+    }
+
+    /// The party (A2Tools' roster, `02 97`: names, classes, levels, combat power, slots), each member
+    /// with their entity here when known (their vitals come by it): told the app when it changes,
+    /// checked at most once a second.
+    fn party_check(&mut self, ts: i64) {
+        if ts - self.party_checked < 1000 {
+            return;
+        }
+        self.party_checked = ts;
+        let mut members: Vec<Value> = self
+            .storage
+            .get_party_members()
+            .into_iter()
+            .map(|(name, m)| {
+                json!({
+                    "name": name, "slot": m.slot, "level": m.level, "combatPower": m.combat_power, "server": m.server_id,
+                    "className": m.job.map(|j| format!("{j:?}")), "entity": self.storage.find_id_by_nickname(&name),
+                })
+            })
+            .collect();
+        members.sort_by_key(|m| m["slot"].as_u64());
+        let party = json!(members);
+        if party != self.party_told {
+            (self.emit)(json!({ "type": "party", "ts": ts, "members": party }));
+            self.party_told = party;
         }
     }
 
@@ -766,6 +798,8 @@ impl Tracker {
     /// One game frame, as the parser read it; `ts` is its capture time (ms).
     pub fn frame(&mut self, ts: i64, f: &[u8]) {
         self.save_cards(ts);
+        // On any frame, so leaving the party is told too (its vitals stop then).
+        self.party_check(ts);
         if let Some((at, _)) = &self.pending_sync {
             if ts - at > SYNC_WAIT_MS {
                 let (_, coll) = self.pending_sync.take().unwrap();
@@ -1067,6 +1101,11 @@ impl Tracker {
                 } else {
                     let raw: String = f.iter().map(|b| format!("{b:02x}")).collect();
                     tracing::info!("reward board not read: {raw}");
+                }
+            }
+            p::OP_PARTY_VITALS => {
+                if let Some((entity, hp, max_hp, fp, max_fp)) = p::party_vitals(f) {
+                    (self.emit)(json!({ "type": "partyVitals", "ts": ts, "entity": entity, "hp": hp, "maxHp": max_hp, "flight": fp, "maxFlight": max_fp }));
                 }
             }
             p::OP_DUTY_TAKEN => {

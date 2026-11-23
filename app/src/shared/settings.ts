@@ -138,6 +138,10 @@ export interface Settings {
    */
   /** Join requests to your party: a widget that comes up when someone applies. */
   applicants: { enabled: boolean; position: Point | null; opacity: number; collapsed: boolean; /** Seconds it stays after the last application. */ hideAfter: number }
+  /** Party frames: each member's class, name and HP over the game, while in a party. `self`: you among them. */
+  party: { enabled: boolean; position: Point | null; opacity: number; collapsed: boolean; self: boolean }
+  /** The flight timer: seconds of flight left, while flying or refilling. */
+  flight: { enabled: boolean; position: Point | null; opacity: number }
   bossRuns: { enabled: boolean; position: Point | null; opacity: number; windowMinutes: number; rows: number; collapsed: boolean; scale: number; aliveMin: number; ignoreLow: boolean; lowPriority: number[] }
 
   /**
@@ -374,6 +378,8 @@ export const SETTINGS_DEFAULTS: Settings = {
   unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, buttons: 'hover', events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, earningsMinutes: 10, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, guild: false, clock: true, odyle: true, runsPinned: false, replace: false },
   muted: false,
   applicants: { enabled: true, position: null, opacity: 0.85, collapsed: false, hideAfter: 60 },
+  party: { enabled: true, position: null, opacity: 0.85, collapsed: false, self: true },
+  flight: { enabled: true, position: null, opacity: 1 },
   bossRuns: { enabled: false, position: { x: 1890, y: 30 }, opacity: 0.85, windowMinutes: 15, rows: 4, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: [101001, 101002, 101006, 101007, 101019, 101017, 101005, 101004, 101003, 101015, 101010, 101008, 101009, 101016, 101012, 101014, 101020, 101013, 101011, 101018] },
   killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null },
   enemies: { enabled: false, position: null, opacity: 0.75, collapsed: false, mapPins: true, sound: true, pvpOnly: true, soundId: 'enemy-spotted', volume: 0.7, customName: null },
@@ -578,6 +584,20 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         opacity: num(v.opacity, 0, 1, d.applicants.opacity),
         collapsed: bool(v.collapsed, false),
         hideAfter: Math.round(num(v.hideAfter, APPLICANTS_HIDE[0], APPLICANTS_HIDE[1], d.applicants.hideAfter)),
+      } as Settings[K]
+    }
+    case 'flight': {
+      const v = (value ?? {}) as Partial<Settings['flight']>
+      return { enabled: bool(v.enabled, d.flight.enabled), position: point(v.position), opacity: num(v.opacity, 0.2, 1, d.flight.opacity) } as Settings[K]
+    }
+    case 'party': {
+      const v = (value ?? {}) as Partial<Settings['party']>
+      return {
+        enabled: bool(v.enabled, d.party.enabled),
+        position: point(v.position),
+        opacity: num(v.opacity, 0, 1, d.party.opacity),
+        collapsed: bool(v.collapsed, false),
+        self: bool(v.self, d.party.self),
       } as Settings[K]
     }
     case 'bossRuns': {

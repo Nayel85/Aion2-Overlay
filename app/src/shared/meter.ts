@@ -43,6 +43,8 @@ export interface MeterTarget {
   maxHp: number
   /** null when unknown. */
   hp: number | null
+  /** How far its stagger gauge is worn down, 0-100 (A2Tools' `stagger_pct`); null without one. */
+  stagger: number | null
 }
 
 export interface MeterData {
@@ -188,6 +190,8 @@ export interface DpsEvent {
   targetTotalDamage: number
   targetCurrentHp: number
   targetIsBoss?: boolean
+  /** -1 without a stagger gauge. */
+  targetStaggerPct?: number
   train?: { damage: number; target: number; lastHit: number } | null
 }
 
@@ -220,6 +224,7 @@ export function meterData(ev: DpsEvent, at: number, ping: number | null = null):
         maxHp: ev.targetMaxHp,
         // A live HP reading when there is one, else what the max less the damage dealt leaves.
         hp: ev.targetCurrentHp >= 0 ? ev.targetCurrentHp : ev.targetMaxHp > 0 ? Math.max(0, ev.targetMaxHp - ev.targetTotalDamage) : null,
+        stagger: ev.targetStaggerPct !== undefined && ev.targetStaggerPct >= 0 ? ev.targetStaggerPct : null,
       }
     : null
   const mode = (TARGET_MODES as readonly string[]).includes(ev.targetMode) ? (ev.targetMode as TargetMode) : 'bossTargets'

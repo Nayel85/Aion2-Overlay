@@ -21,6 +21,8 @@
  *   bossruns  #/bossruns  Verteron's field bosses about to spawn, with their Kibelisk: up by itself
  *                         when several spawn close together; moved by its header, sized by its corner
  *   applicants #/applicants join requests to your party, as people apply (its own widget; up while there are any)
+ *   party      #/party      party frames: each member's HP, while in a party
+ *   flight     #/flight     the flight timer: seconds of flight left, while flying or refilling; click-through
  *   eventtoast #/eventtoast a guild event to answer (going, maybe, not going): popped up in the
  *                         bottom right corner of the screen the game is on, above the taskbar
  *   meter     #/meter     the DPS meter: open while the game is (and the meter is on), movable by
@@ -797,6 +799,39 @@ export const resizeApplicants = applicantsOverlay.resize
 export const moveApplicants = applicantsOverlay.move
 export const applicantsDragEnded = applicantsOverlay.dragEnded
 
+/** Party frames: at the left, a third of the way down (as the game's own). */
+const partyOverlay = measuredOverlay({
+  route: 'party',
+  enabled: () => settings.get('party').enabled,
+  saved: () => settings.get('party').position,
+  fallback: () => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: Math.round(area.x + area.width * 0.02), y: Math.round(area.y + area.height * 0.3) }
+  },
+  save: (position) => settings.set('party', { ...settings.get('party'), position }),
+})
+export const createParty = partyOverlay.create
+export const resizeParty = partyOverlay.resize
+export const moveParty = partyOverlay.move
+export const partyDragEnded = partyOverlay.dragEnded
+
+/** The flight timer: under the centre of the screen, where you look while flying (click-through). */
+const flightOverlay = measuredOverlay({
+  route: 'flight',
+  enabled: () => settings.get('flight').enabled,
+  saved: () => settings.get('flight').position,
+  fallback: () => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: Math.round(area.x + area.width / 2 - 86), y: Math.round(area.y + area.height * 0.62) }
+  },
+  save: (position) => settings.set('flight', { ...settings.get('flight'), position }),
+  clickThrough: true,
+})
+export const createFlight = flightOverlay.create
+export const resizeFlight = flightOverlay.resize
+export const moveFlight = flightOverlay.move
+export const flightDragEnded = flightOverlay.dragEnded
+
 /** Boss Runs: right of centre, a third of the way down. */
 const bossRunsOverlay = measuredOverlay({
   route: 'bossruns',
@@ -832,7 +867,7 @@ const eventToastOverlay = measuredOverlay({
 export const createEventToast = eventToastOverlay.create
 export const resizeEventToast = eventToastOverlay.resize
 
-const MEASURED = [applicantsOverlay, skillsOverlay, miniMapOverlay, buffsOverlay, ccOverlay, enemiesOverlay, trainingOverlay, packetsOverlay, bossRunsOverlay, eventToastOverlay]
+const MEASURED = [applicantsOverlay, partyOverlay, flightOverlay, skillsOverlay, miniMapOverlay, buffsOverlay, ccOverlay, enemiesOverlay, trainingOverlay, packetsOverlay, bossRunsOverlay, eventToastOverlay]
 /** The measured overlays that are open. */
 const measuredWins = (): BrowserWindow[] => MEASURED.map((m) => m.win()).filter((w): w is BrowserWindow => w !== null)
 
@@ -1186,6 +1221,10 @@ export function applyWindowSettings(): void {
   else if (alive(bubble)) createEnemies()
   if (!settings.get('applicants').enabled) applicantsOverlay.close()
   else if (alive(bubble)) createApplicants()
+  if (!settings.get('party').enabled) partyOverlay.close()
+  else if (alive(bubble)) createParty()
+  if (!settings.get('flight').enabled) flightOverlay.close()
+  else if (alive(bubble)) createFlight()
   if (!bossRunsOn()) bossRunsOverlay.close()
   else if (alive(bubble)) createBossRuns()
   if (!eventToastEnabled()) eventToastOverlay.close()
@@ -1255,7 +1294,7 @@ export function rebuildWindow(win: BrowserWindow): string | null {
     showMerchant()
     return 'merchant'
   }
-  for (const [m, route] of [[applicantsOverlay, 'applicants'], [skillsOverlay, 'skills'], [miniMapOverlay, 'minimap'], [buffsOverlay, 'buffs'], [ccOverlay, 'cc'], [enemiesOverlay, 'enemies'], [trainingOverlay, 'training'], [packetsOverlay, 'packets'], [bossRunsOverlay, 'bossruns'], [eventToastOverlay, 'eventtoast']] as const) {
+  for (const [m, route] of [[applicantsOverlay, 'applicants'], [partyOverlay, 'party'], [flightOverlay, 'flight'], [skillsOverlay, 'skills'], [miniMapOverlay, 'minimap'], [buffsOverlay, 'buffs'], [ccOverlay, 'cc'], [enemiesOverlay, 'enemies'], [trainingOverlay, 'training'], [packetsOverlay, 'packets'], [bossRunsOverlay, 'bossruns'], [eventToastOverlay, 'eventtoast']] as const) {
     if (win !== m.win()) continue
     m.close()
     m.create()

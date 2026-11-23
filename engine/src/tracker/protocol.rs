@@ -52,6 +52,8 @@ pub const OP_REWARD_BOARD: [u8; 2] = [0x0A, 0x57];
 pub const OP_BOX_OPENED: [u8; 2] = [0x47, 0x56];
 /// The duty board's missions: one taken (`11 8D`), the board (`1C 8D`), one handed in (`0F 8D`).
 pub const OP_DUTY_TAKEN: [u8; 2] = [0x11, 0x8D];
+/// A party member's vitals, about once a second each (`1B 92`): HP, MP, flight time.
+pub const OP_PARTY_VITALS: [u8; 2] = [0x1B, 0x92];
 pub const OP_DUTY_BOARD: [u8; 2] = [0x1C, 0x8D];
 pub const OP_DUTY_DONE: [u8; 2] = [0x0F, 0x8D];
 /// A Nightmare's end (`38 E2`): its boss and stage too, but after fields of varying length (71 and
@@ -880,6 +882,21 @@ pub fn box_opened(frame: &[u8]) -> Option<Vec<(u32, bool, u32)>> {
     Some(items)
 }
 
+/// A party member's vitals (`1B 92`), as A2Tools' `parse_hp_mp_update_packet` reads its start:
+/// `<entity varint> <hp varint> <max hp varint> <mp u32> <max mp u32> <u32> <u32> <flight time u32>
+/// <max flight time u32> 01`, the times in ms. The owner's 2026-11-22 Vakron run: entity 11185, HP
+/// 26,672 of 26,672, MP 3,489, flight 13.1 s of 150 s. (entity, hp, max hp, flight, max flight).
+pub fn party_vitals(frame: &[u8]) -> Option<(u32, u32, u32, u32, u32)> {
+    let b = body(frame, OP_PARTY_VITALS)?;
+    let (entity, n1) = varint(b, 0)?;
+    let (hp, n2) = varint(b, n1)?;
+    let (max_hp, n3) = varint(b, n1 + n2)?;
+    let at = n1 + n2 + n3;
+    let (mp, max_mp) = (u32_at(b, at)?, u32_at(b, at + 4)?);
+    let (fp, max_fp) = (u32_at(b, at + 16)?, u32_at(b, at + 20)?);
+    (entity >= 100 && max_hp > 0 && hp <= max_hp && max_hp <= 50_000_000 && mp <= max_mp && fp <= max_fp).then_some((entity, hp, max_hp, fp, max_fp))
+}
+
 /// A duty mission's rewards: `<count u8>`, then each `<item u32> <amount varint> 00 <chance u32,
 /// of 100,000,000> 00 00 00 00`. The owner's 2026-11-23 Safe Hiking: Kina (Bound) x10,000 sure,
 /// Yggdrasil Log 50%, Small Odyle Energy 33% and 25%, Cogni Soul Crystal x200 10%. Its rewards (item,
@@ -1568,6 +1585,9 @@ mod tests {
         // The owner's 2026-11-23 transfer of Lucky Auras to Nayel's own warehouse: slots 0 and 1 there.
         let moved = item_slots(&frame(OP_ITEM, &hex("0201005c18080000fb0100e192b22509000000000000000f00000000000000000000000000000000000100cd77060000690200d16bb22501000000000000000f01000000000000000000000000000000")));
         assert_eq!(moved.iter().map(|i| (i.storage, i.slot, i.amount)).collect::<Vec<_>>(), vec![(15, 0, 9), (15, 1, 1)]);
+        // The owner's 2026-11-22 Vakron run: a party member's vitals, full HP; another's, low.
+        assert_eq!(party_vitals(&frame(OP_PARTY_VITALS, &hex("b157b0d001b0d001a10d0000a10d0000000000000000000045330000f049020001"))), Some((11185, 26672, 26672, 13125, 150000)));
+        assert_eq!(party_vitals(&frame(OP_PARTY_VITALS, &hex("a328de74a396012a1400002a1400000000000000000000f0490200f049020001"))).map(|v| (v.0, v.1, v.2)), Some((5155, 14942, 19235)));
         // The owner's 2026-11-23 duty missions: Safe Hiking taken (place 396), handed in with its
         // first reward; Wanted: Officer Barha handed in (place 395) with its first four.
         let taken = duty_taken(&frame(OP_DUTY_TAKEN, &hex("84de130002010000000000008c01000000000000000521337037904e0000e1f505000000009bc76524010080f0fa020000000040da051e0100408af7010000000040da051e010040787d01000000006426b41fc801008096980000000000"))).unwrap();

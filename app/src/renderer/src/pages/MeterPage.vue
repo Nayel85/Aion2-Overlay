@@ -307,6 +307,11 @@ onBeforeUnmount(() => {
               {{ (hpShare * 100).toFixed(1) }}% · {{ short(meter.target!.hp!) }}<template v-if="ttk !== null"> · {{ t('dies in {time}', { time: clock(ttk) }) }}</template>
             </span>
           </div>
+          <!-- The stagger gauge, worn down as it is hit: broken at 100%. -->
+          <div v-if="meter.target?.stagger != null" class="relative mt-0.5 h-2 overflow-hidden rounded bg-dark" :title="t('Stagger')">
+            <div class="h-full bg-yellow/80 transition-[width] duration-300" :style="{ width: `${meter.target.stagger}%` }" />
+            <span class="absolute inset-0 flex items-center justify-center text-[8px] font-semibold tabular-nums leading-none text-default">{{ t('Stagger') }} {{ Math.round(meter.target.stagger) }}%</span>
+          </div>
         </div>
 
         <template v-if="rows.length">

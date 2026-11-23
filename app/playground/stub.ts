@@ -154,7 +154,7 @@ function pushMeter(): void {
   const secs = Math.max(1, (now() - fight.start) / 1000)
   meter = {
     ...meter, at: now(), battleTime: now() - fight.start, meKnown: true, me: 1,
-    target: { id: fight.player ? 7 : 5, name: fight.name, boss: fight.boss, maxHp: fight.maxHp, hp: Math.max(0, fight.hp) },
+    target: { id: fight.player ? 7 : 5, name: fight.name, boss: fight.boss, maxHp: fight.maxHp, hp: Math.max(0, fight.hp), stagger: null },
     rows: [row(1, ME, 'Gladiator', fight.damage, fight.damage / secs, true), row(2, 'Wolves', 'Sorcerer', fight.damage * 0.8, (fight.damage * 0.8) / secs), row(3, 'Stoopzz', 'Cleric', fight.damage * 0.6, (fight.damage * 0.6) / secs)],
   }
   emit('meter:dps', meter)
