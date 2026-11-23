@@ -35,7 +35,7 @@ export interface UpdateState {
 }
 
 /** Where the releases are: electron-builder.yml's `publish` says the same for the installed copy. */
-export const RELEASE_REPO = { owner: 'erylopez', repo: 'aion-overlay' } as const
+export const RELEASE_REPO = { owner: 'Nayel85', repo: 'Aion2-Overlay' } as const
 
 /** The releases page, or one release's. */
 export const releasePage = (version: string | null = null): string =>

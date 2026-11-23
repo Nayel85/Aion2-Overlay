@@ -1,7 +1,9 @@
 /**
  * App updates, only when asked (Settings → Updates → Check for updates), in one go: electron-updater
- * reads the latest release of github.com/erylopez/aion-overlay (the latest.yml the build attaches
- * to it); a newer version is downloaded, put in over this copy, and the app starts again. Opening
+ * reads the latest release of github.com/Nayel85/Aion2-Overlay (the latest.yml the build attaches
+ * to it); a newer version is downloaded, put in over this copy, and the app starts again. The
+ * repository is private: its releases are read through GitHub's API with a read-only token built
+ * in (UPDATE_TOKEN, from app/update-token.txt at build time). Opening
  * the Updates page only looks the newest version up (`peek`), for its manual download links; nothing
  * is downloaded unless asked. Its requests go through electron-updater's own session, not the
  * windows' one that main/index.ts blocks.
@@ -26,10 +28,25 @@ import { promisify } from 'node:util'
 import electronUpdater from 'electron-updater'
 import { broadcast } from './broadcast.ts'
 import { log } from './tracker.ts'
-import { RELEASE_REPO, releaseFile, type UpdateState } from '../shared/update.ts'
+import { RELEASE_REPO, type UpdateState } from '../shared/update.ts'
 
 // electron-updater is CommonJS: its named exports sit on the default import in the ESM build.
 const { autoUpdater } = electronUpdater
+
+declare const __UPDATE_TOKEN__: string
+/** The read-only token for the private releases (electron.vite.config.ts builds it in); '' without. */
+const UPDATE_TOKEN = __UPDATE_TOKEN__
+const API = `https://api.github.com/repos/${RELEASE_REPO.owner}/${RELEASE_REPO.repo}`
+
+/** One of a release's files, through the API (the repository is private): its asset, followed to its bytes. */
+async function releaseAsset(version: string, name: string): Promise<Response> {
+  const auth = { authorization: `Bearer ${UPDATE_TOKEN}`, 'x-github-api-version': '2022-11-28' }
+  const rel = await fetch(`${API}/releases/tags/v${version}`, { headers: { ...auth, accept: 'application/vnd.github+json' } })
+  if (!rel.ok) throw new Error(`release v${version}: HTTP ${rel.status}`)
+  const asset = ((await rel.json()) as { assets?: { name: string; url: string }[] }).assets?.find((a) => a.name === name)
+  if (!asset) throw new Error(`release v${version} has no ${name}`)
+  return fetch(asset.url, { headers: { ...auth, accept: 'application/octet-stream' }, redirect: 'follow' })
+}
 
 /** An installed copy has its uninstaller next to it ("Uninstall Lokthar.exe"); one unpacked from the zip does not. */
 function isPortable(): boolean {
@@ -76,7 +93,7 @@ async function downloadPortable(version: string): Promise<{ dir: string; exe: st
   await mkdir(dir, { recursive: true })
   const zip = join(dir, name)
 
-  const res = await fetch(releaseFile(version, 'portable'), { redirect: 'follow' })
+  const res = await releaseAsset(version, name)
   if (!res.ok || !res.body) throw new Error(`${name}: HTTP ${res.status}`)
   const total = Number(res.headers.get('content-length')) || 0
   const chunks: Uint8Array[] = []
@@ -91,7 +108,7 @@ async function downloadPortable(version: string): Promise<{ dir: string; exe: st
   }
   const bytes = Buffer.concat(chunks)
 
-  const sum = await fetch(releaseFile(version, 'portable.sha256'), { redirect: 'follow' })
+  const sum = await releaseAsset(version, `${name}.sha256`)
   if (!sum.ok) throw new Error(`${name}.sha256: HTTP ${sum.status}`)
   const expected = (await sum.text()).trim().split(/\s+/)[0]?.toLowerCase()
   const actual = createHash('sha256').update(bytes).digest('hex')
@@ -141,8 +158,9 @@ const notesText = (notes: unknown): string | null =>
   typeof notes === 'string' ? notes : Array.isArray(notes) ? notes.map((n) => (n as { note?: string }).note ?? '').join('\n') : null
 
 export function startUpdater(): void {
-  // What electron-builder's publish says (app-update.yml), said here too, for the zip's copy.
-  if (portable) autoUpdater.setFeedURL({ provider: 'github', ...RELEASE_REPO, releaseType: 'release' })
+  // What electron-builder's publish says (app-update.yml), said here too, with the token: the
+  // releases are private.
+  autoUpdater.setFeedURL({ provider: 'github', ...RELEASE_REPO, releaseType: 'release', private: true, token: UPDATE_TOKEN })
   autoUpdater.autoDownload = false
   // A downloaded update the user did not restart for goes in when the app quits.
   autoUpdater.autoInstallOnAppQuit = true

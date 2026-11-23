@@ -32,11 +32,12 @@ win:
   artifactName: Lokthar-${version}-portable.${ext}
 # Where the installed app looks for updates (Settings → Updates, by hand only): the latest release
 # of this repo. The build writes latest.yml next to the installer; the release workflow attaches
-# both. The repo must be public for the app to read its releases.
+# both. The repo is private: the app reads its releases with a read-only token (electron.vite.config.ts).
 publish:
   provider: github
-  owner: erylopez
-  repo: aion-overlay
+  owner: Nayel85
+  repo: Aion2-Overlay
+  private: true
   releaseType: release
 nsis:
   oneClick: true

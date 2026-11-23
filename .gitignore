@@ -7,6 +7,9 @@ captures/
 *.pcap
 *.pcapng
 
+# The updater's read-only token for the private releases (app/electron.vite.config.ts).
+app/update-token.txt
+
 # Packaging output
 build/
 

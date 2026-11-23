@@ -52,6 +52,9 @@ jobs:
       - name: Installer
         working-directory: app
         run: npm run dist
+        # The read-only token the app reads its private releases with (Settings → Secrets → UPDATE_TOKEN).
+        env:
+          LOKTHAR_UPDATE_TOKEN: ${{ secrets.UPDATE_TOKEN }}
 
       - name: Checksum
         id: sum
