@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.15',
+    items: [
+      "Nayel Overlay: Lokthar with play sessions, dungeon loot and duty missions. Its own name, exe and data folder (Lokthar's data is copied in on the first start), and updates from its own releases.",
+      'Sessions: each dungeon run with its mode, clear time, deaths, cubes and loot (gold equipment, materials, wings and artworks, Arcana cards), Shugo Festival chests, field boss chests, gathering stats and duty missions with their reward lists and chances.',
+      'New Past sessions and Loot pages: every session in a list with all of it beside, and your loot rates per run, cube or hour against the drop rates of the game.',
+      'The Lokthar site (guild events, your characters sent to it) is off until you turn it on, on the Guild Events page.',
+    ],
+  },
+  {
     version: '0.3.14',
     items: [
       'New Guild page: every member of your Lokthar roster with all their characters, their gear score, combat power and Odyle energy, by member or as one list, filtered by class and name.',

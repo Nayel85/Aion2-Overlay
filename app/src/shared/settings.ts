@@ -336,7 +336,9 @@ export interface Settings {
   /**
    * Guild events from the Lokthar site (main/guildEvents.ts, at lokthar.url): the events that ask
    * who comes, answered here; on, it sends the site your characters' names and servers to know you
-   * by. `popup`: an event to answer pops up over the game, bottom right.
+   * by (and main/guild.ts their class, level, gear score, combat power and Odyle energy). Off by
+   * default in Nayel Overlay: nothing goes to the site unless you turn it on. `popup`: an event to
+   * answer pops up over the game, bottom right.
    */
   guildEvents: { enabled: boolean; popup: boolean }
 
@@ -397,7 +399,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   sleepWithoutGame: true,
   hideWhenGameAway: true,
   lokthar: { sync: false, url: 'https://lokthar.com', token: '' },
-  guildEvents: { enabled: true, popup: false },
+  guildEvents: { enabled: false, popup: false },
   tracker: { dataFile: '', bossDiagnostics: false },
 }
 
