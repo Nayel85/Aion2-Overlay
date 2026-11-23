@@ -41,6 +41,15 @@ export const KILLFEED_HEIGHT = [60, 900] as const
 /** Boss Runs' size, as a scale of its 260 px: its corner drags it bigger, text and all. */
 export const BOSSRUNS_SCALE = [0.75, 2.5] as const
 
+/** Party frames: the HP as text on a bar. */
+export const PARTY_HP_TEXT = ['none', 'percent', 'value'] as const
+export type PartyHpText = (typeof PARTY_HP_TEXT)[number]
+/** Party frames: what turns a bar to the afflicted colour: any monster's debuff, or one taking control. */
+export const PARTY_AFFLICTED_BY = ['any', 'control'] as const
+export type PartyAfflictedBy = (typeof PARTY_AFFLICTED_BY)[number]
+/** Party frames: a red HP bar, green while afflicted. */
+export const PARTY_DEFAULT_COLORS = { hp: '#c0392b', afflicted: '#2ea043' } as const
+
 export interface Settings {
   /** Where the floating icon sits, in screen DIPs; null = bottom right of the primary display. */
   bubble: Point | null
@@ -138,8 +147,29 @@ export interface Settings {
    */
   /** Join requests to your party: a widget that comes up when someone applies. */
   applicants: { enabled: boolean; position: Point | null; opacity: number; collapsed: boolean; /** Seconds it stays after the last application. */ hideAfter: number }
-  /** Party frames: each member's class, name and HP over the game, while in a party. `self`: you among them. */
-  party: { enabled: boolean; position: Point | null; opacity: number; collapsed: boolean; self: boolean }
+  /**
+   * Party frames: a bar per member over the game, while in a party. `self`: you among them; `header`: a
+   * title bar; `hpText` on the bar's right; `afflictedColor` while a monster's debuff (`afflictedBy`:
+   * any, or one taking control) is on them; `debuffIcons` under the bar. Sizes in px.
+   */
+  party: {
+    enabled: boolean
+    position: Point | null
+    opacity: number
+    collapsed: boolean
+    self: boolean
+    header: boolean
+    icon: boolean
+    hpText: PartyHpText
+    debuffIcons: boolean
+    width: number
+    barHeight: number
+    gap: number
+    fontSize: number
+    hpColor: string
+    afflictedColor: string
+    afflictedBy: PartyAfflictedBy
+  }
   /** The flight timer: seconds of flight left, while flying or refilling. */
   flight: { enabled: boolean; position: Point | null; opacity: number }
   bossRuns: { enabled: boolean; position: Point | null; opacity: number; windowMinutes: number; rows: number; collapsed: boolean; scale: number; aliveMin: number; ignoreLow: boolean; lowPriority: number[] }
@@ -378,7 +408,10 @@ export const SETTINGS_DEFAULTS: Settings = {
   unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, buttons: 'hover', events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, earningsMinutes: 10, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, guild: false, clock: true, odyle: true, runsPinned: false, replace: false },
   muted: false,
   applicants: { enabled: true, position: null, opacity: 0.85, collapsed: false, hideAfter: 60 },
-  party: { enabled: true, position: null, opacity: 0.85, collapsed: false, self: true },
+  party: {
+    enabled: true, position: null, opacity: 1, collapsed: false, self: true, header: false, icon: true, hpText: 'none', debuffIcons: false,
+    width: 180, barHeight: 22, gap: 2, fontSize: 12, hpColor: PARTY_DEFAULT_COLORS.hp, afflictedColor: PARTY_DEFAULT_COLORS.afflicted, afflictedBy: 'any',
+  },
   flight: { enabled: true, position: null, opacity: 1 },
   bossRuns: { enabled: false, position: { x: 1890, y: 30 }, opacity: 0.85, windowMinutes: 15, rows: 4, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: [101001, 101002, 101006, 101007, 101019, 101017, 101005, 101004, 101003, 101015, 101010, 101008, 101009, 101016, 101012, 101014, 101020, 101013, 101011, 101018] },
   killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null },
@@ -413,6 +446,8 @@ const num = (v: unknown, lo: number, hi: number, fallback: number): number =>
   typeof v === 'number' && Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : fallback
 
 const bool = (v: unknown, fallback: boolean): boolean => (typeof v === 'boolean' ? v : fallback)
+/** A colour as `#rrggbb`. */
+const colour = (v: unknown, fallback: string): string => (typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : fallback)
 
 const point = (v: unknown): Point | null => {
   const p = v as Partial<Point> | null
@@ -598,6 +633,17 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         opacity: num(v.opacity, 0, 1, d.party.opacity),
         collapsed: bool(v.collapsed, false),
         self: bool(v.self, d.party.self),
+        header: bool(v.header, d.party.header),
+        icon: bool(v.icon, d.party.icon),
+        hpText: (PARTY_HP_TEXT as readonly unknown[]).includes(v.hpText) ? v.hpText! : d.party.hpText,
+        debuffIcons: bool(v.debuffIcons, d.party.debuffIcons),
+        width: Math.round(num(v.width, 100, 320, d.party.width)),
+        barHeight: Math.round(num(v.barHeight, 14, 40, d.party.barHeight)),
+        gap: Math.round(num(v.gap, 0, 12, d.party.gap)),
+        fontSize: Math.round(num(v.fontSize, 9, 18, d.party.fontSize)),
+        hpColor: colour(v.hpColor, d.party.hpColor),
+        afflictedColor: colour(v.afflictedColor, d.party.afflictedColor),
+        afflictedBy: (PARTY_AFFLICTED_BY as readonly unknown[]).includes(v.afflictedBy) ? v.afflictedBy! : d.party.afflictedBy,
       } as Settings[K]
     }
     case 'bossRuns': {

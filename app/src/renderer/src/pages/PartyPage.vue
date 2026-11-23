@@ -1,20 +1,21 @@
 <script setup lang="ts">
-// Party frames (shared/party.ts): each member of your party with their class, name and HP, as the
-// game sends it about once a second; one at 0 is down (dimmed, a skull), one not heard of for a
-// while is out of range (faded). You among them unless turned off. Up while you are in a party;
-// moved by its header, minimized it is the header with how many. While the dashboard is up out of a
-// party, it shows a sample to place it by. Nothing to show measures 0, and main keeps it hidden.
+// Party frames (shared/party.ts): one bar per member of your party, made to heal by: their class
+// icon and name on a bar of their HP, in the HP colour, or in the afflicted colour while a monster's
+// debuff is on them (any, or only those taking control: the setting), to cleanse. One at 0 is down
+// (grey, struck through, a skull), one not heard of for a while is out of range (faded). Everything
+// else is a setting (dashboard/PartyView): size, colours, the HP as text, the debuffs' icons, a title
+// bar. Up while you are in a party, moved by dragging it; while the dashboard is up out of a party,
+// it shows a sample to place it by. Nothing to show measures 0, and main keeps it hidden.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
+import { buffIcon, buffName, ccKind, hiddenBuff } from '@/lib/buffs.ts'
 import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
 import { panelStyle } from '@/lib/overlayLook.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
-import { CLASS_COLORS } from '@shared/meter.ts'
 import type { PartyDebuff, PartyMember, Vitals } from '@shared/party.ts'
-import { buffIcon, buffName, ccKind, hiddenBuff } from '@/lib/buffs.ts'
 
 const store = useApp()
 const api = bridge()
@@ -24,7 +25,7 @@ const cfg = computed(() => store.settings.party)
 /** Not heard of for this long: out of range (the game sends nothing of them). */
 const STALE_MS = 10_000
 const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 1000)
+const ticker = setInterval(() => (now.value = Date.now()), 500)
 
 const icons = import.meta.glob<string>('@/assets/classes/*.png', { eager: true, import: 'default' })
 /** The engine's names for one class, the files' for it. */
@@ -38,34 +39,34 @@ interface Row {
   member: PartyMember
   vitals: Vitals | null
   you: boolean
+  /** Those worth showing, control effects first. */
   debuffs: PartyDebuff[]
 }
-/** A member's debuffs worth showing, the ones that take control (stuns, roots...) first. */
 const shownDebuffs = (list: PartyDebuff[]): PartyDebuff[] =>
   list
     .filter((d) => !hiddenBuff(d.id, d.skill, d.endsAt !== null, d.endsAt !== null ? d.endsAt - d.startedAt : 0) && (d.endsAt === null || d.endsAt > now.value))
     .sort((a, b) => Number(!!ccKind(b.id)) - Number(!!ccKind(a.id)))
-    .slice(0, 6)
-const secondsLeft = (d: PartyDebuff): string => (d.endsAt === null ? '' : String(Math.max(0, Math.ceil((d.endsAt - now.value) / 1000))))
-/** The sample's debuff: the first control effect in the game's table. */
-const SAMPLE_DEBUFF = computed<PartyDebuff[]>(() => {
-  // Stun (ICON_Abnormal_Stun), 4 s, over and over.
-  return [{ id: 12000001, stacks: 1, endsAt: now.value + 4000 - (now.value % 4000), startedAt: now.value - 1000, skill: null }]
+/** Afflicted, as the setting says: any debuff, or one taking control. */
+const afflicted = (r: Row): boolean => (cfg.value.afflictedBy === 'control' ? r.debuffs.some((d) => ccKind(d.id)) : r.debuffs.length > 0)
+
+/** The sample: a Stun (ICON_Abnormal_Stun) of 4 s on one, over and over. */
+const SAMPLE = computed<Row[]>(() => {
+  const stun: PartyDebuff = { id: 12000001, stacks: 1, endsAt: now.value + 4000 - (now.value % 4000), startedAt: now.value - 1000, skill: null }
+  const at = now.value
+  return [
+    { member: { name: t('You'), slot: 1, level: 45, combatPower: 0, server: 0, className: 'Cleric', entity: -1 }, vitals: { hp: 26_672, maxHp: 26_672, flight: 0, maxFlight: 0, at }, you: true, debuffs: [] },
+    { member: { name: t('A tank'), slot: 2, level: 45, combatPower: 0, server: 0, className: 'Templar', entity: -2 }, vitals: { hp: 24_100, maxHp: 31_400, flight: 0, maxFlight: 0, at }, you: false, debuffs: [] },
+    { member: { name: t('A healer'), slot: 3, level: 45, combatPower: 0, server: 0, className: 'Chanter', entity: -3 }, vitals: { hp: 11_240, maxHp: 19_235, flight: 0, maxFlight: 0, at }, you: false, debuffs: [stun] },
+    { member: { name: t('A ranger'), slot: 4, level: 45, combatPower: 0, server: 0, className: 'Ranger', entity: -4 }, vitals: { hp: 0, maxHp: 22_000, flight: 0, maxFlight: 0, at }, you: false, debuffs: [] },
+  ]
 })
-const SAMPLE = computed<Row[]>(() => [
-  { member: { name: t('You'), slot: 1, level: 45, combatPower: 0, server: 0, className: 'Ranger', entity: -1 }, vitals: { hp: 26_672, maxHp: 26_672, flight: 0, maxFlight: 0, at: now.value }, you: true, debuffs: [] },
-  { member: { name: t('A healer'), slot: 2, level: 45, combatPower: 0, server: 0, className: 'Cleric', entity: -2 }, vitals: { hp: 11_240, maxHp: 19_235, flight: 0, maxFlight: 0, at: now.value }, you: false, debuffs: SAMPLE_DEBUFF.value },
-  { member: { name: t('A tank'), slot: 3, level: 45, combatPower: 0, server: 0, className: 'Templar', entity: -3 }, vitals: { hp: 0, maxHp: 31_400, flight: 0, maxFlight: 0, at: now.value }, you: false, debuffs: [] },
-])
 const rows = computed<Row[]>(() =>
-  store.party.members
-    .map((m) => ({
-      member: m,
-      vitals: m.entity !== null ? (store.party.vitals[m.entity] ?? null) : null,
-      you: m.name === store.status?.character,
-      debuffs: m.entity !== null ? shownDebuffs(store.party.debuffs[m.entity] ?? []) : [],
-    }))
-    .filter((r) => cfg.value.self || !r.you),
+  store.party.members.map((m) => ({
+    member: m,
+    vitals: m.entity !== null ? (store.party.vitals[m.entity] ?? null) : null,
+    you: m.name === store.status?.character,
+    debuffs: m.entity !== null ? shownDebuffs(store.party.debuffs[m.entity] ?? []) : [],
+  })),
 )
 /** Out of a party while the dashboard is up: a sample to place it by. */
 const preview = computed(() => store.party.members.length < 2 && store.panelVisible)
@@ -77,14 +78,22 @@ watch(
     if (n > 1 && before < 2) closed.value = false
   },
 )
-const list = computed<Row[]>(() => (closed.value ? [] : store.party.members.length > 1 ? rows.value : preview.value ? SAMPLE.value : []))
+const list = computed<Row[]>(() =>
+  (closed.value ? [] : store.party.members.length > 1 ? rows.value : preview.value ? SAMPLE.value : []).filter((r) => cfg.value.self || !r.you),
+)
 
 const pct = (v: Vitals | null): number => (v && v.maxHp > 0 ? Math.max(0, Math.min(1, v.hp / v.maxHp)) : 1)
 const down = (v: Vitals | null): boolean => !!v && v.hp === 0
 const stale = (v: Vitals | null): boolean => !v || now.value - v.at > STALE_MS
-/** Green when well, then yellow, then red as it falls. */
-const hpColour = (p: number): string => (p > 0.6 ? '#3fb950' : p > 0.3 ? '#d29922' : '#f85149')
 const short = (n: number): string => (n >= 10_000 ? `${(n / 1000).toFixed(1)}k` : n.toLocaleString('en-US'))
+const hpText = (v: Vitals | null): string => {
+  if (!v || down(v)) return ''
+  if (cfg.value.hpText === 'percent') return `${Math.round(pct(v) * 100)}%`
+  if (cfg.value.hpText === 'value') return short(v.hp)
+  return ''
+}
+const fill = (r: Row): string => (down(r.vitals) ? 'transparent' : afflicted(r) ? cfg.value.afflictedColor : cfg.value.hpColor)
+const secondsLeft = (d: PartyDebuff): string => (d.endsAt === null ? '' : String(Math.max(0, Math.ceil((d.endsAt - now.value) / 1000))))
 
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('party', { ...cfg.value, ...patch })
 const drag = windowDrag({ move: 'party:moveTo', end: 'party:dragEnd' })
@@ -98,7 +107,7 @@ function report(): void {
   sent = key
   void api.invoke('party:resize', { width: r.width, height: r.height })
 }
-watch([() => list.value.length, () => cfg.value.collapsed], () => void nextTick(report))
+watch([() => list.value.length, () => cfg.value.collapsed, () => cfg.value.header], () => void nextTick(report))
 
 let observer: ResizeObserver | null = null
 onMounted(() => {
@@ -117,37 +126,40 @@ onBeforeUnmount(() => {
     <div ref="root" class="inline-block">
       <section
         v-if="list.length"
-        class="text-glow relative m-1.5 w-[240px] cursor-move overflow-hidden rounded-xl border"
-        :style="panelStyle(cfg.opacity, '63 185 80')"
+        :class="['m-1 cursor-move', cfg.header && 'overflow-hidden rounded-xl border']"
+        :style="[{ width: `${cfg.width}px`, opacity: cfg.header ? undefined : cfg.opacity }, cfg.header ? panelStyle(cfg.opacity, '63 185 80') : {}]"
+        :title="!cfg.header && preview ? t('drag to move') : undefined"
         @pointerdown="drag.onPointerDown($event)"
       >
-        <header class="flex items-center gap-2 px-3 pb-1 pt-2 text-[12px]">
+        <header v-if="cfg.header" class="flex items-center gap-2 px-2.5 pb-1 pt-1.5 text-[12px]">
           <span class="shrink-0 font-semibold text-default">{{ t('Party') }}</span>
-          <span class="shrink-0 rounded-full bg-green/20 px-1.5 text-[11px] font-semibold tabular-nums leading-4 text-green">{{ list.length }}</span>
           <span v-if="preview" class="min-w-0 truncate text-[11px] text-darker">{{ t('drag to move') }}</span>
           <span class="flex-1" />
           <CollapseButton :collapsed="cfg.collapsed" class="-my-1" @toggle="set({ collapsed: !cfg.collapsed })" />
           <CloseButton v-if="!preview" class="-my-1 -mr-1" :title="t('Hide until the next party')" @close="closed = true" />
-          <CloseButton v-else class="-my-1 -mr-1" @close="set({ enabled: false })" />
         </header>
-        <ul v-if="!cfg.collapsed" class="space-y-1 px-1.5 pb-2">
-          <li v-for="r in list" :key="r.member.name" :class="['relative overflow-hidden rounded-lg bg-black/40', stale(r.vitals) && !down(r.vitals) && 'opacity-50']">
-            <!-- The HP bar behind the name. -->
-            <div class="absolute inset-y-0 left-0 transition-[width] duration-500" :style="{ width: `${pct(r.vitals) * 100}%`, background: `${hpColour(pct(r.vitals))}55` }" />
-            <div class="absolute inset-y-0 left-0 w-1" :style="{ background: CLASS_COLORS[r.member.className ?? ''] ?? '#787b8a' }" />
-            <div class="relative flex items-center gap-1.5 py-1 pl-2.5 pr-2">
-              <img v-if="icon(r.member.className)" :src="icon(r.member.className)!" alt="" draggable="false" :class="['size-5 shrink-0 object-contain', down(r.vitals) && 'grayscale']" />
-              <span v-else class="size-5 shrink-0" />
-              <span :class="['min-w-0 flex-1 truncate text-[12px] font-semibold [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]', r.you ? 'text-accent' : 'text-default', down(r.vitals) && 'text-darker line-through']">{{ r.member.name }}</span>
-              <svg v-if="down(r.vitals)" viewBox="0 0 16 16" class="size-3.5 shrink-0 text-red" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2a5 5 0 0 0-3.5 8.5V13h7v-2.5A5 5 0 0 0 8 2zM6 8.5h.01M10 8.5h.01M7 13v-1.5M9 13v-1.5" /></svg>
-              <span v-else-if="r.vitals" class="shrink-0 text-[11px] tabular-nums text-default [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">{{ Math.round(pct(r.vitals) * 100) }}%</span>
-              <span v-else class="shrink-0 text-[11px] text-darker">—</span>
+        <ul v-if="!cfg.header || !cfg.collapsed" :class="['flex flex-col', cfg.header && 'px-1.5 pb-1.5']" :style="{ gap: `${cfg.gap}px` }">
+          <li v-for="r in list" :key="r.member.name" :class="[stale(r.vitals) && !down(r.vitals) && 'opacity-45']">
+            <div class="relative overflow-hidden rounded-[3px] bg-black/70 ring-1 ring-black/80" :style="{ height: `${cfg.barHeight}px` }">
+              <div class="absolute inset-y-0 left-0 transition-[width,background-color] duration-300" :style="{ width: `${pct(r.vitals) * 100}%`, background: fill(r) }" />
+              <div class="absolute inset-0 bg-gradient-to-b from-white/15 via-transparent to-black/25" />
+              <div class="relative flex h-full items-center gap-1 px-1" :style="{ fontSize: `${cfg.fontSize}px` }">
+                <img
+                  v-if="cfg.icon && icon(r.member.className)"
+                  :src="icon(r.member.className)!"
+                  alt=""
+                  draggable="false"
+                  :class="['shrink-0 object-contain drop-shadow-[0_0_2px_rgba(0,0,0,0.9)]', down(r.vitals) && 'grayscale']"
+                  :style="{ width: `${cfg.barHeight - 4}px`, height: `${cfg.barHeight - 4}px` }"
+                />
+                <span :class="['min-w-0 flex-1 truncate font-semibold leading-none [text-shadow:0_1px_2px_#000,0_0_2px_#000]', down(r.vitals) ? 'text-white/50 line-through' : 'text-white']">{{ r.member.name }}</span>
+                <svg v-if="down(r.vitals)" viewBox="0 0 16 16" class="size-3.5 shrink-0 text-white/70" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2a5 5 0 0 0-3.5 8.5V13h7v-2.5A5 5 0 0 0 8 2zM6 8.5h.01M10 8.5h.01M7 13v-1.5M9 13v-1.5" /></svg>
+                <span v-else-if="hpText(r.vitals)" class="shrink-0 font-semibold tabular-nums leading-none text-white [text-shadow:0_1px_2px_#000,0_0_2px_#000]">{{ hpText(r.vitals) }}</span>
+              </div>
             </div>
-            <div v-if="r.vitals && !down(r.vitals)" class="relative -mt-1 pb-0.5 pl-9 text-[10px] tabular-nums text-dark">{{ short(r.vitals.hp) }} / {{ short(r.vitals.maxHp) }}</div>
-            <!-- What monsters put on them: control effects (red ring) first, seconds left under each. -->
-            <div v-if="r.debuffs.length && !down(r.vitals)" class="relative flex flex-wrap gap-1 pb-1 pl-9 pr-2">
-              <span v-for="d in r.debuffs" :key="d.id" class="relative size-5" :title="buffName(d.id)">
-                <img v-if="buffIcon(d.id, d.skill)" :src="buffIcon(d.id, d.skill)!" alt="" draggable="false" :class="['size-5 rounded-sm', ccKind(d.id) ? 'ring-1 ring-red' : 'ring-1 ring-black/60']" />
+            <div v-if="cfg.debuffIcons && r.debuffs.length && !down(r.vitals)" class="mt-0.5 flex flex-wrap gap-0.5">
+              <span v-for="d in r.debuffs.slice(0, 8)" :key="d.id" class="relative size-[18px]" :title="buffName(d.id)">
+                <img v-if="buffIcon(d.id, d.skill)" :src="buffIcon(d.id, d.skill)!" alt="" draggable="false" :class="['size-[18px] rounded-sm', ccKind(d.id) ? 'ring-1 ring-red' : 'ring-1 ring-black/60']" />
                 <span v-if="secondsLeft(d)" class="absolute -bottom-0.5 right-0 text-[8px] font-bold tabular-nums leading-none text-white [text-shadow:0_0_2px_#000,0_0_2px_#000]">{{ secondsLeft(d) }}</span>
               </span>
             </div>

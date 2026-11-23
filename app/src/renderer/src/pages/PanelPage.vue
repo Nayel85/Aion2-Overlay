@@ -6,6 +6,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BossesView from '@/components/dashboard/BossesView.vue'
 import ApplicantsView from '@/components/dashboard/ApplicantsView.vue'
 import PartyView from '@/components/dashboard/PartyView.vue'
+import FlightView from '@/components/dashboard/FlightView.vue'
 import GuildView from '@/components/dashboard/GuildView.vue'
 import BossRunsView from '@/components/dashboard/BossRunsView.vue'
 import GuildEventsView from '@/components/dashboard/GuildEventsView.vue'
@@ -45,7 +46,7 @@ import { needsAnswer } from '@shared/guildEvents.ts'
 import { TIMERS, type TimerId } from '@shared/timers.ts'
 import type { UpdateState } from '@shared/update.ts'
 
-type PageId = 'home' | 'characters' | 'roster' | 'guild' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'bossRuns' | 'applicants' | 'party' | 'history' | 'session' | 'sessions' | 'loot' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
+type PageId = 'home' | 'characters' | 'roster' | 'guild' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'bossRuns' | 'applicants' | 'party' | 'flight' | 'history' | 'session' | 'sessions' | 'loot' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
 interface Page {
   id: PageId
   label: string
@@ -72,6 +73,7 @@ const PAGES: Record<PageId, Page> = {
   events: { id: 'events', label: 'Event Alerts', icon: 'M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11zM6.5 14h3' },
   bosses: { id: 'bosses', label: 'Field Bosses', icon: 'M8 2a5 5 0 0 0-3.5 8.5V13h7v-2.5A5 5 0 0 0 8 2zM6 8.5h.01M10 8.5h.01M7 13v-1.5M9 13v-1.5' },
   bossRuns: { id: 'bossRuns', label: 'Boss Runs', icon: 'M2.5 4h2M2.5 8h2M2.5 12h2M6.5 4h7M6.5 8h7M6.5 12h4' },
+  flight: { id: 'flight', label: 'Flight timer', icon: 'M7.5 12C5.5 12 2.5 10.5 1 4.5c1.5 1 3 1.5 4.5 1.5C6.5 7 7 8 7.5 9.5ZM8.5 12c2 0 5-1.5 6.5-7.5-1.5 1-3 1.5-4.5 1.5C9.5 7 9 8 8.5 9.5Z' },
   party: { id: 'party', label: 'Party frames', icon: 'M2.5 3.5h11v3h-11zM2.5 9.5h11v3h-11zM4 5h5M4 11h3' },
   applicants: { id: 'applicants', label: 'Join requests', icon: 'M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M12 4.5v4M10 6.5h4' },
   history: { id: 'history', label: 'Combat history', icon: 'M2 8a6 6 0 1 0 1.8-4.3M2 2.5v3h3M8 5v3l2 1.5', emoji: '💪' },
@@ -86,7 +88,7 @@ const PAGES: Record<PageId, Page> = {
 }
 const SECTIONS: { title: string | null; pages: PageId[] }[] = [
   { title: null, pages: ['home', 'characters', 'roster', 'guild'] },
-  { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'bossRuns', 'party', 'applicants'] },
+  { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'bossRuns', 'party', 'flight', 'applicants'] },
   { title: 'Records', pages: ['history', 'session', 'sessions', 'loot', 'inventory', 'cache'] },
   { title: 'App', pages: ['updates', 'changes'] },
 ]
@@ -343,6 +345,7 @@ onBeforeUnmount(() => {
           <BossRunsView v-else-if="page === 'bossRuns'" />
           <ApplicantsView v-else-if="page === 'applicants'" />
           <PartyView v-else-if="page === 'party'" />
+          <FlightView v-else-if="page === 'flight'" />
           <GuildView v-else-if="page === 'roster'" />
           <GuildEventsView v-else-if="page === 'guild'" />
           <HistoryView v-else-if="page === 'history'" />
