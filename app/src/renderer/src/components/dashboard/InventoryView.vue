@@ -15,7 +15,7 @@ import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
 import { PLACES, placeItems, placeSlots, whereIs, WORN_ARCANA, WORN_LAYOUT, type CharacterInventory, type Place, type SlotItem } from '@shared/inventory.ts'
 import { itemIcon, itemInfo } from '@shared/sessions.ts'
-import { arcanaStatLine, baseLines, skillLine, soulLine, soulRate, stoneLine, type ItemDetails } from '@shared/equipment.ts'
+import { arcanaStatLine, baseLines, skillLine, soulLine, soulRate, stoneLine, theostoneOf, type ItemDetails } from '@shared/equipment.ts'
 import { bridge } from '@/lib/bridge.ts'
 
 const store = useApp()
@@ -76,13 +76,19 @@ const GRADE_NAMES: [number, string][] = [
 ]
 /** An equipment's base stats, asked once of the main process (questlog's): by item id, null while asked or none. */
 const bases = ref(new Map<number, ItemDetails | null>())
-watch(hovered, (h) => {
-  const id = h?.item.item
-  if (id === undefined || bases.value.has(id) || !h?.item.level) return
+function ask(id: number): void {
+  if (bases.value.has(id)) return
   bases.value = new Map(bases.value).set(id, null)
   void bridge()
     .invoke('items:details', id)
     .then((d) => (bases.value = new Map(bases.value).set(id, d)))
+}
+watch(hovered, (h) => {
+  if (!h?.item.level) return
+  ask(h.item.item)
+  // Its Theostone's effect, told by its item.
+  const theo = theostoneOf(h.item.theostone ?? 0)
+  if (theo) ask(theo.item)
 })
 const details = computed(() => {
   const h = hovered.value
@@ -106,6 +112,10 @@ const details = computed(() => {
     soulRate: soulRate(h.item.soul ?? [], (h.item.skills ?? []).length, base?.soulRange),
     skills: (h.item.skills ?? []).map(([skill, levels]) => skillLine(skill, levels)),
     stats: (h.item.stats ?? []).map(([code, value]) => arcanaStatLine(code, value)),
+    theostone: (() => {
+      const theo = theostoneOf(h.item.theostone ?? 0)
+      return theo ? { ...theo, icon: itemIcon(theo.icon), description: bases.value.get(theo.item)?.description ?? '' } : null
+    })(),
     stones: (h.item.stones ?? []).filter((s): s is [number, number, number] => Array.isArray(s)).map(([stone, code, rank]) => stoneLine(stone, code, rank)),
     // Beside the pointer, kept on the screen.
     style: { left: `${Math.min(h.x + 16, window.innerWidth - 300)}px`, top: `${Math.max(8, Math.min(h.y + 12, window.innerHeight - 420))}px` },
@@ -245,6 +255,13 @@ const itemCount = computed(() => Object.keys(placeItems(slots.value)).length)
       <!-- The skills it raises. -->
       <div v-if="details.skills.length" class="mt-2 space-y-0.5 border-t border-card pt-2 tabular-nums">
         <div v-for="(l, i) in details.skills" :key="i" class="flex justify-between gap-3 text-accent"><span>{{ l.label }}</span><span class="text-default">{{ l.value }}</span></div>
+      </div>
+      <!-- Its Theostone, and what it does. -->
+      <div v-if="details.theostone" class="mt-2 border-t border-card pt-2">
+        <div class="flex items-center gap-1.5 font-medium text-green">
+          <img v-if="details.theostone.icon" :src="details.theostone.icon" alt="" class="size-4 rounded-sm" draggable="false" />{{ details.theostone.name }}
+        </div>
+        <div v-if="details.theostone.description" class="mt-0.5 whitespace-pre-line text-dark">{{ details.theostone.description }}</div>
       </div>
       <!-- Its stones, in their grade's colour, as the game's grid. -->
       <div v-if="details.stones.length" class="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 border-t border-card pt-2 tabular-nums">

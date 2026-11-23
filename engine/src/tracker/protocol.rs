@@ -731,6 +731,9 @@ pub struct DepotItem {
     /// An Arcana's own stats, not bound: (stat code, value) (the owner's Chalice of Vigor: 0x0B 21,
     /// "Time [Siel] 21" in game).
     pub stats: Vec<(u16, u32)>,
+    /// The Theostone engraved, by its effect (the owner's Rupture Longbow: 19950011, Theostone:
+    /// Zikel's Vestige, the items whose ids end the same five digits), or 0.
+    pub theostone: u32,
 }
 
 /// The item records of a list (`11 56` at login, `1B 56` as they change): each `<uid u32> 00 <u16>
@@ -762,13 +765,15 @@ fn depot_records(b: &[u8], empty: bool) -> Vec<DepotItem> {
             // This record's extra: up to the next one's uid.
             let end = at.get(k + 1).map_or(b.len(), |&n| n.saturating_sub(8)).max(i + 14);
             let extra = &b[i + 14..end];
-            // Its slot again, after its level and 3 zeros (4 for some: the owner's Vakron Greaves).
+            // Its slot again (where it is worn: 0 in a bag or a warehouse, the owner's Rupture Longbow),
+            // after its level and 3 zeros (4 for some: the owner's Vakron Greaves).
+            let worn = if storage == 11 { slot } else { 0 };
             let mark = (20..extra.len().saturating_sub(1))
                 .find_map(|q| {
                     let lvl = if extra[q - 4] != 0 { q - 4 } else { q - 5 };
-                    (extra[q] == slot && (1..=200).contains(&extra[lvl]) && extra[lvl + 1..q].iter().all(|&v| v == 0) && extra[q + 1] <= 6).then_some((q, lvl))
+                    (extra[q] == worn && (1..=200).contains(&extra[lvl]) && extra[lvl + 1..q].iter().all(|&v| v == 0) && extra[q + 1] <= 6).then_some((q, lvl))
                 });
-            let (mut enchant, mut level, mut stones, mut soul, mut skills, mut stats) = (0, 0, Vec::new(), Vec::new(), Vec::new(), Vec::new());
+            let (mut enchant, mut level, mut stones, mut soul, mut skills, mut stats, mut theostone) = (0, 0, Vec::new(), Vec::new(), Vec::new(), Vec::new(), 0);
             if let Some((q, lvl)) = mark {
                 level = extra[lvl];
                 enchant = extra[8..lvl].iter().copied().find(|&v| v != 0).filter(|&v| v <= 30).unwrap_or(0);
@@ -780,6 +785,8 @@ fn depot_records(b: &[u8], empty: bool) -> Vec<DepotItem> {
                     }
                 }
                 let rest = &extra[q + 2 + 7 * stones.len()..];
+                // After the stones: `<u32> 00 00 <server u16> <u8> 03`, then the Theostone's effect.
+                theostone = u32_at(rest, 10).filter(|v| (19_000_000..20_000_000).contains(v)).unwrap_or(0);
                 soul = soul_binding(rest);
                 if let Some((at, list)) = skill_list(rest) {
                     skills = list;
@@ -788,7 +795,7 @@ fn depot_records(b: &[u8], empty: bool) -> Vec<DepotItem> {
                     }
                 }
             }
-            DepotItem { uid: u32_at(b, i - 8).unwrap_or(0), storage, slot, item: u32_at(b, i).unwrap_or(0), amount: u64_at(b, i + 4).unwrap_or(0), enchant, level, stones, soul, skills, stats }
+            DepotItem { uid: u32_at(b, i - 8).unwrap_or(0), storage, slot, item: u32_at(b, i).unwrap_or(0), amount: u64_at(b, i + 4).unwrap_or(0), enchant, level, stones, soul, skills, stats, theostone }
         })
         .collect()
 }
@@ -1541,7 +1548,10 @@ mod tests {
         assert_eq!((bow.enchant, bow.level), (10, 91));
         assert_eq!(bow.stones, vec![(531360004, 0x13D, 3), (531360004, 0x13D, 1), (531360004, 0xC1, 1), (531360004, 0x13D, 2)]);
         assert_eq!(bow.soul, vec![(0xC1, 308), (0x11A, 972), (0x80, 51)]);
-        assert_eq!(bow.skills, vec![(14_340_000, 1)]);
+        assert_eq!((bow.skills.clone(), bow.theostone), (vec![(14_340_000, 1)], 0));
+        // His Rupture Longbow, in his own warehouse: Theostone: Zikel's Vestige engraved.
+        let longbow = his.iter().find(|i| i.storage == 15 && i.item == 110430049).unwrap();
+        assert_eq!((longbow.enchant, longbow.level, longbow.stones.len(), longbow.theostone), (10, 74, 4, 19_950_011));
         // His Chalice of Vigor, an Arcana worn in slot 41: +1, item level 81 (80 + 1), Time [Siel] 21,
         // four skills (Wind Vigor 14730000 among them).
         let chalice = his.iter().find(|i| i.storage == 11 && i.slot == 41).unwrap();

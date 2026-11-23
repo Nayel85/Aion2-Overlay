@@ -14,28 +14,33 @@
  * still fit, by how the game numbers them (`~`): an attack's damage next to its defense (Back Attack
  * 0x62 by Back Defense 0x63, Front Attack 0x24B by 0x24C, Critical Damage 0x26 by Critical Damage
  * Defense 0x29), a stat 4 before its resist (Perfect 0x1BA, Perfect Resist 0x1BE: Hard Hit 0x1BB, so
- * 0x1BD Iron Wall), the base stats in their usual order (Strength 1, Agility 5). 0x20 and 0x92
- * (Additional Hit Rate or Weapon Damage Amplification, the same ranges everywhere) stay apart.
+ * 0x1BD Iron Wall), the base stats in their usual order. Then checked on Nayoul's windows: Wisdom
+ * Guard (Weapon Damage Boost 0x20 4.6%, Multi-hit Chance 0x92 4.8%), High Commander Lagta Helm
+ * (Double Chance 0x1BB 1.6%), Holy Spirit Spellbook (Critical Attack 0x26, Status Effect Chance 0x9E
+ * 15.8%), Holy Spirit Knife (Might 0x1), Wisdom Bow (Precision 0x5): `~` where not yet.
  */
+import { ITEMS } from './items.ts'
 import { SKILLS } from './skills.ts'
 import { STONES } from './stones.ts'
 
 /** The game's stat codes, by questlog's stat ids. */
 export const STAT_CODES: Record<number, string> = {
-  0x1: 'str', // ~
-  0x5: 'agi', // ~
+  0x1: 'str',
+  0x5: 'agi',
   0x6: 'wis',
-  0x26: 'criticaladddamage', // ~
-  0x62: 'backattackdamage', // ~
+  0x20: 'amplifyweapondamage',
+  0x26: 'criticaladddamage',
+  0x62: 'backattackdamage',
+  0x92: 'additionalhitrate',
   0x9e: 'abnormalaccuracy',
   0xeb: 'amplifyhphealget',
   0x1aa: 'defenseratio',
   0x1ba: 'perfect',
-  0x1bb: 'hardhit', // ~
+  0x1bb: 'hardhit',
   0x1bc: 'restoration',
   0x1bd: 'ironwall', // ~
   0x1be: 'perfectresist',
-  0x24b: 'frontattackdamage', // ~
+  0x24b: 'frontattackdamage',
   0x2: 'dex',
   0x4: 'con',
   0x29: 'criticaldamagedefense',
@@ -73,10 +78,10 @@ const STATS: Record<string, { label: string; pct?: boolean }> = {
   mpmax: { label: 'MP' },
   mpregen: { label: 'MP Recovery' },
   fpmax: { label: 'Flight Time' },
-  str: { label: 'Strength' },
+  str: { label: 'Might' },
   dex: { label: 'Dexterity' },
   con: { label: 'Constitution' },
-  agi: { label: 'Agility' },
+  agi: { label: 'Precision' },
   wis: { label: 'Willpower' },
   abnormalresistance: { label: 'Status Effect Resistance' },
   decreaseweapondamage: { label: 'Weapon Damage Tolerance', pct: true },
@@ -85,21 +90,22 @@ const STATS: Record<string, { label: string; pct?: boolean }> = {
   criticaldamagedefense: { label: 'Critical Damage Defense' },
   armorevasion: { label: 'Evasion' },
   hpregen: { label: 'Natural HP Regen' },
-  criticaladddamage: { label: 'Critical Damage' },
+  criticaladddamage: { label: 'Critical Attack' },
   backattackdamage: { label: 'Back Attack' },
   frontattackdamage: { label: 'Front Attack' },
-  abnormalaccuracy: { label: 'Status Effect Accuracy' },
+  abnormalaccuracy: { label: 'Status Effect Chance', pct: true },
   amplifyhphealget: { label: 'Healing Received', pct: true },
   defenseratio: { label: 'Defense Rate' },
   perfect: { label: 'Perfect' },
   perfectresist: { label: 'Perfect Resist' },
-  hardhit: { label: 'Hard Hit' },
+  hardhit: { label: 'Double Chance', pct: true },
   ironwall: { label: 'Iron Wall' },
   restoration: { label: 'Restoration' },
   combatspeed: { label: 'Combat Speed', pct: true },
   weaponaccuracy: { label: 'Accuracy' },
   amplifyalldamage: { label: 'Damage Amplification', pct: true },
-  amplifyweapondamage: { label: 'Weapon Damage Amplification', pct: true },
+  amplifyweapondamage: { label: 'Weapon Damage Boost', pct: true },
+  additionalhitrate: { label: 'Multi-hit Chance', pct: true },
   amplifycriticaldamage: { label: 'Critical Damage Amplification', pct: true },
   amplifybackattack: { label: 'Back Attack Amplification', pct: true },
   amplifyfrontattack: { label: 'Front Attack Amplification', pct: true },
@@ -168,6 +174,17 @@ export function skillLine(skill: number, levels: number): StatLine {
   return { label: SKILLS[skill] ?? `Skill ${skill}`, value: `Lv. +${levels}` }
 }
 
+/**
+ * The Theostone engraved, by its effect: the Theostone items whose ids end the same five digits
+ * (effect 19950011: Theostone: Zikel's Vestige, 513850011, 533850011...; unique over all 51). Its
+ * item (to ask its description of questlog), name and icon; null when none.
+ */
+export function theostoneOf(effect: number): { item: number; name: string; icon: string | null } | null {
+  if (!effect) return null
+  const found = Object.entries(ITEMS).find(([id, i]) => i[3] === 'getgodstone' && Number(id) % 100_000 === effect % 100_000)
+  return found ? { item: Number(found[0]), name: found[1][0].replace(' (Bound)', ''), icon: found[1][2] } : null
+}
+
 /** What questlog has of an equipment, as the main process keeps it (main/itemDetails.ts). */
 export interface ItemDetails {
   /** Its item level before enchantment (the game's "70" of "70 (+21)"). */
@@ -178,6 +195,8 @@ export interface ItemDetails {
   enchants: Record<number, Record<string, number>>
   /** What each soul binding stat can roll on it, [least, most], by stat id (questlog's subStats). */
   soulRange?: Record<string, [number, number]>
+  /** What it does, in plain text (a Theostone's effect). */
+  description?: string
 }
 
 /** Its base stats as the window's lines, with its enchantment's bonus: "Attack 278–350 (+79)". */

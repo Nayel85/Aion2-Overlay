@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { arcanaStatLine, baseLines, skillLine, soulLine, soulRate, stoneLine } from '../src/shared/equipment.ts'
+import { arcanaStatLine, baseLines, skillLine, soulLine, soulRate, stoneLine, theostoneOf } from '../src/shared/equipment.ts'
 
 test("an equipment's window as the game shows it: base stats with the enchantment, soul binding, stones", () => {
   // The owner's Aulamus Bow +10 (2026-11-23): questlog's base 278-350, +79 at +10.
@@ -37,5 +37,9 @@ test("an equipment's window as the game shows it: base stats with the enchantmen
   assert.deepEqual(skillLine(14730000, 1), { label: 'Wind Vigor', value: 'Lv. +1' })
   // The Chalice of Vigor's Time [Siel] 21; a code not matched yet, told by its number.
   assert.deepEqual(arcanaStatLine(0x0b, 21), { label: 'Time [Siel]', value: '21' })
-  assert.equal(soulLine(0x92, 750).label, 'Stat 0x92')
+  // Nayoul's Wisdom Guard: Weapon Damage Boost 4.65%, Multi-hit Chance 4.81%; Holy Spirit Knife's Might.
+  assert.deepEqual([soulLine(0x20, 465), soulLine(0x92, 481), soulLine(0x1, 18).label], [{ label: 'Weapon Damage Boost', value: '4.65%' }, { label: 'Multi-hit Chance', value: '4.81%' }, 'Might'])
+  // His Rupture Longbow's Theostone: Zikel's Vestige.
+  assert.equal(theostoneOf(19950011)?.name, "Theostone: Zikel's Vestige")
+  assert.equal(soulLine(0x3ff, 1).label, 'Stat 0x3ff')
 })

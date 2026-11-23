@@ -17,6 +17,7 @@ const asked = new Map<string, Promise<ItemDetails | null>>()
 const complete = (d: ItemDetails): boolean => d.soulRange !== undefined
 
 interface QuestlogItem {
+  description?: string
   equipmentInfo?: { itemLevel?: number }
   itemStats?: { mainStats?: Record<string, number>; enchants?: { level: number; stats: Record<string, { value: number }> }[]; subStats?: { id: string; minValue: number; maxValue: number }[] }
 }
@@ -37,6 +38,8 @@ async function fetchDetails(id: string): Promise<ItemDetails | null> {
     main: item.itemStats?.mainStats ?? {},
     enchants: Object.fromEntries((item.itemStats?.enchants ?? []).map((e) => [e.level, Object.fromEntries(Object.entries(e.stats).map(([k, s]) => [k, s.value]))])),
     soulRange: Object.fromEntries((item.itemStats?.subStats ?? []).map((s) => [s.id, [s.minValue, s.maxValue]])),
+    // Its first line ("Grants [...]") and the menu's note dropped: what it does, plain.
+    description: (item.description ?? '').replace(/<[^>]+>/g, '').split('\n').filter((l) => l && !/^Grants \[|can be found in the/.test(l)).join('\n'),
   }
   mkdirSync(dir, { recursive: true })
   writeFileSync(file, JSON.stringify(details))

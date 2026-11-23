@@ -203,6 +203,7 @@ fn depot_json(i: &p::DepotItem) -> Value {
         "soul": i.soul.iter().map(|&(stat, value)| json!([stat, value])).collect::<Vec<_>>(),
         "skills": i.skills.iter().map(|&(skill, levels)| json!([skill, levels])).collect::<Vec<_>>(),
         "stats": i.stats.iter().map(|&(stat, value)| json!([stat, value])).collect::<Vec<_>>(),
+        "theostone": i.theostone,
     })
 }
 

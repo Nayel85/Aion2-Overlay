@@ -34,6 +34,8 @@ export interface SlotItem {
   skills?: [number, number][]
   /** An Arcana's own stats: [stat code, value]. */
   stats?: [number, number][]
+  /** The Theostone engraved, by its effect (shared/equipment.ts theostoneOf). */
+  theostone?: number
 }
 /** Slots by `<storage>:<slot>` (a character's; the Arcana `14:u<uid>`, all in slot 0) or `<slot>` (the account's warehouse). */
 export type Slots = Record<string, SlotItem>
@@ -65,6 +67,7 @@ export interface DepotItem {
   soul?: [number, number][]
   skills?: [number, number][]
   stats?: [number, number][]
+  theostone?: number
 }
 /** A character's slot key: storage and slot; an Arcana's by its uid (they all lie in slot 0). */
 const ownKey = (d: DepotItem): string => (d.storage === 14 && d.uid !== undefined ? `14:u${d.uid}` : `${d.storage}:${d.slot}`)
@@ -77,6 +80,7 @@ const held = (d: DepotItem): SlotItem => ({
   ...(d.soul?.length ? { soul: d.soul } : {}),
   ...(d.skills?.length ? { skills: d.skills } : {}),
   ...(d.stats?.length ? { stats: d.stats } : {}),
+  ...(d.theostone ? { theostone: d.theostone } : {}),
 })
 
 /** A login's list, sorted into the character's own slots and the account's warehouse's. */
