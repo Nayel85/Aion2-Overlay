@@ -1270,6 +1270,9 @@ pub struct ObjectSpawn {
     pub z: f32,
     /// When it spawned (ms since 1970); None when the record has no time.
     pub created_ms: Option<u64>,
+    /// The u32 before the record's closing `07 00 00`: the same on every Odyle node (0x1f6fa332), other
+    /// on other gathering spots of the same template: what a spot's resource is told by, it seems.
+    pub tail: Option<u32>,
 }
 
 /// `34 36 <id varint> <kind u16> <template u32> <x y z f32> <f32> <heading f32>
@@ -1286,7 +1289,8 @@ pub fn object_spawn(frame: &[u8]) -> Option<ObjectSpawn> {
         return None;
     }
     let created_ms = u64_at(b, o + 29).filter(|t| (1_600_000_000_000..2_600_000_000_000).contains(t));
-    Some(ObjectSpawn { id, template: u32_at(b, o + 2)?, x, y, z, created_ms })
+    let tail = (b.len() >= 7 && b[b.len() - 3..] == [0x07, 0x00, 0x00]).then(|| u32_at(b, b.len() - 7)).flatten();
+    Some(ObjectSpawn { id, template: u32_at(b, o + 2)?, x, y, z, created_ms, tail })
 }
 
 /// `35 36 <id varint> <reason u8> ...`: an object gone from view: 04 destroyed

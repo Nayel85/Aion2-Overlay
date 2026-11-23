@@ -198,7 +198,7 @@ pub struct Tracker {
     party_checked: i64,
     /// Objects in view but cubes (gathering spots...), their template by id: a gathering's start
     /// names only its spot, whose template says what it gives.
-    objects: HashMap<u32, u32>,
+    objects: HashMap<u32, (u32, Option<u32>)>,
     /// The craft going on (its recipe), and once done, when: the bags' next change is its item.
     craft: Option<u32>,
     craft_done: Option<(u32, i64)>,
@@ -896,7 +896,7 @@ impl Tracker {
                         if self.objects.len() > 5000 {
                             self.objects.clear();
                         }
-                        self.objects.insert(o.id, o.template);
+                        self.objects.insert(o.id, (o.template, o.tail));
                     }
                     if CUBE_TEMPLATES.contains(&o.template) && self.cubes.insert(o.id, o).is_none() {
                         tracing::info!("hidden cube {} (template {}) at {:.0}, {:.0}", o.id, o.template, o.x, o.y);
@@ -1133,8 +1133,8 @@ impl Tracker {
                     if !matches!(outcome, 0 | 1 | 7) {
                         tracing::info!("gathering start with outcome {outcome}: {}", f.iter().map(|b| format!("{b:02x}")).collect::<String>());
                     }
-                    let template = self.objects.get(&node);
-                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled, "durationMs": ms,
+                    let (template, kind) = self.objects.get(&node).map_or((None, None), |&(t, k)| (Some(t), k));
+                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "kind": kind, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled, "durationMs": ms,
                         "rolls": rolls.iter().map(|r| json!({ "ms": r.ms, "success": r.success, "failure": r.failure, "luck": r.luck, "doubled": r.doubled })).collect::<Vec<_>>() }));
                 }
             }

@@ -2,13 +2,13 @@
 // seconds before the result), told to its pill (pages/GatherPage.vue) until the result comes
 // (`gather`, `craftResult`), or a while. What it will give: a craft's from the game's recipes
 // (shared/recipes.ts); a gathering's from its spot's kind, whose plain item each result says (kept
-// in userData/gather-templates.json), at the grade the game rolled (shared/gatherables.ts).
+// in userData/gather-kinds.json), at the grade the game rolled (shared/gatherables.ts).
 import { app } from 'electron'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
-import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, type GatherForecast, type GatherRoll, type GatherTemplates } from '../shared/gather.ts'
+import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, spotKind, type GatherForecast, type GatherRoll, type GatherTemplates } from '../shared/gather.ts'
 
 /** Gone this long after its start, if no result came (cancelled): a long craft takes 16 s. */
 const FORGET_MS = 25_000
@@ -16,9 +16,9 @@ const FORGET_MS = 25_000
 let state: GatherForecast | null = null
 let timer: NodeJS.Timeout | null = null
 /** The spot's kind of the gathering going on, for its result to teach. */
-let pendingTemplate: number | null = null
+let pendingTemplate: string | null = null
 let templates: GatherTemplates = { ...GATHER_TEMPLATES_SEED }
-const file = (): string => join(app.getPath('userData'), 'gather-templates.json')
+const file = (): string => join(app.getPath('userData'), 'gather-kinds.json')
 
 function set(next: GatherForecast | null): void {
   if (timer) clearTimeout(timer)
@@ -43,7 +43,7 @@ export function startGather(): void {
     // 0 failed; else the grade rolled says it: above 1 ranked up (7 the code seen with it, others too).
     const outcome = code === 0 ? 'fail' : grade > 1 || code === 7 ? 'rankUp' : 'ok'
     if (code !== 0 && code !== 1 && code !== 7) log(`gathering: outcome ${code} (grade ${grade}) not known before`)
-    pendingTemplate = (ev['template'] as number | null | undefined) ?? null
+    pendingTemplate = spotKind(ev['template'] as number | null | undefined, ev['kind'] as number | null | undefined)
     const plain = pendingTemplate !== null ? templates[pendingTemplate] : undefined
     const item = gatherItem(plain, outcome === 'fail' ? 1 : grade)
     const rolls = (ev['rolls'] as GatherRoll[] | undefined) ?? []

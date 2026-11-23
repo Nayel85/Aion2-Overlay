@@ -36,11 +36,19 @@ export interface GatherRoll {
   doubled: boolean
 }
 
-/** A gathering spot's kind (its template, as the game sends it) -> the plain item it gives, learnt from its results. */
+/**
+ * A gathering spot's kind -> the plain item it gives, learnt from its results. The kind is its
+ * template and the number its spawn ends with (`template:number`): the template alone is shared by
+ * spots of other resources (1500000), the number is the same on every spot of one (0x1f6fa332 Odyle).
+ */
 export type GatherTemplates = Record<string, number>
 
-/** Known before any gathering: the Odyle nodes (template 1500062). */
-export const GATHER_TEMPLATES_SEED: GatherTemplates = { '1500062': 610_610_013 }
+/** Known before any gathering: the Odyle spots. */
+export const GATHER_TEMPLATES_SEED: GatherTemplates = { '1500062:527409970': 610_610_013, '1500000:527409970': 610_610_013 }
+
+/** A spot's kind as learnt by: its template and its spawn's number, or the template alone without one. */
+export const spotKind = (template: number | null | undefined, kind: number | null | undefined): string | null =>
+  template === null || template === undefined ? null : kind === null || kind === undefined ? String(template) : `${template}:${kind}`
 
 const asItem = (d: GatherDrop): ForecastItem => ({ id: d[0], count: d[1], name: d[2], grade: d[3], icon: d[4] })
 
