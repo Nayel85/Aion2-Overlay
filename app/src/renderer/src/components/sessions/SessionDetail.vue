@@ -85,6 +85,8 @@ function toggleDuty(d: DutyDone): void {
 
 /** The runs whose own loot is shown, by start. */
 const open = ref(new Set<number>())
+/** Over with nothing from it: not one still going (a Shugo game gives its rewards at its end). */
+const abandoned = (r: DungeonRun): boolean => r.end !== null && !runCounts(r)
 function toggle(r: DungeonRun): void {
   const next = new Set(open.value)
   if (next.has(r.start)) next.delete(r.start)
@@ -155,13 +157,13 @@ function toggle(r: DungeonRun): void {
       <table class="mt-2 w-full text-xs tabular-nums">
         <tbody>
           <template v-for="r in g" :key="r.start">
-            <tr :class="['cursor-pointer border-t border-dark hover:bg-dark/50', !runCounts(r) && 'text-darker line-through']" @click="toggle(r)">
+            <tr :class="['cursor-pointer border-t border-dark hover:bg-dark/50', abandoned(r) && 'text-darker line-through']" @click="toggle(r)">
               <td class="py-1 pl-1 text-dark">{{ clock(r.start) }}</td>
               <td class="py-1">
                 <span v-if="!runIsTimed(r)" class="text-darker">–</span>
                 <span v-else-if="r.end === null && r.cleared === undefined" class="text-accent">{{ t('in progress') }}</span>
                 <span v-else :class="r.cleared !== undefined ? 'text-green' : 'text-darker'">{{ mmss(runMs(r)) }}</span>
-                <span v-if="!runCounts(r)" class="ml-1 text-darker">{{ t('abandoned') }}</span>
+                <span v-if="abandoned(r)" class="ml-1 text-darker">{{ t('abandoned') }}</span>
               </td>
               <td class="py-1" :title="t('Your deaths')">
                 <span class="flex items-center gap-0.5"><svg viewBox="0 0 16 16" class="size-3 text-red" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.skull" /></svg><span :class="r.deaths ? 'font-semibold text-red' : 'text-darker'">{{ r.deaths ?? '-' }}</span></span>
