@@ -183,7 +183,7 @@ export function itemInfo(id: string | number): ItemInfo | undefined {
   const l = LOOT[id]
   if (l) return { name: l[0], grade: l[1], icon: l[3], kind: l[2] }
   const i = ITEMS[id]
-  if (i) return { name: i[0], grade: i[1], icon: i[2], kind: i[3] === 'currency' ? 'currency' : 'item' }
+  if (i) return { name: i[0], grade: i[1], icon: i[2], kind: i[3] === 'currency' ? 'currency' : i[3] === 'arcana' ? 'arcana' : 'item' }
   return undefined
 }
 /** Equipment under Unique (grey, green, blue): listed for the Inventory page, never kept as loot. */

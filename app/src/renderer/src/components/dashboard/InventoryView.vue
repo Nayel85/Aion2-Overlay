@@ -51,8 +51,8 @@ const slots = computed(() => placeSlots(store.inventories, picked.value?.[1] ?? 
 /** Its items as tiles: the bag and the warehouses slot by slot, as in game; the Arcana the best first. */
 const tiles = computed(() =>
   Object.entries(slots.value)
-    .map(([n, s]) => ({ n: Number(n), s }))
-    .sort((a, b) => (view.value.place === 'arcana' ? (itemInfo(b.s.item)?.grade ?? 0) - (itemInfo(a.s.item)?.grade ?? 0) : 0) || a.n - b.n),
+    .map(([n, s]) => ({ n, s }))
+    .sort((a, b) => (view.value.place === 'arcana' ? (itemInfo(b.s.item)?.grade ?? 0) - (itemInfo(a.s.item)?.grade ?? 0) || a.s.item - b.s.item : Number(a.n) - Number(b.n))),
 )
 const asOf = computed(() => (view.value.place === 'account' ? store.inventories.account?.at : picked.value?.[1].at) ?? null)
 const placeOptions = computed(() => PLACES.map((p) => ({ id: p.id, label: p.label, count: Object.keys(placeSlots(store.inventories, picked.value?.[1] ?? null, p.id)).length })))

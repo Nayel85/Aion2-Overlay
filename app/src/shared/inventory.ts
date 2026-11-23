@@ -26,7 +26,7 @@ export interface SlotItem {
   enchant?: number
   stones?: number[]
 }
-/** Slots by `<storage>:<slot>` (a character's) or `<slot>` (the account's warehouse). */
+/** Slots by `<storage>:<slot>` (a character's; the Arcana `14:u<uid>`, all in slot 0) or `<slot>` (the account's warehouse). */
 export type Slots = Record<string, SlotItem>
 export interface CharacterInventory {
   name: string
@@ -45,6 +45,7 @@ export const NO_INVENTORIES: Inventories = { characters: {}, account: null }
 
 /** An item where it lies, as the engine tells it. */
 export interface DepotItem {
+  uid?: number
   storage: number
   slot: number
   item: number
@@ -52,6 +53,8 @@ export interface DepotItem {
   enchant?: number
   stones?: number[]
 }
+/** A character's slot key: storage and slot; an Arcana's by its uid (they all lie in slot 0). */
+const ownKey = (d: DepotItem): string => (d.storage === 14 && d.uid !== undefined ? `14:u${d.uid}` : `${d.storage}:${d.slot}`)
 const held = (d: DepotItem): SlotItem => ({ item: d.item, amount: d.amount, ...(d.enchant ? { enchant: d.enchant } : {}), ...(d.stones?.length ? { stones: d.stones } : {}) })
 
 /** A login's list, sorted into the character's own slots and the account's warehouse's. */
@@ -62,7 +65,7 @@ export function fromList(items: DepotItem[]): { own: Slots; account: Slots } {
     const place = STORAGE_OF[d.storage]
     if (!place || d.amount <= 0) continue
     if (place === 'account') account[d.slot] = held(d)
-    else own[`${d.storage}:${d.slot}`] = held(d)
+    else own[ownKey(d)] = held(d)
   }
   return { own, account }
 }
@@ -76,7 +79,7 @@ export function applySlots(inv: Inventories, id: string, who: { name: string; se
     const place = STORAGE_OF[d.storage]
     if (!place) continue
     const into = place === 'account' ? account : own
-    const key = place === 'account' ? String(d.slot) : `${d.storage}:${d.slot}`
+    const key = place === 'account' ? String(d.slot) : ownKey(d)
     if (place === 'account') accountChanged = true
     if (d.amount > 0) into[key] = held(d)
     else delete into[key]
@@ -87,15 +90,15 @@ export function applySlots(inv: Inventories, id: string, who: { name: string; se
   }
 }
 
-/** The slots of one place: a character's (worn, bag...) or the account's warehouse. By slot number. */
-export function placeSlots(inv: Inventories, c: CharacterInventory | null, place: Place): Record<number, SlotItem> {
-  if (place === 'account') return Object.fromEntries(Object.entries(inv.account?.slots ?? {}).map(([k, v]) => [Number(k), v]))
+/** The slots of one place: a character's (worn, bag...) or the account's warehouse. By slot number (an Arcana's `u<uid>`). */
+export function placeSlots(inv: Inventories, c: CharacterInventory | null, place: Place): Record<string, SlotItem> {
+  if (place === 'account') return { ...(inv.account?.slots ?? {}) }
   const prefix = `${STORAGE_BYTE[place]}:`
-  return Object.fromEntries(Object.entries(c?.slots ?? {}).filter(([k]) => k.startsWith(prefix)).map(([k, v]) => [Number(k.slice(prefix.length)), v]))
+  return Object.fromEntries(Object.entries(c?.slots ?? {}).filter(([k]) => k.startsWith(prefix)).map(([k, v]) => [k.slice(prefix.length), v]))
 }
 
 /** A place's items together: by item id, how many (the stacks of one item added up). */
-export function placeItems(slots: Record<number, SlotItem>): Record<string, number> {
+export function placeItems(slots: Record<string, SlotItem>): Record<string, number> {
   const out: Record<string, number> = {}
   for (const s of Object.values(slots)) out[s.item] = (out[s.item] ?? 0) + s.amount
   return out

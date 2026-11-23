@@ -14,10 +14,14 @@ test("a login's list into slots; items moving say their slots anew; an item foun
     { storage: 15, slot: 0, item: 511490001, amount: 11 },
     { storage: 11, slot: 1, item: 110550049, amount: 1, enchant: 10, stones: [531360001, 531360001] },
     { storage: 99, slot: 0, item: 610610013, amount: 1 },
+    // Two Arcana, both in slot 0: each its own.
+    { uid: 120171, storage: 14, slot: 0, item: 810160002, amount: 1 },
+    { uid: 598828, storage: 14, slot: 0, item: 810560002, amount: 1 },
   ])
   let inv: Inventories = { characters: { '1305:Nayel': { name: 'Nayel', server: 1305, at: 0, slots: own } }, account: { at: 0, slots: account } }
   const nayel = (): NonNullable<Inventories['characters'][string]> => inv.characters['1305:Nayel']!
   assert.deepEqual(placeItems(placeSlots(inv, nayel(), 'bag')), { '930100031': 17108694, '630840002': 1731 })
+  assert.equal(Object.keys(placeSlots(inv, nayel(), 'arcana')).length, 2)
   assert.deepEqual(placeSlots(inv, nayel(), 'worn')[1], { item: 110550049, amount: 1, enchant: 10, stones: [531360001, 531360001] })
 
   // Her Silentium stack of 731 moved to the account's warehouse: slot 40 there, slot 52 of the bag emptied.

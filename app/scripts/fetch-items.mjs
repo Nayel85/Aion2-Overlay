@@ -46,6 +46,7 @@ const CATEGORIES = [
   ['armor', 41, ['torso', 'pants', 'helmet', 'shoulder', 'gloves', 'boots', 'cape']],
   ['accessory', 41, ['necklace', 'earring', 'ring', 'bracelet']],
   ['equip', 41, ['belt', 'amulet', 'rune']],
+  ['arcana', null, []],
 ]
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -117,7 +118,7 @@ for (const [main, iconFrom, subs] of CATEGORIES) {
   for (const i of await category(main, subs)) {
     if (i.mainCategory !== main || i.isDisabled) continue
     const withIcon = iconFrom !== null && (i.grade ?? 0) >= iconFrom
-    items[i.id] = [i.name, i.grade ?? 11, withIcon ? await icon(i.icon) : remoteIcon(i.icon), main === 'currency' ? 'currency' : (i.subCategory ?? main)]
+    items[i.id] = [i.name, i.grade ?? 11, withIcon ? await icon(i.icon) : remoteIcon(i.icon), main === 'currency' || main === 'arcana' ? main : (i.subCategory ?? main)]
   }
   console.log(`${main}: ${Object.keys(items).length} items so far`)
 }

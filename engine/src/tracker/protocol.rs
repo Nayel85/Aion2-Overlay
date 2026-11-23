@@ -711,6 +711,8 @@ pub const DEPOT_STORAGES: [u8; 5] = [1, 2, 11, 14, 15];
 /// empty now), and an equipment's enchantment and the stones set in it (manastones, soulstones).
 #[derive(Debug, Clone, PartialEq)]
 pub struct DepotItem {
+    /// The item's own id (the Arcana all lie in slot 0: told apart by it).
+    pub uid: u32,
     pub storage: u8,
     pub slot: u8,
     pub item: u32,
@@ -758,7 +760,7 @@ fn depot_records(b: &[u8], empty: bool) -> Vec<DepotItem> {
                     }
                 }
             }
-            DepotItem { storage, slot, item: u32_at(b, i).unwrap_or(0), amount: u64_at(b, i + 4).unwrap_or(0), enchant, stones }
+            DepotItem { uid: u32_at(b, i - 8).unwrap_or(0), storage, slot, item: u32_at(b, i).unwrap_or(0), amount: u64_at(b, i + 4).unwrap_or(0), enchant, stones }
         })
         .collect()
 }
@@ -1454,6 +1456,10 @@ mod tests {
         let worn = |slot: u8| items.iter().find(|i| i.storage == 11 && i.slot == slot).unwrap();
         assert_eq!((worn(1).enchant, worn(1).stones.clone()), (5, vec![531360001; 4]));
         assert_eq!([worn(11).enchant, worn(12).enchant, worn(10).enchant, worn(17).enchant, worn(3).enchant], [10, 10, 7, 0, 1]);
+        // Her two Arcana, both in slot 0, each its own uid.
+        let arcana: Vec<u32> = items.iter().filter(|i| i.storage == 14).map(|i| i.uid).collect();
+        assert_eq!(arcana.len(), 2);
+        assert_ne!(arcana[0], arcana[1]);
         // The owner's 2026-11-23 transfer of Lucky Auras to Nayel's own warehouse: slots 0 and 1 there.
         let moved = item_slots(&frame(OP_ITEM, &hex("0201005c18080000fb0100e192b22509000000000000000f00000000000000000000000000000000000100cd77060000690200d16bb22501000000000000000f01000000000000000000000000000000")));
         assert_eq!(moved.iter().map(|i| (i.storage, i.slot, i.amount)).collect::<Vec<_>>(), vec![(15, 0, 9), (15, 1, 1)]);

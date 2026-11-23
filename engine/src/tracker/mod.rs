@@ -197,7 +197,7 @@ pub struct Tracker {
 
 /// An item where it lies, as the app keeps it (shared/inventory.ts).
 fn depot_json(i: &p::DepotItem) -> Value {
-    json!({ "storage": i.storage, "slot": i.slot, "item": i.item, "amount": i.amount, "enchant": i.enchant, "stones": i.stones })
+    json!({ "uid": i.uid, "storage": i.storage, "slot": i.slot, "item": i.item, "amount": i.amount, "enchant": i.enchant, "stones": i.stones })
 }
 
 fn pet_view(id: u32, pet: &Pet, name: Option<&str>, session: u32) -> Value {
