@@ -16,6 +16,9 @@ import { allCrafts, craftKinds, craftSummaries, filterCrafts, recipeStats, type 
 import { luck } from '@shared/lootStats.ts'
 import { itemIcon } from '@shared/sessions.ts'
 
+/** Inside the Stats page (StatsView): its header is the page's. */
+defineProps<{ embedded?: boolean }>()
+
 const store = useApp()
 
 // ---- the filters, remembered ------------------------------------------------------------------
@@ -123,7 +126,7 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
 
 <template>
   <div>
-    <PageHeader title="Crafts" about="Your crafts over the sessions kept: by character and by recipe, how many procced (a better item, or the same one twice), against the game's proc chances (questlog.gg). Your luck: the procs you got against what those chances make of your crafts, ×1 being just that." />
+    <PageHeader v-if="!embedded" title="Crafts" about="Your crafts over the sessions kept: by character and by recipe, how many procced (a better item, or the same one twice), against the game's proc chances (questlog.gg). Your luck: the procs you got against what those chances make of your crafts, ×1 being just that." />
 
     <!-- The filters. -->
     <div class="mb-5 space-y-3 rounded-xl border border-card p-4">

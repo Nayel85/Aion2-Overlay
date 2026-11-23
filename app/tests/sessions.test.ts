@@ -210,3 +210,22 @@ test('runs of one dungeon and mode group together, their gains and deaths summed
   const m = mergeRuns([a, b])
   assert.deepEqual([m.count, m.kina, m.loot, m.deaths, m.partyDeaths, m.start, m.end], [2, 1_200_000, { '630840002': 28 }, 1, 3, 1, 4])
 })
+
+test("the gathering stats: by character and resource, the skills' levels, the x2 Plentiful Harvest makes expected", async () => {
+  const { gatherRows } = await import('../src/shared/gatherStats.ts')
+  const { gatherSkill } = await import('../src/shared/gatherSkills.ts')
+  // Nayel's skills of 2026-11-23, as the rolls' second ids carry them.
+  assert.deepEqual([810, 105, 310, 71_002].map((id) => { const s = gatherSkill(id)!; return [s.skill.name, s.level] }), [['Proficient Handling', 10], ['Delicate Touch', 5], ['Lady Luck', 10], ['Plentiful Harvest', 3]])
+  // Four Odyle gatherings: one doubled (Plentiful Harvest Lv. 3 fired), one Fine, one failed, one plain.
+  const g = (over: object) => ({ at: 0, resource: 610_610_013, outcome: 1, grade: 1, doubled: false, failed: false, item: 610_610_013, amount: 1, skills: [810], ...over })
+  const list = [g({ doubled: true, amount: 2, skills: [810, 71_002] }), g({ item: 610_610_014, outcome: 7, grade: 2 }), g({ failed: true, outcome: 0, amount: 0, skills: [105, 105] }), g({ skills: [310, 810] })].map((gathering) => ({ name: 'Nayel', gathering }))
+  const [row] = gatherRows(list)
+  assert.equal(row!.done, 4)
+  assert.equal(row!.failed, 1)
+  assert.equal(row!.rankUps, 1)
+  assert.equal(row!.doubled, 1)
+  assert.equal(row!.luck, 1)
+  // 30% of its 3 successes.
+  assert.ok(Math.abs(row!.expectedDoubled! - 0.9) < 1e-9)
+  assert.deepEqual(row!.skills, [['Delicate Touch', 5], ['Lady Luck', 10], ['Plentiful Harvest', 3], ['Proficient Handling', 10]])
+})

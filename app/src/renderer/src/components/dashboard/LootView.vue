@@ -18,6 +18,9 @@ import { filterRuns, itemStats, lootChoices, lootRuns, luck, summaries, unitsOf,
 import { itemIcon, LOOT_KINDS } from '@shared/sessions.ts'
 import { gradeClass, ICON, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
 
+/** Inside the Stats page (StatsView): its header is the page's. */
+defineProps<{ embedded?: boolean }>()
+
 const store = useApp()
 
 // ---- the filters, remembered ------------------------------------------------------------------
@@ -140,7 +143,7 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
 
 <template>
   <div>
-    <PageHeader title="Loot" about="What your dungeon runs gave, from their cubes: by character and by item, per run, per cube or per hour in them. Only the runs whose cubes the overlay saw count. Your luck: what you got against what the drop rates of the game (questlog.gg) make of your cubes, ×1 being just that." />
+    <PageHeader v-if="!embedded" title="Loot" about="What your dungeon runs gave, from their cubes: by character and by item, per run, per cube or per hour in them. Only the runs whose cubes the overlay saw count. Your luck: what you got against what the drop rates of the game (questlog.gg) make of your cubes, ×1 being just that." />
 
     <!-- The filters. -->
     <div class="mb-5 space-y-3 rounded-xl border border-card p-4">

@@ -527,9 +527,29 @@ export interface PlaySession {
   supplies?: SupplyDone[]
   /** The crafts done, each with whether it procced and what it made. */
   crafts?: CraftDone[]
+  /** Each gathering done (since 2026-11-23): its resource, how it went and the skills it fired. */
+  gatherings?: GatheringDone[]
 }
 
 /** A duty mission handed in: when, which (its quest id: QUESTS), and the rewards it gave by item id. */
+/**
+ * A gathering done: its resource (its plain item), what its start said (the outcome's flags: 1 made,
+ * 2 and 4 a better grade rolled; the grade rolled; doubled), what came (the item and how many) and
+ * the skills its rolls fired, with their levels (shared/gatherSkills.ts).
+ */
+export interface GatheringDone {
+  at: number
+  resource: number
+  outcome: number
+  grade: number
+  doubled: boolean
+  failed: boolean
+  item: number
+  amount: number
+  /** Every skill fired, once each time it did. */
+  skills: number[]
+}
+
 /** A craft done: its recipe (shared/recipes.ts), whether it procced, and what it made. */
 export interface CraftDone {
   at: number

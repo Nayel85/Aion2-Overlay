@@ -1152,7 +1152,7 @@ impl Tracker {
                     self.gathering = Some(node);
                     let (template, kind) = self.objects.get(&node).map_or((None, None), |&(t, k)| (Some(t), k));
                     (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "kind": kind, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled, "durationMs": ms,
-                        "rolls": rolls.iter().map(|r| json!({ "ms": r.ms, "success": r.success, "failure": r.failure, "luck": r.luck, "doubled": r.doubled })).collect::<Vec<_>>() }));
+                        "rolls": rolls.iter().map(|r| json!({ "ms": r.ms, "success": r.success, "failure": r.failure, "luck": r.luck, "doubled": r.doubled, "skills": r.skills })).collect::<Vec<_>>() }));
                 }
             }
             p::OP_GATHER => {

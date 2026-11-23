@@ -36,6 +36,8 @@ export interface GatherRoll {
   failure: number
   luck: boolean
   doubled: boolean
+  /** The skills it fired, each with its level in its id (shared/gatherSkills.ts). */
+  skills?: number[]
 }
 
 /**

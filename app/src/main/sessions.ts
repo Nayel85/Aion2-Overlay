@@ -19,7 +19,7 @@ import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { RECIPES } from '../shared/recipes.ts'
 import { BOSS_RUNS } from '../shared/bossRuns.ts'
-import { AP_ITEM, apSource, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
+import { AP_ITEM, apSource, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
 
 const HISTORY_MAX = 200
 const CONTINUE_MS = 6 * 3_600_000
@@ -401,8 +401,29 @@ export function startSessions(): void {
     changed()
   })
   // A gathering: the session's stats (done, failed, doubled, ranked up) and what it gave.
+  // Each gathering whole: its start (outcome, grade, the skills its rolls fired), then its result.
+  let gatherStart: { outcome: number; grade: number; doubled: boolean; skills: number[] } | null = null
+  tracker.onEvent('gatherStart', (ev) => {
+    const rolls = (ev['rolls'] as { skills?: number[] }[] | undefined) ?? []
+    gatherStart = { outcome: ev['outcome'] as number, grade: (ev['grade'] as number | undefined) ?? 1, doubled: ev['doubled'] === true, skills: rolls.flatMap((r) => r.skills ?? []) }
+  })
+  tracker.onEvent('gatherEnd', () => {
+    // Given up: no result comes; a done one's comes just after, its start kept for it (and the next
+    // gathering's start, coming meanwhile, left alone).
+    const over = gatherStart
+    setTimeout(() => {
+      if (gatherStart === over) gatherStart = null
+    }, 1_500)
+  })
   tracker.onEvent('gather', (ev) => {
     const s = sessions.current
+    const start = gatherStart
+    gatherStart = null
+    if (s && start) {
+      const item = ev['item'] as number
+      const amount = ((ev['amount'] as number | undefined) ?? 0) + ((ev['bonus'] as number | undefined) ?? 0)
+      s.gatherings = [...(s.gatherings ?? []), { at: Date.now(), resource: resourceOf(item), outcome: start.outcome, grade: start.grade, doubled: start.doubled, failed: ev['result'] === 2 || amount <= 0, item, amount, skills: start.skills }]
+    }
     if (!s) return
     const result = ev['result'] as number
     if (result > 2) log(`session: a gathering's result ${result} not known (${ev['amount']} x ${ev['item']})`)

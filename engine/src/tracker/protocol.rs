@@ -744,13 +744,17 @@ fn gather_ms(b: &[u8], grade: u8) -> u32 {
 /// One roll of a gathering (its start lists them): how long it plays (ms), what it adds to the success
 /// gauge and to the failure one (after the skills: Proficient Handling's +50 on a success, Delicate
 /// Touch's -40 on a failure), and whether it was Lady Luck's (action 300) or the doubling (71000).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GatherRoll {
     pub ms: u32,
     pub success: u32,
     pub failure: u32,
     pub luck: bool,
     pub doubled: bool,
+    /// The skills that fired, each the second id of its action, which carries its level: Nayel's
+    /// Proficient Handling Lv. 10 810 (800 + 10), Delicate Touch Lv. 5 105, Lady Luck Lv. 10 310,
+    /// Odyle's Plentiful Harvest Lv. 3 71002 (71000 its Lv. 1).
+    pub skills: Vec<u32>,
 }
 
 /// A gathering start's rolls (`b` from its try counter on): `<count u8>` at 11, then each `<kind u8>
@@ -774,6 +778,7 @@ pub fn gather_rolls(b: &[u8]) -> Vec<GatherRoll> {
             break;
         }
         let skills: Vec<u32> = (0..actions).filter_map(|m| u(at + 9 * m)).collect();
+        let levels: Vec<u32> = (0..actions).filter_map(|m| u(at + 9 * m + 5)).collect();
         let values = at + 9 * actions;
         let (Some(success), Some(failure)) = (u(values + 4), u(values + 12)) else { break };
         let doubled = skills.contains(&71_000);
@@ -783,6 +788,7 @@ pub fn gather_rolls(b: &[u8]) -> Vec<GatherRoll> {
             failure,
             luck: skills.contains(&300),
             doubled,
+            skills: levels,
         });
         p = values + 16;
     }
@@ -1682,6 +1688,8 @@ mod tests {
         // Its rolls: two successes with Proficient Handling (110 + 50), then the doubling's 40: the 360 gauge.
         let rolls = gather_start(&frame(OP_GATHER_START, &hex("0000b8c701010000000100000100000003030120030000012a0300006e000000a00000000000000000000000030120030000012a0300006e000000a00000000000000000000000030158150100015a15010028000000280000000000000000000000"))).unwrap().6;
         assert_eq!(rolls.iter().map(|r| (r.success, r.failure, r.doubled)).collect::<Vec<_>>(), vec![(160, 0, false), (160, 0, false), (40, 0, true)]);
+        // The skills with their levels: Proficient Handling Lv. 10 twice, Plentiful Harvest Lv. 3.
+        assert_eq!(rolls.iter().map(|r| r.skills.clone()).collect::<Vec<_>>(), vec![vec![810], vec![810], vec![71_002]]);
         // Gathered twice (x2), then once.
         assert_eq!(
             gather_start(&frame(OP_GATHER_START, &hex("0000b8c701010000000100000100000003030120030000012a0300006e000000a00000000000000000000000030120030000012a0300006e000000a00000000000000000000000030158150100015a15010028000000280000000000000000000000"))).map(|g| (g.0, g.1, g.2, g.3, g.4, g.5)),
