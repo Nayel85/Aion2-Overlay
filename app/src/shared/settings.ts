@@ -47,6 +47,8 @@ export type PartyHpText = (typeof PARTY_HP_TEXT)[number]
 /** Party frames: what turns a bar to the afflicted colour: any monster's debuff, or one taking control. */
 export const PARTY_AFFLICTED_BY = ['any', 'control'] as const
 export type PartyAfflictedBy = (typeof PARTY_AFFLICTED_BY)[number]
+/** The gathering outcome: red when it will fail, gold when it will rank up or give x2. */
+export const GATHER_DEFAULT_COLORS = { fail: '#d73a3a', rare: '#f5d77a' } as const
 /** Party frames: a red HP bar, green while afflicted. */
 export const PARTY_DEFAULT_COLORS = { hp: '#c0392b', afflicted: '#2ea043' } as const
 
@@ -170,6 +172,26 @@ export interface Settings {
     afflictedColor: string
     afflictedBy: PartyAfflictedBy
   }
+  /**
+   * The gathering outcome: a pill as a gathering starts, saying how it will end. Which to show
+   * (`fail`, `rare`: rank up or x2, `plain`), their colours, its size (`scale`), a sound for some.
+   */
+  gather: {
+    enabled: boolean
+    position: Point | null
+    opacity: number
+    scale: number
+    icon: boolean
+    fail: boolean
+    rare: boolean
+    plain: boolean
+    failColor: string
+    rareColor: string
+    soundFail: boolean
+    soundRare: boolean
+    soundId: SoundId
+    volume: number
+  }
   /** The flight timer: seconds of flight left, while flying or refilling. */
   flight: { enabled: boolean; position: Point | null; opacity: number }
   bossRuns: { enabled: boolean; position: Point | null; opacity: number; windowMinutes: number; rows: number; collapsed: boolean; scale: number; aliveMin: number; ignoreLow: boolean; lowPriority: number[] }
@@ -264,8 +286,6 @@ export interface Settings {
     cc: boolean
     ccPosition: Point | null
     ccDebuffs: boolean
-    /** On the same banner: a gathering that will fail or rank up, said as it starts. */
-    gather: boolean
   }
 
   /**
@@ -415,12 +435,16 @@ export const SETTINGS_DEFAULTS: Settings = {
     width: 180, barHeight: 22, gap: 2, fontSize: 12, hpColor: PARTY_DEFAULT_COLORS.hp, afflictedColor: PARTY_DEFAULT_COLORS.afflicted, afflictedBy: 'any',
   },
   flight: { enabled: true, position: null, opacity: 1 },
+  gather: {
+    enabled: true, position: null, opacity: 1, scale: 1, icon: true, fail: true, rare: true, plain: false,
+    failColor: GATHER_DEFAULT_COLORS.fail, rareColor: GATHER_DEFAULT_COLORS.rare, soundFail: false, soundRare: false, soundId: 'bell', volume: 0.6,
+  },
   bossRuns: { enabled: false, position: { x: 1890, y: 30 }, opacity: 0.85, windowMinutes: 15, rows: 4, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: [101001, 101002, 101006, 101007, 101019, 101017, 101005, 101004, 101003, 101015, 101010, 101008, 101009, 101016, 101012, 101014, 101020, 101013, 101011, 101018] },
   killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null },
   enemies: { enabled: false, position: null, opacity: 0.75, collapsed: false, mapPins: true, sound: true, pvpOnly: true, soundId: 'enemy-spotted', volume: 0.7, customName: null },
   skills: { enabled: false, position: { x: 500, y: 413 }, rows: 6, opacity: 0.92 },
   dummy: { overlay: false, position: null, autoStart: true, goal: 'time', limitMs: 60000, damageGoal: 10000000, collapsed: false },
-  buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1145, y: 359 }, ccDebuffs: false, gather: true },
+  buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1145, y: 359 }, ccDebuffs: false },
   meter: { enabled: true, position: { x: 410, y: 206 }, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'beside', gear: 'beside', deaths: true, style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
   layoutVersion: 1,
@@ -623,6 +647,26 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         hideAfter: Math.round(num(v.hideAfter, APPLICANTS_HIDE[0], APPLICANTS_HIDE[1], d.applicants.hideAfter)),
       } as Settings[K]
     }
+    case 'gather': {
+      const v = (value ?? {}) as Partial<Settings['gather']>
+      const g = d.gather
+      return {
+        enabled: bool(v.enabled, g.enabled),
+        position: point(v.position),
+        opacity: num(v.opacity, 0.2, 1, g.opacity),
+        scale: num(v.scale, 0.6, 2, g.scale),
+        icon: bool(v.icon, g.icon),
+        fail: bool(v.fail, g.fail),
+        rare: bool(v.rare, g.rare),
+        plain: bool(v.plain, g.plain),
+        failColor: colour(v.failColor, g.failColor),
+        rareColor: colour(v.rareColor, g.rareColor),
+        soundFail: bool(v.soundFail, g.soundFail),
+        soundRare: bool(v.soundRare, g.soundRare),
+        soundId: isSound(v.soundId) && v.soundId !== 'custom' ? v.soundId : g.soundId,
+        volume: num(v.volume, 0, 1, g.volume),
+      } as Settings[K]
+    }
     case 'flight': {
       const v = (value ?? {}) as Partial<Settings['flight']>
       return { enabled: bool(v.enabled, d.flight.enabled), position: point(v.position), opacity: num(v.opacity, 0.2, 1, d.flight.opacity) } as Settings[K]
@@ -713,7 +757,6 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         cc: bool(v.cc, d.buffs.cc),
         ccPosition: point(v.ccPosition),
         ccDebuffs: bool(v.ccDebuffs, d.buffs.ccDebuffs),
-        gather: bool(v.gather, d.buffs.gather),
       } as Settings[K]
     }
     case 'dummy': {

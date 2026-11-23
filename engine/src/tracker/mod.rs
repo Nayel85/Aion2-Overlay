@@ -196,6 +196,9 @@ pub struct Tracker {
     /// The party as last told the app (its members' names, classes and entities), and when checked.
     party_told: Value,
     party_checked: i64,
+    /// Objects in view but cubes (gathering spots...), their template by id: a gathering's start
+    /// names only its spot, whose template says what it gives.
+    objects: HashMap<u32, u32>,
 }
 
 /// An item where it lies, as the app keeps it (shared/inventory.ts).
@@ -280,6 +283,7 @@ impl Tracker {
             duty_pending: Vec::new(),
             party_told: json!([]),
             party_checked: 0,
+            objects: HashMap::new(),
         }
     }
 
@@ -882,6 +886,13 @@ impl Tracker {
             }
             p::OP_OBJECT_SPAWN => {
                 if let Some(o) = p::object_spawn(f) {
+                    if !CUBE_TEMPLATES.contains(&o.template) {
+                        // Kept while in view; a long session without removals is trimmed.
+                        if self.objects.len() > 5000 {
+                            self.objects.clear();
+                        }
+                        self.objects.insert(o.id, o.template);
+                    }
                     if CUBE_TEMPLATES.contains(&o.template) && self.cubes.insert(o.id, o).is_none() {
                         tracing::info!("hidden cube {} (template {}) at {:.0}, {:.0}", o.id, o.template, o.x, o.y);
                         self.cubes_changed(ts);
@@ -891,6 +902,7 @@ impl Tracker {
             p::OP_OBJECT_REMOVED => {
                 // Opened (04) or out of range (01): either way not there for you any more.
                 if let Some((id, reason)) = p::object_removed(f) {
+                    self.objects.remove(&id);
                     if self.cubes.remove(&id).is_some() {
                         tracing::info!("hidden cube {id} gone (reason {reason})");
                         self.cubes_changed(ts);
@@ -1092,7 +1104,8 @@ impl Tracker {
             p::OP_GATHER_START => {
                 if let Some((node, tries, outcome, doubled)) = p::gather_start(f) {
                     tracing::info!("gathering {node} (try {tries}): will be {outcome}, doubled {doubled}");
-                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "try": tries, "outcome": outcome, "doubled": doubled }));
+                    let template = self.objects.get(&node);
+                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "try": tries, "outcome": outcome, "doubled": doubled }));
                 }
             }
             p::OP_GATHER => {

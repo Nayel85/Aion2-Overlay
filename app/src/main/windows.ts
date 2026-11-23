@@ -22,6 +22,7 @@
  *                         when several spawn close together; moved by its header, sized by its corner
  *   applicants #/applicants join requests to your party, as people apply (its own widget; up while there are any)
  *   party      #/party      party frames: each member's HP, while in a party
+ *   gather     #/gather     a gathering's outcome as it starts (fail, rank up, x2); click-through
  *   flight     #/flight     the flight timer: seconds of flight left, while flying or refilling; click-through
  *   eventtoast #/eventtoast a guild event to answer (going, maybe, not going): popped up in the
  *                         bottom right corner of the screen the game is on, above the taskbar
@@ -721,7 +722,7 @@ export const buffsDragEnded = buffsOverlay.dragEnded
 
 const ccOverlay = measuredOverlay({
   route: 'cc',
-  enabled: () => settings.get('buffs').cc || settings.get('buffs').gather,
+  enabled: () => settings.get('buffs').cc,
   saved: () => settings.get('buffs').ccPosition,
   fallback: () => {
     const area = screen.getPrimaryDisplay().workArea
@@ -832,6 +833,23 @@ export const resizeFlight = flightOverlay.resize
 export const moveFlight = flightOverlay.move
 export const flightDragEnded = flightOverlay.dragEnded
 
+/** The gathering outcome: a little above the middle of the screen, where you look (click-through). */
+const gatherOverlay = measuredOverlay({
+  route: 'gather',
+  enabled: () => settings.get('gather').enabled,
+  saved: () => settings.get('gather').position,
+  fallback: () => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: Math.round(area.x + area.width / 2 - 110), y: Math.round(area.y + area.height * 0.38) }
+  },
+  save: (position) => settings.set('gather', { ...settings.get('gather'), position }),
+  clickThrough: true,
+})
+export const createGather = gatherOverlay.create
+export const resizeGather = gatherOverlay.resize
+export const moveGather = gatherOverlay.move
+export const gatherDragEnded = gatherOverlay.dragEnded
+
 /** Boss Runs: right of centre, a third of the way down. */
 const bossRunsOverlay = measuredOverlay({
   route: 'bossruns',
@@ -867,7 +885,7 @@ const eventToastOverlay = measuredOverlay({
 export const createEventToast = eventToastOverlay.create
 export const resizeEventToast = eventToastOverlay.resize
 
-const MEASURED = [applicantsOverlay, partyOverlay, flightOverlay, skillsOverlay, miniMapOverlay, buffsOverlay, ccOverlay, enemiesOverlay, trainingOverlay, packetsOverlay, bossRunsOverlay, eventToastOverlay]
+const MEASURED = [applicantsOverlay, partyOverlay, flightOverlay, gatherOverlay, skillsOverlay, miniMapOverlay, buffsOverlay, ccOverlay, enemiesOverlay, trainingOverlay, packetsOverlay, bossRunsOverlay, eventToastOverlay]
 /** The measured overlays that are open. */
 const measuredWins = (): BrowserWindow[] => MEASURED.map((m) => m.win()).filter((w): w is BrowserWindow => w !== null)
 
@@ -1215,7 +1233,7 @@ export function applyWindowSettings(): void {
   else if (alive(bubble)) createSkills()
   if (!settings.get('buffs').enabled) closeBuffs()
   else if (alive(bubble)) createBuffs()
-  if (!settings.get('buffs').cc && !settings.get('buffs').gather) ccOverlay.close()
+  if (!settings.get('buffs').cc) ccOverlay.close()
   else if (alive(bubble)) createCc()
   if (!enemiesOn()) enemiesOverlay.close()
   else if (alive(bubble)) createEnemies()
@@ -1225,6 +1243,8 @@ export function applyWindowSettings(): void {
   else if (alive(bubble)) createParty()
   if (!settings.get('flight').enabled) flightOverlay.close()
   else if (alive(bubble)) createFlight()
+  if (!settings.get('gather').enabled) gatherOverlay.close()
+  else if (alive(bubble)) createGather()
   if (!bossRunsOn()) bossRunsOverlay.close()
   else if (alive(bubble)) createBossRuns()
   if (!eventToastEnabled()) eventToastOverlay.close()
@@ -1294,7 +1314,7 @@ export function rebuildWindow(win: BrowserWindow): string | null {
     showMerchant()
     return 'merchant'
   }
-  for (const [m, route] of [[applicantsOverlay, 'applicants'], [partyOverlay, 'party'], [flightOverlay, 'flight'], [skillsOverlay, 'skills'], [miniMapOverlay, 'minimap'], [buffsOverlay, 'buffs'], [ccOverlay, 'cc'], [enemiesOverlay, 'enemies'], [trainingOverlay, 'training'], [packetsOverlay, 'packets'], [bossRunsOverlay, 'bossruns'], [eventToastOverlay, 'eventtoast']] as const) {
+  for (const [m, route] of [[applicantsOverlay, 'applicants'], [partyOverlay, 'party'], [flightOverlay, 'flight'], [gatherOverlay, 'gather'], [skillsOverlay, 'skills'], [miniMapOverlay, 'minimap'], [buffsOverlay, 'buffs'], [ccOverlay, 'cc'], [enemiesOverlay, 'enemies'], [trainingOverlay, 'training'], [packetsOverlay, 'packets'], [bossRunsOverlay, 'bossruns'], [eventToastOverlay, 'eventtoast']] as const) {
     if (win !== m.win()) continue
     m.close()
     m.create()

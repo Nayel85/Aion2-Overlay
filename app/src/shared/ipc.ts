@@ -77,6 +77,9 @@ export interface InvokeChannels {
   'flight:get': { args: []; result: FlightPower | null }
   /** A gathering's outcome, known as it starts (the CC banner). */
   'gather:get': { args: []; result: GatherForecast | null }
+  'gather:moveTo': { args: [to: Point]; result: void }
+  'gather:dragEnd': { args: []; result: void }
+  'gather:resize': { args: [size: { width: number; height: number }]; result: void }
   'flight:moveTo': { args: [to: Point]; result: void }
   'flight:dragEnd': { args: []; result: void }
   'flight:resize': { args: [size: { width: number; height: number }]; result: void }
@@ -347,7 +350,7 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'meter:get', 'meter:reset', 'meter:moveTo', 'meter:dragEnd', 'meter:resize',
   'minimap:moveTo', 'minimap:dragEnd', 'minimap:resize',
   'skills:get', 'skills:moveTo', 'skills:dragEnd', 'skills:resize',
-  'buffs:get', 'buffs:moveTo', 'buffs:dragEnd', 'buffs:resize', 'cc:moveTo', 'cc:dragEnd', 'cc:resize', 'enemies:moveTo', 'enemies:dragEnd', 'enemies:resize', 'guild:get', 'guild:refresh', 'applicants:get', 'gather:get', 'flight:get', 'flight:moveTo', 'flight:dragEnd', 'flight:resize', 'party:get', 'party:moveTo', 'party:dragEnd', 'party:resize', 'applicants:dismiss', 'applicants:clear', 'applicants:moveTo', 'applicants:dragEnd', 'applicants:resize', 'bossruns:moveTo', 'bossruns:dragEnd', 'bossruns:resize', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'eventtoast:resize', 'training:moveTo', 'training:dragEnd', 'training:resize', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'packets:resize', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
+  'buffs:get', 'buffs:moveTo', 'buffs:dragEnd', 'buffs:resize', 'cc:moveTo', 'cc:dragEnd', 'cc:resize', 'enemies:moveTo', 'enemies:dragEnd', 'enemies:resize', 'guild:get', 'guild:refresh', 'applicants:get', 'gather:get', 'gather:moveTo', 'gather:dragEnd', 'gather:resize', 'flight:get', 'flight:moveTo', 'flight:dragEnd', 'flight:resize', 'party:get', 'party:moveTo', 'party:dragEnd', 'party:resize', 'applicants:dismiss', 'applicants:clear', 'applicants:moveTo', 'applicants:dragEnd', 'applicants:resize', 'bossruns:moveTo', 'bossruns:dragEnd', 'bossruns:resize', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'eventtoast:resize', 'training:moveTo', 'training:dragEnd', 'training:resize', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'packets:resize', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
   'details:open', 'details:get', 'details:view', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:bests', 'history:delete',
 ]
 

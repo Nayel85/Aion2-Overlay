@@ -100,9 +100,7 @@ const pct = (v: number): string => `${Math.round(v * 100)}%`
       <SettingRow v-if="cfg.cc" label="Monsters' other debuffs" hint="Under the banner: the other debuffs monsters put on you (poisons, slows...), with their time left.">
         <Toggle :model-value="cfg.ccDebuffs" @update:model-value="set({ ccDebuffs: $event })" />
       </SettingRow>
-      <SettingRow label="Gathering outcome" hint="The game decides a gathering as it starts, about 7 seconds before the result: in the same place, a red pill when it will fail, a gold one when it will rank up (Fine Odyle) or give twice as much. A plain one shows nothing.">
-        <Toggle :model-value="cfg.gather" @update:model-value="set({ gather: $event })" />
-      </SettingRow>
+
     </Section>
 
     <Section title="Buffs overlay" icon="M2.5 2.5h4.5v4.5H2.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5H2.5zM9 9h4.5v4.5H9z">

@@ -6,6 +6,7 @@ import BossRunsPage from './pages/BossRunsPage.vue'
 import ApplicantsPage from './pages/ApplicantsPage.vue'
 import PartyPage from './pages/PartyPage.vue'
 import FlightPage from './pages/FlightPage.vue'
+import GatherPage from './pages/GatherPage.vue'
 import EventToastPage from './pages/EventToastPage.vue'
 import BubblePage from './pages/BubblePage.vue'
 import BuffsPage from './pages/BuffsPage.vue'
@@ -51,6 +52,7 @@ onMounted(() => void store.init())
   <ApplicantsPage v-else-if="page === 'applicants'" />
   <PartyPage v-else-if="page === 'party'" />
   <FlightPage v-else-if="page === 'flight'" />
+  <GatherPage v-else-if="page === 'gather'" />
   <TrainingPage v-else-if="page === 'training'" />
   <PacketsPage v-else-if="page === 'packets'" />
   <GameMapPage v-else-if="page === 'gamemap'" />

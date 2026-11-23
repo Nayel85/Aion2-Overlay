@@ -36,6 +36,9 @@ import {
   applicantsDragEnded,
   moveParty,
   moveFlight,
+  moveGather,
+  gatherDragEnded,
+  resizeGather,
   flightDragEnded,
   resizeFlight,
   partyDragEnded,
@@ -184,6 +187,13 @@ export function registerIpc(): void {
   handle('party:get', () => partyStore.all())
   handle('flight:get', () => flightStore.get())
   handle('gather:get', () => gatherStore.get())
+  handle('gather:moveTo', (to) => {
+    if (isPoint(to)) moveGather(to)
+  })
+  handle('gather:dragEnd', () => gatherDragEnded())
+  handle('gather:resize', (size) => {
+    if (isPoint({ x: size?.width, y: size?.height })) resizeGather(size)
+  })
   handle('flight:moveTo', (to) => {
     if (isPoint(to)) moveFlight(to)
   })

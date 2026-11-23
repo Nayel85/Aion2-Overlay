@@ -3,8 +3,7 @@
 // down, feared... a banner mid-screen with the effect's icon, what it is and the seconds left, a bar
 // running down under it. Optionally the monsters' other debuffs on you in a row below. CC is told
 // by the game's own type for each effect (lib/buffs.ts, ccKind). Clicks go through to the game; while
-// the dashboard is up it shows a preview, and can be dragged into place. Above it, a gathering that
-// will fail, rank up or double, as it starts (main/gather.ts): the game says so about 7 s before.
+// the dashboard is up it shows a preview, and can be dragged into place.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -29,27 +28,19 @@ function cc(b: Buff): CcKind | null {
 const live = computed(() => store.buffs.filter((b) => b.endsAt !== null && b.endsAt > now.value))
 /** The control lost now, the latest first: the banner shows it, the rest beside it. */
 const controls = computed(() =>
-  (cfg.value.cc ? live.value : [])
+  live.value
     .map((b) => ({ b, kind: cc(b) }))
     .filter((c): c is { b: Buff; kind: CcKind } => c.kind !== null)
     .sort((x, y) => y.b.startedAt - x.b.startedAt || (y.b.endsAt ?? 0) - (x.b.endsAt ?? 0)),
 )
-const debuffs = computed(() => (cfg.value.cc && cfg.value.ccDebuffs ? live.value.filter((b) => b.debuff && !cc(b)).sort((x, y) => (x.endsAt ?? 0) - (y.endsAt ?? 0)) : []))
+const debuffs = computed(() => (cfg.value.ccDebuffs ? live.value.filter((b) => b.debuff && !cc(b)).sort((x, y) => (x.endsAt ?? 0) - (y.endsAt ?? 0)) : []))
 /** Nothing on you while the dashboard is up: a sample to place it by. */
-const preview = computed(() => cfg.value.cc && !controls.value.length && store.panelVisible)
-/** What a gathering going on will give, when it is not a plain one (that says nothing). */
-const gathering = computed(() => {
-  const g = cfg.value.gather ? store.gather : null
-  if (!g || (g.outcome === 'ok' && !g.doubled)) return null
-  if (g.outcome === 'fail') return { fail: true, text: t('Gathering will fail') }
-  const text = g.outcome === 'rankUp' ? (g.doubled ? t('Gathering ranks up, x2') : t('Gathering ranks up')) : t('Gathering x2')
-  return { fail: false, text }
-})
+const preview = computed(() => !controls.value.length && store.panelVisible)
 const main = computed(() => controls.value[0] ?? null)
 const left = (b: Buff): number => Math.max(0, (b.endsAt ?? 0) - now.value)
 const share = (b: Buff): number => Math.max(0, Math.min(1, left(b) / Math.max(1, (b.endsAt ?? 0) - b.startedAt)))
 const seconds = (b: Buff): string => `${(left(b) / 1000).toFixed(1)} seconds`
-const shown = computed(() => !!main.value || preview.value || debuffs.value.length > 0 || !!gathering.value)
+const shown = computed(() => !!main.value || preview.value || debuffs.value.length > 0)
 
 const drag = windowDrag({ move: 'cc:moveTo', end: 'cc:dragEnd' })
 
@@ -63,7 +54,7 @@ function report(): void {
   sent = key
   void api.invoke('cc:resize', { width: r.width, height: r.height })
 }
-watch([shown, () => debuffs.value.length, () => controls.value.length, gathering], () => void nextTick(report))
+watch([shown, () => debuffs.value.length, () => controls.value.length], () => void nextTick(report))
 
 let timer: ReturnType<typeof setInterval> | null = null
 let observer: ResizeObserver | null = null
@@ -83,14 +74,6 @@ onBeforeUnmount(() => {
   <div class="inline-block">
     <div ref="root" class="inline-block">
       <div v-if="shown" :class="['m-1.5 w-[380px]', preview && 'cursor-move']" @pointerdown="preview && drag.onPointerDown($event)">
-        <div v-if="gathering" class="mb-1.5 flex justify-center">
-          <span
-            :class="[
-              'rounded-full px-4 py-1 text-[17px] font-bold drop-shadow ring-1',
-              gathering.fail ? 'bg-danger/80 text-white ring-danger' : 'bg-[#f5d77a]/90 text-black ring-[#f5d77a]',
-            ]"
-          >{{ gathering.text }}</span>
-        </div>
         <div v-if="main || preview" class="relative bg-gradient-to-r from-transparent via-black/80 to-transparent px-6 py-3">
           <div class="absolute inset-x-0 top-0 h-0.5 bg-gradient-to-r from-transparent via-danger to-transparent" />
           <div class="flex items-center justify-center gap-3.5">
