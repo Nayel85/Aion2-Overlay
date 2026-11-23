@@ -178,8 +178,11 @@ export interface Settings {
    */
   gather: {
     enabled: boolean
-    /** A pill with words, or a ring as the flight timer's: the item inside, running down to the result. */
-    style: 'pill' | 'ring'
+    /**
+     * A ring as the flight timer's (the item inside, running down to the result), a pill with words,
+     * or the game's two gauges filling roll by roll (a craft's shows as the ring).
+     */
+    style: 'pill' | 'ring' | 'gauges'
     position: Point | null
     opacity: number
     scale: number
@@ -656,7 +659,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       const g = d.gather
       return {
         enabled: bool(v.enabled, g.enabled),
-        style: v.style === 'pill' ? 'pill' : 'ring',
+        style: v.style === 'pill' || v.style === 'gauges' ? v.style : 'ring',
         position: point(v.position),
         opacity: num(v.opacity, 0.2, 1, g.opacity),
         scale: num(v.scale, 0.6, 2, g.scale),

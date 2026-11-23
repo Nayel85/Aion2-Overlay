@@ -28,7 +28,13 @@ const SAMPLE: GatherForecast = {
   doubled: true,
   item: { id: 610_610_014, count: 1, name: t('Fine Odyle'), grade: 21, icon: 'Icon_Item_Gather_Od_L_lv4_02a' },
   at: 0,
-  durationMs: 6000,
+  durationMs: 6800,
+  rolls: [
+    { ms: 1557, success: 160, failure: 0, luck: false, doubled: false },
+    { ms: 1102, success: 0, failure: 104, luck: false, doubled: false },
+    { ms: 1557, success: 160, failure: 0, luck: false, doubled: false },
+    { ms: 1557, success: 40, failure: 0, luck: false, doubled: true },
+  ],
 }
 
 type Kind = 'fail' | 'rare' | 'plain'
@@ -69,6 +75,42 @@ const left = computed(() => {
   const elapsed = preview.value ? now.value % span : now.value - g.at
   return Math.max(0, 1 - elapsed / span)
 })
+// ---- the gauges: the game's success and failure gauges, filling roll by roll -----------------
+
+/** The time spent so far (the sample loops). */
+const elapsed = computed(() => {
+  const g = shownGather.value
+  if (!g) return 0
+  return preview.value ? now.value % lastsMs(g) : now.value - g.at
+})
+/** Where the gauges stand now (0..1 each), and the roll playing: a roll fills its share over its time. */
+const gauges = computed(() => {
+  const g = shownGather.value
+  if (!g || !g.rolls.length) return null
+  const fullOk = g.rolls.reduce((n, r) => n + r.success, 0)
+  const fullFail = g.rolls.reduce((n, r) => n + r.failure, 0)
+  // The gauge's top: what a success fills (360 for an Odyle node), else what a failure does.
+  const top = Math.max(g.outcome === 'fail' ? fullFail : fullOk, fullOk, fullFail, 1)
+  let t = elapsed.value - 690
+  let ok = 0
+  let bad = 0
+  let playing: (typeof g.rolls)[number] | null = null
+  for (const r of g.rolls) {
+    if (t <= 0) break
+    const part = Math.min(1, t / r.ms)
+    ok += r.success * part
+    bad += r.failure * part
+    if (part < 1) playing = r
+    t -= r.ms
+  }
+  // Past its rolls (steps not read yet): the outcome's gauge fills to its top.
+  if (t > 0) {
+    if (g.outcome === 'fail') bad = top
+    else ok = top
+  }
+  return { ok: Math.min(1, ok / top), bad: Math.min(1, bad / top), luck: !!playing?.luck, doubled: !!playing?.doubled }
+})
+
 /** The ring's length (2πr, r 21). */
 const RING = 2 * Math.PI * 21
 
@@ -118,9 +160,29 @@ onBeforeUnmount(() => {
         :title="preview ? t('drag to move') : undefined"
         @pointerdown="preview && drag.onPointerDown($event)"
       >
+        <!-- The gauges: the item and what it will be, then the success gauge and the failure one filling roll by roll. -->
+        <div
+          v-if="cfg.style === 'gauges' && gauges"
+          class="rounded-lg bg-black/70 shadow-[0_2px_8px_rgba(0,0,0,0.6)] ring-1 ring-black/40"
+          :style="{ width: `${190 * cfg.scale}px`, padding: `${6 * cfg.scale}px ${8 * cfg.scale}px` }"
+        >
+          <div class="flex items-center font-bold" :style="{ gap: `${6 * cfg.scale}px`, fontSize: `${12 * cfg.scale}px`, color: colour }">
+            <img v-if="item?.icon" :src="item.icon" :alt="item.name" draggable="false" :class="['rounded', kind === 'fail' && 'opacity-60 grayscale']" :style="{ width: `${22 * cfg.scale}px`, height: `${22 * cfg.scale}px` }" />
+            <span class="min-w-0 flex-1 truncate">{{ textOf(shownGather) }}</span>
+            <span v-if="gauges.luck" class="shrink-0 text-[#f5d77a]" :style="{ fontSize: `${10 * cfg.scale}px` }">{{ t('Lady Luck') }}</span>
+            <span v-else-if="gauges.doubled" class="shrink-0 text-[#f5d77a]" :style="{ fontSize: `${10 * cfg.scale}px` }">x2</span>
+          </div>
+          <div class="overflow-hidden rounded-full bg-white/10" :style="{ marginTop: `${5 * cfg.scale}px`, height: `${7 * cfg.scale}px` }">
+            <div class="h-full rounded-full bg-[#3fb950]" :style="{ width: `${gauges.ok * 100}%` }" />
+          </div>
+          <div class="overflow-hidden rounded-full bg-white/10" :style="{ marginTop: `${3 * cfg.scale}px`, height: `${5 * cfg.scale}px` }">
+            <div class="h-full rounded-full" :style="{ width: `${gauges.bad * 100}%`, background: cfg.failColor }" />
+          </div>
+        </div>
+
         <!-- The ring: its outcome's colour around, running down; the item inside (greyed on a failure). -->
         <div
-          v-if="cfg.style === 'ring'"
+          v-else-if="cfg.style !== 'pill'"
           class="relative"
           :style="{ width: `${52 * cfg.scale}px`, height: `${52 * cfg.scale}px` }"
           :title="textOf(shownGather)"

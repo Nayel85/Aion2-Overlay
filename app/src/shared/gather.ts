@@ -23,6 +23,17 @@ export interface GatherForecast {
   /** When it started (ms), and how long it takes, as its steps say (null when not told). */
   at: number
   durationMs: number | null
+  /** A gathering's rolls, as the game rolled them (the engine's `gather_rolls`); none for a craft. */
+  rolls: GatherRoll[]
+}
+
+/** One roll of a gathering: how long it plays, what it adds to each gauge, Lady Luck's or the doubling. */
+export interface GatherRoll {
+  ms: number
+  success: number
+  failure: number
+  luck: boolean
+  doubled: boolean
 }
 
 /** A gathering spot's kind (its template, as the game sends it) -> the plain item it gives, learnt from its results. */

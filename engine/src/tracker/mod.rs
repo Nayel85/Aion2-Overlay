@@ -1113,13 +1113,6 @@ impl Tracker {
                     (self.emit)(json!({ "type": "nightmare", "ts": ts, "boss": boss, "level": level }));
                 }
             }
-            p::OP_SUPPLY_DONE => {
-                if let Some((request, rewards)) = p::supply_done(f) {
-                    tracing::info!("supply request {request} handed in: {rewards:?}");
-                    let rewards: Vec<Value> = rewards.iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect();
-                    (self.emit)(json!({ "type": "supplyDone", "ts": ts, "request": request, "rewards": rewards }));
-                }
-            }
             p::OP_CRAFT_START => {
                 if let Some((recipe, outcome, ms)) = p::craft_start(f) {
                     tracing::info!("craft {recipe}: will be {outcome}");
@@ -1133,13 +1126,14 @@ impl Tracker {
                 }
             }
             p::OP_GATHER_START => {
-                if let Some((node, tries, outcome, grade, doubled, ms)) = p::gather_start(f) {
+                if let Some((node, tries, outcome, grade, doubled, ms, rolls)) = p::gather_start(f) {
                     tracing::info!("gathering {node} (try {tries}): will be {outcome}, grade {grade}, doubled {doubled}");
                     if !matches!(outcome, 0 | 1 | 7) {
                         tracing::info!("gathering start with outcome {outcome}: {}", f.iter().map(|b| format!("{b:02x}")).collect::<String>());
                     }
                     let template = self.objects.get(&node);
-                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled, "durationMs": ms }));
+                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled, "durationMs": ms,
+                        "rolls": rolls.iter().map(|r| json!({ "ms": r.ms, "success": r.success, "failure": r.failure, "luck": r.luck, "doubled": r.doubled })).collect::<Vec<_>>() }));
                 }
             }
             p::OP_GATHER => {
@@ -1205,6 +1199,12 @@ impl Tracker {
                 tracing::info!("nightmare ended: {raw}");
             }
             p::OP_QUEST_REWARD => {
+                // A supply request handed in (its id the second number).
+                if let Some((request, rewards)) = p::supply_done(f) {
+                    tracing::info!("supply request {request} handed in: {rewards:?}");
+                    let rewards: Vec<Value> = rewards.iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect();
+                    (self.emit)(json!({ "type": "supplyDone", "ts": ts, "request": request, "rewards": rewards }));
+                }
                 if let Some((quest, rewards)) = p::quest_reward(f) {
                     let rewards: Vec<Value> = rewards.into_iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect();
                     tracing::info!("quest reward: {quest} {rewards:?}");

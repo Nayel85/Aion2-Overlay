@@ -47,8 +47,6 @@ pub const OP_DUNGEON_CLEAR: [u8; 2] = [0x01, 0x61];
 pub const OP_NIGHTMARE_START: [u8; 2] = [0x35, 0xE2];
 pub const OP_LOOT: [u8; 2] = [0x15, 0x57];
 pub const OP_GATHER: [u8; 2] = [0x33, 0x8D];
-/// A supply request handed in: what it gave (`supply_done`).
-pub const OP_SUPPLY_DONE: [u8; 2] = [0x3F, 0xE2];
 /// A craft starting: its outcome already in it (`craft_start`); and done, its item next in the bags.
 pub const OP_CRAFT_START: [u8; 2] = [0x6F, 0x8D];
 pub const OP_CRAFT_DONE: [u8; 2] = [0x71, 0x8D];
@@ -680,8 +678,8 @@ pub fn loot(frame: &[u8]) -> Option<(u8, Vec<(u32, u32)>)> {
 /// record `01 58 15 01 00 01 5a 15 01 00` among those that follow is in the start of every gathering
 /// that doubled, and of no other. All 17 of the owner's gatherings of 2026-11-22 (3 failed, 4 ranked
 /// up, 6 doubled) had what their start said. The grade rolled follows: 1 plain, 2 ranked up...
-/// (node, try, outcome, grade, doubled, how long it takes in ms).
-pub fn gather_start(frame: &[u8]) -> Option<(u32, u32, u8, u8, bool, u32)> {
+/// (node, try, outcome, grade, doubled, how long it takes in ms, its rolls).
+pub fn gather_start(frame: &[u8]) -> Option<(u32, u32, u8, u8, bool, u32, Vec<GatherRoll>)> {
     const DOUBLED: [u8; 10] = [0x01, 0x58, 0x15, 0x01, 0x00, 0x01, 0x5a, 0x15, 0x01, 0x00];
     let b = body(frame, OP_GATHER_START)?;
     let (node, n) = varint(b, 2)?;
@@ -693,14 +691,15 @@ pub fn gather_start(frame: &[u8]) -> Option<(u32, u32, u8, u8, bool, u32)> {
     let doubled = b[at..].windows(DOUBLED.len()).any(|w| w == DOUBLED);
     let ms = gather_ms(&b[at..], grade);
     // Outcomes other than 0, 1 and 7 come too (a Fine Odyle on 2026-11-23 had one): told as they are.
-    (grade >= 1 && grade <= 9).then_some((node, tries, outcome, grade, doubled, ms))
+    (grade >= 1 && grade <= 9).then(|| (node, tries, outcome, grade, doubled, ms, gather_rolls(&b[at..])))
 }
 
-/// A supply request handed in (`3F E2 <u32> <request u32> <u32> <n u8> (<item u32> <amount u32>)×n`):
+/// A supply request handed in (`3F E2 <u32> <request u32> <u32> <n u8> (<item u32> <amount u32>)×n`, the
+/// message `quest_reward` reads):
 /// its rewards, the game's set ones. The owner's 2026-11-23 Silentium (1011117): 1640 Abyss Points
 /// and 420 Enhance Stones; Blacksmith Weapon (1013001): 1840 Abyss Points. (request, rewards).
 pub fn supply_done(frame: &[u8]) -> Option<(u32, Vec<(u32, u32)>)> {
-    let b = body(frame, OP_SUPPLY_DONE)?;
+    let b = body(frame, OP_QUEST_REWARD)?;
     let request = u32_at(b, 4)?;
     let n = *b.get(12)? as usize;
     let rewards = (0..n).map(|i| Some((u32_at(b, 13 + 8 * i)?, u32_at(b, 17 + 8 * i)?))).collect::<Option<Vec<_>>>()?;
@@ -738,27 +737,58 @@ pub fn craft_start(frame: &[u8]) -> Option<(u32, u8, u32)> {
 /// a rank up 1.35 s more, and 0.69 s besides: the owner's 17 gatherings of 2026-11-22 to 0.23 s on
 /// average. `b` from the gathering's try counter on.
 fn gather_ms(b: &[u8], grade: u8) -> u32 {
-    const ACTIONS: [u32; 4] = [100, 300, 800, 71_000];
+    let rolls = gather_rolls(b);
     let steps = b.get(11).copied().unwrap_or(0) as u32;
-    let (mut long, mut short, mut found) = (0, 0, 0);
+    let other = steps.saturating_sub(rolls.len() as u32);
+    690 + rolls.iter().map(|r| r.ms).sum::<u32>() + 1050 * other + if grade > 1 { 1345 } else { 0 }
+}
+
+/// One roll of a gathering (its start lists them): how long it plays (ms), what it adds to the success
+/// gauge and to the failure one (after the skills: Proficient Handling's +50 on a success, Delicate
+/// Touch's -40 on a failure), and whether it was Lady Luck's (action 300) or the doubling (71000).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct GatherRoll {
+    pub ms: u32,
+    pub success: u32,
+    pub failure: u32,
+    pub luck: bool,
+    pub doubled: bool,
+}
+
+/// A gathering start's rolls, those with an action told (`b` from its try counter on): each
+/// `<kind u8> <actions u8> (<action u32> <u8> <action u32>)×actions` then its gains as u32s, the
+/// success's second (800: 110 then 160 with the skill), the failure's fourth (100: 144 then 104).
+pub fn gather_rolls(b: &[u8]) -> Vec<GatherRoll> {
+    const ACTIONS: [u32; 4] = [100, 300, 800, 71_000];
+    let mut starts = Vec::new();
     let mut p = 12;
     while p + 6 <= b.len() {
         let actions = b[p + 1] as usize;
         let action = u32::from_le_bytes([b[p + 2], b[p + 3], b[p + 4], b[p + 5]]);
         if (1..=4).contains(&actions) && ACTIONS.contains(&action) {
-            if matches!(b[p], 0 | 4 | 6) {
-                short += 1;
-            } else {
-                long += 1;
-            }
-            found += 1;
+            starts.push(p);
             p += 2 + 9 * actions;
         } else {
             p += 1;
         }
     }
-    let other = steps.saturating_sub(found);
-    690 + 1557 * long + 1102 * short + 1050 * other + if grade > 1 { 1345 } else { 0 }
+    let u = |at: usize| b.get(at..at + 4).map_or(0, |x| u32::from_le_bytes([x[0], x[1], x[2], x[3]]));
+    starts
+        .iter()
+        .map(|&s| {
+            let actions = b[s + 1] as usize;
+            let ids: Vec<u32> = (0..actions).map(|m| u(s + 2 + 9 * m)).collect();
+            let values = s + 2 + 9 * actions;
+            let failed = ids.contains(&100) && !ids.contains(&800);
+            GatherRoll {
+                ms: if matches!(b[s], 0 | 4 | 6) { 1102 } else { 1557 },
+                success: if failed { 0 } else { u(values + 4) },
+                failure: if failed { u(values + 12) } else { 0 },
+                luck: ids.contains(&300),
+                doubled: ids.contains(&71_000),
+            }
+        })
+        .collect()
 }
 
 /// A gathering's outcome (`33 8D <result u8> <u32> <item u32> <amount u32> <bonus u32> ...`), sent
@@ -1626,8 +1656,8 @@ mod tests {
         // Ranked up (and doubled).
         assert_eq!(gather(&frame(OP_GATHER, &hex("013aa3b7015e2b652401000000010000000000000000000000"))), Some((1, 610_610_014, 1, 1)));
         // The owner's supply requests: Silentium, then Blacksmith Weapon.
-        assert_eq!(supply_done(&frame(OP_SUPPLY_DONE, &hex("3c6d5200ad6d0f000000000002233370376806000037337037a4010000"))), Some((1_011_117, vec![(930_100_003, 1640), (930_100_023, 420)])));
-        assert_eq!(supply_done(&frame(OP_SUPPLY_DONE, &hex("0572520009750f0000000000012333703730070000"))), Some((1_013_001, vec![(930_100_003, 1840)])));
+        assert_eq!(supply_done(&frame(OP_QUEST_REWARD, &hex("3c6d5200ad6d0f000000000002233370376806000037337037a4010000"))), Some((1_011_117, vec![(930_100_003, 1640), (930_100_023, 420)])));
+        assert_eq!(supply_done(&frame(OP_QUEST_REWARD, &hex("0572520009750f0000000000012333703730070000"))), Some((1_013_001, vec![(930_100_003, 1840)])));
         // The owner's crafts: an Orichalcum Guard (recipe 111086001), then the one that procced.
         assert_eq!(craft_start(&frame(OP_CRAFT_START, &hex("0005b08701b1099f0601000304006500000065000000060070000000700000000100f3010000f3010000"))), Some((111_086_001, 1, 5200)));
         assert_eq!(
@@ -1635,15 +1665,18 @@ mod tests {
             Some((111_086_001, 13, 16_700))
         );
         // Their starts, which already said it: gathered, ranked up, failed.
-        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000a3b70102000000070000020000000305"))), Some((23459, 2, 7, 2, false, 5185)));
-        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000b3b20101000000000000010000000605"))), Some((22835, 1, 0, 1, false, 6990)));
+        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000a3b70102000000070000020000000305"))).map(|g| (g.0, g.1, g.2, g.3, g.4, g.5)), Some((23459, 2, 7, 2, false, 5185)));
+        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000b3b20101000000000000010000000605"))).map(|g| (g.0, g.1, g.2, g.3, g.4, g.5)), Some((22835, 1, 0, 1, false, 6990)));
+        // Its rolls: two successes with Proficient Handling (110 + 50), then the doubling's 40: the 360 gauge.
+        let rolls = gather_start(&frame(OP_GATHER_START, &hex("0000b8c701010000000100000100000003030120030000012a0300006e000000a00000000000000000000000030120030000012a0300006e000000a00000000000000000000000030158150100015a15010028000000280000000000000000000000"))).unwrap().6;
+        assert_eq!(rolls.iter().map(|r| (r.success, r.failure, r.doubled)).collect::<Vec<_>>(), vec![(160, 0, false), (160, 0, false), (40, 0, true)]);
         // Gathered twice (x2), then once.
         assert_eq!(
-            gather_start(&frame(OP_GATHER_START, &hex("0000b8c701010000000100000100000003030120030000012a0300006e000000a00000000000000000000000030120030000012a0300006e000000a00000000000000000000000030158150100015a15010028000000280000000000000000000000"))),
+            gather_start(&frame(OP_GATHER_START, &hex("0000b8c701010000000100000100000003030120030000012a0300006e000000a00000000000000000000000030120030000012a0300006e000000a00000000000000000000000030158150100015a15010028000000280000000000000000000000"))).map(|g| (g.0, g.1, g.2, g.3, g.4, g.5)),
             Some((25528, 1, 1, 1, true, 5361))
         );
         assert_eq!(
-            gather_start(&frame(OP_GATHER_START, &hex("0000b8c701020000000100000100000006060164000000016900000000000000000000006000000038000000040120030000012a03000032000000640000000000000000000000050164000000016900000000000000000000009000000068000000040120030000012a03000032000000640000000000000000000000040120030000012a0300003200000064000000000000000000000004000120030000012a030000320000003c0000000000000000000000"))),
+            gather_start(&frame(OP_GATHER_START, &hex("0000b8c701020000000100000100000006060164000000016900000000000000000000006000000038000000040120030000012a03000032000000640000000000000000000000050164000000016900000000000000000000009000000068000000040120030000012a03000032000000640000000000000000000000040120030000012a0300003200000064000000000000000000000004000120030000012a030000320000003c0000000000000000000000"))).map(|g| (g.0, g.1, g.2, g.3, g.4, g.5)),
             Some((25528, 2, 1, 1, false, 7757))
         );
         // A failed one: nothing gathered.

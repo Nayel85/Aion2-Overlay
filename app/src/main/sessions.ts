@@ -336,13 +336,19 @@ export function startSessions(): void {
     log(`session: supply request ${String(ev['request'])} gave ${JSON.stringify(rewards)}`)
     changed()
     const ap = rewards[AP_ITEM] ?? 0
-    if (ap)
+    const kina = rewards[KINA_ITEM] ?? 0
+    if (ap || kina)
       setTimeout(() => {
         const now = Date.now()
-        if (sessions.current === s && questReward(s, recent, 'ap', ap, now, 'supply')) {
+        if (sessions.current !== s) return
+        let moved = false
+        if (ap && questReward(s, recent, 'ap', ap, now, 'supply')) {
           abyss.notRift(at - QUEST_WITHIN_MS, now)
-          changed()
+          moved = true
         }
+        if (kina && questReward(s, recent, 'kina', kina, now, 'supply')) moved = true
+        if (moved) changed()
+        else log(`session: supply request ${String(ev['request'])}'s rewards came with no gain to take them from`)
       }, 1_500)
   })
   // A field event's reward board (a Shugo Festival's five chests): the entries with your name are
@@ -406,23 +412,8 @@ export function startSessions(): void {
     noteGain({ at, kind: 'ap', gained, source })
     changed()
   })
-  // A quest handed in: its Abyss Points and Kina were the gains just before, now the quests'.
-  tracker.onEvent('questReward', (ev) => {
-    const s = sessions.current
-    if (!s) return
-    const at = Date.now()
-    let moved = false
-    for (const r of ev['rewards'] as { item: number; amount: number }[]) {
-      const kind = r.item === AP_ITEM ? 'ap' : r.item === KINA_ITEM ? 'kina' : null
-      if (kind && questReward(s, recent, kind, r.amount, at)) {
-        moved = true
-        // A quest's Abyss Points are not a rift's.
-        if (kind === 'ap') abyss.notRift(at - QUEST_WITHIN_MS, at)
-      }
-      else if (kind) log(`session: quest ${String(ev['quest'])}'s ${r.amount} ${kind} came with no gain to take it from`)
-    }
-    if (moved) changed()
-  })
+  // `questReward` is the same message as `supplyDone` (a supply request handed in), which the
+  // handler above takes: its gains come just after it, so they are moved a moment later.
   // The login's balance is a start; each rise after it is earned.
   tracker.onEvent('wallet', (ev) => {
     if (sessions.current?.name === ev['name'] && typeof ev['kina'] === 'number') kinaSeen = ev['kina']

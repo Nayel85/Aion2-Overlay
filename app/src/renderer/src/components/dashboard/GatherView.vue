@@ -22,8 +22,9 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('gather',
 const pct = (v: number): string => `${Math.round(v * 100)}%`
 const times = (v: number): string => `×${v.toFixed(1)}`
 const STYLES = [
-  { id: 'pill', label: 'Pill' },
   { id: 'ring', label: 'Ring' },
+  { id: 'gauges', label: 'Gauges' },
+  { id: 'pill', label: 'Pill' },
 ] as const
 /** The shipped sounds (your own mp3 belongs to the cube and enemy alerts). */
 const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, label: t(s.label) }))
@@ -38,7 +39,7 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
         <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />
       </SettingRow>
       <template v-if="cfg.enabled">
-        <SettingRow label="Look" hint="A ring as the flight timer's: the item inside, the outcome's colour around it running down to the result, x2 when it doubles. Or a pill that says it in words.">
+        <SettingRow label="Look" hint="A ring as the flight timer's: the item inside, the outcome's colour around it running down to the result, x2 when it doubles. The game's gauges: success and failure filling roll by roll, Lady Luck and the x2 as they come (a craft shows as the ring). Or a pill that says it in words.">
           <Segmented size="sm" :model-value="cfg.style" :options="STYLES" @update:model-value="set({ style: $event })" />
         </SettingRow>
         <SettingRow label="Item icon" hint="What it will give. Each spot's kind is learnt from its first gathering (Odyle is known already).">
