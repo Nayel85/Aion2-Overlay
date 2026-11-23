@@ -1121,10 +1121,10 @@ impl Tracker {
                 }
             }
             p::OP_CRAFT_START => {
-                if let Some((recipe, outcome)) = p::craft_start(f) {
+                if let Some((recipe, outcome, ms)) = p::craft_start(f) {
                     tracing::info!("craft {recipe}: will be {outcome}");
                     self.craft = Some(recipe);
-                    (self.emit)(json!({ "type": "craftStart", "ts": ts, "recipe": recipe, "outcome": outcome }));
+                    (self.emit)(json!({ "type": "craftStart", "ts": ts, "recipe": recipe, "outcome": outcome, "durationMs": ms }));
                 }
             }
             p::OP_CRAFT_DONE => {
@@ -1133,13 +1133,13 @@ impl Tracker {
                 }
             }
             p::OP_GATHER_START => {
-                if let Some((node, tries, outcome, grade, doubled)) = p::gather_start(f) {
+                if let Some((node, tries, outcome, grade, doubled, ms)) = p::gather_start(f) {
                     tracing::info!("gathering {node} (try {tries}): will be {outcome}, grade {grade}, doubled {doubled}");
                     if !matches!(outcome, 0 | 1 | 7) {
                         tracing::info!("gathering start with outcome {outcome}: {}", f.iter().map(|b| format!("{b:02x}")).collect::<String>());
                     }
                     let template = self.objects.get(&node);
-                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled }));
+                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled, "durationMs": ms }));
                 }
             }
             p::OP_GATHER => {

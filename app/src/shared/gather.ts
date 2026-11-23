@@ -20,8 +20,9 @@ export interface GatherForecast {
   doubled: boolean
   /** What it will give (on a failed gathering, what it would have); null while not known. */
   item: ForecastItem | null
-  /** When it started (ms). */
+  /** When it started (ms), and how long it takes, as its steps say (null when not told). */
   at: number
+  durationMs: number | null
 }
 
 /** A gathering spot's kind (its template, as the game sends it) -> the plain item it gives, learnt from its results. */

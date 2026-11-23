@@ -46,7 +46,7 @@ export function startGather(): void {
     pendingTemplate = (ev['template'] as number | null | undefined) ?? null
     const plain = pendingTemplate !== null ? templates[pendingTemplate] : undefined
     const item = gatherItem(plain, outcome === 'fail' ? 1 : grade)
-    set({ kind: 'gather', outcome, doubled: ev['doubled'] === true, item, at: Date.now() })
+    set({ kind: 'gather', outcome, doubled: ev['doubled'] === true, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null })
   })
   tracker.onEvent('gather', (ev) => {
     // Its result says the spot's plain item, even failed (a ranked-up one is its next grade's).
@@ -67,7 +67,7 @@ export function startGather(): void {
     if (code !== 1 && code !== 13) log(`craft: outcome ${code} not known (recipe ${ev['recipe']})`)
     const proc = code === 13
     const { item, doubled } = craftItem(ev['recipe'] as number, proc)
-    set({ kind: 'craft', outcome: proc ? 'proc' : 'ok', doubled, item, at: Date.now() })
+    set({ kind: 'craft', outcome: proc ? 'proc' : 'ok', doubled, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null })
   })
   tracker.onEvent('craftResult', () => {
     if (state?.kind === 'craft') set(null)

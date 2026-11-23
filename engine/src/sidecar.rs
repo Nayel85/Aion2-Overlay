@@ -52,9 +52,9 @@
 //!   {"type": "party", "members": [{"name", "slot", "level", "combatPower", "server", "className", "entity"}]}   the party as it changes
 //!   {"type": "flight", "fp": {"current", "max", "ratePerS", "flying", "drainPerS", "atMs"} | null}   your flight power (hundredths), as it changes
 //!   {"type": "supplyDone", "request", "rewards": [{"item", "amount"}]}   a supply request handed in
-//!   {"type": "craftStart", "recipe", "outcome": 1 plain | 13 proc}   a craft starting, its outcome already known
+//!   {"type": "craftStart", "recipe", "outcome": 1 plain | 13 proc, "durationMs"}   a craft starting, its outcome already known
 //!   {"type": "craftResult", "recipe", "item"}   what a craft made
-//!   {"type": "gatherStart", "node", "template" | null, "try", "outcome": 1 gathered | 7 ranked up | 0 failed, "grade", "doubled"}   a gathering starting, its outcome already known
+//!   {"type": "gatherStart", "node", "template" | null, "try", "outcome": 1 gathered | 7 ranked up | 0 failed, "grade", "doubled", "durationMs"}   a gathering starting, its outcome already known
 //!   {"type": "partyDebuffs", "debuffs": {"<entity>": [buff as in "buffs"]}}   what monsters and the other faction put on your party (but you), as it changes
 //!   {"type": "partyVitals", "entity", "hp", "maxHp", "flight", "maxFlight"}   a member's vitals (`1B 92`, about once a second each)
 //!   {"type": "inventory", "name", "server", "items": [{"storage", "slot", "item", "amount", "enchant", "stones"}]}   a login's whole item list (1 bag, 2 account warehouse, 11 worn, 14 Arcana, 15 own warehouse)

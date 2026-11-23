@@ -3,7 +3,7 @@
 // the result. A pill with what it will give (its icon, once its spot's kind is known) saying it will
 // fail, rank up (Fine Odyle) or give twice as much; a plain one only if wanted. Gone when the result
 // comes. Or (the default) a ring as the flight timer's: the item inside, its outcome's colour around,
-// running down to the result (how long one takes is learnt). Size, colours, which to show and a sound are settings
+// running down to the result (how long it takes, from the game's steps). Size, colours, which to show and a sound are settings
 // (dashboard/GatherView). Clicks go through to the game; while the dashboard is up it shows a sample,
 // and can be dragged into place. Nothing to show measures 0, and main keeps the window hidden.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -28,6 +28,7 @@ const SAMPLE: GatherForecast = {
   doubled: true,
   item: { id: 610_610_014, count: 1, name: t('Fine Odyle'), grade: 21, icon: 'Icon_Item_Gather_Od_L_lv4_02a' },
   at: 0,
+  durationMs: 6000,
 }
 
 type Kind = 'fail' | 'rare' | 'plain'
@@ -54,41 +55,17 @@ const item = computed(() => {
   return it ? { name: it.count > 1 ? `${it.name} x${it.count}` : it.name, icon: itemIcon(it.icon) } : null
 })
 
-// ---- the ring: how long a gathering or a craft takes, learnt from the last ones ------------------
+// ---- the ring: running down over how long it takes (the game's steps say it, main/gather.ts) ----
 
 const now = ref(Date.now())
 const ticker = setInterval(() => (now.value = Date.now()), 50)
-const LASTED_KEY = 'gather.lasted'
-const lasted = ref<Record<string, number>>((() => {
-  try {
-    return JSON.parse(localStorage.getItem(LASTED_KEY) ?? '{}') as Record<string, number>
-  } catch {
-    return {}
-  }
-})())
-/** Until it has seen one: about 5 s a gathering (4.3 to 7.1 in the owner's), 7 s a craft. */
-const lastsMs = (kind: string): number => lasted.value[kind] ?? (kind === 'craft' ? 7000 : 5000)
-// One gone with its result: how long it took, kept (half of the last, half of before).
-watch(
-  () => store.gather,
-  (next, before) => {
-    if (next || !before) return
-    const took = Date.now() - before.at
-    if (took < 1000 || took > 20_000) return
-    const was = lasted.value[before.kind]
-    lasted.value = { ...lasted.value, [before.kind]: was ? Math.round((was + took) / 2) : took }
-    try {
-      localStorage.setItem(LASTED_KEY, JSON.stringify(lasted.value))
-    } catch {
-      // Learnt again next time.
-    }
-  },
-)
+/** When not told: about 5 s a gathering, 7 s a craft. */
+const lastsMs = (g: GatherForecast): number => g.durationMs ?? (g.kind === 'craft' ? 7000 : 5000)
 /** The ring's share left, 1 at the start to 0 at the result as it should come; the sample loops. */
 const left = computed(() => {
   const g = shownGather.value
   if (!g) return 0
-  const span = lastsMs(g.kind)
+  const span = lastsMs(g)
   const elapsed = preview.value ? now.value % span : now.value - g.at
   return Math.max(0, 1 - elapsed / span)
 })
