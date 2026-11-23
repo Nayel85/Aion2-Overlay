@@ -13,7 +13,8 @@ import { panelStyle } from '@/lib/overlayLook.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { CLASS_COLORS } from '@shared/meter.ts'
-import type { PartyMember, Vitals } from '@shared/party.ts'
+import type { PartyDebuff, PartyMember, Vitals } from '@shared/party.ts'
+import { buffIcon, buffName, ccKind, hiddenBuff } from '@/lib/buffs.ts'
 
 const store = useApp()
 const api = bridge()
@@ -37,15 +38,33 @@ interface Row {
   member: PartyMember
   vitals: Vitals | null
   you: boolean
+  debuffs: PartyDebuff[]
 }
+/** A member's debuffs worth showing, the ones that take control (stuns, roots...) first. */
+const shownDebuffs = (list: PartyDebuff[]): PartyDebuff[] =>
+  list
+    .filter((d) => !hiddenBuff(d.id, d.skill, d.endsAt !== null, d.endsAt !== null ? d.endsAt - d.startedAt : 0) && (d.endsAt === null || d.endsAt > now.value))
+    .sort((a, b) => Number(!!ccKind(b.id)) - Number(!!ccKind(a.id)))
+    .slice(0, 6)
+const secondsLeft = (d: PartyDebuff): string => (d.endsAt === null ? '' : String(Math.max(0, Math.ceil((d.endsAt - now.value) / 1000))))
+/** The sample's debuff: the first control effect in the game's table. */
+const SAMPLE_DEBUFF = computed<PartyDebuff[]>(() => {
+  // Stun (ICON_Abnormal_Stun), 4 s, over and over.
+  return [{ id: 12000001, stacks: 1, endsAt: now.value + 4000 - (now.value % 4000), startedAt: now.value - 1000, skill: null }]
+})
 const SAMPLE = computed<Row[]>(() => [
-  { member: { name: t('You'), slot: 1, level: 45, combatPower: 0, server: 0, className: 'Ranger', entity: -1 }, vitals: { hp: 26_672, maxHp: 26_672, flight: 0, maxFlight: 0, at: now.value }, you: true },
-  { member: { name: t('A healer'), slot: 2, level: 45, combatPower: 0, server: 0, className: 'Cleric', entity: -2 }, vitals: { hp: 11_240, maxHp: 19_235, flight: 0, maxFlight: 0, at: now.value }, you: false },
-  { member: { name: t('A tank'), slot: 3, level: 45, combatPower: 0, server: 0, className: 'Templar', entity: -3 }, vitals: { hp: 0, maxHp: 31_400, flight: 0, maxFlight: 0, at: now.value }, you: false },
+  { member: { name: t('You'), slot: 1, level: 45, combatPower: 0, server: 0, className: 'Ranger', entity: -1 }, vitals: { hp: 26_672, maxHp: 26_672, flight: 0, maxFlight: 0, at: now.value }, you: true, debuffs: [] },
+  { member: { name: t('A healer'), slot: 2, level: 45, combatPower: 0, server: 0, className: 'Cleric', entity: -2 }, vitals: { hp: 11_240, maxHp: 19_235, flight: 0, maxFlight: 0, at: now.value }, you: false, debuffs: SAMPLE_DEBUFF.value },
+  { member: { name: t('A tank'), slot: 3, level: 45, combatPower: 0, server: 0, className: 'Templar', entity: -3 }, vitals: { hp: 0, maxHp: 31_400, flight: 0, maxFlight: 0, at: now.value }, you: false, debuffs: [] },
 ])
 const rows = computed<Row[]>(() =>
   store.party.members
-    .map((m) => ({ member: m, vitals: m.entity !== null ? (store.party.vitals[m.entity] ?? null) : null, you: m.name === store.status?.character }))
+    .map((m) => ({
+      member: m,
+      vitals: m.entity !== null ? (store.party.vitals[m.entity] ?? null) : null,
+      you: m.name === store.status?.character,
+      debuffs: m.entity !== null ? shownDebuffs(store.party.debuffs[m.entity] ?? []) : [],
+    }))
     .filter((r) => cfg.value.self || !r.you),
 )
 /** Out of a party while the dashboard is up: a sample to place it by. */
@@ -125,6 +144,13 @@ onBeforeUnmount(() => {
               <span v-else class="shrink-0 text-[11px] text-darker">—</span>
             </div>
             <div v-if="r.vitals && !down(r.vitals)" class="relative -mt-1 pb-0.5 pl-9 text-[10px] tabular-nums text-dark">{{ short(r.vitals.hp) }} / {{ short(r.vitals.maxHp) }}</div>
+            <!-- What monsters put on them: control effects (red ring) first, seconds left under each. -->
+            <div v-if="r.debuffs.length && !down(r.vitals)" class="relative flex flex-wrap gap-1 pb-1 pl-9 pr-2">
+              <span v-for="d in r.debuffs" :key="d.id" class="relative size-5" :title="buffName(d.id)">
+                <img v-if="buffIcon(d.id, d.skill)" :src="buffIcon(d.id, d.skill)!" alt="" draggable="false" :class="['size-5 rounded-sm', ccKind(d.id) ? 'ring-1 ring-red' : 'ring-1 ring-black/60']" />
+                <span v-if="secondsLeft(d)" class="absolute -bottom-0.5 right-0 text-[8px] font-bold tabular-nums leading-none text-white [text-shadow:0_0_2px_#000,0_0_2px_#000]">{{ secondsLeft(d) }}</span>
+              </span>
+            </div>
           </li>
         </ul>
       </section>

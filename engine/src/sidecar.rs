@@ -51,6 +51,7 @@
 //!   {"type": "bossKilled", "npc": 2100003}   a field boss died in view (its monster code)
 //!   {"type": "party", "members": [{"name", "slot", "level", "combatPower", "server", "className", "entity"}]}   the party as it changes
 //!   {"type": "flight", "fp": {"current", "max", "ratePerS", "flying", "drainPerS", "atMs"} | null}   your flight power (hundredths), as it changes
+//!   {"type": "partyDebuffs", "debuffs": {"<entity>": [buff as in "buffs"]}}   what monsters put on your party (but you), as it changes
 //!   {"type": "partyVitals", "entity", "hp", "maxHp", "flight", "maxFlight"}   a member's vitals (`1B 92`, about once a second each)
 //!   {"type": "inventory", "name", "server", "items": [{"storage", "slot", "item", "amount", "enchant", "stones"}]}   a login's whole item list (1 bag, 2 account warehouse, 11 worn, 14 Arcana, 15 own warehouse)
 //!   {"type": "inventorySlots", "name", "server", "slots": [...]}   slots said anew as items move (amount 0: emptied)
@@ -416,6 +417,7 @@ impl Sidecar {
             let mut port = None;
             let mut ping = None;
             let mut buffs: Option<Value> = None;
+            let mut party_debuffs = json!({});
             let mut ticks: u32 = 0;
             loop {
                 tick.tick().await;
@@ -453,6 +455,16 @@ impl Sidecar {
                         buffs = Some(now);
                     }
                 }
+                // Your party's debuffs, for its frames: only in a party.
+                if ticks % BUFFS_EVERY == 0 && !me.meter.storage.get_party_members().is_empty() || party_debuffs != json!({}) {
+                    let meter = me.meter.clone();
+                    if let Ok(now) = tokio::task::spawn_blocking(move || meter.party_debuffs()).await
+                        && now != party_debuffs
+                    {
+                        emit(&event("partyDebuffs", json!({ "debuffs": now })));
+                        party_debuffs = now;
+                    }
+                }
                 if !me.meter_on.load(Ordering::SeqCst) && !me.training_on.load(Ordering::SeqCst) {
                     continue;
                 }
@@ -467,13 +479,13 @@ impl Sidecar {
         });
     }
 
-    /// Your flight power (A2Tools' `capture::flight_power`) when it changes, looked at 4 times a
+    /// Your flight power (A2Tools' `capture::flight_power`) when it changes, looked at 10 times a
     /// second while capturing, for the flight timer: in hundredths, with how fast it refills and
     /// drains and whether you are in the air.
     fn flight(self: &Arc<Self>) {
         let me = self.clone();
         self.runtime.spawn(async move {
-            let mut tick = tokio::time::interval(Duration::from_millis(250));
+            let mut tick = tokio::time::interval(Duration::from_millis(100));
             let mut told = None;
             loop {
                 tick.tick().await;

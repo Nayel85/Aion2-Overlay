@@ -25,9 +25,21 @@ export interface Vitals {
   at: number
 }
 
+/** A debuff on a member, as the engine's buffs are (a monster's). */
+export interface PartyDebuff {
+  id: number
+  stacks: number
+  /** ms, null when not known. */
+  endsAt: number | null
+  startedAt: number
+  skill: number | null
+}
+
 export interface Party {
   members: PartyMember[]
   /** By entity. */
   vitals: Record<number, Vitals>
+  /** By entity: those with any. */
+  debuffs: Record<number, PartyDebuff[]>
 }
-export const NO_PARTY: Party = { members: [], vitals: {} }
+export const NO_PARTY: Party = { members: [], vitals: {}, debuffs: {} }

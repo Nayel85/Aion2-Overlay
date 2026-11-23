@@ -138,7 +138,7 @@ export const ES: Record<string, string> = {
   'Runs': 'Partidas',
   'Flight timer': 'Temporizador de vuelo',
   'Seconds of flight left': 'Segundos de vuelo restantes',
-  'full in {n}s': 'lleno en {n}s',
+  'Full in {n}s': 'Lleno en {n}s',
   'Stagger': 'Aturdimiento',
   'Seconds of flight left at the way you fly now, with a gauge of your flight power; on the ground, how long until it is full again. Clicks go through it; while the dashboard is open, drag it into place.': 'Segundos de vuelo restantes a tu ritmo actual, con una barra de tu poder de vuelo; en el suelo, cuánto falta para llenarse. Los clics lo atraviesan; con el panel abierto, arrástralo a su sitio.',
   'Party': 'Grupo',

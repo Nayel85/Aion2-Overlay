@@ -288,6 +288,30 @@ impl Meter {
         let Some(me) = self.storage.local_player_id().and_then(|id| i32::try_from(id).ok()) else {
             return serde_json::json!([]);
         };
+        self.buffs_of(me)
+    }
+
+    /// The debuffs on each member of your party but you (by their entity, those with any), as
+    /// `my_buffs` reads them: what monsters put on them, for the party frames.
+    pub fn party_debuffs(&self) -> serde_json::Value {
+        let me = self.storage.local_player_id();
+        let mut out = serde_json::Map::new();
+        for name in self.storage.get_party_members().into_keys() {
+            let Some(id) = self.storage.find_id_by_nickname(&name) else { continue };
+            if me == Some(i64::from(id)) {
+                continue;
+            }
+            let list: Vec<serde_json::Value> =
+                self.buffs_of(id).as_array().into_iter().flatten().filter(|b| b["debuff"] == true).cloned().collect();
+            if !list.is_empty() {
+                out.insert(id.to_string(), serde_json::json!(list));
+            }
+        }
+        serde_json::Value::Object(out)
+    }
+
+    /// What is on one entity now, as `my_buffs` says it (`mine`: cast by that entity).
+    fn buffs_of(&self, me: i32) -> serde_json::Value {
         let now = a2tools_dps_meter_lib::clock::now_ms();
         let players = self.storage.get_nicknames();
         let mut by_id: std::collections::BTreeMap<(u32, i32), serde_json::Value> = std::collections::BTreeMap::new();
