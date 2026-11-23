@@ -4,6 +4,7 @@
 // class and strength are easy to find for a run. Two views of the same list: by member, or every
 // character on its own. Filtered by class and by a name; sorted by combat power, gear score or energy.
 // What the site has is sent by main/guild.ts (the overlay reports yours as the game says it).
+import { useStored } from '@/lib/now.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
@@ -46,13 +47,12 @@ const fade = (className: string | null): string => `linear-gradient(90deg, ${col
 
 // ---- filters ----------------------------------------------------------------------------------
 
-const view = ref<'members' | 'characters'>((() => { try { return localStorage.getItem('guild.view') === 'characters' ? 'characters' : 'members' } catch { return 'members' } })())
+const view = useStored<'members' | 'characters'>('guild.view', 'members', (raw) => (raw === 'characters' ? 'characters' : 'members'))
 const sort = ref<'power' | 'gear' | 'energy' | 'name'>('power')
 const query = ref('')
 const picked = ref(new Set<string>())
 const setView = (v: 'members' | 'characters'): void => {
   view.value = v
-  try { localStorage.setItem('guild.view', v) } catch { /* private window */ }
 }
 const toggleClass = (c: string): void => {
   const next = new Set(picked.value)

@@ -3,6 +3,7 @@
 // now, with a gauge of your flight power; on the ground, how long until it is full again. Up while
 // flying or refilling, gone at full. Clicks go through to the game; while the dashboard is up it
 // shows a preview, and can be dragged into place.
+import { useNow } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
@@ -15,8 +16,11 @@ const api = bridge()
 const root = ref<HTMLElement | null>(null)
 const cfg = computed(() => store.settings.flight)
 
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 33)
+// Ticking while flying or refilling (or with the sample shown): still at full on the ground.
+const now = useNow(33, () => {
+  const fp = store.flight
+  return store.settings.flight.enabled && (store.panelVisible || (fp !== null && (fp.flying || fp.max === null || fp.current < fp.max)))
+})
 
 /** While the dashboard is up: a flight to place it by. */
 const preview = computed(() => store.panelVisible)
@@ -55,7 +59,6 @@ onMounted(() => {
   report()
 })
 onBeforeUnmount(() => {
-  clearInterval(ticker)
   observer?.disconnect()
 })
 </script>

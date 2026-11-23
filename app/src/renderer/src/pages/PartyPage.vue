@@ -6,6 +6,7 @@
 // else is a setting (dashboard/PartyView): size, colours, the HP as text, the debuffs' icons, a title
 // bar. Up while you are in a party, moved by dragging it; while the dashboard is up out of a party,
 // it shows a sample to place it by. Nothing to show measures 0, and main keeps it hidden.
+import { useNow } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
@@ -26,8 +27,8 @@ const cfg = computed(() => store.settings.party)
 const BOSS_ON_MS = 6_000
 /** Not heard of for this long: out of range (the game sends nothing of them). */
 const STALE_MS = 10_000
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 500)
+// Ticking in a party (or with the sample shown).
+const now = useNow(500, () => store.party.members.length > 1 || store.panelVisible)
 
 const icons = import.meta.glob<string>('@/assets/classes/*.png', { eager: true, import: 'default' })
 /** The engine's names for one class, the files' for it. */
@@ -125,7 +126,6 @@ onMounted(() => {
   report()
 })
 onBeforeUnmount(() => {
-  clearInterval(ticker)
   observer?.disconnect()
 })
 </script>

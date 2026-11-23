@@ -4,6 +4,7 @@
 // running down under it. Optionally the monsters' other debuffs on you in a row below. CC is told
 // by the game's own type for each effect (lib/buffs.ts, ccKind). Clicks go through to the game; while
 // the dashboard is up it shows a preview, and can be dragged into place.
+import { useNow } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -17,7 +18,8 @@ const store = useApp()
 const api = bridge()
 const root = ref<HTMLElement | null>(null)
 const cfg = computed(() => store.settings.buffs)
-const now = ref(Date.now())
+// Ticking while there are effects on you (or the preview).
+const now = useNow(100, () => store.buffs.length > 0 || store.panelVisible)
 
 /** An effect on you that takes control away: never one you cast; a transformation only from a monster. */
 function cc(b: Buff): CcKind | null {
@@ -56,16 +58,13 @@ function report(): void {
 }
 watch([shown, () => debuffs.value.length, () => controls.value.length], () => void nextTick(report))
 
-let timer: ReturnType<typeof setInterval> | null = null
 let observer: ResizeObserver | null = null
 onMounted(() => {
-  timer = setInterval(() => (now.value = Date.now()), 100)
   observer = new ResizeObserver(report)
   if (root.value) observer.observe(root.value)
   report()
 })
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
   observer?.disconnect()
 })
 </script>

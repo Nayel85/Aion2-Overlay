@@ -2,6 +2,7 @@
 // Your buffs and debuffs over the game: each one's icon with its stacks, and the time left under
 // it (a ring runs down around timed ones). Buffs on one row, debuffs (cast by monsters) on another,
 // red-edged. Moved by dragging; sized to what it shows, hidden while nothing is on you.
+import { useNow } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -15,7 +16,8 @@ const store = useApp()
 const api = bridge()
 const root = ref<HTMLElement | null>(null)
 const cfg = computed(() => store.settings.buffs)
-const now = ref(Date.now())
+// Ticking while there are effects to count down (or the sample to place).
+const now = useNow(100, () => store.buffs.length > 0 || store.panelVisible)
 
 /** Timed ones first, the soonest to run out first; then the ones without a timer. */
 const order = (a: Buff, b: Buff): number => (a.endsAt ?? Infinity) - (b.endsAt ?? Infinity) || a.id - b.id
@@ -52,16 +54,13 @@ function report(): void {
 }
 watch(() => rows.value.map((r) => r.length).join(), () => void nextTick(report))
 
-let timer: ReturnType<typeof setInterval> | null = null
 let observer: ResizeObserver | null = null
 onMounted(() => {
-  timer = setInterval(() => (now.value = Date.now()), 100)
   observer = new ResizeObserver(report)
   if (root.value) observer.observe(root.value)
   report()
 })
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
   observer?.disconnect()
 })
 </script>

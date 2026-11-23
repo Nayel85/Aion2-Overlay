@@ -3,7 +3,7 @@
 // (GatherStatsView), each with its filters. By default the counts, your rates and the game's; with
 // Details, what the game's rates make expected, your luck and the rest. The tab picked and Details
 // are remembered (this window's storage).
-import { ref, watch } from 'vue'
+import { useStored } from '@/lib/now.ts'
 import CraftsView from '@/components/dashboard/CraftsView.vue'
 import GatherStatsView from '@/components/dashboard/GatherStatsView.vue'
 import LootView from '@/components/dashboard/LootView.vue'
@@ -18,38 +18,9 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'crafts', label: 'Crafts' },
   { id: 'gathering', label: 'Gathering' },
 ]
-const STORAGE_KEY = 'stats.tab'
-function savedTab(): Tab {
-  try {
-    const v = localStorage.getItem(STORAGE_KEY)
-    return TABS.some((x) => x.id === v) ? (v as Tab) : 'loot'
-  } catch {
-    return 'loot'
-  }
-}
-const tab = ref<Tab>(savedTab())
-watch(tab, (v) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, v)
-  } catch {
-    // Storage unavailable: the tab is only for this time.
-  }
-})
-const DETAILS_KEY = 'stats.details'
-const details = ref((() => {
-  try {
-    return localStorage.getItem(DETAILS_KEY) === '1'
-  } catch {
-    return false
-  }
-})())
-watch(details, (v) => {
-  try {
-    localStorage.setItem(DETAILS_KEY, v ? '1' : '0')
-  } catch {
-    // Storage unavailable: only for this time.
-  }
-})
+/** The tab and Details, remembered in this window's storage. */
+const tab = useStored<Tab>('stats.tab', 'loot', (raw) => (TABS.some((x) => x.id === raw) ? (raw as Tab) : 'loot'))
+const details = useStored('stats.details', false, (raw) => raw === true || raw === 1)
 </script>
 
 <template>

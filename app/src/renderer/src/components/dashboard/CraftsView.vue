@@ -3,6 +3,7 @@
 // craft, then by character (how many, how many procced, your proc rate against the game's chances:
 // your luck) and by recipe (the same, with what the proc gives: a better item or the same twice).
 // The filters picked are remembered (this window's storage).
+import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -43,27 +44,9 @@ interface Saved {
   kind: string | null
   show: Show
 }
-const STORAGE_KEY = 'crafts.filters'
-function saved(): Saved {
-  const none: Saved = { names: [], period: 'all', kind: null, show: 'all' }
-  try {
-    return { ...none, ...(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<Saved>) }
-  } catch {
-    return none
-  }
-}
-const f = ref<Saved>(saved())
-watch(
-  f,
-  (v) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(v))
-    } catch {
-      // Storage unavailable: the filters are only for this time.
-    }
-  },
-  { deep: true },
-)
+/** The filters picked, remembered in this window's storage. */
+const NO_FILTERS: Saved = { names: [], period: 'all', kind: null, show: 'all' }
+const f = useStored<Saved>('crafts.filters', NO_FILTERS, (raw) => ({ ...NO_FILTERS, ...(raw as Partial<Saved>) }))
 const query = ref('')
 
 /** Since when a period's crafts count: today's midnight, the weekly reset (Wednesday 07:00 UTC), 30 days back. */

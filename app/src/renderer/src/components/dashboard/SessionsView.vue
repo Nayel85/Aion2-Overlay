@@ -3,6 +3,7 @@
 // title), each session one line with what it did in a few words; on the right the one picked, all of
 // it (SessionDetail). Filtered by character and since when, as the Loot page; the filters are
 // remembered (this window's storage).
+import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import SessionDetail from '@/components/sessions/SessionDetail.vue'
@@ -29,27 +30,9 @@ interface Saved {
   names: string[]
   period: Period
 }
-const STORAGE_KEY = 'sessions.filters'
-function saved(): Saved {
-  const none: Saved = { names: [], period: 'all' }
-  try {
-    return { ...none, ...(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<Saved>) }
-  } catch {
-    return none
-  }
-}
-const f = ref<Saved>(saved())
-watch(
-  f,
-  (v) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(v))
-    } catch {
-      // Storage unavailable: the filters are only for this time.
-    }
-  },
-  { deep: true },
-)
+/** The filters picked, remembered in this window's storage. */
+const NO_FILTERS: Saved = { names: [], period: 'all' }
+const f = useStored<Saved>('sessions.filters', NO_FILTERS, (raw) => ({ ...NO_FILTERS, ...(raw as Partial<Saved>) }))
 /** Since when a period's sessions count: today's midnight, the weekly reset (Wednesday 07:00 UTC), 30 days back. */
 function fromOf(p: Period): number {
   const now = Date.now()

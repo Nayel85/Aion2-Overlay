@@ -5,6 +5,7 @@
 // a run's chance of it), per run, per cube or per hour in them; beside it, what the game's rates make
 // of the same cubes, and your luck: what you got against that. The filters picked are remembered
 // (this window's storage).
+import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -55,27 +56,9 @@ interface Saved {
   unit: LootUnit
   family: Family
 }
-const STORAGE_KEY = 'loot.filters'
-function saved(): Saved {
-  const none: Saved = { names: [], period: 'all', kind: null, world: null, unit: 'run', family: 'gold' }
-  try {
-    return { ...none, ...(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<Saved>) }
-  } catch {
-    return none
-  }
-}
-const f = ref<Saved>(saved())
-watch(
-  f,
-  (v) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(v))
-    } catch {
-      // Storage unavailable: the filters are only for this time.
-    }
-  },
-  { deep: true },
-)
+/** The filters picked, remembered in this window's storage. */
+const NO_FILTERS: Saved = { names: [], period: 'all', kind: null, world: null, unit: 'run', family: 'gold' }
+const f = useStored<Saved>('loot.filters', NO_FILTERS, (raw) => ({ ...NO_FILTERS, ...(raw as Partial<Saved>) }))
 const query = ref('')
 
 /** Since when a period's runs count: today's midnight, the weekly reset (Wednesday 07:00 UTC), 30 days back. */

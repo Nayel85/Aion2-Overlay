@@ -6,6 +6,7 @@
 // running down to the result (how long it takes, from the game's steps). Size, colours, which to show and a sound are settings
 // (dashboard/GatherView). Clicks go through to the game; while the dashboard is up it shows a sample,
 // and can be dragged into place. Nothing to show measures 0, and main keeps the window hidden.
+import { useNow } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
@@ -81,8 +82,8 @@ const item = computed(() => {
 
 // ---- the ring: running down over how long it takes (the game's steps say it, main/gather.ts) ----
 
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 50)
+// Ticking while a gathering or a craft is going on (or with the sample shown).
+const now = useNow(50, () => store.settings.gather.enabled && (store.panelVisible || !!store.gather))
 /** When not told: about 5 s a gathering, 7 s a craft. */
 const lastsMs = (g: GatherForecast): number => g.durationMs ?? (g.kind === 'craft' ? 7000 : 5000)
 /** The ring's share left, 1 at the start to 0 at the result as it should come; the sample loops. */
@@ -164,7 +165,6 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   observer?.disconnect()
-  clearInterval(ticker)
 })
 </script>
 

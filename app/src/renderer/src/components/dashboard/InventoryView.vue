@@ -4,6 +4,7 @@
 // Arcana; the account's warehouse), their items as tiles, a hovered one's details beside it; or,
 // searched by name, where an item is across all of them. The character and place picked are
 // remembered (this window's storage).
+import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import ItemTile from '@/components/dashboard/ItemTile.vue'
@@ -20,27 +21,11 @@ import { bridge } from '@/lib/bridge.ts'
 
 const store = useApp()
 
-const STORAGE_KEY = 'inventory.view'
-function saved(): { who: string | null; place: Place } {
-  try {
-    const v = { who: null, place: 'worn', ...(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as object) } as { who: string | null; place: Place }
-    return PLACES.some((p) => p.id === v.place) ? v : { ...v, place: 'worn' }
-  } catch {
-    return { who: null, place: 'worn' }
-  }
-}
-const view = ref(saved())
-watch(
-  view,
-  (v) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(v))
-    } catch {
-      // Storage unavailable: the view is only for this time.
-    }
-  },
-  { deep: true },
-)
+/** Whose and which place, remembered in this window's storage. */
+const view = useStored<{ who: string | null; place: Place }>('inventory.view', { who: null, place: 'worn' }, (raw) => {
+  const v = { who: null, place: 'worn', ...(raw as object) } as { who: string | null; place: Place }
+  return PLACES.some((p) => p.id === v.place) ? v : { ...v, place: 'worn' }
+})
 const query = ref('')
 
 /** The characters known, the latest first. */

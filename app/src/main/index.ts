@@ -7,6 +7,7 @@ import { DISPLAY_NAME, LOKTHAR_FOLDER } from '../shared/app.ts'
 import { broadcast } from './broadcast.ts'
 import { startApplicants } from './applicants.ts'
 import { startParty } from './party.ts'
+import { pruneRecordings } from './recordings.ts'
 import { startFlight } from './flight.ts'
 import { startGather } from './gather.ts'
 import { startCharacters } from './characters.ts'
@@ -94,6 +95,7 @@ if (!app.requestSingleInstanceLock()) {
       setPlayerRegion(all.timers.region)
     })
     startMeter()
+    pruneRecordings()
     startDummy()
     startUpdater()
     startPackets()

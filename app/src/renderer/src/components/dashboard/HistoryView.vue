@@ -2,6 +2,7 @@
 // History: the boss fights the engine saved (every 30 s while one goes on, and before the meter is
 // cleared), newest first. A click opens one in the Details window: each player's damage, skills and
 // buffs. The last 500 are kept.
+import { useStored } from '@/lib/now.ts'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import DetailsPage from '@/pages/DetailsPage.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -18,8 +19,7 @@ const fights = ref<FightSummary[] | null>(null)
 const kind = ref<'bosses' | 'dummy' | 'all'>('bosses')
 const query = ref('')
 /** Fights grouped under their dungeon (the newest dungeon first), or one flat list. */
-const grouped = ref(((): boolean => { try { return localStorage.getItem('history.grouped') !== '0' } catch { return true } })())
-watch(grouped, (v) => { try { localStorage.setItem('history.grouped', v ? '1' : '0') } catch { /* private window */ } })
+const grouped = useStored('history.grouped', true, (raw) => raw !== false && raw !== 0)
 const folded = ref(new Set<string>())
 const toggle = (key: string): void => void (folded.value.has(key) ? folded.value.delete(key) : folded.value.add(key), (folded.value = new Set(folded.value)))
 

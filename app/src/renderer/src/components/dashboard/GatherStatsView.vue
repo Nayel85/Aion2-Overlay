@@ -3,6 +3,7 @@
 // resource, then by character and resource: how many, failed, ranked up, a plant's x3, doubled
 // against what Plentiful Harvest's level makes expected (your luck), Lady Luck's triggers, and the
 // skills' levels the rolls showed. The filters picked are remembered (this window's storage).
+import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import Segmented from '@/components/ui/Segmented.vue'
@@ -31,27 +32,9 @@ interface Saved {
   period: Period
   resource: number | null
 }
-const STORAGE_KEY = 'gatherStats.filters'
-function saved(): Saved {
-  const none: Saved = { names: [], period: 'all', resource: null }
-  try {
-    return { ...none, ...(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as Partial<Saved>) }
-  } catch {
-    return none
-  }
-}
-const f = ref<Saved>(saved())
-watch(
-  f,
-  (v) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(v))
-    } catch {
-      // Storage unavailable: the filters are only for this time.
-    }
-  },
-  { deep: true },
-)
+/** The filters picked, remembered in this window's storage. */
+const NO_FILTERS: Saved = { names: [], period: 'all', resource: null }
+const f = useStored<Saved>('gatherStats.filters', NO_FILTERS, (raw) => ({ ...NO_FILTERS, ...(raw as Partial<Saved>) }))
 function fromOf(p: Period): number {
   const now = Date.now()
   if (p === 'today') return new Date(new Date().setHours(0, 0, 0, 0)).getTime()
