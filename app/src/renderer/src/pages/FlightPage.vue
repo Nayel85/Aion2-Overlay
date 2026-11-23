@@ -31,8 +31,10 @@ const share = computed(() => (fp.value?.max ? Math.min(1, value.value / fp.value
 /** Flying, or refilling: hidden at full on the ground. */
 const shown = computed(() => cfg.value.enabled && !!fp.value && (preview.value || left.value !== null || refill.value !== null))
 /** Red under 5 s of flight, yellow under 15. */
-const colour = computed(() => (left.value === null ? '#58a6ff' : left.value < 5 ? '#f85149' : left.value < 15 ? '#d29922' : '#3fb950'))
+const colour = computed(() => (left.value === null ? '#6e8fb8' : left.value < 5 ? '#f85149' : left.value < 15 ? '#d29922' : '#3fb950'))
 
+/** The ring's length (2πr, r 21). */
+const RING = 2 * Math.PI * 21
 const drag = windowDrag({ move: 'flight:moveTo', end: 'flight:dragEnd' })
 
 let sent = ''
@@ -61,21 +63,29 @@ onBeforeUnmount(() => {
 <template>
   <div class="inline-block">
     <div ref="root" class="inline-block">
-      <!-- Compact: the wings, the seconds (of flight left, or until full with a refill arrow), a thin gauge under. -->
+      <!-- A ring, as a skill's cooldown: the flight power left around, the seconds inside (of flight
+           left, bright; until full, dim), the wings under them. -->
       <div
         v-if="shown"
-        :class="['m-1 w-[92px] rounded-md bg-black/60 px-1.5 pb-1 pt-0.5', preview && 'cursor-move']"
+        :class="['relative m-1 size-[52px]', preview && 'cursor-move']"
         :style="{ opacity: cfg.opacity }"
-        :title="preview && !store.flight ? t('drag to move') : undefined"
+        :title="preview && !store.flight ? t('drag to move') : refill !== null ? t('Full in {n}s', { n: Math.ceil(refill) }) : undefined"
         @pointerdown="preview && drag.onPointerDown($event)"
       >
-        <div class="flex items-center justify-center gap-1 [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
-          <svg viewBox="0 0 24 16" class="h-3 w-4 shrink-0" :style="{ color: colour }" fill="currentColor"><path d="M11 13C8 13 3 11 1 3c2 1.5 4 2 6 2-1.5-.8-2.5-2-3-3.5C7 3 9 5 11 9Zm2 0c3 0 8-2 10-10-2 1.5-4 2-6 2 1.5-.8 2.5-2 3-3.5C17 3 15 5 13 9Z" /></svg>
-          <span v-if="left !== null" class="text-[15px] font-bold tabular-nums leading-tight" :style="{ color: colour }">{{ left.toFixed(1) }}s</span>
-          <span v-else-if="refill !== null" class="whitespace-nowrap text-[12px] font-semibold tabular-nums leading-tight text-dark" :title="t('Full in {n}s', { n: Math.ceil(refill) })">↻ {{ Math.ceil(refill) }}s</span>
-        </div>
-        <div v-if="share !== null" class="h-1 overflow-hidden rounded-full bg-white/10">
-          <div class="h-full" :style="{ width: `${share * 100}%`, background: colour }" />
+        <svg viewBox="0 0 52 52" class="absolute inset-0 -rotate-90 drop-shadow-[0_0_3px_rgba(0,0,0,0.9)]">
+          <circle cx="26" cy="26" r="23" fill="rgba(9,9,11,0.72)" />
+          <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3.5" />
+          <circle
+            v-if="share !== null"
+            cx="26" cy="26" r="21" fill="none" :stroke="colour" stroke-width="3.5" stroke-linecap="round"
+            :stroke-dasharray="RING" :stroke-dashoffset="RING * (1 - share)"
+            :style="{ filter: left !== null ? `drop-shadow(0 0 3px ${colour})` : undefined }"
+          />
+        </svg>
+        <div class="relative flex size-full flex-col items-center justify-center [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
+          <span v-if="left !== null" class="text-[15px] font-bold tabular-nums leading-none" :style="{ color: colour }">{{ left < 10 ? left.toFixed(1) : Math.floor(left) }}</span>
+          <span v-else-if="refill !== null" class="text-[13px] font-semibold tabular-nums leading-none text-dark">{{ Math.ceil(refill) }}</span>
+          <svg viewBox="0 0 24 16" class="mt-0.5 h-2 w-3" :style="{ color: left !== null ? colour : '#8b8f9c' }" fill="currentColor"><path d="M11 13C8 13 3 11 1 3c2 1.5 4 2 6 2-1.5-.8-2.5-2-3-3.5C7 3 9 5 11 9Zm2 0c3 0 8-2 10-10-2 1.5-4 2-6 2 1.5-.8 2.5-2 3-3.5C17 3 15 5 13 9Z" /></svg>
         </div>
       </div>
     </div>
