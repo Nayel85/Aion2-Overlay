@@ -61,9 +61,11 @@ L'overlay s'affiche par-dessus le jeu en mode **fenêtré ou fenêtré sans bord
 
 ## Mises à jour
 
-**Settings → Updates → Check for updates** télécharge la dernière release de ce dépôt et
-l'installe par-dessus ta copie (installée ou portable), seulement quand tu le demandes. Tes données
-restent dans `%APPDATA%\Nayel Overlay`.
+L'app vérifie toute seule s'il y a une nouvelle release (30 secondes après le lancement, puis toutes
+les 30 minutes) : un « ! » apparaît alors sur la bulle. Rien n'est téléchargé sans toi :
+**Settings → Updates → Check for updates** télécharge la nouvelle version, l'installe par-dessus ta
+copie (installée ou portable) et redémarre l'app. Tes données restent dans
+`%APPDATA%\Nayel Overlay`.
 
 Le dépôt étant privé, l'app lit ses releases avec un token GitHub en **lecture seule**, limité à ce
 dépôt, intégré à la compilation. Il n'est pas dans le code source : en local il vient de
