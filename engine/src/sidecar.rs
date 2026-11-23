@@ -482,14 +482,12 @@ impl Sidecar {
 
     /// Your flight power (A2Tools' `capture::flight_power`) when it changes, looked at 50 times a
     /// second while capturing, for the flight timer: in hundredths, with how fast it refills and
-    /// drains and whether you are in the air. And where you are (`nearby`) when it changed, 10
-    /// times a second at most, for the map overlay to follow you (the heartbeat's 2 s was a lag).
+    /// drains and whether you are in the air.
     fn flight(self: &Arc<Self>) {
         let me = self.clone();
         self.runtime.spawn(async move {
             let mut tick = tokio::time::interval(Duration::from_millis(20));
             let mut told = None;
-            let mut ticks: u32 = 0;
             loop {
                 tick.tick().await;
                 if !me.capturing.load(Ordering::SeqCst) {
@@ -499,13 +497,6 @@ impl Sidecar {
                 if now != told {
                     told = now;
                     emit(&event("flight", json!({ "fp": now })));
-                }
-                ticks = ticks.wrapping_add(1);
-                if ticks % 5 == 0 {
-                    let mut tracker = me.tracker.lock();
-                    if tracker.nearby_dirty {
-                        emit(&event("nearby", tracker.nearby()));
-                    }
                 }
             }
         });
