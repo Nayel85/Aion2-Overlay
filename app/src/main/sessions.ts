@@ -17,6 +17,7 @@ import { join } from 'node:path'
 import { abyss } from './abyss.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
+import { RECIPES } from '../shared/recipes.ts'
 import { BOSS_RUNS } from '../shared/bossRuns.ts'
 import { AP_ITEM, apSource, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
 
@@ -303,6 +304,46 @@ export function startSessions(): void {
     s.last = at
     log(`session: duty mission ${String(ev['quest'])} gave ${JSON.stringify(rewards)}`)
     changed()
+  })
+  // A craft: as it starts the game says whether it will proc; once done, what it made (its count the
+  // recipe's, shared/recipes.ts: a proc can be the item twice).
+  let crafting: { recipe: number; proc: boolean } | null = null
+  tracker.onEvent('craftStart', (ev) => {
+    crafting = { recipe: ev['recipe'] as number, proc: ev['outcome'] === 13 }
+  })
+  tracker.onEvent('craftResult', (ev) => {
+    const s = sessions.current
+    const c = crafting
+    crafting = null
+    if (!s || !c || c.recipe !== ev['recipe']) return
+    const at = Date.now()
+    const r = RECIPES[String(c.recipe)]
+    const count = (c.proc ? r?.[1]?.[1] : r?.[0][1]) ?? 1
+    s.crafts = [...(s.crafts ?? []), { at, recipe: c.recipe, proc: c.proc, item: ev['item'] as number, count }]
+    s.last = at
+    changed()
+  })
+  // A supply request handed in: its rewards, the game's set ones. Its Abyss Points rose the balance
+  // in the same breath, counted a moment later: then taken off where you stood (or a rift) as a reward.
+  tracker.onEvent('supplyDone', (ev) => {
+    const s = sessions.current
+    if (!s) return
+    const rewards: Record<string, number> = {}
+    for (const r of (ev['rewards'] as { item: number; amount: number }[] | undefined) ?? []) rewards[r.item] = (rewards[r.item] ?? 0) + r.amount
+    const at = Date.now()
+    s.supplies = [...(s.supplies ?? []), { at, request: ev['request'] as number, rewards }]
+    s.last = at
+    log(`session: supply request ${String(ev['request'])} gave ${JSON.stringify(rewards)}`)
+    changed()
+    const ap = rewards[AP_ITEM] ?? 0
+    if (ap)
+      setTimeout(() => {
+        const now = Date.now()
+        if (sessions.current === s && questReward(s, recent, 'ap', ap, now, 'supply')) {
+          abyss.notRift(at - QUEST_WITHIN_MS, now)
+          changed()
+        }
+      }, 1_500)
   })
   // A field event's reward board (a Shugo Festival's five chests): the entries with your name are
   // the chests you opened; theirs go to the run, as a cube's loot.

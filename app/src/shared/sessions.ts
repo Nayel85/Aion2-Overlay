@@ -14,6 +14,7 @@ import { ABYSS_WORLDS, CONTINENT_WORLDS, DUNGEON_WORLDS } from './worlds.ts'
 import { LOOT } from './loot.ts'
 import { ITEMS } from './items.ts'
 import { QUESTS } from './quests.ts'
+import { SUPPLIES } from './supplies.ts'
 import { ZONES } from './zones.ts'
 
 export { ABYSS_WORLDS }
@@ -39,7 +40,7 @@ export const QUEST_WITHIN_MS = 3_000
 export const PVP_AFTER_MS = 6_000
 
 /** Where Abyss Points came from; `dungeon:<id>` a dungeon's, `zone:<id>` another instance's (by their names). */
-export type ApSource = 'abyssPvp' | 'rift' | 'arena' | 'pvp' | 'corridor' | 'reward' | 'abyssMobs' | 'continentMobs' | 'other' | `dungeon:${number}` | `zone:${number}`
+export type ApSource = 'abyssPvp' | 'rift' | 'arena' | 'pvp' | 'corridor' | 'reward' | 'supply' | 'abyssMobs' | 'continentMobs' | 'other' | `dungeon:${number}` | `zone:${number}`
 
 export const SOURCE_LABELS: Record<string, string> = {
   abyssPvp: 'Abyss PvP',
@@ -48,6 +49,7 @@ export const SOURCE_LABELS: Record<string, string> = {
   pvp: 'PvP elsewhere',
   corridor: 'Corridors',
   reward: 'Quests',
+  supply: 'Supply requests',
   abyssMobs: 'Abyss monsters',
   continentMobs: 'Monsters on the continents',
   other: 'Unknown',
@@ -164,7 +166,9 @@ export function sessionDigest(s: PlaySession, tr: Translate = untranslated): str
   const parts = runGroups(runs.filter((r) => r.kind !== 'fieldboss')).map((g) => (g.length > 1 ? `${runName(g[0]!, tr)} ×${g.length}` : runName(g[0]!, tr)))
   const bosses = [...new Set(runs.filter((r) => r.kind === 'fieldboss').map((r) => r.name))]
   const duties = s.duties?.length ? [tr(s.duties.length === 1 ? '{n} duty mission' : '{n} duty missions', { n: s.duties.length })] : []
-  return [...parts, ...(bosses.length ? [bosses.join(', ')] : []), ...duties]
+  const supplies = s.supplies?.length ? [tr(s.supplies.length === 1 ? '{n} supply request' : '{n} supply requests', { n: s.supplies.length })] : []
+  const crafts = s.crafts?.length ? [tr(s.crafts.length === 1 ? '{n} craft' : '{n} crafts', { n: s.crafts.length })] : []
+  return [...parts, ...(bosses.length ? [bosses.join(', ')] : []), ...duties, ...supplies, ...crafts]
 }
 /** A field boss is killed, not cleared: no clear time, just when it fell. */
 export const runIsTimed = (run: DungeonRun): boolean => run.kind !== 'fieldboss'
@@ -463,9 +467,30 @@ export interface PlaySession {
   gathering?: GatherStats
   /** The duty missions handed in, in order. */
   duties?: DutyDone[]
+  /** The supply requests handed in, with what each gave (the game's set rewards). */
+  supplies?: SupplyDone[]
+  /** The crafts done, each with whether it procced and what it made. */
+  crafts?: CraftDone[]
 }
 
 /** A duty mission handed in: when, which (its quest id: QUESTS), and the rewards it gave by item id. */
+/** A craft done: its recipe (shared/recipes.ts), whether it procced, and what it made. */
+export interface CraftDone {
+  at: number
+  recipe: number
+  proc: boolean
+  item: number
+  count: number
+}
+
+export interface SupplyDone {
+  at: number
+  request: number
+  rewards: Record<string, number>
+}
+/** A supply request's name (questlog's), else its id. */
+export const supplyName = (request: number): string => SUPPLIES[request]?.[0] ?? `#${request}`
+
 export interface DutyDone {
   at: number
   quest: number
@@ -495,7 +520,7 @@ export interface RecentGain {
  * with (of at least that much, within QUEST_WITHIN_MS before it) and given to the quests. False when
  * no such gain is there.
  */
-export function questReward(s: PlaySession, recent: RecentGain[], kind: 'ap' | 'kina', amount: number, at: number): boolean {
+export function questReward(s: PlaySession, recent: RecentGain[], kind: 'ap' | 'kina', amount: number, at: number, as: ApSource = 'reward'): boolean {
   const gain = [...recent].reverse().find((g) => g.kind === kind && g.gained >= amount && at - g.at >= 0 && at - g.at <= QUEST_WITHIN_MS)
   if (!gain) return false
   // Inside a dungeon its rewards stay the dungeon's, with what else it gave.
@@ -504,7 +529,7 @@ export function questReward(s: PlaySession, recent: RecentGain[], kind: 'ap' | '
   const left = (by[gain.source] ?? 0) - amount
   if (left > 0) by[gain.source] = left
   else delete by[gain.source]
-  by['reward'] = (by['reward'] ?? 0) + amount
+  by[as] = (by[as] ?? 0) + amount
   gain.gained -= amount
   return true
 }

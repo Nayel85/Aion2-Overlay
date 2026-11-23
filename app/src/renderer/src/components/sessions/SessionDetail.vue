@@ -14,7 +14,8 @@ import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
-import { countedRuns, CURRENCY_LABELS, gatheredRows, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type PlaySession } from '@shared/sessions.ts'
+import { countedRuns, CURRENCY_LABELS, gatheredRows, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
+import { RECIPES } from '@shared/recipes.ts'
 
 const props = withDefaults(defineProps<{ session: PlaySession; live?: boolean; header?: boolean }>(), { live: false, header: true })
 const store = useApp()
@@ -58,8 +59,34 @@ function meanClear(g: DungeonRun[]): string | null {
 /** Kina a run made: its own, else its cubes'. */
 const kinaOf = (r: DungeonRun): number => Math.max(r.kina, r.loot?.['930100031'] ?? 0)
 
-/** What a duty mission gave, one by one: its name (without "(Bound)"), grade, icon and amount. */
-function dutyRewards(d: DutyDone): { id: string; name: string; grade: number; icon: string | null; amount: number }[] {
+/** The crafts by recipe, the most made first: its name, icon, how many, how many procced, and the proc's item. */
+const craftRows = computed(() => {
+  const by = new Map<number, { made: number; procs: number }>()
+  for (const c of props.session.crafts ?? []) {
+    const r = by.get(c.recipe) ?? { made: 0, procs: 0 }
+    r.made++
+    if (c.proc) r.procs++
+    by.set(c.recipe, r)
+  }
+  return [...by]
+    .map(([recipe, r]) => {
+      const def = RECIPES[String(recipe)]
+      return {
+        recipe,
+        ...r,
+        name: def?.[0][2] ?? `#${recipe}`,
+        grade: def?.[0][3] ?? 11,
+        icon: itemIcon(def?.[0][4]),
+        procName: def?.[1] ? `${def[1][2]}${def[1][1] > 1 ? ` x${def[1][1]}` : ''}` : '',
+        procIcon: itemIcon(def?.[1]?.[4]),
+      }
+    })
+    .sort((a, b) => b.made - a.made)
+})
+const craftProcs = computed(() => (props.session.crafts ?? []).filter((c) => c.proc).length)
+
+/** What a duty mission (or a supply request) gave, one by one: its name (without "(Bound)"), grade, icon and amount. */
+function dutyRewards(d: DutyDone | SupplyDone): { id: string; name: string; grade: number; icon: string | null; amount: number }[] {
   return Object.entries(d.rewards).map(([id, amount]) => {
     const item = itemInfo(id)
     return { id, name: (item?.name ?? `#${id}`).replace(' (Bound)', ''), grade: item?.grade ?? 11, icon: itemIcon(item?.icon), amount }
@@ -199,6 +226,40 @@ function toggle(r: DungeonRun): void {
       </div>
     </div>
 
+    <!-- Its crafts, by recipe (the most made first): how many, how many procced, and what they made. -->
+    <div v-if="session.crafts?.length" class="rounded-lg bg-card p-3 text-xs">
+      <div class="mb-1 flex items-center gap-1.5 font-medium text-darker">
+        <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2.5l4 4-6 6-4-4zM5.5 10.5l-3 3" /></svg>{{ t('Crafts') }}
+        <span class="font-semibold tabular-nums text-default">{{ session.crafts.length }}</span>
+        <span v-if="craftProcs" class="text-green">{{ t('{n} procs', { n: craftProcs }) }}</span>
+      </div>
+      <div v-for="c in craftRows" :key="c.recipe" class="flex w-full flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 first:border-t-0">
+        <img v-if="c.icon" :src="c.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+        <span :class="['font-semibold', gradeClass(c.grade)]">{{ c.name }}</span>
+        <span class="tabular-nums text-dark">×{{ c.made }}</span>
+        <span v-if="c.procs" class="flex items-center gap-1 tabular-nums text-green" :title="c.procName">
+          <img v-if="c.procIcon" :src="c.procIcon" alt="" class="size-4 rounded-sm" draggable="false" />{{ t('{n} procs', { n: c.procs }) }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Its supply requests, the latest first: each with what it gave. -->
+    <div v-if="session.supplies?.length" class="rounded-lg bg-card p-3 text-xs">
+      <div class="mb-1 flex items-center gap-1.5 font-medium text-darker">
+        <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.box" /></svg>{{ t('Supply requests') }}
+        <span class="font-semibold tabular-nums text-default">{{ session.supplies.length }}</span>
+      </div>
+      <div v-for="d in [...session.supplies].reverse()" :key="d.at" class="flex w-full flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 first:border-t-0">
+        <span class="tabular-nums text-darker">{{ clock(d.at) }}</span>
+        <span class="font-semibold">{{ supplyName(d.request) }}</span>
+        <span v-for="x in dutyRewards(d)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
+          <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+          <svg v-else viewBox="0 0 16 16" :class="['size-4', gradeClass(x.grade)]" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path :d="ICON.box" /></svg>
+          <span :class="gradeClass(x.grade)">{{ x.name }}</span> {{ x.amount >= 1000 ? x.amount.toLocaleString('en-US') : `×${x.amount}` }}
+        </span>
+      </div>
+    </div>
+
     <!-- Its duty missions, the latest first: each with what it gave. -->
     <div v-if="session.duties?.length" class="rounded-lg bg-card p-3 text-xs">
       <div class="mb-1 flex items-center gap-1.5 font-medium text-darker">
@@ -246,6 +307,6 @@ function toggle(r: DungeonRun): void {
       </div>
     </div>
 
-    <p v-if="!session.runs?.length && !session.duties?.length && !session.gathering?.done && !ranked(session.sources).length && !ranked(session.kinaSources).length" class="text-xs text-darker">{{ t('Nothing more in this session.') }}</p>
+    <p v-if="!session.runs?.length && !session.duties?.length && !session.supplies?.length && !session.crafts?.length && !session.gathering?.done && !ranked(session.sources).length && !ranked(session.kinaSources).length" class="text-xs text-darker">{{ t('Nothing more in this session.') }}</p>
   </div>
 </template>

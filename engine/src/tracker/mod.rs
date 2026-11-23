@@ -1113,6 +1113,13 @@ impl Tracker {
                     (self.emit)(json!({ "type": "nightmare", "ts": ts, "boss": boss, "level": level }));
                 }
             }
+            p::OP_SUPPLY_DONE => {
+                if let Some((request, rewards)) = p::supply_done(f) {
+                    tracing::info!("supply request {request} handed in: {rewards:?}");
+                    let rewards: Vec<Value> = rewards.iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect();
+                    (self.emit)(json!({ "type": "supplyDone", "ts": ts, "request": request, "rewards": rewards }));
+                }
+            }
             p::OP_CRAFT_START => {
                 if let Some((recipe, outcome)) = p::craft_start(f) {
                     tracing::info!("craft {recipe}: will be {outcome}");
@@ -1126,10 +1133,10 @@ impl Tracker {
                 }
             }
             p::OP_GATHER_START => {
-                if let Some((node, tries, outcome, doubled)) = p::gather_start(f) {
+                if let Some((node, tries, outcome, grade, doubled)) = p::gather_start(f) {
                     tracing::info!("gathering {node} (try {tries}): will be {outcome}, doubled {doubled}");
                     let template = self.objects.get(&node);
-                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "try": tries, "outcome": outcome, "doubled": doubled }));
+                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled }));
                 }
             }
             p::OP_GATHER => {

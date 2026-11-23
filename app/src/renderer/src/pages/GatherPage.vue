@@ -11,7 +11,7 @@ import { playSound } from '@/lib/sound.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import type { GatherForecast } from '@shared/gather.ts'
-import { itemIcon, itemInfo } from '@shared/sessions.ts'
+import { itemIcon } from '@shared/sessions.ts'
 
 const store = useApp()
 const api = bridge()
@@ -20,12 +20,18 @@ const cfg = computed(() => store.settings.gather)
 
 /** While the dashboard is up and nothing is being gathered: a sample to place it by. */
 const preview = computed(() => store.panelVisible && !store.gather)
-const SAMPLE: GatherForecast = { kind: 'gather', outcome: 'rankUp', doubled: true, item: 610_610_014, at: 0 }
+const SAMPLE: GatherForecast = {
+  kind: 'gather',
+  outcome: 'rankUp',
+  doubled: true,
+  item: { id: 610_610_014, count: 1, name: t('Fine Odyle'), grade: 21, icon: 'Icon_Item_Gather_Od_L_lv4_02a' },
+  at: 0,
+}
 
 type Kind = 'fail' | 'rare' | 'plain'
 const kindOf = (g: GatherForecast): Kind => (g.outcome === 'fail' ? 'fail' : g.outcome === 'rankUp' || g.outcome === 'proc' || g.doubled ? 'rare' : 'plain')
 const textOf = (g: GatherForecast): string => {
-  if (g.kind === 'craft') return g.outcome === 'proc' ? t('Craft procs') : t('Plain craft')
+  if (g.kind === 'craft') return g.outcome === 'proc' ? (g.doubled ? t('Craft procs, x2') : t('Craft procs')) : t('Plain craft')
   if (g.outcome === 'fail') return t('Gathering will fail')
   if (g.outcome === 'rankUp') return g.doubled ? t('Rank up, x2') : t('Rank up')
   return g.doubled ? t('Gathering x2') : t('Gathering succeeds')
@@ -40,11 +46,10 @@ const shownGather = computed<GatherForecast | null>(() => (preview.value ? SAMPL
 const kind = computed(() => (shownGather.value ? kindOf(shownGather.value) : null))
 const colour = computed(() => (kind.value === 'fail' ? cfg.value.failColor : kind.value === 'rare' ? cfg.value.rareColor : '#9aa0ac'))
 const shown = computed(() => cfg.value.enabled && !!shownGather.value)
-/** What it will give, as an icon and a name (none for a spot whose kind is not known yet). */
+/** What it will give, as an icon and a name (none for a spot whose kind is not learnt yet). */
 const item = computed(() => {
-  const id = cfg.value.icon ? shownGather.value?.item : null
-  const info = id ? itemInfo(id) : undefined
-  return info ? { name: info.name, icon: itemIcon(info.icon) } : null
+  const it = cfg.value.icon ? shownGather.value?.item : null
+  return it ? { name: it.count > 1 ? `${it.name} x${it.count}` : it.name, icon: itemIcon(it.icon) } : null
 })
 
 // A sound as one starts, for those wanted.
