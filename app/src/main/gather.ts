@@ -36,6 +36,9 @@ function set(next: GatherForecast | null): void {
 
 export const gatherStore = {
   get: (): GatherForecast | null => state,
+  /** The plain item a spot's kind gives, as known (learnt, seeded or told by the map). */
+  plainOf: (template: number | null | undefined): number | null =>
+    template === null || template === undefined ? null : (templates[String(template)] ?? voted(template)?.item ?? null),
 }
 
 // ---- a spot's kind told by the map ------------------------------------------------------------

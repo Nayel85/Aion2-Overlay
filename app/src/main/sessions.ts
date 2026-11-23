@@ -17,9 +17,10 @@ import { join } from 'node:path'
 import { abyss } from './abyss.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
+import { gatherStore } from './gather.ts'
 import { RECIPES } from '../shared/recipes.ts'
 import { BOSS_RUNS } from '../shared/bossRuns.ts'
-import { AP_ITEM, apSource, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
+import { AP_ITEM, apSource, GATHER_FAILED, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
 
 const HISTORY_MAX = 200
 const CONTINUE_MS = 6 * 3_600_000
@@ -402,17 +403,31 @@ export function startSessions(): void {
   })
   // A gathering: the session's stats (done, failed, doubled, ranked up) and what it gave.
   // Each gathering whole: its start (outcome, grade, the skills its rolls fired), then its result.
-  let gatherStart: { outcome: number; grade: number; doubled: boolean; skills: number[] } | null = null
+  let gatherStart: { outcome: number; grade: number; doubled: boolean; skills: number[]; template: number | null } | null = null
   tracker.onEvent('gatherStart', (ev) => {
     const rolls = (ev['rolls'] as { skills?: number[] }[] | undefined) ?? []
-    gatherStart = { outcome: ev['outcome'] as number, grade: (ev['grade'] as number | undefined) ?? 1, doubled: ev['doubled'] === true, skills: rolls.flatMap((r) => r.skills ?? []) }
+    gatherStart = {
+      outcome: ev['outcome'] as number,
+      grade: (ev['grade'] as number | undefined) ?? 1,
+      doubled: ev['doubled'] === true,
+      skills: rolls.flatMap((r) => r.skills ?? []),
+      template: (ev['template'] as number | null | undefined) ?? null,
+    }
   })
   tracker.onEvent('gatherEnd', () => {
-    // Given up: no result comes; a done one's comes just after, its start kept for it (and the next
-    // gathering's start, coming meanwhile, left alone).
+    // A done one's result comes just after; with none, it was given up: counted as a failure, its
+    // resource the spot's (as known). The next gathering's start, coming meanwhile, is left alone.
     const over = gatherStart
     setTimeout(() => {
-      if (gatherStart === over) gatherStart = null
+      if (!over || gatherStart !== over) return
+      gatherStart = null
+      const s = sessions.current
+      if (!s) return
+      const plain = gatherStore.plainOf(over.template) ?? 0
+      s.gatherings = [...(s.gatherings ?? []), { at: Date.now(), resource: plain, outcome: over.outcome, grade: over.grade, doubled: over.doubled, failed: true, abandoned: true, item: plain, amount: 0, skills: over.skills }]
+      noteGathering(s, plain, 0, GATHER_FAILED)
+      s.last = Date.now()
+      changed()
     }, 1_500)
   })
   tracker.onEvent('gather', (ev) => {

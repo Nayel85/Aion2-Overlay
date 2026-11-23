@@ -61,7 +61,7 @@ const sessions = computed(() => (store.sessions.current ? [store.sessions.curren
 const all = computed(() => allGatherings(sessions.value))
 const characters = computed(() => [...new Set(all.value.map((g) => g.name))])
 const resources = computed(() => gatherResources(filterGatherings(all.value, { names: f.value.names, from: fromOf(f.value.period), resource: null })))
-const resourceOptions = computed(() => [{ id: 0, label: t('All resources') }, ...resources.value.map(([id, name, n]) => ({ id, label: `${name} (${n})` }))])
+const resourceOptions = computed(() => [{ id: 0, label: t('All resources') }, ...resources.value.map(([id, name, n]) => ({ id, label: `${t(name)} (${n})` }))])
 const picked = computed(() => filterGatherings(all.value, { names: f.value.names, from: fromOf(f.value.period), resource: f.value.resource }))
 const rows = computed(() => gatherRows(picked.value))
 const total = computed(() => gatherTotal(picked.value))
@@ -137,7 +137,7 @@ function luckOf(got: number, expected: number | null): { text: string; class: st
             <td class="px-4 py-1.5"><span class="flex items-center gap-1.5"><ClassIcon :class-name="className(r.name)" :size="16" />{{ r.name }}</span></td>
             <td class="px-3 py-1.5">
               <span class="flex items-center gap-1.5">
-                <img v-if="itemIcon(r.icon)" :src="itemIcon(r.icon)!" alt="" class="size-5 rounded-sm" draggable="false" />{{ r.resourceName }}
+                <img v-if="itemIcon(r.icon)" :src="itemIcon(r.icon)!" alt="" class="size-5 rounded-sm" draggable="false" />{{ t(r.resourceName) }}
               </span>
             </td>
             <td class="px-3 py-1.5 text-center">{{ r.done }}</td>
