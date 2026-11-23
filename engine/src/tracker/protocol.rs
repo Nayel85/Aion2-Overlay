@@ -1107,13 +1107,15 @@ fn board_lists(b: &[u8], mut at: usize) -> Option<(Vec<(u32, u32)>, usize)> {
     (!items.is_empty()).then_some((items, at))
 }
 
-/// A player's name in a reward board's entry: `<len u8><name>` followed by `0E 00 00 00`.
+/// A player's name in a reward board's entry: `<len u8><name>` followed by a small u32 (`0E 00 00 00`
+/// on the Shugo Festival's of 2026-11-22, `1E 00 00 00` on the Incursion of the Spirits' of the 23rd).
 fn board_name(part: &[u8]) -> Option<String> {
     (0..part.len()).find_map(|q| {
         let len = part[q] as usize;
         let name = part.get(q + 1..q + 1 + len)?;
-        (len > 0 && part.get(q + 1 + len..q + 5 + len) == Some(&[0x0E, 0, 0, 0][..]))
-            .then(|| std::str::from_utf8(name).ok().filter(|s| !s.chars().any(char::is_control)).map(str::to_string))
+        let after = part.get(q + 1 + len..q + 5 + len)?;
+        ((2..=16).contains(&len) && after[0] > 0 && after[1..] == [0, 0, 0])
+            .then(|| std::str::from_utf8(name).ok().filter(|s| s.chars().all(|c| c.is_alphanumeric())).map(str::to_string))
             .flatten()
     })
 }
@@ -1663,6 +1665,8 @@ mod tests {
         assert_eq!(gather(&frame(OP_GATHER, &hex("003ab8c7015d2b652401000000000000000000000000000000"))), Some((0, 610_610_013, 1, 0)));
         // Ranked up (and doubled).
         assert_eq!(gather(&frame(OP_GATHER, &hex("013aa3b7015e2b652401000000010000000000000000000000"))), Some((1, 610_610_014, 1, 1)));
+        // An invasion's board names its player with 1E after the name (the Shugo Festival's 0E).
+        assert_eq!(board_name(&hex("01190500 2a1a0300 00001905 054e6179656c1e00000001".replace(' ', "").as_str())), Some("Nayel".to_string()));
         // The owner's supply requests: Silentium, then Blacksmith Weapon.
         assert_eq!(supply_done(&frame(OP_QUEST_REWARD, &hex("3c6d5200ad6d0f000000000002233370376806000037337037a4010000"))), Some((1_011_117, vec![(930_100_003, 1640), (930_100_023, 420)])));
         assert_eq!(supply_done(&frame(OP_QUEST_REWARD, &hex("0572520009750f0000000000012333703730070000"))), Some((1_013_001, vec![(930_100_003, 1840)])));
