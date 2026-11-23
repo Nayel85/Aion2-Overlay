@@ -15,7 +15,7 @@ import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
 import { PLACES, placeItems, placeSlots, whereIs, WORN_ARCANA, WORN_LAYOUT, type CharacterInventory, type Place, type SlotItem } from '@shared/inventory.ts'
 import { itemIcon, itemInfo } from '@shared/sessions.ts'
-import { arcanaStatLine, baseLines, skillLine, soulLine, stoneLine, type ItemDetails } from '@shared/equipment.ts'
+import { arcanaStatLine, baseLines, skillLine, soulLine, soulRate, stoneLine, type ItemDetails } from '@shared/equipment.ts'
 import { bridge } from '@/lib/bridge.ts'
 
 const store = useApp()
@@ -102,7 +102,8 @@ const details = computed(() => {
     // "70 (+21)": the base's level and what enchanting it added; its total alone without the base.
     level: h.item.level ? (base?.itemLevel ? `${base.itemLevel}${h.item.level > base.itemLevel ? ` (+${h.item.level - base.itemLevel})` : ''}` : String(h.item.level)) : null,
     base: base ? baseLines(base, enchant) : [],
-    soul: (h.item.soul ?? []).map(([code, value]) => soulLine(code, value, base?.soulMax)),
+    soul: (h.item.soul ?? []).map(([code, value]) => soulLine(code, value, base?.soulRange)),
+    soulRate: soulRate(h.item.soul ?? [], (h.item.skills ?? []).length, base?.soulRange),
     skills: (h.item.skills ?? []).map(([skill, levels]) => skillLine(skill, levels)),
     stats: (h.item.stats ?? []).map(([code, value]) => arcanaStatLine(code, value)),
     stones: (h.item.stones ?? []).filter((s): s is [number, number, number] => Array.isArray(s)).map(([stone, code, rank]) => stoneLine(stone, code, rank)),
@@ -234,8 +235,12 @@ const itemCount = computed(() => Object.keys(placeItems(slots.value)).length)
       </div>
       <!-- Its soul binding. -->
       <div v-if="details.soul.length" class="mt-2 space-y-0.5 border-t border-card pt-2 tabular-nums">
-        <div class="text-accent">{{ t('Soul Binding') }}</div>
-        <div v-for="(l, i) in details.soul" :key="i" class="flex justify-between gap-3"><span>{{ t(l.label) }}</span><span>{{ l.value }}</span></div>
+        <div class="flex justify-between gap-3 text-accent">
+          <span>{{ t('Soul Binding') }}</span><span v-if="details.soulRate !== null" class="font-semibold">{{ details.soulRate.toFixed(1) }}%</span>
+        </div>
+        <div v-for="(l, i) in details.soul" :key="i" class="flex justify-between gap-3">
+          <span>{{ t(l.label) }}</span><span>{{ l.value }}<span v-if="l.roll !== undefined" class="ml-1.5 text-[10px] text-darker">({{ l.roll }}%)</span></span>
+        </div>
       </div>
       <!-- The skills it raises. -->
       <div v-if="details.skills.length" class="mt-2 space-y-0.5 border-t border-card pt-2 tabular-nums">

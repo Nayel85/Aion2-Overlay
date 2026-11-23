@@ -97,11 +97,38 @@ export function stoneLine(stone: number, code: number, rank: number): StatLine {
   return { label: labelOf(id, code), value: r ? `+${formatValue(id!, r[1])}` : `rank ${rank}`, grade: r?.[0] }
 }
 
-/** A soul binding's stat: named and valued, out of the most it can roll on that item ("308/361"). */
-export function soulLine(code: number, value: number, max?: Record<string, number>): StatLine {
+/**
+ * How good a soul binding stat's roll is, as the game's soul binding window puts it under each line:
+ * where it lies in its item's range, counting both ends ((value - min + 1) / (max - min + 1)). Matched
+ * on the owner's 14 lines (2026-11-23): the bow's HP 308 of 308-361, 2%; Bakarma Boots' Dexterity 21
+ * of 15-24, 70%. Null without the range.
+ */
+export function soulRoll(code: number, value: number, range?: Record<string, [number, number]>): number | null {
   const id = STAT_CODES[code]
-  const most = id ? max?.[id] : undefined
-  return { label: labelOf(id, code), value: id ? `${formatValue(id, value)}${most ? `/${formatValue(id, most)}` : ''}` : String(value) }
+  const r = id ? range?.[id] : undefined
+  return r ? Math.min(1, Math.max(0, (value - r[0] + 1) / (r[1] - r[0] + 1))) : null
+}
+
+/**
+ * The soul binding rate: the mean of its stats' rolls, each skill it raises counting in full, cut
+ * (not rounded) to a tenth of a percent as the game writes it (the bow: 2%, 1%, 6% and its Tempest
+ * Shot 100%, 27.1%; Vakron Greaves 35.4%; Bakarma Boots 27.0%; Gartua Breastplate 23.6%). Null when a
+ * stat's range is not known.
+ */
+export function soulRate(soul: [number, number][], skills: number, range?: Record<string, [number, number]>): number | null {
+  if (!soul.length) return null
+  const rolls = soul.map(([code, value]) => soulRoll(code, value, range))
+  if (rolls.some((r) => r === null)) return null
+  const mean = ((rolls as number[]).reduce((a, r) => a + r, 0) + skills) / (rolls.length + skills)
+  return Math.floor(mean * 1000 + 1e-9) / 10
+}
+
+/** A soul binding's stat: named and valued, out of the most it can roll on that item ("308/361"), with its roll ("2%"). */
+export function soulLine(code: number, value: number, range?: Record<string, [number, number]>): StatLine & { roll?: number } {
+  const id = STAT_CODES[code]
+  const most = id ? range?.[id]?.[1] : undefined
+  const roll = soulRoll(code, value, range)
+  return { label: labelOf(id, code), value: id ? `${formatValue(id, value)}${most ? `/${formatValue(id, most)}` : ''}` : String(value), ...(roll !== null ? { roll: Math.round(roll * 100) } : {}) }
 }
 
 /** An Arcana's own stats, by code: the game's names where seen (the Chalice of Vigor's "Time [Siel]"). */
@@ -123,8 +150,8 @@ export interface ItemDetails {
   main: Record<string, number>
   /** The bonus each enchantment level adds, by stat id. */
   enchants: Record<number, Record<string, number>>
-  /** The most each soul binding stat can roll on it, by stat id (questlog's subStats). */
-  soulMax?: Record<string, number>
+  /** What each soul binding stat can roll on it, [least, most], by stat id (questlog's subStats). */
+  soulRange?: Record<string, [number, number]>
 }
 
 /** Its base stats as the window's lines, with its enchantment's bonus: "Attack 278–350 (+79)". */
