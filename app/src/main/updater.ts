@@ -129,24 +129,31 @@ async function downloadPortable(version: string): Promise<{ dir: string; exe: st
   throw new Error(`${name} has no ${EXE_NAMES[0]}`)
 }
 
-/** On quitting: a script waits for this app to close, copies the new files over its folder and starts it again. */
+/** A path as a PowerShell literal: single-quoted, its quotes doubled. */
+const psPath = (p: string): string => `'${p.replace(/'/g, "''")}'`
+
+/**
+ * On quitting: a script waits for this app to close, copies the new files over its folder and starts
+ * it again. PowerShell's Wait-Process, not cmd's `tasklist | find` loop: that one could hang on its
+ * pipe for good (seen 2026-11-23, its console window left waiting on `find`). Hidden, no window.
+ */
 async function handOverPortable(from: { dir: string; exe: string }): Promise<void> {
   const target = dirname(app.getPath('exe'))
   const old = app.getPath('exe')
   const exe = join(target, from.exe)
-  const script = join(app.getPath('temp'), 'lokthar-install-update.cmd')
+  const script = join(app.getPath('temp'), 'nayel-install-update.ps1')
   const lines = [
-    '@echo off',
-    ':wait',
-    `tasklist /NH /FI "PID eq ${process.pid}" 2>nul | find " ${process.pid} " >nul && (timeout /t 1 /nobreak >nul & goto wait)`,
+    "$ErrorActionPreference = 'SilentlyContinue'",
+    // Two minutes at most: the app is gone by then, or the copy is tried anyway.
+    `Wait-Process -Id ${process.pid} -Timeout 120`,
     // The engine closes with the app; retried a while in case a file is still held.
-    `robocopy "${from.dir}" "${target}" /E /R:30 /W:1 /NFL /NDL /NJH /NJS /NP >nul`,
+    `robocopy ${psPath(from.dir)} ${psPath(target)} /E /R:30 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null`,
     // Renamed: the old exe would start the new files under the old name; gone.
-    ...(basename(old).toLowerCase() === from.exe.toLowerCase() ? [] : [`del /f /q "${old}" >nul 2>&1`]),
-    `start "" "${exe}"`,
+    ...(basename(old).toLowerCase() === from.exe.toLowerCase() ? [] : [`Remove-Item -LiteralPath ${psPath(old)} -Force`]),
+    `Start-Process -FilePath ${psPath(exe)}`,
   ]
   await writeFile(script, lines.join('\r\n') + '\r\n')
-  spawn('cmd.exe', ['/c', script], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
+  spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', script], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
 }
 
 function set(patch: Partial<UpdateState>): void {

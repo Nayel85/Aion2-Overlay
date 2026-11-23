@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.16',
+    items: [
+      "A run you go into as the app first knows your character (started before a Shugo Festival's game or a dungeon, the teleport telling it who you are) is kept in your session.",
+      'The portable update no longer leaves a window waiting: the new files are put in as soon as the app has closed.',
+    ],
+  },
+  {
     version: '0.3.15',
     items: [
       "Nayel Overlay: Lokthar with play sessions, dungeon loot and duty missions. Its own name, exe and data folder (Lokthar's data is copied in on the first start), and updates from its own releases.",
