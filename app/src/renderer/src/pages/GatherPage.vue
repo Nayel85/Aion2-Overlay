@@ -56,15 +56,20 @@ const wanted = (g: GatherForecast): boolean => {
 
 const shownGather = computed<GatherForecast | null>(() => (preview.value ? SAMPLE : store.gather && wanted(store.gather) ? store.gather : null))
 const kind = computed(() => (shownGather.value ? kindOf(shownGather.value) : null))
+/** A failure red, a craft's proc green, a gathering's x2 or x3 gold. */
+const FAIL = '#d73a3a'
+const PROC = '#3fb950'
+const GOLD = '#f5d77a'
 /** The grades' colours, as the game's: green Fine, blue Pure, gold Radiant, orange above. */
 const gradeColour = (grade: number): string | null => (grade >= 51 ? '#f0883e' : grade >= 41 ? '#f5d77a' : grade >= 31 ? '#58a6ff' : grade >= 21 ? '#3fb950' : null)
 const colour = computed(() => {
   const g = shownGather.value
-  if (kind.value === 'fail') return cfg.value.failColor
-  if (kind.value === 'proc') return cfg.value.procColor
-  // A rank up in its item's grade colour, or, the item not known, the grade rolled's (2 Fine...).
+  if (kind.value === 'fail') return FAIL
+  if (kind.value === 'proc') return PROC
+  // A rank up in its item's grade colour, or, the item not known, the grade rolled's (2 Fine...);
+  // a gathering's x2 or x3 in gold.
   const grade = g?.item ? g.item.grade : g?.grade ? g.grade * 10 + 1 : 0
-  if (kind.value === 'rare') return (cfg.value.gradeColours && g?.outcome === 'rankUp' && gradeColour(grade)) || cfg.value.rareColor
+  if (kind.value === 'rare') return (g?.outcome === 'rankUp' && gradeColour(grade)) || GOLD
   return '#9aa0ac'
 })
 const shown = computed(() => cfg.value.enabled && !!shownGather.value)
@@ -189,7 +194,7 @@ onBeforeUnmount(() => {
             <div class="h-full rounded-full bg-[#3fb950]" :style="{ width: `${gauges.ok * 100}%` }" />
           </div>
           <div class="overflow-hidden rounded-full bg-white/10" :style="{ marginTop: `${3 * cfg.scale}px`, height: `${5 * cfg.scale}px` }">
-            <div class="h-full rounded-full" :style="{ width: `${gauges.bad * 100}%`, background: cfg.failColor }" />
+            <div class="h-full rounded-full" :style="{ width: `${gauges.bad * 100}%`, background: FAIL }" />
           </div>
         </div>
 

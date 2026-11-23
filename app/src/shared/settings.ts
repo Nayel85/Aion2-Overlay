@@ -47,8 +47,6 @@ export type PartyHpText = (typeof PARTY_HP_TEXT)[number]
 /** Party frames: what turns a bar to the afflicted colour: any monster's debuff, or one taking control. */
 export const PARTY_AFFLICTED_BY = ['any', 'control'] as const
 export type PartyAfflictedBy = (typeof PARTY_AFFLICTED_BY)[number]
-/** The gathering outcome: red when it will fail, gold when it will rank up or give x2, green when a craft procs. */
-export const GATHER_DEFAULT_COLORS = { fail: '#d73a3a', rare: '#f5d77a', proc: '#3fb950' } as const
 /** Party frames: a red HP bar, green while afflicted. */
 export const PARTY_DEFAULT_COLORS = { hp: '#c0392b', afflicted: '#2ea043' } as const
 
@@ -178,7 +176,7 @@ export interface Settings {
   }
   /**
    * The gathering outcome: a pill as a gathering starts, saying how it will end. Which to show
-   * (`fail`, `rare`: rank up or x2, `plain`), their colours, its size (`scale`), a sound for some.
+   * (`fail`, `rare`: rank up or x2, `plain`), its size (`scale`), a sound for some.
    */
   gather: {
     enabled: boolean
@@ -196,12 +194,6 @@ export interface Settings {
     plain: boolean
     /** Crafts too: their proc (the better item), and the plain ones with `plain`. */
     crafts: boolean
-    failColor: string
-    rareColor: string
-    /** A craft's proc (its better item can look the same: the colour says it). */
-    procColor: string
-    /** A rank up in its item's grade colour (green Fine, blue Pure, gold Radiant), else `rareColor`. */
-    gradeColours: boolean
     soundFail: boolean
     soundRare: boolean
     soundId: SoundId
@@ -452,7 +444,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   flight: { enabled: true, position: null, opacity: 1 },
   gather: {
     enabled: true, style: 'ring', position: null, opacity: 1, scale: 1, icon: true, fail: true, rare: true, plain: false, crafts: true,
-    failColor: GATHER_DEFAULT_COLORS.fail, rareColor: GATHER_DEFAULT_COLORS.rare, procColor: GATHER_DEFAULT_COLORS.proc, gradeColours: true, soundFail: false, soundRare: false, soundId: 'bell', volume: 0.6,
+    soundFail: false, soundRare: false, soundId: 'bell', volume: 0.6,
   },
   bossRuns: { enabled: false, position: { x: 1890, y: 30 }, opacity: 0.85, windowMinutes: 15, rows: 4, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: [101001, 101002, 101006, 101007, 101019, 101017, 101005, 101004, 101003, 101015, 101010, 101008, 101009, 101016, 101012, 101014, 101020, 101013, 101011, 101018] },
   killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null },
@@ -676,10 +668,6 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         rare: bool(v.rare, g.rare),
         plain: bool(v.plain, g.plain),
         crafts: bool(v.crafts, g.crafts),
-        failColor: colour(v.failColor, g.failColor),
-        rareColor: colour(v.rareColor, g.rareColor),
-        procColor: colour(v.procColor, g.procColor),
-        gradeColours: bool(v.gradeColours, g.gradeColours),
         soundFail: bool(v.soundFail, g.soundFail),
         soundRare: bool(v.soundRare, g.soundRare),
         soundId: isSound(v.soundId) && v.soundId !== 'custom' ? v.soundId : g.soundId,

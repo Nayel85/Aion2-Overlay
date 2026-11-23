@@ -136,6 +136,8 @@ export const ES: Record<string, string> = {
   'All characters': 'Todos los personajes',
   '{n} in all': '{n} en total',
   'Runs': 'Partidas',
+  'In red.': 'En rojo.',
+  "A rank up in its item's grade colour (green Fine, blue Pure, gold Radiant), a gathering's x2 or x3 in gold, a craft's proc (its better item, often with the plain one's icon, or its double) in green.": 'Una subida de rango con el color de su grado (verde Fine, azul Pure, oro Radiant), el x2 o x3 de una recolección en oro, el proc de un crafteo (su mejor objeto, a menudo con el icono del normal, o su doble) en verde.',
   'The boss is on them': 'El jefe va a por él',
   'Shielded': 'Con escudo',
   'Shields': 'Escudos',

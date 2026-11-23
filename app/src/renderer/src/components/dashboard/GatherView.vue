@@ -13,7 +13,6 @@ import SelectBox from '@/components/ui/SelectBox.vue'
 import { t } from '@/lib/i18n.ts'
 import { playSound } from '@/lib/sound.ts'
 import { useApp } from '@/stores/app.ts'
-import { GATHER_DEFAULT_COLORS } from '@shared/settings.ts'
 import { SOUNDS } from '@shared/sounds.ts'
 
 const store = useApp()
@@ -55,28 +54,11 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
     </Section>
 
     <Section v-if="cfg.enabled" title="What to show">
-      <SettingRow label="Will fail">
-        <span class="flex items-center gap-2">
-          <button v-if="cfg.failColor !== GATHER_DEFAULT_COLORS.fail" type="button" class="text-xs text-darker hover:text-default" @click="set({ failColor: GATHER_DEFAULT_COLORS.fail })">{{ t('Reset') }}</button>
-          <input type="color" class="h-7 w-10 cursor-pointer rounded border border-light bg-transparent" :value="cfg.failColor" @change="set({ failColor: ($event.target as HTMLInputElement).value })" />
-          <Toggle :model-value="cfg.fail" @update:model-value="set({ fail: $event })" />
-        </span>
+      <SettingRow label="Will fail" hint="In red.">
+        <Toggle :model-value="cfg.fail" @update:model-value="set({ fail: $event })" />
       </SettingRow>
-      <SettingRow label="Rank ups in their grade's colour" hint="A rank up in its item's colour (green Fine, blue Pure, gold Radiant) rather than the colour above.">
-        <Toggle :model-value="cfg.gradeColours" @update:model-value="set({ gradeColours: $event })" />
-      </SettingRow>
-      <SettingRow label="Craft procs" hint="A craft's better item (a green Splendent one where a white one is crafted, often with the same icon) or its double: shown with the rank ups and x2, in a colour of its own.">
-        <span class="flex items-center gap-2">
-          <button v-if="cfg.procColor !== GATHER_DEFAULT_COLORS.proc" type="button" class="text-xs text-darker hover:text-default" @click="set({ procColor: GATHER_DEFAULT_COLORS.proc })">{{ t('Reset') }}</button>
-          <input type="color" class="h-7 w-10 cursor-pointer rounded border border-light bg-transparent" :value="cfg.procColor" @change="set({ procColor: ($event.target as HTMLInputElement).value })" />
-        </span>
-      </SettingRow>
-      <SettingRow label="Rank up, x2 or proc" hint="A Fine Odyle from an Odyle node, twice as much, or a craft's better item (a green Splendent one where a white one is crafted).">
-        <span class="flex items-center gap-2">
-          <button v-if="cfg.rareColor !== GATHER_DEFAULT_COLORS.rare" type="button" class="text-xs text-darker hover:text-default" @click="set({ rareColor: GATHER_DEFAULT_COLORS.rare })">{{ t('Reset') }}</button>
-          <input type="color" class="h-7 w-10 cursor-pointer rounded border border-light bg-transparent" :value="cfg.rareColor" @change="set({ rareColor: ($event.target as HTMLInputElement).value })" />
-          <Toggle :model-value="cfg.rare" @update:model-value="set({ rare: $event })" />
-        </span>
+      <SettingRow label="Rank up, x2 or proc" hint="A rank up in its item's grade colour (green Fine, blue Pure, gold Radiant), a gathering's x2 or x3 in gold, a craft's proc (its better item, often with the plain one's icon, or its double) in green.">
+        <Toggle :model-value="cfg.rare" @update:model-value="set({ rare: $event })" />
       </SettingRow>
       <SettingRow label="Crafts" hint="Crafts too: as each one starts, whether it will proc.">
         <Toggle :model-value="cfg.crafts" @update:model-value="set({ crafts: $event })" />
