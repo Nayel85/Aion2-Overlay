@@ -44,9 +44,10 @@ export interface GatherRoll {
  */
 export type GatherTemplates = Record<string, number>
 
-/** Known before any gathering: the owner's of 2026-11-22 and 23. */
+/** Known before any gathering: the owner's of 2026-11-22 and 23, gathered or told by the map. */
 export const GATHER_TEMPLATES_SEED: GatherTemplates = {
   '1500000': 610_610_013,
+  '1500022': 610_660_027,
   '1500062': 610_610_013,
   '1500012': 610_650_011,
   '1500021': 610_660_026,

@@ -55,6 +55,7 @@
 //!   {"type": "craftStart", "recipe", "outcome": 0 failed | 1 plain | 13 proc, "durationMs"}   a craft starting, its outcome already known
 //!   {"type": "craftResult", "recipe", "item"}   what a craft made
 //!   {"type": "craftDone", "recipe"}   a craft over, made or failed
+//!   {"type": "spot", "template", "world", "position": [x, y]}   a gathering spot in view (the map's frame)
 //!   {"type": "gatherEnd", "node"}   the gathering over: done (its result follows) or given up
 //!   {"type": "gatherStart", "node", "template" | null, "kind" | null, "try", "outcome": 1 gathered | 7 ranked up | 0 failed, "grade", "doubled", "durationMs"}   a gathering starting, its outcome already known
 //!   {"type": "partyDebuffs", "debuffs": {"<entity>": [buff as in "buffs"]}}   what monsters and the other faction put on your party (but you), as it changes

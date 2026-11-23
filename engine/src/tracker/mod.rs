@@ -900,6 +900,11 @@ impl Tracker {
                             self.objects.clear();
                         }
                         self.objects.insert(o.id, (o.template, o.tail));
+                        // A gathering spot (templates 1500000 up, one per resource): where it is, for
+                        // the app to tell its resource by the map's.
+                        if (1_500_000..1_501_000).contains(&o.template) {
+                            (self.emit)(json!({ "type": "spot", "ts": ts, "template": o.template, "world": self.world, "position": [o.x.round() as i64, (-o.y).round() as i64] }));
+                        }
                     }
                     if CUBE_TEMPLATES.contains(&o.template) && self.cubes.insert(o.id, o).is_none() {
                         tracing::info!("hidden cube {} (template {}) at {:.0}, {:.0}", o.id, o.template, o.x, o.y);

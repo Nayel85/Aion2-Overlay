@@ -2,10 +2,14 @@
 // seconds before the result), told to its pill (pages/GatherPage.vue) until the result comes
 // (`gather`, `craftResult`), or a while. What it will give: a craft's from the game's recipes
 // (shared/recipes.ts); a gathering's from its spot's kind, whose plain item each result says (kept
-// in userData/gather-spots.json), at the grade the game rolled (shared/gatherables.ts).
+// in userData/gather-spots.json), at the grade the game rolled (shared/gatherables.ts). A kind not
+// gathered yet is told by the map (the app's gathering points, maps/gatherables.json): each spot of it
+// that comes into view votes for the resource of the point nearest to it; the most voted one is taken,
+// and kept once sure (3 votes, three in four). The owner's captures: 6 kinds told right that way.
 import { app } from 'electron'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { GATHERABLES } from '../shared/gatherables.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, plainItem, type GatherForecast, type GatherRoll, type GatherTemplates } from '../shared/gather.ts'
@@ -33,12 +37,75 @@ export const gatherStore = {
   get: (): GatherForecast | null => state,
 }
 
+// ---- a spot's kind told by the map ------------------------------------------------------------
+
+/** The map's gathering points: [resource name, zone, x, y]; loaded once, the first time needed. */
+let points: [string, number, number, number][] | null = null
+function mapPoints(): [string, number, number, number][] {
+  if (points) return points
+  points = []
+  try {
+    const m = JSON.parse(readFileSync(join(__dirname, '../renderer/maps/gatherables.json'), 'utf8')) as { types: { name: string; zones: Record<string, [number, number][]> }[] }
+    for (const t of m.types) for (const [zone, list] of Object.entries(t.zones)) for (const [x, y] of list) points.push([t.name, Number(zone), x, y])
+  } catch (e) {
+    log(`gathering: the map's points not read (${String(e)})`)
+  }
+  return points
+}
+/** A resource's plain item, by its name (questlog's: every spot of one gives the same). */
+const PLAIN_BY_NAME = new Map<string, number>()
+for (const [name, , groups] of Object.values(GATHERABLES)) if (groups['1'] && !PLAIN_BY_NAME.has(name)) PLAIN_BY_NAME.set(name, groups['1'][0])
+/** Nearer than this to a point (the map's units, ~cm): its resource. */
+const NEAR = 800
+/** Each unknown kind's votes, by resource name. */
+const votes = new Map<number, Map<string, number>>()
+/** The resource most voted for a kind, if any: its plain item, and whether it is sure (to keep). */
+function voted(template: number): { item: number; sure: boolean } | null {
+  const v = votes.get(template)
+  if (!v) return null
+  const all = [...v.values()].reduce((a, b) => a + b, 0)
+  const [name, n] = [...v].sort((a, b) => b[1] - a[1])[0]!
+  const item = PLAIN_BY_NAME.get(name)
+  if (!item || n / all < 0.6) return null
+  return { item, sure: n >= 3 && n / all >= 0.75 }
+}
+function keep(): void {
+  try {
+    writeFileSync(file(), JSON.stringify(templates))
+  } catch {
+    // Learnt again next time.
+  }
+}
+
 export function startGather(): void {
   try {
     templates = { ...GATHER_TEMPLATES_SEED, ...(JSON.parse(readFileSync(file(), 'utf8')) as GatherTemplates) }
   } catch {
     // None learnt yet.
   }
+  tracker.onEvent('spot', (ev) => {
+    const template = ev['template'] as number
+    const world = ev['world'] as number | null
+    const [x, y] = ev['position'] as [number, number]
+    if (templates[template] || world === null) return
+    let best: [string, number] | null = null
+    for (const [name, zone, px, py] of mapPoints()) {
+      if (zone !== world) continue
+      const d = Math.hypot(px - x, py - y)
+      if (d < NEAR && (!best || d < best[1])) best = [name, d]
+    }
+    if (!best) return
+    const v = votes.get(template) ?? new Map<string, number>()
+    v.set(best[0], (v.get(best[0]) ?? 0) + 1)
+    votes.set(template, v)
+    const told = voted(template)
+    if (told?.sure) {
+      templates = { ...templates, [template]: told.item }
+      votes.delete(template)
+      log(`gathering: spots ${template} told by the map: ${best[0]}`)
+      keep()
+    }
+  })
   tracker.onEvent('gatherStart', (ev) => {
     const code = ev['outcome'] as number
     const grade = (ev['grade'] as number | undefined) ?? 1
@@ -47,7 +114,7 @@ export function startGather(): void {
     if (code !== 0 && code !== 1 && code !== 7) log(`gathering: outcome ${code} (grade ${grade}) not known before`)
     const template = ev['template'] as number | null | undefined
     pendingTemplate = template === null || template === undefined ? null : String(template)
-    const plain = pendingTemplate !== null ? templates[pendingTemplate] : undefined
+    const plain = pendingTemplate !== null ? (templates[pendingTemplate] ?? voted(Number(pendingTemplate))?.item) : undefined
     const item = gatherItem(plain, outcome === 'fail' ? 1 : grade)
     // A grade that gives the plain item more times (a plant's x3) is no rank up.
     const base = plainItem(plain)
@@ -64,11 +131,8 @@ export function startGather(): void {
     const item = ev['item'] as number | undefined
     if (pendingTemplate !== null && item && ev['result'] !== 1 && templates[pendingTemplate] !== item) {
       templates = { ...templates, [pendingTemplate]: item }
-      try {
-        writeFileSync(file(), JSON.stringify(templates))
-      } catch {
-        // Learnt again next time.
-      }
+      votes.delete(Number(pendingTemplate))
+      keep()
     }
     pendingTemplate = null
     if (state) set(null)
