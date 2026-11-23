@@ -36,6 +36,24 @@ pub const OP_CHARACTER_LIST: [u8; 2] = [0x15, 0x36];
 pub const OP_COUNTERS: [u8; 2] = [0x0B, 0x61];
 pub const OP_COUNTER: [u8; 2] = [0x0C, 0x61];
 pub const OP_ABYSS_POINTS: [u8; 2] = [0xAB, 0xFF];
+pub const OP_SUBSCRIPTIONS: [u8; 2] = [0x3B, 0xE3];
+pub const OP_ITEM_LIST: [u8; 2] = [0x11, 0x56];
+pub const OP_QUEST_REWARD: [u8; 2] = [0x3F, 0xE2];
+pub const OP_DUNGEON_START: [u8; 2] = [0x01, 0x40];
+pub const OP_DUNGEON_CLEAR: [u8; 2] = [0x01, 0x61];
+pub const OP_NIGHTMARE_START: [u8; 2] = [0x35, 0xE2];
+pub const OP_LOOT: [u8; 2] = [0x15, 0x57];
+pub const OP_GATHER: [u8; 2] = [0x33, 0x8D];
+pub const OP_REWARD_BOARD: [u8; 2] = [0x0A, 0x57];
+/// A box opened from your bags (a field boss's loot chest...): what it took and gave.
+pub const OP_BOX_OPENED: [u8; 2] = [0x47, 0x56];
+/// The duty board's missions: one taken (`11 8D`), the board (`1C 8D`), one handed in (`0F 8D`).
+pub const OP_DUTY_TAKEN: [u8; 2] = [0x11, 0x8D];
+pub const OP_DUTY_BOARD: [u8; 2] = [0x1C, 0x8D];
+pub const OP_DUTY_DONE: [u8; 2] = [0x0F, 0x8D];
+/// A Nightmare's end (`38 E2`): its boss and stage too, but after fields of varying length (71 and
+/// 68 bytes in the owner's two runs); only logged, `35 E2` says the same as you enter.
+pub const OP_NIGHTMARE_END: [u8; 2] = [0x38, 0xE2];
 
 /// `42 36`'s flag for a monster killed in combat (1: out of range, 7: gone).
 pub const DEATH_FLAG_COMBAT: u32 = 3;
@@ -552,12 +570,276 @@ pub fn abyss_balance(frame: &[u8]) -> Option<u64> {
     currency(frame, ABYSS_ITEM)
 }
 
-fn currency(frame: &[u8], item: [u8; 4]) -> Option<u64> {
-    let b = body(frame, OP_ITEM)?;
-    if b.len() < 23 || b[0] != 0x01 || b[11..15] != item {
+/// Your subscriptions (`3B E3`, at login): `<count varint> (<u8> <id u32> <u64> <end u64>)*`, the
+/// end in unix ms. As Abyss DPS Meter (v4.2.8) reads it (`DecodeSubscribeList`, its membership from
+/// ids 1 (Special Shugo), 3 (Tsenka) and 4-7 (Special Quai), ended at the second u64). Each (id, end).
+pub fn subscriptions(frame: &[u8]) -> Option<Vec<(u32, u64)>> {
+    let b = body(frame, OP_SUBSCRIPTIONS)?;
+    let (count, mut at) = varint(b, 0)?;
+    if count > 64 {
         return None;
     }
-    u64_at(b, 15)
+    let mut out = Vec::with_capacity(count as usize);
+    for _ in 0..count {
+        out.push((u32_at(b, at + 1)?, u64_at(b, at + 13)?));
+        at += 21;
+    }
+    (at == b.len()).then_some(out)
+}
+
+/// Your Kina and bound Kina in the item list the game sends as you enter the world (`11 56`, Abyss
+/// DPS Meter's `DecodeItemDepotList`: two bytes, a count, then the items). Its items have equipment
+/// details of varying length, so the two currencies are found by their item ids, each followed by
+/// its amount (u64), as in `1B 56`. None for either not in the list.
+pub fn wallet(frame: &[u8]) -> Option<(Option<u64>, Option<u64>)> {
+    let b = body(frame, OP_ITEM_LIST)?;
+    let find = |item: [u8; 4]| b.windows(4).position(|w| w == item).and_then(|at| u64_at(b, at + 4));
+    let (kina, bound) = (find(KINA_ITEM), find(BOUND_KINA_ITEM));
+    (kina.is_some() || bound.is_some()).then_some((kina, bound))
+}
+
+/// A quest's rewards (`3F E2`, sent with the items' changes as you hand it in): `<quest u32> <u32>
+/// <u32> <count u8> (<item u32> <amount u32>)*`. The owner's 2026-11-22 Abyss Supply Request: quest
+/// 5401914, 770 Abyss Points (930100003) and 200 enhancement stones (930100023). (quest, rewards).
+pub fn quest_reward(frame: &[u8]) -> Option<(u32, Vec<(u32, u32)>)> {
+    let b = body(frame, OP_QUEST_REWARD)?;
+    let quest = u32_at(b, 0)?;
+    let count = *b.get(12)? as usize;
+    let rewards: Option<Vec<(u32, u32)>> = (0..count).map(|i| Some((u32_at(b, 13 + 8 * i)?, u32_at(b, 17 + 8 * i)?))).collect();
+    (13 + 8 * count == b.len()).then_some((quest, rewards?))
+}
+
+/// The currencies the Session page counts besides Kina and Abyss Points (questlog.gg's item ids):
+/// the Enhance Stones (dailies, quests) and the Phantasmal Fragments (the Nightmares).
+pub const SESSION_CURRENCIES: [u32; 2] = [930_100_023, 930_100_017];
+
+/// The balances of SESSION_CURRENCIES a `1B 56` changes: found by their item ids, each followed by
+/// its amount (u64), as Kina's (a record can list several items, with equipment of varying length).
+pub fn currencies(frame: &[u8]) -> Vec<(u32, u64)> {
+    let Some(b) = body(frame, OP_ITEM) else { return Vec::new() };
+    SESSION_CURRENCIES
+        .iter()
+        .filter_map(|&id| {
+            let at = b.windows(4).position(|w| w == id.to_le_bytes())?;
+            Some((id, u64_at(b, at + 4)?))
+        })
+        .collect()
+}
+
+/// A dungeon begins (`01 40 <zone u32> ...`, as you are let in) and is cleared (`01 61 <u8> <zone
+/// u32> ...`, its last boss down, or a field event over: 00 the owner's 2026-11-22 Nightmare, zone
+/// 200003, 1 min 25 apart; 01 their Shugo Festival's "Up! Up! Up!", 500035).
+pub fn dungeon_start(frame: &[u8]) -> Option<u32> {
+    u32_at(body(frame, OP_DUNGEON_START)?, 0).filter(|&z| z > 0)
+}
+
+pub fn dungeon_clear(frame: &[u8]) -> Option<u32> {
+    let b = body(frame, OP_DUNGEON_CLEAR)?;
+    matches!(b.first(), Some(0 | 1)).then(|| u32_at(b, 1)).flatten().filter(|&z| z > 0)
+}
+
+/// A Nightmare as you enter (`35 E2 00 00 <boss u32> <stage u32>`): its boss and level, the stage
+/// being the level the game shows plus one. The owner's 2026-11-22 runs: Fortress Guardian Notun
+/// (2001) level 2 sent stage 3, Mutated Gerod (2002) level 4 stage 5.
+pub fn nightmare_start(frame: &[u8]) -> Option<(u32, u32)> {
+    let b = body(frame, OP_NIGHTMARE_START)?;
+    Some((u32_at(b, 2)?, u32_at(b, 6)?.checked_sub(1)?))
+}
+
+/// What a reward cube gave as you open it (`15 57 00 00 <source u8> <count u8> (<item u32> <amount
+/// u32>)*`), the loot window's list: the owner's 2026-11-22 Vakron Sky Island cube, source 2, 26
+/// items from 600,000 Kina to an Amplify Stone Fragment (Unique). (source, items).
+pub fn loot(frame: &[u8]) -> Option<(u8, Vec<(u32, u32)>)> {
+    let b = body(frame, OP_LOOT)?;
+    let count = *b.get(3)? as usize;
+    if b.len() != 4 + 8 * count {
+        return None;
+    }
+    let items = (0..count).map(|i| Some((u32_at(b, 4 + 8 * i)?, u32_at(b, 8 + 8 * i)?))).collect::<Option<Vec<_>>>()?;
+    Some((b[2], items))
+}
+
+/// A gathering's outcome (`33 8D <result u8> <u32> <item u32> <amount u32> <bonus u32> ...`), sent
+/// with the bags' change: the owner's 2026-11-22 Odyle (610610013) and Fine Odyle (610610014), one
+/// each; the result 0 gathered, 1 ranked up (the Fine Odyle, from an Odyle node), 2 failed (amount
+/// 0); the bonus 1 when the gathering doubled (their "x2" Odyle: amount 1, bonus 1). (result, item,
+/// amount, bonus).
+pub fn gather(frame: &[u8]) -> Option<(u8, u32, u32, u32)> {
+    let b = body(frame, OP_GATHER)?;
+    let item = u32_at(b, 5)?;
+    (item > 0).then_some((*b.first()?, item, u32_at(b, 9)?, u32_at(b, 13)?))
+}
+
+/// A field event's reward board (`0A 57`, a Shugo Festival's end): `<u16> <u32> <u32> <u32> <count
+/// u8>`, then each entry `<index u8>` and two lists `<count u8> (<item u32> <amount u32>)*`, then
+/// what it says of its player, of varying length, with their name (`<len u8><name> 0E 00 00 00`)
+/// when there is one. The owner's 2026-11-22 "Up! Up! Up!": 5 entries, three with their name, whose
+/// items are what they got (1,320 Abyss Points, 2,100 Enhance Stones, 150 Centuryroot Tokens...).
+/// Each entry: (its player's name, its items).
+pub fn reward_board(frame: &[u8]) -> Option<Vec<(Option<String>, Vec<(u32, u32)>)>> {
+    let b = body(frame, OP_REWARD_BOARD)?;
+    let count = *b.get(14)? as usize;
+    let mut entries = Vec::with_capacity(count);
+    let mut at = 15;
+    for index in 0..count {
+        if b.get(at) != Some(&(index as u8)) {
+            return None;
+        }
+        let (items, end) = board_lists(b, at + 1)?;
+        // The player part runs to the next entry: the first place its index starts lists that read.
+        let next = (end..b.len()).find(|&q| index + 1 < count && b[q] == (index + 1) as u8 && board_lists(b, q + 1).is_some()).unwrap_or(b.len());
+        entries.push((board_name(&b[end..next]), items));
+        at = next;
+    }
+    Some(entries)
+}
+
+/// A box opened from your bags (`47 56`): 9 bytes, then each item `<index u8> <item u32> <flag
+/// u8> <amount u32>`, the index from 0; flag FF the box spent, else what it gave. The owner's
+/// 2026-11-22 Kashapa's Loot Chest, opened 5 s after the boss fell: the chest (FF) x1, Artwork Scrap:
+/// Field Boss I x6. Its items (id, spent, amount), or None unless at least one reads.
+pub fn box_opened(frame: &[u8]) -> Option<Vec<(u32, bool, u32)>> {
+    let b = body(frame, OP_BOX_OPENED)?;
+    // An item at `at`: its index, a known id, a sane amount.
+    let item_at = |at: usize, index: usize| -> Option<(u32, bool, u32)> {
+        let (item, amount) = (u32_at(b, at + 1)?, u32_at(b, at + 6)?);
+        (*b.get(at)? as usize == index && (100_000_000..1_000_000_000).contains(&item) && amount > 0 && amount <= 100_000_000).then(|| (item, b[at + 5] == 0xFF, amount))
+    };
+    let mut items = vec![item_at(9, 0)?];
+    let mut at = 19;
+    // The next item where its index reads: an equipment's entry runs longer (its enchantment...).
+    while let Some(q) = (at..b.len().saturating_sub(9)).find(|&q| item_at(q, items.len()).is_some()) {
+        items.push(item_at(q, items.len())?);
+        at = q + 10;
+    }
+    Some(items)
+}
+
+/// A duty mission's rewards: `<count u8>`, then each `<item u32> <amount varint> 00 <chance u32,
+/// of 100,000,000> 00 00 00 00`. The owner's 2026-11-23 Safe Hiking: Kina (Bound) x10,000 sure,
+/// Yggdrasil Log 50%, Small Odyle Energy 33% and 25%, Cogni Soul Crystal x200 10%. Its rewards (item,
+/// amount, chance) and where they end; None unless all read.
+pub type DutyReward = (u32, u32, u32);
+fn duty_rewards(b: &[u8], at: usize) -> Option<(Vec<DutyReward>, usize)> {
+    let n = *b.get(at)? as usize;
+    if n == 0 || n > 12 {
+        return None;
+    }
+    let mut p = at + 1;
+    let mut out = Vec::with_capacity(n);
+    for _ in 0..n {
+        let item = u32_at(b, p)?;
+        let (amount, len) = varint(b, p + 4)?;
+        let q = p + 4 + len;
+        let chance = u32_at(b, q + 1)?;
+        if !(100_000_000..1_000_000_000).contains(&item) || *b.get(q)? != 0 || chance > 100_000_000 || u32_at(b, q + 5)? != 0 {
+            return None;
+        }
+        out.push((item, amount, chance));
+        p = q + 9;
+    }
+    Some((out, p))
+}
+
+/// A duty mission: its quest, its place on the board, its rewards.
+pub type DutyMission = (u32, u32, Vec<DutyReward>);
+
+/// A duty mission taken (`11 8D`): `<quest u32> ...` its place at 12, its rewards at 21.
+pub fn duty_taken(frame: &[u8]) -> Option<DutyMission> {
+    let b = body(frame, OP_DUTY_TAKEN)?;
+    Some((u32_at(b, 0)?, u32_at(b, 12)?, duty_rewards(b, 21)?.0))
+}
+
+/// The duty board (`1C 8D`, as you open it and as you hand one in): each mission's `<quest u32>
+/// <place u32>`, its rewards a few bytes on. Those on the board (taken or not).
+pub fn duty_board(frame: &[u8]) -> Vec<DutyMission> {
+    let Some(b) = body(frame, OP_DUTY_BOARD) else { return Vec::new() };
+    let mut out = Vec::new();
+    let mut p = 0;
+    while p + 8 < b.len() {
+        let (quest, place) = (u32_at(b, p).unwrap_or(0), u32_at(b, p + 4).unwrap_or(0));
+        if (1_000_000..2_000_000).contains(&quest) && (1..100_000).contains(&place) {
+            if let Some((rewards, end)) = (p + 8..p + 24).find_map(|q| duty_rewards(b, q)) {
+                out.push((quest, place, rewards));
+                p = end;
+                continue;
+            }
+        }
+        p += 1;
+    }
+    out
+}
+
+/// A duty mission handed in (`0F 8D`): `00 00 <place u32> <count u8> <index u32>*`, the indexes of
+/// the rewards it gave in its list. The owner's 2026-11-23 Wanted: Officer Barha: place 395, rewards
+/// 0 to 3. (place, indexes).
+pub fn duty_done(frame: &[u8]) -> Option<(u32, Vec<u32>)> {
+    let b = body(frame, OP_DUTY_DONE)?;
+    let n = *b.get(6)? as usize;
+    Some((u32_at(b, 2)?, (0..n).map(|i| u32_at(b, 7 + 4 * i)).collect::<Option<Vec<_>>>()?))
+}
+
+/// An entry's two lists of items from `at`: its items and where they end; None unless all read as
+/// items, at least one (a player part's bytes can read as two empty lists).
+fn board_lists(b: &[u8], mut at: usize) -> Option<(Vec<(u32, u32)>, usize)> {
+    let mut items = Vec::new();
+    for _ in 0..2 {
+        let n = *b.get(at)? as usize;
+        at += 1;
+        for _ in 0..n {
+            let (item, amount) = (u32_at(b, at)?, u32_at(b, at + 4)?);
+            if !(100_000_000..1_000_000_000).contains(&item) || amount == 0 || amount > 100_000_000 {
+                return None;
+            }
+            items.push((item, amount));
+            at += 8;
+        }
+    }
+    (!items.is_empty()).then_some((items, at))
+}
+
+/// A player's name in a reward board's entry: `<len u8><name>` followed by `0E 00 00 00`.
+fn board_name(part: &[u8]) -> Option<String> {
+    (0..part.len()).find_map(|q| {
+        let len = part[q] as usize;
+        let name = part.get(q + 1..q + 1 + len)?;
+        (len > 0 && part.get(q + 1 + len..q + 5 + len) == Some(&[0x0E, 0, 0, 0][..]))
+            .then(|| std::str::from_utf8(name).ok().filter(|s| !s.chars().any(char::is_control)).map(str::to_string))
+            .flatten()
+    })
+}
+
+/// Your bound Kina, the same record with item 930100001 (`21 33 70 37`): the item Abyss DPS Meter's
+/// ticket roster (v4.2.8) reads beside Kina as `boundKina`.
+const BOUND_KINA_ITEM: [u8; 4] = [0x21, 0x33, 0x70, 0x37];
+
+pub fn bound_kina(frame: &[u8]) -> Option<u64> {
+    currency(frame, BOUND_KINA_ITEM)
+}
+
+/// Any item of a `1B 56` record: its id and the stack's amount (an item bought lands in your bags
+/// this way: the app marks it bought on the Black Cloud Merchant's list).
+pub fn item_change(frame: &[u8]) -> Option<(u32, u64)> {
+    let b = body(frame, OP_ITEM)?;
+    if b.len() < 23 || b[0] != 0x01 {
+        return None;
+    }
+    Some((u32_at(b, 11)?, u64_at(b, 15)?))
+}
+
+/// A currency's balance in a `1B 56`: a record of one item at its place, or in a record of several
+/// (a cube opened: 28 items, equipment of varying length among them) found by its id, each followed
+/// by its amount (u64), as `currencies` does.
+fn currency(frame: &[u8], item: [u8; 4]) -> Option<u64> {
+    let b = body(frame, OP_ITEM)?;
+    if b.len() < 23 || b[0] == 0 {
+        return None;
+    }
+    if b[0] == 0x01 {
+        return if b[11..15] == item { u64_at(b, 15) } else { None };
+    }
+    let at = b.windows(4).position(|w| w == item)?;
+    u64_at(b, at + 4)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -1004,6 +1286,121 @@ mod tests {
         assert_eq!(list[4].key, 395753817255505632);
         assert_eq!(list[0].legion.as_deref(), Some("Lokthar"));
         assert_eq!(list[1].legion.as_deref(), Some("Lokthar\u{30c3}"));
+    }
+
+    #[test]
+    fn a_nightmare_reads_its_zone_boss_level_and_clear() {
+        assert_eq!(dungeon_start(&frame(OP_DUNGEON_START, &hex("430d03000000000000000000000100"))), Some(200_003));
+        assert_eq!(dungeon_clear(&frame(OP_DUNGEON_CLEAR, &hex("00430d03000100"))), Some(200_003));
+        assert_eq!(dungeon_clear(&frame(OP_DUNGEON_CLEAR, &hex("0143a1070001d1e10600"))), Some(500_035));
+        // Fortress Guardian Notun level 2, then Mutated Gerod level 4.
+        assert_eq!(nightmare_start(&frame(OP_NIGHTMARE_START, &hex("0000d107000003000000"))), Some((2001, 2)));
+        assert_eq!(nightmare_start(&frame(OP_NIGHTMARE_START, &hex("0000d207000005000000"))), Some((2002, 4)));
+    }
+
+    #[test]
+    fn kina_reads_in_a_record_of_several_items() {
+        // The owner's 2026-11-22 Vakron Sky Island cube: 28 items, Kina first, 4,678,749 + 600,000.
+        let f = frame(OP_ITEM, &hex("1c010068620e00004301003f3370371d8c5000000000000001000000000000000000000000000000"));
+        assert_eq!(kina(&f), Some(5_278_749));
+    }
+
+    #[test]
+    fn a_resource_gathered_reads_its_item_and_amount() {
+        assert_eq!(gather(&frame(OP_GATHER, &hex("003ab8c7015d2b652401000000000000000000000000000000"))), Some((0, 610_610_013, 1, 0)));
+        // Ranked up (and doubled).
+        assert_eq!(gather(&frame(OP_GATHER, &hex("013aa3b7015e2b652401000000010000000000000000000000"))), Some((1, 610_610_014, 1, 1)));
+        // A failed one: nothing gathered.
+        assert_eq!(gather(&frame(OP_GATHER, &hex("023ab3b2015d2b652400000000000000000000000000000000"))), Some((2, 610_610_013, 0, 0)));
+        // The owner's "x2": one Odyle and one more.
+        assert_eq!(gather(&frame(OP_GATHER, &hex("003afc95015d2b652401000000010000000000000000000000"))), Some((0, 610_610_013, 1, 1)));
+    }
+
+    #[test]
+    fn a_shugo_festival_reward_board_reads_each_entry_and_its_player() {
+        assert_eq!(
+            box_opened(&frame(OP_BOX_OPENED, &hex("5d032f140a00002d0000159fcf1fff0100000001a27db3250006000000"))),
+            Some(vec![(533700373, true, 1), (632520098, false, 6)])
+        );
+        // The owner's 2026-11-23 duty missions: Safe Hiking taken (place 396), handed in with its
+        // first reward; Wanted: Officer Barha handed in (place 395) with its first four.
+        let taken = duty_taken(&frame(OP_DUTY_TAKEN, &hex("84de130002010000000000008c01000000000000000521337037904e0000e1f505000000009bc76524010080f0fa020000000040da051e0100408af7010000000040da051e010040787d01000000006426b41fc801008096980000000000"))).unwrap();
+        assert_eq!((taken.0, taken.1), (1302148, 396));
+        assert_eq!(taken.2, vec![(930100001, 10000, 100_000_000), (610650011, 1, 50_000_000), (503700032, 1, 33_000_000), (503700032, 1, 25_000_000), (531900004, 200, 10_000_000)]);
+        assert_eq!(duty_done(&frame(OP_DUTY_DONE, &hex("00008b0100000400000000010000000200000003000000"))), Some((395, vec![0, 1, 2, 3])));
+        assert_eq!(duty_done(&frame(OP_DUTY_DONE, &hex("00008c0100000100000000"))), Some((396, vec![0])));
+        // The board as Safe Hiking was handed in: both missions, each at its place.
+        let board = duty_board(&frame(OP_DUTY_BOARD, &hex("020000000200000010cf05000005de13008b01000000000000040521337037c03e0000e1f5050000000037337037f4030080f0fa02000000006826b41fc80100408af7010000000040da051e010040787d010000000021337037a08d06008096980000000000dd0500007cde1300000000000000000001056426b41fc8010000e1f5050000000037337037f4030080f0fa02000000006626b41fc80100408af7010000000037337037f4030040787d01000000002133703780f104008096980000000000de050000a4de1300000000000000000001053733703790030000e1f5050000000021337037904e0080f0fa02000000006e5265240100408af70100000000beee6524010040787d010000000037337037d00f008096980000000000df0500007bde13000000000000000000010537337037ac020000e1f5050000000021337037b06d0080f0fa0200000000dd1566240100408af7010000000041da051e010040787d010000000037337037d00f008096980000000000e00500008dde13000000000000000000010521337037c03e0000e1f505000000009bc76524010080f0fa020000000021337037c0bb0100408af7010000000021337037b0ea010040787d01000000006426b41fc801008096980000000000e105000094de13000000000000000000010537337037640000e1f5050000000021039706010080f0fa020000000021337037a09c0100408af7010000000021337037c0b8020040787d01000000006826b41fc801008096980000000000e205000084de13008c01000000000000040521337037904e0000e1f505000000009bc76524010080f0fa020000000040da051e0100408af7010000000040da051e010040787d01000000006426b41fc801008096980000000000e305000004de1300000000000000000001053733703790030000e1f505000000006826b41fc8010080f0fa020000000037337037e80700408af7010000000037337037f4030040787d01000000002133703780f104008096980000000000e405000096de13000000000000000000010537337037640000e1f5050000000021337037a09c010080f0fa0200000000434892060100408af701000000006e526524010040787d010000000021337037e0d403008096980000000000e50500005ede1300000000000000000001056626b41fc8010000e1f5050000000037337037f4030080f0fa020000000021337037f0ab0100408af7010000000037337037e8070040787d0100000000373370378827008096980000000000e60500007ade130000000000000000000105ec3c6624010000e1f5050000000037337037e8070080f0fa020000000037337037f40300408af7010000000021337037a099020040787d010000000037337037b817008096980000000000e705000006de1300000000000000000001056526b41fc8010000e1f505000000006526b41fc8010080f0fa020000000037337037f40300408af70100000000c0ee6524010040787d01000000006f52652401008096980000000000e80500006dde13000000000000000000010540da051e010000e1f505000000006826b41fc8010080f0fa020000000000b0890c0100408af701000000006426b41fc8010040787d0100000000fc88890c01008096980000000000e90500008ede13000000000000000000010543da051e010000e1f5050000000021337037d08c010080f0fa020000000037337037f40300408af701000000006e526524010040787d01000000002133703780f104008096980000000000ea0500008fde130000000000000000000105d9156624010000e1f5050000000062f18f0c010080f0fa02000000006526b41fc80100408af70100000000beee6524010040787d010000000037337037d00f008096980000000000eb050000fcdd1300000000000000000001053733703790030000e1f5050000000020039706010080f0fa02000000006826b41fc80100408af7010000000037337037d00f0040787d010000000021337037e0d40300809698000000000080553407a20100000080553407a2010000")));
+        assert_eq!(board.iter().map(|m| (m.0, m.1, m.2.len())).collect::<Vec<_>>(), vec![(1302021, 395, 5), (1302148, 396, 5)]);
+        assert_eq!(board[0].2[0], (930100001, 8000, 100_000_000));
+        let entries = reward_board(&frame(OP_REWARD_BOARD, &hex("000049f00000d0100000ae11a9000500082b3370371e000000fc489b060100000037337037b0040000418ee91f01000000418ee91f01000000418ee91f010000002333703720030000d1b77c1e010000000e7ca38f0c01000000a1368b0c01000000406f920601000000a3c9860c010000005e2b6524010000005d2b6524010000005d2b652401000000d1f2632401000000d1f263240100000023337037400100005d2b6524010000002b3370371e00000037337037bc0200002b3370371400000000ab01000c6129880c0100000042addb0601000000a3c9860c010000005d2b6524010000005e2b652401000000d1f2632401000000d1f263240100000023337037b80100005f2b6524010000002b3370371e00000037337037bc0200002b33703714000000011905001463030000001905064e61796f756c0e00000001000000000000000002000c00b0890c01000000825d8b0c01000000e3d6890c010000005d2b6524010000005f2b652401000000d1f2632401000000d1f263240100000023337037900100005d2b6524010000002b3370371e00000037337037bc0200002b33703714000000011905001463030000001905064e61796f756c0e00000001000000000000000003000c4248920601000000825d8b0c01000000416f9206010000005d2b6524010000005d2b652401000000d1f2632401000000d1f263240100000023337037e00100005d2b6524010000002b3370371e00000037337037bc0200002b33703714000000011905001463030000001905064e61796f756c0e00000001000000000000000004000c6129880c0100000063f18f0c01000000c0899806010000005d2b6524010000005d2b652401000000d1f2632401000000d1f263240100000023337037b80100005d2b6524010000002b3370371e00000037337037bc0200002b33703714000000000100000014630300000019050000000000000000000100010000000101000000"))).unwrap();
+        assert_eq!(entries.len(), 5);
+        let names: Vec<_> = entries.iter().map(|(n, _)| n.as_deref()).collect();
+        assert_eq!(names, [None, Some("Nayoul"), Some("Nayoul"), Some("Nayoul"), None]);
+        // The owner's three: what the game's log said they got.
+        let mut got = std::collections::HashMap::new();
+        for (_, items) in entries.iter().filter(|(n, _)| n.is_some()) {
+            for &(item, amount) in items {
+                *got.entry(item).or_insert(0) += amount;
+            }
+        }
+        assert_eq!(got[&930_100_003], 1320);
+        assert_eq!(got[&930_100_023], 2100);
+        assert_eq!(got[&930_100_011], 150);
+        assert_eq!(got[&610_610_013], 6);
+        assert_eq!(got[&610_610_015], 2);
+        assert_eq!(got[&610_530_001], 6);
+    }
+
+    #[test]
+    fn a_cube_reads_each_item_and_amount() {
+        let (source, items) = loot(&frame(OP_LOOT, &hex("0000021a3f337037c027090037337037a00f0000e6f5930601000000cfa7930601000000466f9206020000002f21920601000000a6e89006010000008f9a900601000000cf88890c010000002f02880c0100000006979b060100000066109a0601000000c689980601000000cb629806010000000f968c0c01000000885d8b0c01000000e8d6890c02000000d3697f12010000004fa38f0c0100000028e48c0c01000000c480a82501000000c2da99250e000000d5f2632401000000d1f2632405000000b146cc2301000000418ee91f06000000"))).unwrap();
+        assert_eq!(source, 2);
+        assert_eq!(items.len(), 26);
+        assert_eq!(items[0], (930_100_031, 600_000));
+        assert_eq!(items[1], (930_100_023, 4000));
+        assert_eq!(items[20], (631_800_004, 1));
+        assert_eq!(items[25], (535_400_001, 6));
+    }
+
+    #[test]
+    fn a_quest_reward_reads_each_item_and_amount() {
+        let body = hex("3a6d5200c26d0f000000000002233370370203000037337037c8000000");
+        assert_eq!(quest_reward(&frame(OP_QUEST_REWARD, &body)), Some((5_401_914, vec![(930_100_003, 770), (930_100_023, 200)])));
+        assert_eq!(quest_reward(&frame(OP_QUEST_REWARD, &body[..body.len() - 1])), None);
+    }
+
+    #[test]
+    fn the_session_currencies_are_found_among_the_items() {
+        // The 2026-11-22 Abyss Supply Request's: Abyss Points, Enhance Stones (164734) and another item.
+        let body = hex("030100ed2508000092010023337037052f0100000000000101000000000000000000000000003600000100e0a8090000970000373370377e83020000000000010500000000000000000000000036000001008e450900005e0100525896252000000000000000024b000000000000000000000000004b00");
+        assert_eq!(currencies(&frame(OP_ITEM, &body)), vec![(930_100_023, 164_734)]);
+    }
+
+    #[test]
+    fn the_wallet_is_found_among_the_items() {
+        let mut body = vec![0, 0, 3];
+        body.extend([9, 9, 9, 0x21, 0x33, 0x70, 0x37]);
+        body.extend(377_200u64.to_le_bytes());
+        body.extend([1, 2, 3, 0x3f, 0x33, 0x70, 0x37]);
+        body.extend(12_800_000u64.to_le_bytes());
+        body.extend([0; 6]);
+        assert_eq!(wallet(&frame(OP_ITEM_LIST, &body)), Some((Some(12_800_000), Some(377_200))));
+        assert_eq!(wallet(&frame(OP_ITEM_LIST, &[0, 0, 1, 5, 5, 5])), None);
+    }
+
+    #[test]
+    fn subscriptions_read_each_id_and_end() {
+        let mut body = vec![2];
+        for (id, end) in [(1u32, 1_797_000_000_000u64), (3, 1_798_000_000_000)] {
+            body.push(0);
+            body.extend(id.to_le_bytes());
+            body.extend(1_795_000_000_000u64.to_le_bytes());
+            body.extend(end.to_le_bytes());
+        }
+        assert_eq!(subscriptions(&frame(OP_SUBSCRIPTIONS, &body)), Some(vec![(1, 1_797_000_000_000), (3, 1_798_000_000_000)]));
+        // One byte short: not read.
+        assert_eq!(subscriptions(&frame(OP_SUBSCRIPTIONS, &body[..body.len() - 1])), None);
     }
 
     #[test]

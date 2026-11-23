@@ -3,7 +3,7 @@
  * file or a renderer bug can never store something the app then trips over.
  */
 
-import { BOSS_RUNS, DEFAULT_LOW_PRIORITY } from './bossRuns.ts'
+import { BOSS_RUNS } from './bossRuns.ts'
 import type { Lang } from './i18n.ts'
 import { DUMMY_DAMAGE_GOALS, DUMMY_LIMITS, type DummyGoal } from './dummy.ts'
 import { isSound, type SoundId } from './sounds.ts'
@@ -50,6 +50,8 @@ export interface Settings {
   panelOnTop: boolean
   /** Minimise the panel when you click from it into the game, as a click outside closes a modal. */
   panelHideOnGame: boolean
+  /** Times on a 24-hour clock (15:30) rather than the language's own (3:30 PM in English). */
+  clock24: boolean
 
   hud: {
     enabled: boolean
@@ -123,7 +125,8 @@ export interface Settings {
   detailsWindow: Point | null
 
   /** The timers' countdown bar over the game: on, where (null = top centre), how opaque. */
-  timerBar: { enabled: boolean; position: Point | null; opacity: number }
+  /** `layout`: a bar of icons and countdowns, or a list, a timer a line with its name. */
+  timerBar: { enabled: boolean; position: Point | null; opacity: number; layout: 'bar' | 'list' }
 
   /**
    * Boss Runs (shared/bossRuns.ts): Verteron's field bosses about to spawn, with their Kibelisk,
@@ -139,8 +142,8 @@ export interface Settings {
    * hover and shows things as they matter. `position` is its top centre (it grows both ways from
    * there; null = the top centre of the primary display). `buttons`: the overlays' buttons always,
    * or only while hovered. The minutes and seconds are how long each thing stays after its last
-   * news. `runsPinned`: Boss Runs kept open under the bar. `replace`: the timer bar, Enemies nearby
-   * and the Boss Runs list stay closed while it is on.
+   * news. `runsPinned`: Boss Runs kept open under the bar. `replace`: Enemies nearby and the Boss
+   * Runs list stay closed while it is on (the timer bar is not: the HUD shows only two events).
    */
   unified: {
     enabled: boolean
@@ -256,8 +259,12 @@ export interface Settings {
     /** Hidden while no damage (or healing, or damage taken) has come in for `idleSeconds`. */
     hideIdle: boolean
     idleSeconds: number
-    /** Each player's combat power: hidden, beside the name, or in small type under it. */
+    /** Each player's combat power: hidden, in a column of its own ('beside'), or in small type under the name. */
     power: 'off' | 'beside' | 'below'
+    /** Each player's item level (gear score): the same places. */
+    gear: 'off' | 'beside' | 'below'
+    /** Each player's deaths, in a column of its own. */
+    deaths: boolean
     /** The rows' look: 'flat' (bars), 'compact' (small pills with gradient) or 'bold' (big pills, big icons). */
     style: 'flat' | 'compact' | 'bold'
     /** Only the DPS bars, with no background, until the pointer is over the meter (then all of it). */
@@ -340,74 +347,53 @@ export interface Settings {
 
 export type SettingKey = keyof Settings
 
+/**
+ * The owner's own settings (2026-11-22) as the defaults: this fork's windows where they put them
+ * (its screens), its Unified HUD, timers and meter columns.
+ */
 export const SETTINGS_DEFAULTS: Settings = {
-  bubble: null,
-  panel: { width: 1100, height: 720 },
-  panelPosition: null,
+  bubble: { x: 2636, y: 938 },
+  panel: { width: 1411, height: 898 },
+  panelPosition: { x: -1585, y: 155 },
   panelOnTop: true,
-  panelHideOnGame: true,
-  hud: {
-    enabled: true,
-    position: null,
-    mode: 'recent',
-    nearby: true,
-    nearbyCount: 3,
-    pinned: [],
-    recentCount: 3,
-    toasts: true,
-    opacity: 0.92,
-    scale: 1,
-    hideWithoutGame: true,
-    idleHideSeconds: 45,
-    merchant: true,
-    kina: true,
-    abyss: true,
-    cubes: true,
-    cubeSound: true,
-    cubeSoundId: 'chime',
-    cubeVolume: 0.6,
-    cubeCustomName: null,
-  },
-  minimap: { enabled: false, position: null, size: 260, height: null, opacity: 0.92, zoom: 6, collapsed: false, gatherables: false },
-  mapPage: { needed: false, cubes: true, gatherables: false, hiddenPets: [] },
+  panelHideOnGame: false,
+  clock24: true,
+  hud: { enabled: true, position: { x: 1758, y: 39 }, mode: 'pinned', nearby: true, nearbyCount: 3, pinned: [], recentCount: 3, toasts: true, opacity: 0.92, scale: 1, hideWithoutGame: true, idleHideSeconds: 45, merchant: true, kina: true, abyss: true, cubes: false, cubeSound: true, cubeSoundId: 'chime', cubeVolume: 0.6, cubeCustomName: null },
+  minimap: { enabled: false, position: { x: 2098, y: 722 }, size: 260, height: null, opacity: 0.92, zoom: 13.5, collapsed: false, gatherables: false },
+  mapPage: { needed: false, cubes: false, gatherables: true, hiddenPets: [] },
   gatherables: { pinned: [] },
   gameMap: { enabled: false, region: null, gatherables: true, pets: true, cubes: true, enemies: true, showArea: false },
-  merchantWindow: null,
-  detailsWindow: null,
-  timerBar: { enabled: false, position: null, opacity: 0.92 },
-  unified: {
-    enabled: true, position: null, opacity: 0.94, scale: 1, buttons: 'hover',
-    events: true, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always',
-    kina: false, abyssRate: false, season: true, earningsMinutes: 10, rift: true, cubes: true, death: true, deathMinutes: 10,
-    enemies: true, bosses: true, guild: true, clock: false, odyle: true, runsPinned: false, replace: true,
-  },
+  merchantWindow: { x: 342, y: 859 },
+  detailsWindow: { x: 449, y: 251 },
+  timerBar: { enabled: true, position: { x: 859, y: 141 }, opacity: 0.92, layout: 'list' },
+  unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, buttons: 'hover', events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, earningsMinutes: 10, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, guild: false, clock: true, odyle: true, runsPinned: false, replace: false },
   muted: false,
-  bossRuns: { enabled: false, position: null, opacity: 0.85, windowMinutes: 15, rows: 5, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: DEFAULT_LOW_PRIORITY },
+  bossRuns: { enabled: false, position: { x: 1890, y: 30 }, opacity: 0.85, windowMinutes: 15, rows: 4, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: [101001, 101002, 101006, 101007, 101019, 101017, 101005, 101004, 101003, 101015, 101010, 101008, 101009, 101016, 101012, 101014, 101020, 101013, 101011, 101018] },
   killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null },
   enemies: { enabled: false, position: null, opacity: 0.75, collapsed: false, mapPins: true, sound: true, pvpOnly: true, soundId: 'enemy-spotted', volume: 0.7, customName: null },
-  skills: { enabled: false, position: null, rows: 6, opacity: 0.92 },
-  dummy: { overlay: false, position: null, autoStart: true, goal: 'time', limitMs: 60_000, damageGoal: 10e6, collapsed: false },
-  buffs: { enabled: false, position: null, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: false, ccPosition: null, ccDebuffs: false },
-  meter: { enabled: true, position: null, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'off', style: 'compact', barsOnly: false, barsBackground: 0.6 },
+  skills: { enabled: false, position: { x: 500, y: 413 }, rows: 6, opacity: 0.92 },
+  dummy: { overlay: false, position: null, autoStart: true, goal: 'time', limitMs: 60000, damageGoal: 10000000, collapsed: false },
+  buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1145, y: 359 }, ccDebuffs: false },
+  meter: { enabled: true, position: { x: 410, y: 206 }, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'beside', gear: 'beside', deaths: true, style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
-  layoutVersion: 0,
-  language: 'es',
+  layoutVersion: 1,
+  language: 'en',
   faction: 'elyos',
-  playerLevel: null,
+  playerLevel: 45,
   hideMaxed: true,
   timers: {
-    region: 'south-america',
-    enabled: Object.fromEntries(TIMERS.map((t) => [t.id, t.defaultOn])) as Record<TimerId, boolean>,
-    lead: Object.fromEntries(TIMERS.map((t) => [t.id, t.lead])) as Record<TimerId, number>,
+    region: 'europe',
+    enabled: Object.fromEntries(TIMERS.map((t) => [t.id, ['shugo', 'rift', 'nahma', 'gartua', 'fb-101022', 'fb-101023', 'fb-101024', 'fb-2002'].includes(t.id)])) as Record<TimerId, boolean>,
+    lead: { ...Object.fromEntries(TIMERS.map((t) => [t.id, t.lead])), shugo: 3, merchant: 0, rift: 5, invasion: 3, kaira: 10, siege: 10, siegeBosses: 5, nahma: 10, gartua: 10, dailyReset: 0, weeklyReset: 0, 'fb-101001': 5, 'fb-101002': 5, 'fb-101003': 5, 'fb-101004': 5, 'fb-101005': 5, 'fb-101006': 5, 'fb-101007': 5, 'fb-101008': 5, 'fb-101009': 5, 'fb-101010': 5, 'fb-101011': 5, 'fb-101012': 5, 'fb-101013': 5, 'fb-101014': 5, 'fb-101015': 5, 'fb-101016': 5, 'fb-101017': 5, 'fb-101018': 5, 'fb-101019': 5, 'fb-101020': 5, 'fb-101022': 10, 'fb-101023': 10, 'fb-101024': 10, 'fb-111001': 5, 'fb-111002': 5, 'fb-111003': 5, 'fb-111004': 5, 'fb-111005': 5, 'fb-111006': 5, 'fb-111007': 5, 'fb-111008': 5, 'fb-111009': 5, 'fb-111010': 5, 'fb-111011': 5, 'fb-111012': 5, 'fb-111013': 5, 'fb-111014': 5, 'fb-111015': 5, 'fb-111016': 5, 'fb-111017': 5, 'fb-111018': 5, 'fb-111019': 5, 'fb-111020': 5, 'fb-111021': 5, 'fb-111022': 5, 'fb-111023': 5, 'fb-111024': 5, 'fb-2001': 5, 'fb-2002': 10, 'fb-2003': 5, 'fb-2004': 5, 'fb-2005': 5, 'fb-2006': 5, 'fb-2007': 5, 'fb-2008': 5 } as Record<TimerId, number>,
     sound: true,
     volume: 0.5,
     shake: true,
-    shown: Object.fromEntries(TIMERS.map((t) => [t.id, defaultShown(t)])) as Record<TimerId, boolean>,
+    shown: { ...Object.fromEntries(TIMERS.map((t) => [t.id, defaultShown(t)])), shugo: true, merchant: true, rift: true, invasion: true, kaira: true, siege: true, siegeBosses: true, nahma: true, gartua: true, dailyReset: true, weeklyReset: true, 'fb-101001': false, 'fb-101002': false, 'fb-101003': false, 'fb-101004': false, 'fb-101005': false, 'fb-101006': false, 'fb-101007': false, 'fb-101008': false, 'fb-101009': false, 'fb-101010': false, 'fb-101011': false, 'fb-101012': false, 'fb-101013': false, 'fb-101014': false, 'fb-101015': false, 'fb-101016': false, 'fb-101017': false, 'fb-101018': false, 'fb-101019': false, 'fb-101020': false, 'fb-101022': true, 'fb-101023': true, 'fb-101024': true, 'fb-111001': false, 'fb-111002': false, 'fb-111003': false, 'fb-111004': false, 'fb-111005': false, 'fb-111006': false, 'fb-111007': false, 'fb-111008': false, 'fb-111009': false, 'fb-111010': false, 'fb-111011': false, 'fb-111012': false, 'fb-111013': false, 'fb-111014': false, 'fb-111015': false, 'fb-111016': false, 'fb-111017': false, 'fb-111018': false, 'fb-111019': false, 'fb-111020': false, 'fb-111021': false, 'fb-111022': false, 'fb-111023': false, 'fb-111024': false, 'fb-2001': false, 'fb-2002': true, 'fb-2003': false, 'fb-2004': false, 'fb-2005': false, 'fb-2006': false, 'fb-2007': false, 'fb-2008': false } as Record<TimerId, boolean>,
   },
   sleepWithoutGame: true,
   hideWhenGameAway: true,
   lokthar: { sync: false, url: 'https://lokthar.com', token: '' },
-  guildEvents: { enabled: true, popup: true },
+  guildEvents: { enabled: true, popup: false },
   tracker: { dataFile: '', bossDiagnostics: false },
 }
 
@@ -444,6 +430,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
     }
     case 'panelOnTop':
     case 'panelHideOnGame':
+    case 'clock24':
     case 'hideFromCapture':
     case 'hideMaxed':
     case 'sleepWithoutGame':
@@ -541,6 +528,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         enabled: bool(v.enabled, d.timerBar.enabled),
         position: point(v.position),
         opacity: num(v.opacity, 0.3, 1, d.timerBar.opacity),
+        layout: v.layout === 'list' ? 'list' : 'bar',
       } as Settings[K]
     }
     case 'unified': {
@@ -671,6 +659,8 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         hideIdle: bool(v.hideIdle, d.meter.hideIdle),
         idleSeconds: Math.round(num(v.idleSeconds, 5, 300, d.meter.idleSeconds)),
         power: v.power === 'beside' || v.power === 'below' ? v.power : 'off',
+        gear: v.gear === 'beside' || v.gear === 'below' ? v.gear : 'off',
+        deaths: bool(v.deaths, d.meter.deaths),
         style: v.style === 'flat' || v.style === 'bold' ? v.style : 'compact',
         barsOnly: bool(v.barsOnly, false),
         barsBackground: num(v.barsBackground, 0, 1, d.meter.barsBackground),

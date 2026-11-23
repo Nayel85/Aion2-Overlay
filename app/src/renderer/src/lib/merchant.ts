@@ -2,13 +2,16 @@
  * The Black Cloud Merchant's pets worth buying: from the stock of the tabs opened (main keeps the
  * latest of each until its restock time), the "Pet: <name>" and "Soul: <name>" items whose pet is
  * not at the cap. A pet item unlocks a pet you do not have yet, and gives one soul otherwise; a
- * soul item gives one soul. Items are matched to pets by petItems.json (scripts/fetch-pet-items.mjs),
+ * soul item gives one soul. One bought (it reached your bags, or was marked) is left out until the
+ * restock. Items are matched to pets by petItems.json (scripts/fetch-pet-items.mjs),
  * which the caller passes in (this file imports types only, so the tests can run it).
  */
 import { MAX_LEVEL, type ShopStock } from '../../../shared/tracker.ts'
 
 export interface MerchantOffer {
   pet: number
+  /** The shop item it is (to mark it bought). */
+  item: number
   /** What buying does: unlock the pet, or add one soul to it. */
   gives: 'unlock' | 'soul'
   price: number
@@ -36,6 +39,7 @@ export function merchantOffers(
   for (const stock of stocks) {
     if (stock.nextAt !== null && stock.nextAt <= now) continue // restocked since
     for (const it of stock.items) {
+      if (stock.bought?.includes(it.item)) continue
       const petItem = table.pets[String(it.item)]
       const pet = petItem ?? table.souls[String(it.item)]
       if (pet === undefined) continue
@@ -43,6 +47,7 @@ export function merchantOffers(
       if (lv !== null && lv >= MAX_LEVEL) continue
       const offer: MerchantOffer = {
         pet,
+        item: it.item,
         gives: petItem !== undefined && (lv === null || lv === 0) ? 'unlock' : 'soul',
         price: it.price,
         base: it.base,

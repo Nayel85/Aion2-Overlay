@@ -17,6 +17,14 @@ test('a gain between two kills goes to the nearest one it follows', () => {
   assert.equal(byEvent.get(kills[0]!), undefined)
 })
 
+test("the Abyss's corridors in a rift's window are not the rift's farm; the continents are", () => {
+  const at = (min: number): number => Date.UTC(2026, 10, 22, 2, min)
+  const corridors = riftFarms([[at(5), 30_000, 'Nayell', 20], [at(20), 19_300, 'Nayell', 22]])
+  assert.equal(corridors.length, 0)
+  const rift = riftFarms([[at(5), 30_000, 'Nayell', 1110], [at(20), 19_300, 'Nayell', 20], [at(30), 2_000, 'Nayell', null]])
+  assert.deepEqual(rift.map((f) => f.points), [32_000])
+})
+
 test('a rift farm keeps its gains', () => {
   const farms = riftFarms([[Date.UTC(2026, 10, 14, 20, 5), 700, 'Ksix'], [Date.UTC(2026, 10, 14, 20, 10), 500, 'Ksix']])
   for (const f of farms) assert.equal(f.gains.reduce((n, g) => n + g[1], 0), f.points)

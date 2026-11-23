@@ -9,6 +9,7 @@ import { tr } from './i18n.ts'
 import { settings } from './settings.ts'
 import { command, tracker } from './tracker.ts'
 import type { Buff, BuffTrack, FightBuffs } from '../shared/buffs.ts'
+import { pveInstance } from '../shared/sessions.ts'
 import {
   CLASS_NAMES,
   detailsView,
@@ -74,13 +75,15 @@ function answer(ev: Record<string, unknown>): void {
 /**
  * What the engine's meter follows: the meter's own setting, unless the Unified HUD is showing your
  * target (it needs your last hit, a player or a boss): then your last hit always, or while a
- * player is selected (a selection is a player you targeted in the last 30 seconds).
+ * player is selected (a selection is a player you targeted in the last 30 seconds). Never in a PvE
+ * instance: there the meter's own setting stands, so its bosses mode is not taken off the boss by
+ * an add you hit (2026-11-22, Vakron Sky Island's Thamon).
  */
 const SELECTED_MS = 30_000
-function effectiveMode(): TargetMode {
+function effectiveMode(world = tracker.nearby().world): TargetMode {
   const own = settings.get('meter').targetMode
   const u = settings.get('unified')
-  if (!u.enabled || !u.target || u.targetMode === 'meter') return own
+  if (!u.enabled || !u.target || u.targetMode === 'meter' || pveInstance(world)) return own
   if (u.targetMode === 'always') return 'lastHitByMe'
   const t = tracker.target()
   return t && Date.now() - t.at < SELECTED_MS ? 'lastHitByMe' : own
@@ -108,14 +111,17 @@ export function startMeter(): void {
   })
   // A player selected (or let go): the meter's target follows.
   let mode = ''
-  const follow = (): void => {
-    const next = effectiveMode()
+  const follow = (world?: number | null): void => {
+    const next = effectiveMode(world)
     if (next === mode) return
     mode = next
     command({ cmd: 'targetMode', mode: next })
   }
-  tracker.onEvent('target', follow)
-  tracker.onEvent('targetClear', follow)
+  tracker.onEvent('target', () => follow())
+  tracker.onEvent('targetClear', () => follow())
+  // Into a dungeon and out of it: its own mode there, your last hit again after. (The event's
+  // world: listeners hear it before the tracker keeps it.)
+  tracker.onEvent('nearby', (ev) => follow((ev['world'] as number | null | undefined) ?? null))
   tracker.onEvent('ping', (ev) => {
     ping = (ev['ms'] as number | null) ?? null
     meter = { ...meter, ping }

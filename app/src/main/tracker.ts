@@ -29,6 +29,7 @@ import type { AbyssSession, RiftFarm } from '../shared/abyss.ts'
 import { serverFaction, serverRegion } from '../shared/servers.ts'
 import { GAME_ACTIVE_S, NO_NEARBY, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type PvpKill, type ShopItem, type ShopStock, type SoulToast, type TrackerStatus } from '../shared/tracker.ts'
 import { tr } from './i18n.ts'
+import { pveInstance } from '../shared/sessions.ts'
 
 const RESTART_DELAYS_MS = [1000, 3000, 10000, 30000]
 const EXE = process.platform === 'win32' ? 'lokthar-engine.exe' : 'lokthar-engine'
@@ -54,6 +55,20 @@ const currentShop = (): ShopStock[] => {
   const now = Date.now()
   for (const [tab, s] of shopTabs) if (s.nextAt !== null && s.nextAt <= now) shopTabs.delete(tab)
   return [...shopTabs.values()]
+}
+/** An item of a tab's stock bought (seen in your bags, or marked by hand): off the merchant's list until it restocks. */
+function markBought(item: number): boolean {
+  let marked = false
+  for (const s of shopTabs.values()) {
+    if (!s.items.some((i) => i.item === item) || s.bought?.includes(item)) continue
+    s.bought = [...(s.bought ?? []), item]
+    marked = true
+  }
+  if (marked) {
+    broadcast('tracker:shop', currentShop())
+    for (const fn of shopListeners) fn(currentShop())
+  }
+  return marked
 }
 /** Kina earned since the app started (or the last reset). */
 let kina: KinaSession = NO_KINA
@@ -372,7 +387,8 @@ function handleLine(line: string): void {
     }
     case 'enemies': {
       const before = new Set(enemies.map((e) => e.entity))
-      enemies = (ev['players'] as Enemy[] | undefined) ?? []
+      // In a PvE instance the other servers' players are your party: no enemies there.
+      enemies = pveInstance(nearby.world) ? [] : ((ev['players'] as Enemy[] | undefined) ?? [])
       for (const e of enemies) if (!before.has(e.entity)) log(`enemy in view: ${e.name}${e.server ? ` (${e.server})` : ''}${e.legion ? ` <${e.legion}>` : ''}`)
       broadcast('tracker:enemies', enemies)
       break
@@ -430,7 +446,8 @@ function handleLine(line: string): void {
       })
       break
     case 'abyssGain':
-      abyss.gain({ gained: ev['gained'] as number, name: (ev['name'] as string | null) ?? null })
+      // Where: a rift's farm is the continents', not the Abyss's corridors at the same time.
+      abyss.gain({ gained: ev['gained'] as number, name: (ev['name'] as string | null) ?? null, world: nearby.world })
       break
     case 'shop': {
       const stock: ShopStock = {
@@ -439,6 +456,9 @@ function handleLine(line: string): void {
         at: Date.now(),
         items: ev['items'] as ShopItem[],
       }
+      // Opened again before its restock: what was bought from it still was.
+      const before = shopTabs.get(stock.tab)
+      if (before?.bought?.length && before.nextAt === stock.nextAt) stock.bought = before.bought
       shopTabs.set(stock.tab, stock)
       const restock = stock.nextAt ? new Date(stock.nextAt).toISOString().slice(11, 16) + ' UTC' : 'unknown'
       log(`merchant: tab ${stock.tab}, ${stock.items.length} items (${stock.items.map((i) => `${i.item}@${i.price}`).join(' ')}); restocks ${restock}`)
@@ -446,6 +466,10 @@ function handleLine(line: string): void {
       for (const fn of shopListeners) fn(currentShop())
       break
     }
+    case 'item':
+      // An item of the merchant's stock reaching your bags: bought.
+      if (markBought(ev['item'] as number)) log(`merchant: bought ${String(ev['item'])}`)
+      break
     case 'pet':
       updatePet(ev['pet'] as Pet)
       break
@@ -463,6 +487,10 @@ function handleLine(line: string): void {
         monsters: ev['monsters'] as Nearby['monsters'],
       }
       broadcast('tracker:nearby', nearby)
+      if (enemies.length && pveInstance(nearby.world)) {
+        enemies = []
+        broadcast('tracker:enemies', enemies)
+      }
       break
     }
     case 'error':
@@ -500,6 +528,8 @@ export function command(cmd: Record<string, unknown>): void {
 }
 
 export const tracker = {
+  /** Mark an item of the merchant's stock bought (its row's button). */
+  markBought: (item: number): boolean => markBought(item),
   status: (): TrackerStatus => status,
   pets: (): Pet[] => [...pets.values()],
   nearby: (): Nearby => nearby,

@@ -6,7 +6,8 @@
  * gain is kept (main/abyss.ts), so the farms can be told after the fact:
  *
  * A rift farm is what one character earned during a Spacetime Rift: from its opening (the
- * Event Alerts' rift timer, shared/timers.ts) until 1 h 10 min after, when it is really over. Only
+ * Event Alerts' rift timer, shared/timers.ts) until 1 h 10 min after, when it is really over, on the
+ * continents (not the Abyss's corridors, done at the same time: RIFT_WORLDS). Only
  * those that earned at least RIFT_MIN_POINTS are listed, so a rift you skipped (a quest's few
  * points in its window) does not show.
  */
@@ -55,8 +56,16 @@ export function currentSeason(gains: readonly AbyssGain[]): AbyssSeason | null {
   return { points, start, last: end[0] }
 }
 
-/** One gain as kept: when, how much, and whose (null: no character known yet). */
-export type AbyssGain = [at: number, gained: number, name: string | null]
+/** One gain as kept: when, how much, whose (null: no character known yet), and in which zone (the
+ *  world id; null or missing when not known: gains kept before zones were). */
+export type AbyssGain = [at: number, gained: number, name: string | null, world?: number | null]
+
+/**
+ * Where a Spacetime Rift is farmed: the continents' zones (Verteron, Eltnen, Altgard, Morheim: the
+ * map data's elyos and asmodians worlds), never the Abyss (Lower and Middle Reshanta, 20 and 22),
+ * where the corridors are. A gain in another known zone during a rift's window is not the rift's.
+ */
+export const RIFT_WORLDS: ReadonlySet<number> = new Set([1010, 1011, 1110, 1111])
 
 /** A rift's window: from its opening until it is really over. */
 export const RIFT_MS = 70 * 60_000
@@ -89,9 +98,10 @@ export function riftOf(at: number): number | null {
 /** The rift farms in `gains` (oldest first), newest first. */
 export function riftFarms(gains: readonly AbyssGain[]): RiftFarm[] {
   const farms = new Map<string, RiftFarm>()
-  for (const [at, gained, name] of gains) {
+  for (const [at, gained, name, world] of gains) {
     const start = riftOf(at)
     if (start === null) continue
+    if (world !== undefined && world !== null && !RIFT_WORLDS.has(world)) continue
     const key = `${start}|${name ?? ''}`
     const farm = farms.get(key)
     if (farm) {

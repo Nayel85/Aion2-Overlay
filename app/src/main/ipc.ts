@@ -6,6 +6,7 @@ import { dummy } from './dummy.ts'
 import { updater } from './updater.ts'
 import { meterState } from './meter.ts'
 import { characterStore } from './characters.ts'
+import { sessionStore } from './sessions.ts'
 import { gameMap, regionDisplay } from './gameMap.ts'
 import { mapDetail } from './gameMapDetail.ts'
 import { lokthar } from './lokthar.ts'
@@ -71,6 +72,7 @@ import {
   skillsDragEnded,
   showPetInPanel,
   showTimersInPanel,
+  showCharactersInPanel,
   timerBarDragEnded,
   togglePanel,
   toggleOverlays,
@@ -127,6 +129,7 @@ export function registerIpc(): void {
     if (isPoint({ x: size?.width, y: size?.height })) resizeUnified(size)
   })
   handle('panel:open', () => showPanel())
+  handle('panel:characters', () => showCharactersInPanel())
   handle('killfeed:open', () => setKillFeedOpen(true))
   handle('killfeed:close', () => setKillFeedOpen(false))
   handle('killfeed:moveTo', (to) => {
@@ -160,6 +163,7 @@ export function registerIpc(): void {
   handle('gamemap:detail', (key, cols, rows, col, row) => mapDetail.get(key, cols, rows, col, row))
   handle('gamemap:saveFeatures', (key, data, col, row) => mapDetail.saveFeatures(key, data, col, row))
   handle('characters:get', () => characterStore.all())
+  handle('sessions:get', () => sessionStore.all())
   handle('characters:refresh', (id) => characterStore.refresh(id))
   handle('characters:forget', (id) => characterStore.forget(id))
   handle('lokthar:test', () => lokthar.test())
@@ -193,6 +197,9 @@ export function registerIpc(): void {
     if (isPoint({ x: size?.width, y: size?.height })) resizeMerchant(size)
   })
   handle('merchant:close', () => closeMerchant())
+  handle('merchant:bought', (item) => {
+    if (Number.isInteger(item)) tracker.markBought(item)
+  })
   handle('timers:get', () => timers.alerting())
   handle('timers:dismiss', () => timers.dismiss())
   handle('timers:open', () => {

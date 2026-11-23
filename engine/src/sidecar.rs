@@ -19,13 +19,38 @@
 //!    "npc", "raw", "levelCorrected", "kills": [{"npc", "name", "pet", "ago"}]}
 //!   {"type": "pet", "pet": {...}}                     after an edit, or a level-up the game sent
 //!   {"type": "combat"}                                you killed something (at most every 5 s)
-//!   {"type": "kina", "balance": 3769926}
+//!   {"type": "kina", "balance": 3769926, "name": "Ksix" | null, "server": 1104 | null}
+//!   {"type": "boundKina", "balance": 377200, ...}     your bound Kina, as it changes (whose, as Kina's:
+//!                                                     null while a login waits for its character)
+//!   {"type": "currency", "ts": ms, "item": 930100023, "balance": 164734, "name": ..., "server": ...}
+//!                                                     an Enhance Stone or Phantasmal Fragment balance (whose, as Kina's)
+//!   {"type": "item", "ts": ms, "item": 534760128, "amount": 1}
+//!                                                     an item in your bags changed (bought, looted, used)
+//!   {"type": "dungeonStart" | "dungeonClear", "ts": ms, "zone": 200003}
+//!                                                     a dungeon begins / its last boss is down
+//!   {"type": "nightmare", "ts": ms, "boss": 2001, "level": 2}   a Nightmare entered: its boss and level
+//!   {"type": "gather", "ts": ms, "item": 610610013, "amount": 1, "bonus": 1, "result": 0}
+//!                                                     a gathering: 0 done, 1 ranked up, 2 failed (amount 0); bonus: doubled
+//!   {"type": "rewardBoard", "ts": ms, "entries": [{"name": "Nayoul" | null, "items": [{"item", "amount"}]}]}
+//!                                                     a field event's rewards (a Shugo Festival), each entry's player and items
+//!   {"type": "playerDied", "at": ms, "name": "Nayoul" | null, "you": true}
+//!                                                     a player (you, your party) down to 0 HP
+//!   {"type": "loot", "ts": ms, "source": 2, "items": [{"item": 631800004, "amount": 1}]}
+//!                                                     a reward cube opened: everything it gave
+//!   {"type": "questReward", "ts": ms, "quest": 5401914, "rewards": [{"item": 930100003, "amount": 770}]}
+//!                                                     a quest handed in: what it gave (after the items' changes)
+//!   {"type": "wallet", "ts": ms, "name": "Ksix", "server": 1104, "kina": 12800000, "boundKina": 0}
+//!                                                     your Kina and bound Kina, at login (null: not listed)
+//!   {"type": "subscriptions", "ts": ms, "name": "Ksix", "server": 1104, "list": [{"id": 1, "end": ms}]}
+//!                                                     your memberships and the like, at login
 //!   {"type": "abyss", "ts": ms, "name": "Ksix" | null, "points": 133369, "limit": 2500000, "gained": 913}
 //!                                                     the week's Abyss Points, at a login and with
 //!                                                     each gain (gained 0: a login's, or a new start)
 //!   {"type": "shop", "tab": 104, "nextAt": ms | null, "items": [{"slot", "item", "quantity", "currency", "base", "price"}]}
 //!   {"type": "fieldBosses", "world": 1010, "bosses": [{"id": 101021, "up": false, "at": ms}]}
 //!   {"type": "bossKilled", "npc": 2100003}   a field boss died in view (its monster code)
+//!   {"type": "dutyDone", "quest", "rewards": [{"item", "amount"}], "offered": [{"item", "amount", "chance", "got"}]}   a duty mission handed in: what it gave, of its list
+//!   {"type": "boxOpened", "items": [{"item", "spent", "amount"}]}   a box opened from your bags (`47 56`): the box spent, what it gave
 //!   {"type": "pvpKill", "killer": {"name", "server", "guild"}, "victim": {...} | null, "mine", "died", "legion"}
 //!   {"type": "snapshot", "pets": [...]}               answer to "snapshot" (then a nearby)
 //!   {"type": "nearby", "world": 1010, "position": [x, y] | null, "monsters": [{"npc", "count"}]}
@@ -431,12 +456,14 @@ impl Sidecar {
     }
 
     /// Every 2 s while capturing: how long since the game's last frame, what
-    /// is around you when it changed, and your level when it changed.
+    /// is around you when it changed, your level when it changed, and the
+    /// players who died since (upstream's: their HP down to 0).
     fn heartbeat(self: &Arc<Self>) {
         let me = self.clone();
         self.runtime.spawn(async move {
             let mut tick = tokio::time::interval(HEARTBEAT);
             let mut level = None;
+            let mut deaths_after = crate::meter::now_ms();
             loop {
                 tick.tick().await;
                 if !me.capturing.load(Ordering::SeqCst) {
@@ -449,6 +476,16 @@ impl Sidecar {
                 if now.is_some() && now != level {
                     level = now;
                     emit(&event("player", json!({ "level": now })));
+                }
+                let storage = &me.meter.storage;
+                let died = storage.deaths_between(deaths_after + 1, i64::MAX);
+                if !died.is_empty() {
+                    let (names, you) = (storage.get_nicknames(), storage.local_player_id());
+                    for &(entity, at, _) in &died {
+                        let name = names.get(&entity).filter(|n| !n.is_empty());
+                        emit(&event("playerDied", json!({ "at": at, "name": name, "you": you == Some(i64::from(entity)) })));
+                        deaths_after = deaths_after.max(at);
+                    }
                 }
                 let mut tracker = me.tracker.lock();
                 if tracker.nearby_dirty {

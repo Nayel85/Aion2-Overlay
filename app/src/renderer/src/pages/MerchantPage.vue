@@ -56,6 +56,8 @@ const restockIn = computed(() => {
 
 const drag = windowDrag({ move: 'merchant:moveTo', end: 'merchant:dragEnd' })
 const close = (): void => void bridge().invoke('merchant:close')
+/** Bought (when the game did not say so): off the list until the restock. */
+const bought = (o: MerchantOffer): void => void bridge().invoke('merchant:bought', o.item)
 /** Where the pet's soul monsters spawn: the panel's map of it, as the collection shows it. */
 const showPet = (id: number): void => void bridge().invoke('panel:showPet', id)
 
@@ -128,6 +130,15 @@ onBeforeUnmount(() => {
                 <span class="ml-auto shrink-0 tabular-nums">
                   {{ kina(o.price) }}<span v-if="o.discount" class="text-yellow"> −{{ o.discount }}%</span>
                 </span>
+                <button
+                  type="button"
+                  class="flex size-5 shrink-0 items-center justify-center rounded text-darker hover:bg-light hover:text-green"
+                  :title="t('Bought: hide it until the restock')"
+                  @pointerdown.stop
+                  @click.stop="bought(o)"
+                >
+                  <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5 6.5 12 13 4.5" /></svg>
+                </button>
               </div>
               <div class="mt-0.5 flex items-center gap-1.5 text-[11px]">
                 <span v-if="o.gives === 'unlock'" class="rounded bg-green/20 px-1 font-bold text-green">{{ t('unlocks') }}</span>
@@ -145,6 +156,7 @@ onBeforeUnmount(() => {
 
         <p class="border-t border-card px-3 py-1.5 text-[10px] text-darkest">
           {{ t('Click a pet for where its soul monsters spawn. Marked: none spawn on your side ({side}), or none are known (bosses, events). Your side is in Settings → You.', { side: SHORT[side] }) }}
+          {{ t('A pet bought leaves the list (✓ if it stays).') }}
         </p>
       </div>
     </div>

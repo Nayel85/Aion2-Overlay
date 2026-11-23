@@ -119,7 +119,7 @@ const BUTTON_ICONS = [
       </Section>
 
       <Section title="Kina and Abyss Points">
-        <SettingRow label="Abyss Points this season" hint="The Abyss Points you earn, with a coin, to the left of the bar. The count restarts after 15 minutes without earning any. Rift farms are counted apart (see Rift farm).">
+        <SettingRow label="Abyss Points this session" hint="The Abyss Points you earned since you logged in with this character, with a coin, to the left of the bar. The Session page has them by source.">
           <Toggle :model-value="cfg.season" @update:model-value="set({ season: $event })" />
         </SettingRow>
         <SettingRow label="Kina per hour" hint="This session's Kina per hour, to the left of the bar while it comes in.">
@@ -170,7 +170,7 @@ const BUTTON_ICONS = [
       </Section>
 
       <Section title="Widgets and sound">
-        <SettingRow label="Hide the widgets it replaces" hint="Keeps the timer bar, the Enemies overlay and the Boss Runs list closed while the Unified HUD is on, since the bar shows the same things. The enemy sound still plays.">
+        <SettingRow label="Hide the widgets it replaces" hint="Keeps the Enemies overlay and the Boss Runs list closed while the Unified HUD is on, since the bar shows the same things. The enemy sound still plays.">
           <Toggle :model-value="cfg.replace" @update:model-value="set({ replace: $event })" />
         </SettingRow>
         <SettingRow label="Mute every sound" hint="Cubes, enemies and the timers' chime: the same switch as the speaker on the bar.">

@@ -287,12 +287,16 @@ onBeforeUnmount(() => {
         </div>
 
         <template v-if="rows.length">
-          <div v-if="!lean" class="flex items-center gap-1.5 px-3 pb-1 text-[10px] text-darkest">
+          <!-- Inset on the right as the rows are (the list's 6 px, and the row's own), so each title is over its column. -->
+          <div v-if="!lean" :class="['flex items-center gap-1.5 pb-1 pl-3 text-[10px] text-darkest', cfg.style === 'flat' ? 'pr-3' : 'pr-[22px]']">
             <span :class="['min-w-0 flex-1', cfg.style === 'bold' ? 'pl-9' : cfg.style === 'compact' ? 'pl-6' : 'pl-6']">{{ t('Player') }}</span>
-            <span class="w-12 text-right">{{ STAT_TITLE[cfg.stat][2] }}</span>
-            <span class="w-10 text-right">{{ t('Share') }}</span>
-            <span class="w-12 text-right">{{ cfg.stat === 'taken' ? t('Taken') : cfg.stat === 'healing' ? t('Healed') : t('Damage') }}</span>
-            <span v-if="cfg.style === 'flat' && cfg.stat === 'damage'" class="w-8 text-right">Crit</span>
+            <span v-if="cfg.gear === 'beside'" class="w-9 shrink-0 text-center" :title="t('Item level')">iLvl</span>
+            <span v-if="cfg.power === 'beside'" class="w-11 shrink-0 text-center" :title="t('Combat power')">CP</span>
+            <span v-if="cfg.deaths" class="flex w-5 shrink-0 justify-center" :title="t('Deaths')"><svg viewBox="0 0 16 16" class="size-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2a5 5 0 0 0-3.5 8.5V13h7v-2.5A5 5 0 0 0 8 2zM6 8.5h.01M10 8.5h.01M7 13v-1.5M9 13v-1.5" /></svg></span>
+            <span class="w-12 shrink-0 text-center">{{ STAT_TITLE[cfg.stat][2] }}</span>
+            <span class="w-12 shrink-0 text-center">{{ t('Share') }}</span>
+            <span class="w-12 shrink-0 text-center">{{ cfg.stat === 'taken' ? t('Taken') : cfg.stat === 'healing' ? t('Healed') : t('Damage') }}</span>
+            <span v-if="cfg.style === 'flat' && cfg.stat === 'damage'" class="w-8 shrink-0 text-center">Crit</span>
           </div>
           <ul :class="['space-y-0.5 px-1.5 pb-1.5', lean ? 'pt-1.5' : 'pt-1', height !== null && 'min-h-0 flex-1 overflow-y-auto']">
             <li
@@ -312,16 +316,21 @@ onBeforeUnmount(() => {
                 <img v-if="icon(r.className)" :src="icon(r.className)!" :class="['shrink-0', cfg.style === 'bold' ? 'size-6' : 'size-4', cfg.style !== 'flat' && 'drop-shadow-[0_0_3px_rgba(0,0,0,0.8)]']" alt="" />
                 <span v-else :class="['shrink-0', cfg.style === 'bold' ? 'size-6' : 'size-4']" />
                 <span class="flex min-w-0 flex-1 flex-col">
-                  <span class="flex min-w-0 items-baseline gap-1.5">
-                    <span :class="['truncate', lean ? 'font-semibold' : 'font-medium', r.you ? 'text-[#ffc53d] [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_0_4px_rgba(0,0,0,0.85)]' : 'text-default']">{{ r.name }}</span>
-                    <span v-if="cfg.power === 'beside' && r.combatPower > 0" class="shrink-0 text-[9px] tabular-nums text-default/75" :title="t('Combat power')">{{ short(r.combatPower) }}</span>
+                  <span :class="['truncate', lean ? 'font-semibold' : 'font-medium', r.you ? 'text-[#ffc53d] [text-shadow:0_1px_2px_rgba(0,0,0,0.95),0_0_4px_rgba(0,0,0,0.85)]' : 'text-default']">{{ r.name }}</span>
+                  <span v-if="(cfg.gear === 'below' && r.gearScore > 0) || (cfg.power === 'below' && r.combatPower > 0)" class="-mt-0.5 flex gap-1.5 text-[9px] leading-tight tabular-nums">
+                    <span v-if="cfg.gear === 'below' && r.gearScore > 0" class="text-yellow/80" :title="t('Item level')">{{ r.gearScore }}</span>
+                    <span v-if="cfg.power === 'below' && r.combatPower > 0" class="text-default/75" :title="t('Combat power')">{{ r.combatPower.toLocaleString() }}</span>
                   </span>
-                  <span v-if="cfg.power === 'below' && r.combatPower > 0" class="-mt-0.5 text-[9px] leading-tight tabular-nums text-default/75" :title="t('Combat power')">{{ r.combatPower.toLocaleString() }}</span>
                 </span>
-                <span class="w-12 text-right font-semibold tabular-nums text-default">{{ short(r.perSecond) }}</span>
-                <span class="w-10 text-right tabular-nums text-dark">{{ r.part.toFixed(1) }}%</span>
-                <span class="w-12 text-right tabular-nums text-dark">{{ short(r.value) }}</span>
-                <span v-if="!lean && cfg.style === 'flat' && cfg.stat === 'damage'" :class="['w-8 text-right tabular-nums', r.you ? 'text-green' : 'text-dark']">{{ Math.round(r.critRate * 100) }}%</span>
+                <!-- Item level and combat power as columns of their own ("In a column"); a dash while unknown. Every column centred under its title. -->
+                <span v-if="cfg.gear === 'beside'" class="w-9 shrink-0 text-center text-[11px] tabular-nums text-yellow/80">{{ r.gearScore > 0 ? r.gearScore : '–' }}</span>
+                <span v-if="cfg.power === 'beside'" class="w-11 shrink-0 text-center text-[11px] tabular-nums text-dark">{{ r.combatPower > 0 ? short(r.combatPower) : '–' }}</span>
+                <!-- Deaths: red once they died, a dash before; centred under the skull. -->
+                <span v-if="cfg.deaths" :class="['w-5 shrink-0 text-center text-[11px] tabular-nums', r.deaths > 0 ? 'font-semibold text-red' : 'text-darker']">{{ r.deaths > 0 ? r.deaths : '–' }}</span>
+                <span class="w-12 shrink-0 text-center font-semibold tabular-nums text-default">{{ short(r.perSecond) }}</span>
+                <span class="w-12 shrink-0 text-center tabular-nums text-dark">{{ r.part.toFixed(1) }}%</span>
+                <span class="w-12 shrink-0 text-center tabular-nums text-dark">{{ short(r.value) }}</span>
+                <span v-if="!lean && cfg.style === 'flat' && cfg.stat === 'damage'" :class="['w-8 shrink-0 text-center tabular-nums', r.you ? 'text-green' : 'text-dark']">{{ Math.round(r.critRate * 100) }}%</span>
               </div>
             </li>
           </ul>

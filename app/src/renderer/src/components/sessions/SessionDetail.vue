@@ -1,0 +1,249 @@
+<script setup lang="ts">
+// One session, all of it at once (the Past sessions page's right side, the Session page's going-on
+// one): who and when, its totals, where its Abyss Points and Kina came from, its other currencies,
+// its dungeons by zone and mode (their runs in a table, what they gave in all as a row of icons; a
+// run's own loot a click away), its field bosses, and its gathering; the latest first. `header`
+// false: without who and when (the page above says it).
+import { computed, ref } from 'vue'
+import ClassIcon from '@/components/ClassIcon.vue'
+import GatherStats from '@/components/panel/GatherStats.vue'
+import RunLoot from '@/components/panel/RunLoot.vue'
+import { CURRENCY_ICON, gradeClass, ICON, kindIcon, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
+import { loc, t } from '@/lib/i18n.ts'
+import { useApp } from '@/stores/app.ts'
+import { characterId } from '@shared/characters.ts'
+import { formatAmount } from '@shared/earnings.ts'
+import { formatKina } from '@shared/kina.ts'
+import { countedRuns, CURRENCY_LABELS, gatheredRows, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type PlaySession } from '@shared/sessions.ts'
+
+const props = withDefaults(defineProps<{ session: PlaySession; live?: boolean; header?: boolean }>(), { live: false, header: true })
+const store = useApp()
+
+const clock = (ms: number): string => new Date(ms).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
+const date = (ms: number): string => new Date(ms).toLocaleDateString(loc(), { weekday: 'long', day: 'numeric', month: 'long' })
+function length(s: PlaySession): string {
+  const m = Math.max(1, Math.round((s.last - s.start) / 60_000))
+  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`
+}
+const mmss = (ms: number): string => {
+  const s = Math.max(0, Math.round(ms / 1000))
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+}
+/** A run's time: its clear time once its last boss fell, else how long you were in it. */
+const runMs = (r: DungeonRun): number => (r.cleared !== undefined ? r.cleared - (r.started ?? r.start) : (r.end ?? r.start) - r.start)
+const className = computed(() => (props.session.server !== null ? (store.characters[characterId(props.session.server, props.session.name)]?.className ?? null) : null))
+const counts = computed(() => lootCounts(countedRuns(props.session)))
+const deaths = computed(() => (props.session.runs ?? []).reduce((n, r) => n + (r.deaths ?? 0), 0))
+
+/** Amounts by source's name (the zones of one name together), the biggest first. */
+function ranked(by: Record<string, number> | undefined): [string, number][] {
+  const named = new Map<string, number>()
+  for (const [source, n] of Object.entries(by ?? {})) if (n > 0) named.set(sourceLabel(source), (named.get(sourceLabel(source)) ?? 0) + n)
+  return [...named].sort((a, b) => b[1] - a[1])
+}
+const currencies = computed(() => Object.entries(props.session.currencies ?? {}).filter(([, n]) => n > 0))
+
+/** The dungeons (field bosses apart), by zone and mode, the last run first, each's runs the latest first; the field bosses, the latest first. */
+const groups = computed(() =>
+  runGroups((props.session.runs ?? []).filter((r) => r.kind !== 'fieldboss'))
+    .map((g) => [...g].reverse())
+    .sort((a, b) => b[0]!.start - a[0]!.start),
+)
+const bosses = computed(() => (props.session.runs ?? []).filter((r) => r.kind === 'fieldboss').reverse())
+/** A group's clears' mean time, or null. */
+function meanClear(g: DungeonRun[]): string | null {
+  const cleared = g.filter((r) => r.cleared !== undefined)
+  return cleared.length ? mmss(cleared.reduce((n, r) => n + runMs(r), 0) / cleared.length) : null
+}
+/** Kina a run made: its own, else its cubes'. */
+const kinaOf = (r: DungeonRun): number => Math.max(r.kina, r.loot?.['930100031'] ?? 0)
+
+/** What a duty mission gave, one by one: its name (without "(Bound)"), grade, icon and amount. */
+function dutyRewards(d: DutyDone): { id: string; name: string; grade: number; icon: string | null; amount: number }[] {
+  return Object.entries(d.rewards).map(([id, amount]) => {
+    const item = itemInfo(id)
+    return { id, name: (item?.name ?? `#${id}`).replace(' (Bound)', ''), grade: item?.grade ?? 11, icon: itemIcon(item?.icon), amount }
+  })
+}
+
+/** A duty mission's whole list, as shown: each reward's name, grade, icon, amount, chance and whether it came. */
+function offerRows(d: DutyDone): { name: string; grade: number; icon: string | null; amount: number; chance: number; got: boolean }[] {
+  return (d.offered ?? []).map((o) => {
+    const item = itemInfo(o.item)
+    return { name: (item?.name ?? `#${o.item}`).replace(' (Bound)', ''), grade: item?.grade ?? 11, icon: itemIcon(item?.icon), amount: o.amount, chance: o.chance, got: o.got }
+  })
+}
+/** The duty missions whose whole list is shown, by when. */
+const openDuties = ref(new Set<number>())
+function toggleDuty(d: DutyDone): void {
+  if (!d.offered?.length) return
+  const next = new Set(openDuties.value)
+  if (next.has(d.at)) next.delete(d.at)
+  else next.add(d.at)
+  openDuties.value = next
+}
+
+/** The runs whose own loot is shown, by start. */
+const open = ref(new Set<number>())
+function toggle(r: DungeonRun): void {
+  const next = new Set(open.value)
+  if (next.has(r.start)) next.delete(r.start)
+  else next.add(r.start)
+  open.value = next
+}
+</script>
+
+<template>
+  <div class="space-y-4 text-sm">
+    <!-- Who and when, and its totals. -->
+    <div>
+      <template v-if="header">
+        <div class="flex items-center gap-2">
+          <ClassIcon :class-name="className" :size="20" />
+          <span class="text-lg font-semibold">{{ session.name }}</span>
+          <span v-if="live" class="rounded-full bg-green/15 px-2 py-0.5 text-xs font-medium text-green">{{ t('In progress') }}</span>
+        </div>
+        <div class="mt-0.5 text-xs text-darker first-letter:uppercase">{{ date(session.start) }} · {{ clock(session.start) }}–{{ clock(session.last) }} · {{ length(session) }}</div>
+      </template>
+      <div :class="['flex flex-wrap items-center gap-x-5 gap-y-1.5 tabular-nums', header && 'mt-3']">
+        <span v-if="session.ap" class="flex items-center gap-1.5 font-semibold text-blue"><img :src="'items/abyss-point.webp'" alt="" class="size-4" draggable="false" />{{ formatAmount(session.ap) }} AP</span>
+        <span v-if="session.kina" class="flex items-center gap-1.5 font-semibold text-yellow"><svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path :d="ICON.coin" /></svg>{{ formatKina(session.kina) }}</span>
+        <template v-for="k in LOOT_KINDS" :key="k.key">
+          <span v-if="counts[k.key]" :class="['flex items-center gap-1.5 font-semibold', LOOT_KIND_STYLE[k.key]!.class]" :title="t(k.label)"><svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="LOOT_KIND_STYLE[k.key]!.icon" /></svg>{{ counts[k.key] }} <span class="text-xs font-normal text-darker">{{ t(k.label) }}</span></span>
+        </template>
+        <span v-if="countedRuns(session).length" class="flex items-center gap-1.5 text-dark"><svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.dungeon" /></svg>{{ countedRuns(session).length }}</span>
+        <span v-if="deaths" class="flex items-center gap-1.5 text-red" :title="t('Your deaths')"><svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.skull" /></svg>{{ deaths }}</span>
+      </div>
+      <div v-if="currencies.length" class="mt-1.5 flex flex-wrap items-center gap-4 text-xs">
+        <span v-for="[id, n] in currencies" :key="id" class="flex items-center gap-1">
+          <svg viewBox="0 0 16 16" class="size-3.5 text-green" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="CURRENCY_ICON[id] ?? ICON.stone" /></svg>
+          {{ t(CURRENCY_LABELS[id] ?? id) }} <span class="font-semibold tabular-nums text-green">+{{ n.toLocaleString('en-US') }}</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- Where its Abyss Points and Kina came from, side by side. -->
+    <div v-if="ranked(session.sources).length || ranked(session.kinaSources).length" class="grid gap-3 sm:grid-cols-2">
+      <div v-for="part in [{ by: session.sources, all: session.ap, label: 'Abyss Points by source', bar: 'bg-blue', fmt: formatAmount }, { by: session.kinaSources, all: session.kina, label: 'Kina by source', bar: 'bg-yellow', fmt: formatKina }].filter((p) => ranked(p.by).length)" :key="part.label" class="rounded-lg bg-card p-3 text-xs">
+        <div class="mb-1.5 font-medium text-darker">{{ t(part.label) }}</div>
+        <div v-for="[label, n] in ranked(part.by)" :key="label" class="flex items-center gap-2 py-0.5">
+          <span class="min-w-0 flex-1 truncate">{{ t(label) }}</span>
+          <span class="h-1 w-20 overflow-hidden rounded-full bg-dark"><span :class="['block h-full rounded-full', part.bar]" :style="{ width: `${(n / Math.max(1, part.all)) * 100}%` }" /></span>
+          <span class="w-14 text-right tabular-nums">{{ part.fmt(n) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Its dungeons: each zone and mode, what its runs gave in all, then each run. -->
+    <div v-for="g in groups" :key="`${g[0]!.world}:${g[0]!.name}`" class="rounded-lg bg-card p-3">
+      <div class="flex flex-wrap items-baseline gap-x-2 text-xs">
+        <svg viewBox="0 0 16 16" class="size-3.5 shrink-0 self-center text-darker" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="kindIcon(g[0]!.kind)" /></svg>
+        <span class="text-sm font-semibold">{{ runName(g[0]!, t) }}</span>
+        <span v-if="g.length > 1" class="font-semibold text-accent">×{{ g.length }}</span>
+        <span class="text-darker">{{ t(runKindLabel(g[0]!.kind)) }}</span>
+        <span v-if="meanClear(g)" class="text-darker">· {{ t('mean clear {time}', { time: meanClear(g)! }) }}</span>
+      </div>
+      <!-- What they gave in all, in a row. -->
+      <div class="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs tabular-nums">
+        <span v-for="r in runRewards(mergeRuns(g))" :key="r.id" class="flex items-center gap-1" :title="r.name">
+          <img v-if="r.icon" :src="r.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+          <svg v-else viewBox="0 0 16 16" :class="['size-4', gradeClass(r.grade)]" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path :d="ICON.box" /></svg>
+          <span :class="r.currency ? 'text-default' : gradeClass(r.grade)">{{ r.currency ? (r.id === '930100031' ? formatKina(r.amount) : r.amount.toLocaleString('en-US')) : `×${r.amount}` }}</span>
+        </span>
+      </div>
+      <!-- Each run. -->
+      <table class="mt-2 w-full text-xs tabular-nums">
+        <tbody>
+          <template v-for="r in g" :key="r.start">
+            <tr :class="['cursor-pointer border-t border-dark hover:bg-dark/50', !runCounts(r) && 'text-darker line-through']" @click="toggle(r)">
+              <td class="py-1 pl-1 text-dark">{{ clock(r.start) }}</td>
+              <td class="py-1">
+                <span v-if="!runIsTimed(r)" class="text-darker">–</span>
+                <span v-else-if="r.end === null && r.cleared === undefined" class="text-accent">{{ t('in progress') }}</span>
+                <span v-else :class="r.cleared !== undefined ? 'text-green' : 'text-darker'">{{ mmss(runMs(r)) }}</span>
+                <span v-if="!runCounts(r)" class="ml-1 text-darker">{{ t('abandoned') }}</span>
+              </td>
+              <td class="py-1" :title="t('Your deaths')">
+                <span class="flex items-center gap-0.5"><svg viewBox="0 0 16 16" class="size-3 text-red" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.skull" /></svg><span :class="r.deaths ? 'font-semibold text-red' : 'text-darker'">{{ r.deaths ?? '-' }}</span></span>
+              </td>
+              <td class="py-1 text-yellow">{{ kinaOf(r) ? formatKina(kinaOf(r)) : '' }}</td>
+              <td v-for="k in LOOT_KINDS" :key="k.key" class="py-1">
+                <span v-if="lootCounts([r])[k.key]" :class="['flex items-center gap-0.5', LOOT_KIND_STYLE[k.key]!.class]" :title="t(k.label)"><svg viewBox="0 0 16 16" class="size-3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="LOOT_KIND_STYLE[k.key]!.icon" /></svg>{{ lootCounts([r])[k.key] }}</span>
+              </td>
+              <td class="w-4 py-1 pr-1 text-right">
+                <svg v-if="r.loot" viewBox="0 0 16 16" :class="['ml-auto size-3 text-darker transition-transform', open.has(r.start) && 'rotate-90']" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.chevron" /></svg>
+              </td>
+            </tr>
+            <tr v-if="open.has(r.start)">
+              <td colspan="9" class="pb-1.5"><RunLoot :run="r" /></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Its field bosses: each with what its chest gave. -->
+    <div v-if="bosses.length" class="rounded-lg bg-card p-3 text-xs">
+      <div class="mb-1 flex items-center gap-1.5 font-medium text-darker">
+        <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.skull" /></svg>{{ t('Field bosses') }}
+      </div>
+      <div v-for="r in bosses" :key="r.start" class="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 first:border-t-0">
+        <span class="font-semibold">{{ r.name }}</span>
+        <span class="tabular-nums text-darker">{{ clock(r.start) }}</span>
+        <span v-for="x in runRewards(r)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
+          <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+          <span :class="gradeClass(x.grade)">{{ x.name.replace(' (Bound)', '') }}</span> ×{{ x.amount }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Its duty missions, the latest first: each with what it gave. -->
+    <div v-if="session.duties?.length" class="rounded-lg bg-card p-3 text-xs">
+      <div class="mb-1 flex items-center gap-1.5 font-medium text-darker">
+        <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.scroll" /></svg>{{ t('Duty missions') }}
+        <span class="font-semibold tabular-nums text-default">{{ session.duties.length }}</span>
+      </div>
+      <template v-for="d in [...session.duties].reverse()" :key="d.at">
+        <button type="button" class="flex w-full flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 text-left first:border-t-0 hover:bg-dark/50" @click="toggleDuty(d)">
+          <span class="tabular-nums text-darker">{{ clock(d.at) }}</span>
+          <span class="font-semibold">{{ questName(d.quest) }}</span>
+          <span v-for="x in dutyRewards(d)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
+            <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+            <svg v-else viewBox="0 0 16 16" :class="['size-4', gradeClass(x.grade)]" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path :d="ICON.box" /></svg>
+            <span :class="gradeClass(x.grade)">{{ x.name }}</span> {{ x.amount >= 1000 ? x.amount.toLocaleString('en-US') : `×${x.amount}` }}
+          </span>
+          <svg v-if="d.offered?.length" viewBox="0 0 16 16" :class="['ml-auto size-3 text-darker transition-transform', openDuties.has(d.at) && 'rotate-90']" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.chevron" /></svg>
+        </button>
+        <!-- Its whole list, the likeliest first: what came ticked in green, the rest dimmed. -->
+        <div v-if="openDuties.has(d.at) && d.offered?.length" class="mb-1 ml-10 max-w-sm space-y-0.5 py-0.5">
+          <div v-for="(o, i) in offerRows(d)" :key="i" :class="['flex items-center gap-1.5', !o.got && 'opacity-50']">
+            <svg v-if="o.got" viewBox="0 0 16 16" class="size-3.5 shrink-0 text-green" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3 3 7-7" /></svg>
+            <span v-else class="size-3.5 shrink-0" />
+            <img v-if="o.icon" :src="o.icon" alt="" class="size-4 shrink-0 rounded-sm" draggable="false" />
+            <svg v-else viewBox="0 0 16 16" :class="['size-4 shrink-0', gradeClass(o.grade)]" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path :d="ICON.box" /></svg>
+            <span :class="['min-w-0 flex-1 truncate', gradeClass(o.grade)]">{{ o.name }}</span>
+            <span class="tabular-nums">{{ o.amount >= 1000 ? o.amount.toLocaleString('en-US') : `×${o.amount}` }}</span>
+            <span class="w-10 text-right tabular-nums text-darker">{{ o.chance >= 1 ? '100%' : `${Math.round(o.chance * 1000) / 10}%` }}</span>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Its gathering. -->
+    <div v-if="session.gathering?.done" class="rounded-lg bg-card p-3 text-xs">
+      <div class="mb-2 flex items-center gap-1.5 font-medium text-darker">
+        <svg viewBox="0 0 16 16" class="size-3.5 text-green" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.leaf" /></svg>{{ t('Gathering') }}
+      </div>
+      <GatherStats :stats="session.gathering" class="mb-2" />
+      <div class="flex flex-wrap gap-x-4 gap-y-1">
+        <span v-for="[name, grade, n, icon] in gatheredRows(session)" :key="name" class="flex items-center gap-1.5">
+          <img v-if="icon" :src="icon" alt="" class="size-4 rounded-sm" draggable="false" />
+          <span :class="gradeClass(grade)">{{ name.replace(' (Bound)', '') }}</span>
+          <span class="tabular-nums">×{{ n }}</span>
+        </span>
+      </div>
+    </div>
+
+    <p v-if="!session.runs?.length && !session.duties?.length && !session.gathering?.done && !ranked(session.sources).length && !ranked(session.kinaSources).length" class="text-xs text-darker">{{ t('Nothing more in this session.') }}</p>
+  </div>
+</template>

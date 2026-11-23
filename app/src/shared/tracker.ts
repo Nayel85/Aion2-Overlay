@@ -239,4 +239,6 @@ export interface ShopStock {
   /** When the tab was opened (ms since epoch, stamped by main). */
   at: number
   items: ShopItem[]
+  /** Item ids bought from it since it was read (they reached your bags, or you marked them). */
+  bought?: number[]
 }

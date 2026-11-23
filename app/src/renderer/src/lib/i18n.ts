@@ -20,5 +20,6 @@ export function plural(n: number, one: string, many: string, vars?: Record<strin
 
 /** The locale for dates and times in the language picked (numbers stay as the game writes them: 123,186, 1.2K). */
 export function loc(): string {
-  return locale(lang())
+  // The Unicode extension for a 24-hour clock: every time shown in the windows follows it.
+  return locale(lang()) + (useApp().settings.clock24 ? '-u-hc-h23' : '')
 }

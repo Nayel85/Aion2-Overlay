@@ -34,7 +34,7 @@ const pets = [
 ]
 
 function row(id: number, name: string, className: string, damage: number, dps: number, you = false): MeterRow {
-  return { id, name, className, dps, damage, share: 0, hps: 0, heal: 0, taken: 0, critRate: 0.3, combatPower: 100000, you, party: true, others: false } as MeterRow
+  return { id, name, className, dps, damage, share: 0, hps: 0, heal: 0, taken: 0, critRate: 0.3, combatPower: 100000, gearScore: 2650, you, party: true, others: false } as MeterRow
 }
 function idleMeter(): MeterData {
   return { target: null, mode: 'bossTargets', battleTime: 0, rows: [], at: now(), ping: 40, meKnown: true, me: 1, train: null } as MeterData

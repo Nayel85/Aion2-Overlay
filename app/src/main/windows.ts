@@ -243,6 +243,7 @@ export function createPanel(): BrowserWindow {
   win.on('restore', () => panelShown(true))
   win.on('closed', () => (panel = null))
   win.on('blur', () => (panelBlurredAt = Date.now()))
+  win.on('focus', syncArranging)
   // Its size and place are remembered as they change (not maximised or minimised ones).
   let saveTimer: NodeJS.Timeout | null = null
   const remember = (): void => {
@@ -297,8 +298,13 @@ export function showTimersInPanel(ids: TimerId[]): void {
   sendToPanel('panel:showTimers', ids)
 }
 
+/** The dashboard on the Characters page: a click on the Unified HUD's Odyle energy. */
+export function showCharactersInPanel(): void {
+  sendToPanel('panel:showCharacters', null)
+}
+
 /** Show the panel (open if hidden, never toggled shut) and tell it what to show, once loaded. */
-function sendToPanel<C extends 'panel:showPet' | 'panel:showTimers'>(channel: C, payload: EventChannels[C]): void {
+function sendToPanel<C extends 'panel:showPet' | 'panel:showTimers' | 'panel:showCharacters'>(channel: C, payload: EventChannels[C]): void {
   showPanel()
   const win = panel
   if (!alive(win)) return
@@ -332,15 +338,43 @@ function panelLeftForGame(): void {
 /** The dashboard came up on screen, or went down to the taskbar. */
 let panelUp = false
 function panelShown(up: boolean): void {
-  if (up === panelUp) return
-  panelUp = up
-  broadcast('panel:visible', up)
-  for (const fn of panelListeners) fn(up)
-  // While the panel is up the HUD can be moved: it shows (even when empty) and takes the mouse.
-  // Down, back to click-through, so the HUD never catches a click meant for the game.
-  setHudEditing(up, false)
-  for (const m of MEASURED) m.panelUp(up)
+  if (up !== panelUp) {
+    panelUp = up
+    for (const fn of panelListeners) fn(up)
+  }
+  syncArranging()
 }
+
+/**
+ * Arranging the overlays: they show previews, the HUD and the others can be dragged, and take the
+ * mouse. While the dashboard is up and, when it stays open over the game (not hidden on a click in
+ * the game), while it or an overlay being placed has the focus: a click in the game ends it, so the
+ * overlays never catch clicks meant for the game and their previews go.
+ */
+let arranging = false
+function arrangingNow(): boolean {
+  if (!panelVisible()) return false
+  if (settings.get('panelHideOnGame')) return true
+  // The dashboard, or an overlay being dragged into place; not the meter or the Unified HUD, which
+  // take clicks as you play.
+  const focused = BrowserWindow.getFocusedWindow()
+  return focused !== null && (focused === panel || focused === hud || measuredWins().includes(focused))
+}
+function syncArranging(): void {
+  const on = arrangingNow()
+  if (on === arranging) return
+  arranging = on
+  broadcast('panel:visible', on)
+  // The HUD shows (even when empty) and takes the mouse; otherwise back to click-through, so it
+  // never catches a click meant for the game.
+  setHudEditing(on, false)
+  for (const m of MEASURED) m.panelUp(on)
+}
+// Focus moving between the app's windows (a drag starts on an overlay) and the game: a moment
+// later, once the window taking it has it.
+app.on('browser-window-focus', () => setTimeout(syncArranging, 50))
+app.on('browser-window-blur', () => setTimeout(syncArranging, 50))
+settings.onChanged(syncArranging)
 
 /**
  * Alt+E and the tray: the dashboard down when it is up where you can see it (in front, or kept on
@@ -369,7 +403,7 @@ export function createHud(): BrowserWindow {
   win.on('closed', () => (hud = null))
   win.webContents.once('did-finish-load', () => {
     // Made while the panel is open (the game started meanwhile): in move mode, like the panel's.
-    if (panelVisible()) setHudEditing(true, false)
+    if (arranging) setHudEditing(true, false)
     refreshHud()
   })
   load(win, 'hud')
@@ -596,7 +630,7 @@ function measuredOverlay(o: {
       if (!o.enabled() || alive(win)) return
       const p = position()
       const w = overlayWindow({ x: p.x, y: p.y, width: 300, height: 120, ...(o.clickThrough ? { focusable: false } : {}) })
-      if (o.clickThrough && !panelVisible()) w.setIgnoreMouseEvents(true)
+      if (o.clickThrough && !arranging) w.setIgnoreMouseEvents(true)
       else if (o.clickThrough) w.setFocusable(true)
       win = w
       size = { width: 0, height: 0 }
@@ -894,7 +928,8 @@ export function timerBarDragEnded(): void {
 
 /** The Unified HUD is on and stands in for the timer bar, Enemies nearby and the Boss Runs list. */
 const replaced = (): boolean => settings.get('unified').enabled && settings.get('unified').replace
-const timerBarOn = (): boolean => settings.get('timerBar').enabled && !replaced()
+// Not replaced by the HUD: it shows only the next two events, the bar (or list) every one alerted.
+const timerBarOn = (): boolean => settings.get('timerBar').enabled
 const enemiesOn = (): boolean => settings.get('enemies').enabled && !replaced()
 const bossRunsOn = (): boolean => settings.get('bossRuns').enabled && !replaced()
 

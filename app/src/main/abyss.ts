@@ -62,14 +62,32 @@ export const abyss = {
   },
 
   /** The engine's `abyssGain` event: the Abyss Points balance rose by `gained`. */
-  gain(ev: { gained: number; name: string | null }, now = Date.now()): void {
+  gain(ev: { gained: number; name: string | null; world: number | null }, now = Date.now()): void {
     if (!(ev.gained > 0)) return
     const list = all()
-    list.push([now, ev.gained, ev.name])
+    list.push([now, ev.gained, ev.name, ev.world])
     const old = list.findIndex(([at]) => at > now - KEEP_MS)
     if (old > 0) list.splice(0, old)
     setSession(earn(session, ev.gained, now))
     farms = riftFarms(list)
+    broadcast('tracker:rifts', farms)
+    save()
+  },
+
+  /**
+   * The gains from `from` to `to` were a quest's reward (a duty mission's, handed in on the
+   * continent during a rift's window): not the rift's. Kept, as of no rift's world.
+   */
+  notRift(from: number, to: number): void {
+    let changed = false
+    for (const g of all()) {
+      if (g[0] >= from && g[0] <= to && g[3] !== 0) {
+        g[3] = 0
+        changed = true
+      }
+    }
+    if (!changed) return
+    farms = riftFarms(all())
     broadcast('tracker:rifts', farms)
     save()
   },

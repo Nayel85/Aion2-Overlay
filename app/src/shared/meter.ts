@@ -23,6 +23,10 @@ export interface MeterRow {
   /** 0..1 of its hits that crit. */
   critRate: number
   combatPower: number
+  /** Item level (gear score), from the party roster (yours from your own record); 0 when unknown. */
+  gearScore: number
+  /** Deaths in combat since the meter's data was last cleared. */
+  deaths: number
   /** You. */
   you: boolean
   /** In your party's roster. */
@@ -165,6 +169,8 @@ export interface DpsEvent {
       damageContribution: number
       nickname: string
       combatPower: number
+      gearScore?: number
+      deaths?: number
       isOthers?: boolean
       hps?: number
       healAmount?: number
@@ -199,6 +205,8 @@ export function meterData(ev: DpsEvent, at: number, ping: number | null = null):
     taken: p.taken ?? 0,
     critRate: p.critRate ?? 0,
     combatPower: p.combatPower,
+    gearScore: p.gearScore ?? 0,
+    deaths: p.deaths ?? 0,
     you: ev.localPlayerId !== null && Number(id) === ev.localPlayerId,
     party: p.party === true || p.combatPower > 0,
     others: p.isOthers === true,

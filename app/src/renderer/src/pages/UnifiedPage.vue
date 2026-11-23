@@ -24,10 +24,10 @@ import { currentWorld, nearbyPets, useSpawns } from '@/lib/spawns.ts'
 import { CLOCK_ICON, EVENT_ICONS } from '@/lib/timerView.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
-import { riftOf, SEASON_GAP_MS } from '@shared/abyss.ts'
+import { riftOf } from '@shared/abyss.ts'
 import { runRows, type RunRow } from '@shared/bossRuns.ts'
 import { characterId, counterNow, ENERGY } from '@shared/characters.ts'
-import { formatAmount } from '@shared/earnings.ts'
+import { formatAmount, livePerHour } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
 import { CLASS_COLORS, meterRows, NO_METER, timeToKill, type MeterData } from '@shared/meter.ts'
 import { serverTag } from '@shared/servers.ts'
@@ -128,6 +128,7 @@ function toggleRuns(): void {
 }
 const toggleMute = (): void => void store.set('muted', !store.settings.muted)
 const openApp = (): void => void api.invoke('panel:open')
+const openCharacters = (): void => void api.invoke('panel:characters')
 
 // ---- the events: the next two, and the field bosses alive ----------------------------------------
 
@@ -173,13 +174,19 @@ const startsAt = (at: number): string => new Date(at).toLocaleTimeString(loc(), 
 const earningMs = computed(() => cfg.value.earningsMinutes * 60_000)
 const coming = (lastAt: number | null): boolean => lastAt !== null && now.value - lastAt < earningMs.value
 const kinaText = computed(() => (cfg.value.kina && coming(store.kina.lastAt) ? (store.kinaRate !== null ? formatKina(store.kinaRate) : '…') : null))
-const abyssText = computed(() => (cfg.value.abyssRate && coming(store.abyss.lastAt) ? (store.abyssRate !== null ? formatAmount(store.abyssRate) : '…') : null))
-/** The Abyss Points of the season going on: a season ends after 15 minutes without any. */
-const season = computed(() => {
-  const s = store.abyss.season
-  return cfg.value.season && s && now.value - s.last < SEASON_GAP_MS ? s : null
+/** Abyss Points per hour at the pace of the last 15 seconds (0 between pulls), while they come in. */
+const abyssText = computed(() => (cfg.value.abyssRate && coming(store.abyss.lastAt) ? formatAmount(livePerHour(store.abyss, now.value)) : null))
+/** The Kina of the session going on: the character playing's, since their login. */
+const sessionKina = computed(() => {
+  const s = store.sessions.current
+  return cfg.value.kina && s && s.kina > 0 && s.name === store.status?.character ? s.kina : null
 })
-/** The Spacetime Rift going on, once it is a farm (shared/abyss.ts): its total stands in for the hourly rate. */
+/** The Abyss Points of the session going on: the character playing's, since their login. */
+const season = computed(() => {
+  const s = store.sessions.current
+  return cfg.value.season && s && s.ap > 0 && s.name === store.status?.character ? { points: s.ap } : null
+})
+/** The Spacetime Rift going on, once it is a farm (shared/abyss.ts): its total, beside the hourly rate. */
 const rift = computed(() => {
   if (!cfg.value.rift) return null
   const start = riftOf(now.value)
@@ -253,8 +260,9 @@ const cubePins = computed(() => store.cubes.map((c) => c.position))
 const threats = computed(() => (cfg.value.enemies ? store.enemies.filter((e) => canAttack(e, inAbyss.value)) : []))
 const ENEMY_ROWS = 8
 const cp = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(1)}K` : String(v))
-// The alarm is Enemies nearby's: sounded from here while this stands in for that overlay.
-useEnemyAlarm(() => cfg.value.replace && store.settings.enemies.enabled)
+// The alarm is Enemies nearby's: sounded from here whenever that overlay is not up (turned off, or
+// kept closed while this replaces it), so it always sounds once, from one of the two.
+useEnemyAlarm(() => !store.settings.enemies.enabled || cfg.value.replace)
 
 const death = computed(() => {
   const d = cfg.value.death ? store.pvpStats.death : null
@@ -351,7 +359,7 @@ function report(): void {
 }
 // Measured after each change too, not only by the observer: a hidden window (Alt+Shift+E, an
 // alt-tab) does not run it, and would come back at its old size.
-watch([tools, shown, targetOn, () => cfg.value.targetStyle, notice, kinaText, abyssText, season, rift, cube, death, () => threats.value.length, () => aliveBosses.value.length, () => upcoming.value.length, () => cfg.value.scale], () => void nextTick(report))
+watch([tools, shown, targetOn, () => cfg.value.targetStyle, notice, kinaText, sessionKina, abyssText, season, rift, cube, death, () => threats.value.length, () => aliveBosses.value.length, () => upcoming.value.length, () => cfg.value.scale], () => void nextTick(report))
 
 let observer: ResizeObserver | null = null
 const offs: (() => void)[] = []
@@ -385,7 +393,11 @@ onBeforeUnmount(() => {
         <!-- The bar. -->
         <div class="flex h-9 cursor-move items-center gap-2.5 whitespace-nowrap px-2.5" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
           <!-- Kina and Abyss Points per hour, while they come in. -->
-          <template v-if="kinaText || abyssText || rift || season">
+          <template v-if="kinaText || sessionKina !== null || abyssText || rift || season">
+            <span v-if="sessionKina !== null" class="flex items-center gap-1 text-xs font-semibold tabular-nums text-yellow" :title="t('Kina earned since you logged in with this character (by source on the Session page)')">
+              <!-- A Kina coin. -->
+              <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6" /><path d="M8 4.5v7M6 6.2c.3-.7 1-1 2-1s1.9.5 1.9 1.3c0 1.8-3.8 1-3.8 2.9 0 .8.8 1.3 1.9 1.3s1.7-.3 2-1" stroke-linecap="round" /></svg>{{ formatKina(sessionKina) }}
+            </span>
             <span v-if="kinaText" class="text-xs font-semibold tabular-nums text-yellow" :title="t('This session\'s Kina per hour')">
               {{ kinaText }} <span class="font-medium text-darker">Kina/h</span>
             </span>
@@ -394,10 +406,10 @@ onBeforeUnmount(() => {
               <span class="font-medium text-darker">{{ t('Rift') }} {{ startsAt(rift.start) }}</span>
               +{{ formatAmount(rift.points) }} AP
             </span>
-            <span v-if="abyssText && !rift" class="text-xs font-semibold tabular-nums text-blue" :title="t('This session\'s Abyss Points per hour')">
+            <span v-if="abyssText" class="text-xs font-semibold tabular-nums text-blue" :title="t('Abyss Points per hour at your pace of the last 15 seconds')">
               {{ abyssText }} <span class="font-medium text-darker">AP/h</span>
             </span>
-            <span v-if="season" class="flex items-center gap-1 text-xs font-semibold tabular-nums text-blue" :title="t('Abyss Points earned this season (it ends after 15 minutes without any)')">
+            <span v-if="season" class="flex items-center gap-1 text-xs font-semibold tabular-nums text-blue" :title="t('Abyss Points earned since you logged in with this character (by source on the Session page)')">
               <img :src="'items/abyss-point.webp'" alt="AP" class="size-4" draggable="false" />{{ formatAmount(season.points) }}
             </span>
             <span class="h-4 w-px bg-light" />
@@ -406,9 +418,16 @@ onBeforeUnmount(() => {
           <img src="/icon.png" alt="Lokthar" class="size-[18px] shrink-0" draggable="false" />
 
           <span v-if="cfg.clock" class="text-xs font-medium tabular-nums text-dark" :title="t('Local time')">{{ localTime }}</span>
-          <span v-if="odyle !== null" class="flex items-center gap-1 text-xs font-medium tabular-nums text-dark" :title="t('Odyle Energy')">
+          <button
+            v-if="odyle !== null"
+            type="button"
+            class="flex items-center gap-1 rounded-md text-xs font-medium tabular-nums text-dark hover:text-default"
+            :title="t('Odyle Energy: click for your characters\' energy, entries and Kina')"
+            @pointerdown.stop
+            @click="openCharacters"
+          >
             <img :src="'items/odyle-energy.webp'" alt="" class="size-4" draggable="false" />{{ odyle }}
-          </span>
+          </button>
 
           <!-- The next two events: tinted as they near, a countdown in the last minutes. -->
           <button

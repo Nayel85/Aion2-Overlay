@@ -229,7 +229,60 @@ export function startCharacters(): void {
       changed()
       return
     }
+    if (!CORRIDORS.some((k) => k.id === id)) {
+      // Any other counter: kept up to date as it changes (a Daily Dungeon entered, keys used), and logged.
+      const values = ev['values'] as number[]
+      log(`characters: ${c.name}'s counter ${id} now ${JSON.stringify(values)} (was ${JSON.stringify(c.counters?.values[id] ?? null)})`)
+      if (!c.counters || at < (c.counters.changedAt?.[id] ?? c.counters.at)) return
+      c.counters.values[id] = values
+      c.counters.changedAt = { ...c.counters.changedAt, [id]: at }
+      changed()
+      return
+    }
     if (corridorSeen(c, id, (ev['values'] as number[])[0] ?? 0, at)) changed()
   })
+  // Your Kina and bound Kina as you enter the world (the item list): theirs until they change.
+  tracker.onEvent('wallet', (ev) => {
+    const server = ev['server'] as number | null
+    if (server === null) return
+    const c = entry(server, ev['name'] as string)
+    const at = (ev['ts'] as number | undefined) ?? Date.now()
+    const kina = ev['kina'] as number | null
+    const bound = ev['boundKina'] as number | null
+    if (kina !== null) c.kina = { balance: kina, at }
+    // Not in the list: none.
+    c.boundKina = { balance: bound ?? 0, at }
+    changed()
+  })
+  // Your subscriptions, at login: the account's, kept on the character that logged in (the newest
+  // reading counts, whichever character it was); the memberships among them show on the Characters page.
+  tracker.onEvent('subscriptions', (ev) => {
+    const server = ev['server'] as number | null
+    if (server === null) return
+    const c = entry(server, ev['name'] as string)
+    const list = ev['list'] as { id: number; end: number }[]
+    c.subscriptions = { list, at: (ev['ts'] as number | undefined) ?? Date.now() }
+    log(`characters: ${c.name}'s subscriptions ${JSON.stringify(list)}`)
+    changed()
+  })
+  // The Kina and bound Kina of the character playing, kept as theirs: saved a few seconds after
+  // they stop changing (farming sends many).
+  let kinaSave: ReturnType<typeof setTimeout> | null = null
+  for (const [type, field] of [['kina', 'kina'], ['boundKina', 'boundKina']] as const) {
+    tracker.onEvent(type, (ev) => {
+      // Whose the engine says (nobody's while a login is under way: the one playing is the last one).
+      const name = ev['name'] as string | null
+      const server = ev['server'] as number | null
+      if (!name || server === null) return
+      const c = characters[characterId(server, name)]
+      if (!c) return
+      c[field] = { balance: ev['balance'] as number, at: (ev['ts'] as number | undefined) ?? Date.now() }
+      if (kinaSave) clearTimeout(kinaSave)
+      kinaSave = setTimeout(() => {
+        kinaSave = null
+        changed()
+      }, 5000)
+    })
+  }
   void fetchMissing()
 }

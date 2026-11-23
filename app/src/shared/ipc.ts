@@ -5,6 +5,7 @@
  */
 import type { Buff } from './buffs.ts'
 import type { Characters } from './characters.ts'
+import type { Sessions } from './sessions.ts'
 import type { GameMapState, MapDetail } from './gameMap.ts'
 import type { DummyState } from './dummy.ts'
 import type { UpdateState } from './update.ts'
@@ -52,6 +53,8 @@ export interface InvokeChannels {
   'gamemap:grab': { args: [w: number, h: number]; result: { width: number; height: number; rgba: Uint8Array } | null }
   /** Your characters (the Characters page). */
   'characters:get': { args: []; result: Characters }
+  /** The play sessions: the one going on and the past ones (shared/sessions.ts). */
+  'sessions:get': { args: []; result: Sessions }
   /** Ask NCSoft for a character's combat power and portrait again. */
   'characters:refresh': { args: [id: string]; result: void }
   /** Stop tracking a character. */
@@ -80,6 +83,8 @@ export interface InvokeChannels {
   'merchant:dragEnd': { args: []; result: void }
   'merchant:resize': { args: [size: { width: number; height: number }]; result: void }
   'merchant:close': { args: []; result: void }
+  /** An item of the merchant's stock bought: off its list until the restock. */
+  'merchant:bought': { args: [item: number]; result: void }
   /** The timers' countdown bar over the game. */
   'timerbar:moveTo': { args: [to: Point]; result: void }
   'timerbar:dragEnd': { args: []; result: void }
@@ -90,6 +95,8 @@ export interface InvokeChannels {
   'unified:resize': { args: [size: { width: number; height: number }]; result: void }
   /** Bring the dashboard up (the Unified HUD's cog). */
   'panel:open': { args: []; result: void }
+  /** The dashboard on the Characters page (the Unified HUD's Odyle energy). */
+  'panel:characters': { args: []; result: void }
   /** The kill feed over the game: opened from the PvP page, closed there or with its X. */
   'killfeed:open': { args: []; result: void }
   'killfeed:close': { args: []; result: void }
@@ -231,6 +238,7 @@ export interface EventChannels {
   'gamemap:state': GameMapState
   /** Your characters, whenever one changes. */
   'characters:changed': Characters
+  'sessions:changed': Sessions
   /** A timer started alerting (once per start: the chime). */
   'timers:alert': TimerAlert
   /** Every timer alerting now (the bubble shakes while there are any). */
@@ -239,6 +247,8 @@ export interface EventChannels {
   'panel:showPet': number
   /** To the panel: show the Event Alerts and Field Bosses pages and highlight these timers (the ones that alerted). */
   'panel:showTimers': TimerId[]
+  /** To the panel: show the Characters page. */
+  'panel:showCharacters': null
   'hud:editing': boolean
   'panel:visible': boolean
   /** The dashboard was maximised (true) or restored. */
@@ -281,13 +291,13 @@ export interface Bridge {
 export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'app:info', 'app:quit', 'app:openPath',
   'settings:all', 'settings:set',
-  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
+  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
   'killfeed:open', 'killfeed:close', 'killfeed:moveTo', 'killfeed:dragEnd', 'killfeed:resize',
   'timerbar:moveTo', 'timerbar:dragEnd', 'timerbar:resize',
-  'unified:moveTo', 'unified:dragEnd', 'unified:resize', 'panel:open',
+  'unified:moveTo', 'unified:dragEnd', 'unified:resize', 'panel:open', 'panel:characters',
   'bubble:moveTo', 'bubble:dragEnd', 'panel:toggle', 'panel:hide', 'panel:minimize', 'panel:maximize',
   'hud:setEditing', 'hud:moveTo', 'hud:dragEnd', 'hud:resize',
-  'merchant:moveTo', 'merchant:dragEnd', 'merchant:resize', 'merchant:close', 'panel:showPet', 'timers:get', 'timers:dismiss', 'timers:open',
+  'merchant:moveTo', 'merchant:dragEnd', 'merchant:resize', 'merchant:close', 'merchant:bought', 'panel:showPet', 'timers:get', 'timers:dismiss', 'timers:open',
   'lokthar:test', 'lokthar:sync', 'lokthar:last',
   'meter:get', 'meter:reset', 'meter:moveTo', 'meter:dragEnd', 'meter:resize',
   'minimap:moveTo', 'minimap:dragEnd', 'minimap:resize',
@@ -297,5 +307,5 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
 ]
 
 export const EVENT_CHANNELS: readonly EventChannel[] = [
-  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', 'guildEvents:state', 'guildEvents:changed',
+  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'characters:changed', 'sessions:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'panel:showCharacters', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', 'guildEvents:state', 'guildEvents:changed',
 ]

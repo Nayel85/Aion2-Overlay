@@ -42,6 +42,36 @@ export interface TrackedCharacter {
   counters: CharacterCounters | null
   /** What the game said of their Abyss corridors; missing until it said anything. */
   corridors?: CorridorLog
+  /** Their Kina as last seen while they played (the balance the game sends); missing until then. */
+  kina?: { balance: number; at: number }
+  /** Their bound Kina, the same way. */
+  boundKina?: { balance: number; at: number }
+  /** The subscriptions the game listed at their last login (`3B E3`): each id and its end (unix ms). */
+  subscriptions?: { list: { id: number; end: number }[]; at: number }
+}
+
+/** The subscriptions that are memberships, by id, as Abyss DPS Meter (v4.2.8) names them. */
+export const MEMBERSHIPS: Record<number, string> = {
+  1: 'Special Shugo Membership',
+  3: 'Tsenka Membership',
+  4: 'Special Quai Membership',
+  5: 'Special Quai Membership',
+  6: 'Special Quai Membership',
+  7: 'Special Quai Membership',
+}
+
+/**
+ * The account's memberships still running (one for all its characters, whatever their server), from
+ * whichever character logged in last: one per name, the latest end, soonest to end first.
+ */
+export function membershipsNow(list: TrackedCharacter[], now: number): { name: string; end: number }[] {
+  const latest = list.filter((c) => c.subscriptions).sort((a, b) => b.subscriptions!.at - a.subscriptions!.at)[0]
+  const ends = new Map<string, number>()
+  for (const s of latest?.subscriptions?.list ?? []) {
+    const name = MEMBERSHIPS[s.id]
+    if (name && s.end > now) ends.set(name, Math.max(ends.get(name) ?? 0, s.end))
+  }
+  return [...ends].map(([name, end]) => ({ name, end })).sort((a, b) => a.end - b.end)
 }
 
 /**
@@ -138,6 +168,23 @@ export const ENERGY: Refill = { id: '60000001', label: 'Odyle Energy', max: 840,
 export const NIGHTMARE: Refill = { id: '4', label: 'Nightmare', max: 14, per: 2, every: DAY, offset: 7 * HOUR, when: 'daily' }
 /** The Ascension Trial: +3 at the weekly reset (Wednesday 07:00 UTC: 1970-01-07 was one), up to 3. */
 export const ASCENSION: Refill = { id: '80000001', label: 'Ascension Trial', max: 3, per: 3, every: 7 * DAY, offset: 6 * DAY + 7 * HOUR, when: 'weekly' }
+
+/*
+ * The counters shared by a server's characters (one value for all of them), as Abyss DPS Meter's
+ * ticket table has them for the global servers (v4.2.8): the Daily Dungeon 101, refilled to 14 at the
+ * weekly reset; the Shugo Festival keys 1, +3 a day up to 21 with a membership (12 without); the
+ * invasion keys 8, +1 a day up to 7.
+ */
+export const DAILY_DUNGEON: Refill = { id: '101', label: 'Daily Dungeon', max: 14, per: 14, every: 7 * DAY, offset: 6 * DAY + 7 * HOUR, when: 'weekly' }
+export const SHUGO_KEYS: Refill = { id: '1', label: 'Shugo keys', max: 21, per: 3, every: DAY, offset: 7 * HOUR, when: 'daily' }
+export const INVASION_KEYS: Refill = { id: '8', label: 'Invasion keys', max: 7, per: 1, every: DAY, offset: 7 * HOUR, when: 'daily' }
+
+/** A shared counter now: from whichever of the server's characters the game told it last. */
+export function sharedNow(r: Refill, list: (CharacterCounters | null)[], now: number): CounterNow | null {
+  const readAt = (c: CharacterCounters): number => c.changedAt?.[r.id] ?? c.at
+  const latest = list.filter((c): c is CharacterCounters => !!c?.values[r.id]).sort((a, b) => readAt(b) - readAt(a))[0]
+  return latest ? counterNow(r, latest, now) : null
+}
 
 /** How many refills came between two times. */
 export const refillsBetween = (r: Refill, from: number, to: number): number =>

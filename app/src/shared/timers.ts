@@ -25,6 +25,8 @@
  *   The game's own countdown said 19:00 Buenos Aires (22:00 UTC) on 2026-11-03, twice; the Games
  *   Wiki's "every 4 hours from 01:00 server time" put it at 21:00 on the South American servers.
  *   Its Abyss list gives Kaira no time, so the Field Bosses page's Kaira is this schedule too.
+ *   Europe is 2 hours later, every 3 hours from 00:00 UTC (03:00, 06:00...): the player's game said
+ *   so on 2026-11-22, when the 01:00 UTC schedule had it 2 minutes away.
  * - Guardian Lord Nahma: the Abyss list's own time once read, the schedule until then. The list
  *   said Friday 21:10 on the South American servers (UTC-3) on 2026-11-03, 10 minutes after the
  *   guides' 21:00: the schedule is at 21:10. Sunday is the guides', not seen in the game yet.
@@ -49,8 +51,9 @@ export type TimerId =
   | `fb-${number}`
 
 export type Schedule =
-  /** Every `every` minutes, at `offset` minutes past each period (periods counted from 00:00 UTC). */
-  | { kind: 'every'; every: number; offset: number }
+  /** Every `every` minutes, at `offset` minutes past each period (periods counted from 00:00 UTC);
+   *  `offsets`: a region's own, where it differs. */
+  | { kind: 'every'; every: number; offset: number; offsets?: Partial<Record<Region, number>> }
   /** On these weekdays (0 = Sunday), at these times (minutes after midnight), in the server
    *  region's time zone, or in `zone` for every region. `bosses`: the field bosses it is (their
    *  ids in the map's list), whose respawn the list gives, when it has, over the schedule. */
@@ -248,7 +251,8 @@ export const TIMERS: TimerDef[] = [
     id: 'kaira',
     name: 'Watcher Kaira',
     detail: 'Abyss boss in Lower Reshanta, at a random spot',
-    schedule: { kind: 'every', every: 180, offset: 60 },
+    // Europe: 2 hours after the others (the player's game, 2026-11-22: 03:00 UTC, not 01:00).
+    schedule: { kind: 'every', every: 180, offset: 60, offsets: { europe: 180 } },
     lead: 10,
     confirmed: false,
     defaultOn: false,
@@ -358,7 +362,8 @@ export function nextStart(s: Schedule, from: number, region: Region = 'south-ame
   }
   if (s.kind === 'every') {
     const period = s.every * MINUTE
-    return Math.ceil((from - s.offset * MINUTE) / period) * period + s.offset * MINUTE
+    const offset = (s.offsets?.[region] ?? s.offset) * MINUTE
+    return Math.ceil((from - offset) / period) * period + offset
   }
   const told = (s.bosses ?? []).map((id) => bosses[id]).filter((b) => b && !b.up && b.at >= from).map((b) => b!.at)
   if (told.length) return Math.min(...told)

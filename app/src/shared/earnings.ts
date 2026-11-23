@@ -43,6 +43,15 @@ export function perHour(s: Earnings, now: number): number | null {
   return ms < MIN_MS ? null : (s.earned / ms) * 3_600_000
 }
 
+/** The live rate looks back this far. */
+export const LIVE_MS = 15_000
+
+/** The pace of the last LIVE_MS as an hourly rate: what an hour at that speed would earn; 0 when nothing came in it. */
+export function livePerHour(s: Earnings, now: number): number {
+  const sum = s.gains.reduce((n, [at, g]) => (at > now - LIVE_MS && at <= now ? n + g : n), 0)
+  return (sum / LIVE_MS) * 3_600_000
+}
+
 export interface EarnedPoint {
   at: number
   /** Earned per hour over the WINDOW_MS before `at`. */

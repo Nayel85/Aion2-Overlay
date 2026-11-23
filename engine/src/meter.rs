@@ -21,6 +21,32 @@ const SKILLS: &str = include_str!("../data/skills_en.json");
 const DOT_SKILL_IDS: &str = include_str!("../data/dot_skill_ids.json");
 const ABNORMALS: &str = include_str!("../data/abnormals.json");
 
+/// Now, in the ms the parser stamps its records with (its deaths' times).
+pub fn now_ms() -> i64 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_millis() as i64)
+}
+
+/// Monsters the NPC table calls bosses that are adds, the boss mode following them off the boss:
+/// in a dungeon questlog.gg lists bosses for, a monster named as none of them (2026-11-22, Fire
+/// Temple: Silver Blade Rotan, spawned in Red Spark Ignus's fight, took the meter). Silver Blade
+/// Rotan, Shining Mau Totem (Ferocious Horn Den), Blazing Guardian Sword (Chalice of Muspel),
+/// Surveillance Device (Corroded Decontamination Facility), Mirror of Scarlet Desire's unnamed four.
+const NOT_BOSSES: &[&str] = &[
+    "2300310", "2310310", "2320310", "2300907", "2310907", "2320907", "2301055", "2301067", "2301085", "2301097", "2301216", "2300364", "2300365",
+    "2300367", "2300368",
+];
+
+/// The NPC table with NOT_BOSSES no bosses.
+fn npc_table() -> String {
+    let Ok(mut table) = serde_json::from_str::<serde_json::Value>(NPCS) else { return NPCS.to_string() };
+    for code in NOT_BOSSES {
+        if let Some(npc) = table.get_mut(*code) {
+            npc["isBoss"] = serde_json::Value::Bool(false);
+        }
+    }
+    table.to_string()
+}
+
 /// Target modes the calculator knows, by the id the app sends.
 pub const TARGET_MODES: &[&str] = &["bossTargets", "mostDamage", "mostRecent", "lastHitByMe", "allTargets", "trainTargets"];
 
@@ -50,7 +76,7 @@ impl Meter {
         let skills = SkillLookup::new();
         skills.load_from_json(SKILLS);
         let npcs = NpcLookup::new();
-        npcs.load_from_json(NPCS);
+        npcs.load_from_json(&npc_table());
         let (skills, npcs) = (Arc::new(skills), Arc::new(npcs));
         let storage = Arc::new(DataStorage::new());
         storage.set_abnormal_stack_limits(abnormal::stack_limits(ABNORMALS));
@@ -135,20 +161,33 @@ impl Meter {
     /// The meter as the app shows it, as JSON (`DpsData`, camelCase), each row
     /// with what upstream's own row leaves out: `critRate` (0..1 of its hits),
     /// `taken` (damage it took from the targets on the meter), and `party`
-    /// (in your party's roster). And `train`: your own damage on training
+    /// (in your party's roster), `gearScore` (item level: the roster's, or
+    /// for you your own record's; 0 when unknown), and your own `combatPower`
+    /// when solo. Its `deaths` are upstream's: the player's, in the fight shown (their HP down to 0;
+    /// a player's death sends no `42 36`). And `train`: your own damage on training
     /// dummies, whatever the meter follows, for timing training runs:
     /// `{"damage", "target": the dummy you hit last, "lastHit": ms}` or null.
     pub fn dps(&self) -> serde_json::Value {
         let data = self.calculator.lock().get_dps();
         let mut out = serde_json::to_value(&data).unwrap_or_default();
         let party = self.storage.get_party_members();
+        let me = self.storage.local_player_id().and_then(|id| i32::try_from(id).ok());
+        let profile = self.storage.local_profile();
         for (id, row) in &data.map {
             let (crits, hits) = row.analyzed_data.values().fold((0i64, 0i64), |(c, h), s| (c + i64::from(s.crit_times), h + i64::from(s.times)));
+            let member = party.get(&row.nickname);
+            let you = me == Some(*id);
             let entry = &mut out["map"][id.to_string()];
             if entry.is_object() {
                 entry["critRate"] = serde_json::json!(if hits > 0 { crits as f64 / hits as f64 } else { 0.0 });
                 entry["taken"] = serde_json::json!(row.damage_received);
-                entry["party"] = serde_json::json!(party.contains_key(&row.nickname));
+                entry["party"] = serde_json::json!(member.is_some());
+                let gear = member.map(|m| m.gear_score).filter(|&g| g > 0).or(if you { profile.gear_score } else { None });
+                entry["gearScore"] = serde_json::json!(gear.unwrap_or(0));
+                // Out of a party the roster says nothing of you: your own record does.
+                if you && row.combat_power <= 0 {
+                    entry["combatPower"] = serde_json::json!(profile.combat_power.unwrap_or(0));
+                }
             }
         }
         out["train"] = self.train();
@@ -318,6 +357,16 @@ fn thin_timeline(times: &mut Vec<i64>) -> Option<Vec<i64>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn an_add_the_npc_table_calls_a_boss_is_none() {
+        let npcs = NpcLookup::new();
+        npcs.load_from_json(&npc_table());
+        // Silver Blade Rotan, an add of Red Spark Ignus's fight; the Fire Temple's bosses stay.
+        assert!(!npcs.is_boss(2_300_310));
+        assert!(npcs.is_boss(2_300_311));
+        assert!(npcs.is_boss(2_300_371));
+    }
 
     #[test]
     fn live_graph_keeps_activity_bounds_and_exact_opening_in_dense_fights() {

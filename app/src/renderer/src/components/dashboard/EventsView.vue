@@ -9,6 +9,7 @@ import Slider from '@/components/Slider.vue'
 import Toggle from '@/components/Toggle.vue'
 import Countdown from '@/components/ui/Countdown.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
+import Segmented from '@/components/ui/Segmented.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { playChime } from '@/lib/chime.ts'
 import { CLOCK_ICON, EVENT_ICONS, leadLabel, setAlert, setLead, timerNext } from '@/lib/timerView.ts'
@@ -100,6 +101,13 @@ onBeforeUnmount(() => flashTimer && clearTimeout(flashTimer))
         <Toggle :model-value="bar.enabled" @update:model-value="store.set('timerBar', { ...bar, enabled: $event })" />
         <span>{{ t('Countdown bar over the game') }}</span>
       </label>
+      <Segmented
+        v-if="bar.enabled"
+        size="sm"
+        :model-value="bar.layout"
+        :options="[{ id: 'bar', label: 'Bar' }, { id: 'list', label: 'List' }] as const"
+        @update:model-value="store.set('timerBar', { ...bar, layout: $event })"
+      />
       <label v-if="bar.enabled" class="flex items-center gap-2">
         <span class="text-xs font-medium uppercase tracking-wide text-darker">{{ t('Opacity') }}</span>
         <Slider :model-value="bar.opacity" :min="0.3" :max="1" :step="0.05" :format="pct" @update:model-value="store.set('timerBar', { ...bar, opacity: $event })" />

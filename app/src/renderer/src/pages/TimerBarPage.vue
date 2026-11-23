@@ -4,9 +4,10 @@
 // (the rift's stands for the invasion and the siege too), field bosses their portrait, the rest a
 // short name. Moved by dragging; sized to what it shows, and hidden with nothing to show. Hovering
 // one names it right away, in a label under the bar (the window grows to it: a title's tooltip
-// waits a second or so).
+// waits a second or so). As a list instead, a timer a line: its icon, its name and its countdown.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
+import { EVENT_ICONS } from '@/lib/timerView.ts'
 import { loc, t } from '@/lib/i18n.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
@@ -38,6 +39,8 @@ const LABELS: Partial<Record<TimerId, string>> = {
 }
 const icon = (def: TimerDef): string | null =>
   def.schedule.kind === 'boss' ? bossPortrait(def.schedule.boss) : (ICONS[def.id] ?? null)
+
+const list = computed(() => store.settings.timerBar.layout === 'list')
 
 const alerting = computed(() => new Map(store.alerting.map((a) => [a.id, a.at])))
 
@@ -93,7 +96,7 @@ function report(): void {
   sent = key
   void bridge().invoke('timerbar:resize', { width: r.width, height: r.height })
 }
-watch([() => items.value.length, () => store.ready], () => void nextTick(report))
+watch([() => items.value.length, () => store.ready, list], () => void nextTick(report))
 
 let observer: ResizeObserver | null = null
 onMounted(() => {
@@ -112,9 +115,27 @@ onBeforeUnmount(() => {
        window grows to it (inside a narrower window the items shrank and their numbers were cut). -->
   <div class="inline-block w-max">
     <div ref="root" class="inline-block w-max">
+      <!-- The list: a timer a line, its name on the left and its countdown on the right. -->
+      <div
+        v-if="items.length && list"
+        class="m-1.5 w-max min-w-[220px] cursor-move space-y-0.5 whitespace-nowrap rounded-lg border border-card bg-darker px-2.5 py-1.5 shadow-card"
+        :style="{ opacity: store.settings.timerBar.opacity }"
+        :title="t('Drag to move')"
+        @pointerdown="drag.onPointerDown"
+      >
+        <div v-for="{ def, at, up } in items" :key="def.id" class="flex items-center gap-2 text-[13px]">
+          <img v-if="icon(def)" :src="icon(def)!" class="size-4 shrink-0 rounded-sm object-cover" alt="" draggable="false" />
+          <svg v-else viewBox="0 0 16 16" class="size-4 shrink-0 text-darker" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path :d="EVENT_ICONS[def.id] ?? 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM8 4.5V8l2.5 1.5'" />
+          </svg>
+          <span :class="['font-semibold', alerting.has(def.id) ? 'text-yellow' : 'text-default']">{{ t(def.name) }}</span>
+          <span v-if="up" class="ml-auto pl-6 font-semibold text-green">{{ t('Alive') }}</span>
+          <span v-else :class="['ml-auto pl-6 text-right font-bold tabular-nums', alerting.has(def.id) ? 'text-yellow' : 'text-default']">{{ countdown(at) }}</span>
+        </div>
+      </div>
       <!-- Sized like the kill feed's title bar: 12 px figures, 16 px icons. -->
       <div
-        v-if="items.length"
+        v-else-if="items.length"
         class="m-1.5 flex w-max cursor-move items-center gap-3 whitespace-nowrap rounded-lg border border-card bg-darker px-2.5 py-1.5 shadow-card"
         :style="{ opacity: store.settings.timerBar.opacity }"
         :title="t('Drag to move')"
@@ -142,7 +163,7 @@ onBeforeUnmount(() => {
       </div>
       <!-- In the flow, not floating: the window is measured with it, so it isn't cut off. -->
       <div
-        v-if="hoveredItem"
+        v-if="hoveredItem && !list"
         class="mx-1.5 mb-1.5 w-max whitespace-nowrap rounded-md border border-card bg-darker px-2 py-1 text-xs shadow-card"
         :style="{ marginLeft: `${hovered!.x}px`, opacity: store.settings.timerBar.opacity }"
       >

@@ -117,6 +117,9 @@ const lastPacket = computed(() => {
       <SettingRow label="Language" hint="Game words (PvP, DPS, skills, buffs, bosses, pets...) stay as the community says them.">
         <Segmented :model-value="store.settings.language" :options="LANGS" @update:model-value="store.set('language', $event)" />
       </SettingRow>
+      <SettingRow label="24-hour clock" hint="Times as 15:30 rather than 3:30 PM, in every window.">
+        <Toggle :model-value="store.settings.clock24" @update:model-value="store.set('clock24', $event)" />
+      </SettingRow>
     </Section>
 
     <Section title="General" icon="M2.5 3.5h11v9h-11zM2.5 6h11">

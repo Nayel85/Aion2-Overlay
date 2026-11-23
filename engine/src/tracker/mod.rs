@@ -124,6 +124,10 @@ pub struct Tracker {
     pending_counters: Option<(i64, Vec<(u32, Vec<u64>)>)>,
     /// Counters changed (`0C 61`) while those wait: theirs too, told after them.
     pending_counter: Vec<(i64, u32, Vec<u64>)>,
+    /// The login's subscriptions (`3B E3`), waiting for the record that names the character.
+    pending_subscriptions: Option<(i64, Vec<(u32, u64)>)>,
+    /// The login's Kina and bound Kina (`11 56`), the same way.
+    pending_wallet: Option<(i64, Option<u64>, Option<u64>)>,
     /// The Abyss Points total the game just sent (when, points, limit), waiting to know whose.
     pending_abyss: Option<(i64, u64, u64)>,
     /// Each character's Abyss Points balance as last seen (`1b 56`, item byte 0x23).
@@ -183,6 +187,10 @@ pub struct Tracker {
     /// Your entity in this zone (from your own record).
     self_entity: Option<u32>,
     pvp_seen: HashMap<(u32, u32), i64>,
+    /// The duty board's missions by place: their quest and rewards (from the board, or taken).
+    duty: HashMap<u32, (u32, Vec<p::DutyReward>)>,
+    /// Missions handed in before their place was known (the board follows them): (place, indexes, when).
+    duty_pending: Vec<(u32, Vec<u32>, i64)>,
 }
 
 fn pet_view(id: u32, pet: &Pet, name: Option<&str>, session: u32) -> Value {
@@ -217,6 +225,8 @@ impl Tracker {
             pending_sync: None,
             pending_counters: None,
             pending_counter: Vec::new(),
+            pending_subscriptions: None,
+            pending_wallet: None,
             pending_abyss: None,
             abyss_balance: HashMap::new(),
             me_stats: None,
@@ -248,6 +258,43 @@ impl Tracker {
             legions: HashMap::new(),
             self_entity: None,
             pvp_seen: HashMap::new(),
+            duty: HashMap::new(),
+            duty_pending: Vec::new(),
+        }
+    }
+
+    /// A duty mission handed in at `place` with the rewards at `indexes` of its list: told when its
+    /// mission is known, else kept for the board that follows (dropped after 10 s).
+    fn duty_done(&mut self, ts: i64, place: u32, indexes: Vec<u32>) {
+        let Some((quest, rewards)) = self.duty.get(&place) else {
+            self.duty_pending.retain(|(_, _, at)| ts - at < 10_000);
+            self.duty_pending.push((place, indexes, ts));
+            return;
+        };
+        let got: Vec<Value> = indexes.iter().filter_map(|&i| rewards.get(i as usize)).map(|&(item, amount, _)| json!({ "item": item, "amount": amount })).collect();
+        // Its whole list too, each with its chance (of 100,000,000) and whether it came.
+        let offered: Vec<Value> = rewards
+            .iter()
+            .enumerate()
+            .map(|(i, &(item, amount, chance))| json!({ "item": item, "amount": amount, "chance": chance, "got": indexes.contains(&(i as u32)) }))
+            .collect();
+        tracing::info!("duty mission {quest} handed in: {got:?}");
+        (self.emit)(json!({ "type": "dutyDone", "ts": ts, "quest": quest, "rewards": got, "offered": offered }));
+    }
+
+    /// The duty board's missions known: remember them, and tell the ones handed in waiting for them.
+    fn duty_known(&mut self, ts: i64, missions: Vec<p::DutyMission>) {
+        for (quest, place, rewards) in missions {
+            self.duty.insert(place, (quest, rewards));
+        }
+        for (place, indexes, at) in std::mem::take(&mut self.duty_pending) {
+            if self.duty.contains_key(&place) {
+                self.duty_done(at, place, indexes);
+            } else if ts - at < 10_000 {
+                self.duty_pending.push((place, indexes, at));
+            } else {
+                tracing::info!("duty mission at {place} handed in, its mission never seen");
+            }
         }
     }
 
@@ -710,6 +757,26 @@ impl Tracker {
                 self.sync(ts, &coll);
             }
         }
+        // The wallet and subscriptions with no character record after them (mid-game): the
+        // character playing's.
+        if self.pending_wallet.as_ref().is_some_and(|(at, ..)| ts - at > COUNTERS_WAIT_MS) {
+            match self.store.current.clone() {
+                Some(name) => {
+                    let server = self.store.characters.get(&name).and_then(|c| c.server);
+                    self.wallet_read(&name, server);
+                }
+                None => self.pending_wallet = None,
+            }
+        }
+        if self.pending_subscriptions.as_ref().is_some_and(|(at, _)| ts - at > COUNTERS_WAIT_MS) {
+            match self.store.current.clone() {
+                Some(name) => {
+                    let server = self.store.characters.get(&name).and_then(|c| c.server);
+                    self.subscriptions_read(&name, server);
+                }
+                None => self.pending_subscriptions = None,
+            }
+        }
         // Counters with no character record after them (not a login): the character playing.
         if self.pending_counters.as_ref().is_some_and(|(at, _)| ts - at > COUNTERS_WAIT_MS) {
             if let Some(name) = self.store.current.clone() {
@@ -876,9 +943,22 @@ impl Tracker {
                 if let Some(balance) = p::abyss_balance(f) {
                     self.abyss_wallet(ts, balance);
                 }
+                // Whose: the character playing, but nobody's while a login's item list waits for the
+                // record naming the one logging in (the one playing until then is the last one).
+                let owner = if self.pending_wallet.is_some() { None } else { self.store.current.clone() };
+                let server = owner.as_ref().and_then(|n| self.store.characters.get(n)).and_then(|c| c.server);
                 if let Some(balance) = p::kina(f) {
                     // The balance as is: the app works out what was earned from the changes.
-                    (self.emit)(json!({ "type": "kina", "ts": ts, "balance": balance }));
+                    (self.emit)(json!({ "type": "kina", "ts": ts, "balance": balance, "name": owner, "server": server }));
+                }
+                if let Some(balance) = p::bound_kina(f) {
+                    (self.emit)(json!({ "type": "boundKina", "ts": ts, "balance": balance, "name": owner, "server": server }));
+                }
+                for (item, balance) in p::currencies(f) {
+                    (self.emit)(json!({ "type": "currency", "ts": ts, "item": item, "balance": balance, "name": owner, "server": server }));
+                }
+                if let Some((item, amount)) = p::item_change(f) {
+                    (self.emit)(json!({ "type": "item", "ts": ts, "item": item, "amount": amount }));
                 }
             }
             p::OP_FIELD_BOSSES => match p::field_bosses(f) {
@@ -925,6 +1005,100 @@ impl Tracker {
             p::OP_COUNTERS => {
                 if let Some(list) = p::counters(f) {
                     self.pending_counters = Some((ts, list));
+                }
+            }
+            p::OP_DUNGEON_START => {
+                if let Some(zone) = p::dungeon_start(f) {
+                    (self.emit)(json!({ "type": "dungeonStart", "ts": ts, "zone": zone }));
+                }
+            }
+            p::OP_DUNGEON_CLEAR => {
+                if let Some(zone) = p::dungeon_clear(f) {
+                    tracing::info!("dungeon cleared: {zone}");
+                    (self.emit)(json!({ "type": "dungeonClear", "ts": ts, "zone": zone }));
+                }
+            }
+            p::OP_NIGHTMARE_START => {
+                if let Some((boss, level)) = p::nightmare_start(f) {
+                    (self.emit)(json!({ "type": "nightmare", "ts": ts, "boss": boss, "level": level }));
+                }
+            }
+            p::OP_GATHER => {
+                if let Some((result, item, amount, bonus)) = p::gather(f) {
+                    tracing::info!("gathered: {amount} + {bonus} x {item} (result {result})");
+                    (self.emit)(json!({ "type": "gather", "ts": ts, "item": item, "amount": amount, "bonus": bonus, "result": result }));
+                }
+            }
+            p::OP_REWARD_BOARD => {
+                if let Some(entries) = p::reward_board(f) {
+                    let entries: Vec<Value> = entries
+                        .into_iter()
+                        .map(|(name, items)| json!({ "name": name, "items": items.into_iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect::<Vec<_>>() }))
+                        .collect();
+                    tracing::info!("reward board: {entries:?}");
+                    (self.emit)(json!({ "type": "rewardBoard", "ts": ts, "entries": entries }));
+                } else {
+                    let raw: String = f.iter().map(|b| format!("{b:02x}")).collect();
+                    tracing::info!("reward board not read: {raw}");
+                }
+            }
+            p::OP_DUTY_TAKEN => {
+                if let Some(mission) = p::duty_taken(f) {
+                    tracing::info!("duty mission taken: {mission:?}");
+                    self.duty_known(ts, vec![mission]);
+                }
+            }
+            p::OP_DUTY_BOARD => {
+                let missions = p::duty_board(f);
+                self.duty_known(ts, missions);
+            }
+            p::OP_DUTY_DONE => {
+                if let Some((place, indexes)) = p::duty_done(f) {
+                    self.duty_done(ts, place, indexes);
+                }
+            }
+            p::OP_BOX_OPENED => {
+                if let Some(items) = p::box_opened(f) {
+                    // Its bytes too: a box's contents vary (equipment...), what was not read shows.
+                    let raw: String = f.iter().map(|b| format!("{b:02x}")).collect();
+                    tracing::info!("box opened: {items:?} ({raw})");
+                    let items: Vec<Value> = items.into_iter().map(|(item, spent, amount)| json!({ "item": item, "spent": spent, "amount": amount })).collect();
+                    (self.emit)(json!({ "type": "boxOpened", "ts": ts, "items": items }));
+                } else {
+                    let raw: String = f.iter().map(|b| format!("{b:02x}")).collect();
+                    tracing::info!("box opened not read: {raw}");
+                }
+            }
+            p::OP_LOOT => {
+                if let Some((source, items)) = p::loot(f) {
+                    let items: Vec<Value> = items.into_iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect();
+                    tracing::info!("loot ({source}): {items:?}");
+                    (self.emit)(json!({ "type": "loot", "ts": ts, "source": source, "items": items }));
+                }
+            }
+            p::OP_NIGHTMARE_END => {
+                let raw: String = f.iter().map(|b| format!("{b:02x}")).collect();
+                tracing::info!("nightmare ended: {raw}");
+            }
+            p::OP_QUEST_REWARD => {
+                if let Some((quest, rewards)) = p::quest_reward(f) {
+                    let rewards: Vec<Value> = rewards.into_iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect();
+                    tracing::info!("quest reward: {quest} {rewards:?}");
+                    (self.emit)(json!({ "type": "questReward", "ts": ts, "quest": quest, "rewards": rewards }));
+                }
+            }
+            p::OP_ITEM_LIST => {
+                if let Some((kina, bound)) = p::wallet(f) {
+                    // Sent a few seconds before the record naming the character (a switch's new
+                    // one): it waits for it, as the counters do.
+                    tracing::info!("wallet: kina {kina:?}, bound {bound:?}");
+                    self.pending_wallet = Some((ts, kina, bound));
+                }
+            }
+            p::OP_SUBSCRIPTIONS => {
+                if let Some(list) = p::subscriptions(f) {
+                    tracing::info!("subscriptions: {list:?}");
+                    self.pending_subscriptions = Some((ts, list));
                 }
             }
             p::OP_ABYSS_POINTS => {
@@ -1092,6 +1266,12 @@ impl Tracker {
         if self.pending_counters.is_some() {
             self.counters_read(&who.name, Some(who.server));
         }
+        if self.pending_subscriptions.is_some() {
+            self.subscriptions_read(&who.name, Some(who.server));
+        }
+        if self.pending_wallet.is_some() {
+            self.wallet_read(&who.name, Some(who.server));
+        }
         if let Some((_, coll)) = self.pending_sync.take() {
             self.sync(ts, &coll);
         }
@@ -1133,6 +1313,19 @@ impl Tracker {
         if gained > 0 && gained <= ABYSS_MAX_GAIN {
             (self.emit)(json!({ "type": "abyssGain", "ts": ts, "name": name, "gained": gained, "balance": balance }));
         }
+    }
+
+    /// The login's Kina and bound Kina, for `name`.
+    fn wallet_read(&mut self, name: &str, server: Option<u16>) {
+        let Some((at, kina, bound)) = self.pending_wallet.take() else { return };
+        (self.emit)(json!({ "type": "wallet", "ts": at, "name": name, "server": server, "kina": kina, "boundKina": bound }));
+    }
+
+    /// The subscriptions, for `name`: each id and when it ends (the app knows which are memberships).
+    fn subscriptions_read(&mut self, name: &str, server: Option<u16>) {
+        let Some((at, list)) = self.pending_subscriptions.take() else { return };
+        let list: Vec<Value> = list.into_iter().map(|(id, end)| json!({ "id": id, "end": end })).collect();
+        (self.emit)(json!({ "type": "subscriptions", "ts": at, "name": name, "server": server, "list": list }));
     }
 
     /// The login's counters, for `name`: by id, their values (the app knows which is which).
@@ -1605,6 +1798,28 @@ mod tests {
         assert_eq!(read.len(), 2);
         assert_eq!((read[0]["name"].as_str(), read[0]["values"]["60000001"].clone()), (Some("Ksixx"), json!([60, 155])));
         assert_eq!((read[1]["name"].as_str(), read[1]["values"]["60000001"].clone()), (Some("Ksixx"), json!([45, 155])));
+    }
+
+    /// The item list's Kina comes before the record naming the character: it is the one logging
+    /// in's, not the one playing before. With no record after it, the character playing's.
+    #[test]
+    fn the_login_wallet_goes_to_the_character_logging_in() {
+        let (mut t, events) = tracker();
+        let wallet = |kina: u64| {
+            let mut body = vec![0, 0, 1, 0x3f, 0x33, 0x70, 0x37];
+            body.extend(kina.to_le_bytes());
+            frame(p::OP_ITEM_LIST, &body)
+        };
+        t.frame(1000, &character(5, "Ksix", 1104));
+        t.frame(2000, &wallet(17_224_972));
+        assert!(!events.lock().unwrap().iter().any(|e| e["type"] == "wallet"));
+        t.frame(6000, &character(6, "Ksixx", 1104));
+        t.frame(7000, &wallet(7_273_016));
+        t.frame(7000 + COUNTERS_WAIT_MS + 1, &soul(&[(1006, 1)]));
+        let read: Vec<_> = events.lock().unwrap().iter().filter(|e| e["type"] == "wallet").cloned().collect();
+        assert_eq!(read.len(), 2);
+        assert_eq!((read[0]["name"].as_str(), read[0]["kina"].as_u64()), (Some("Ksixx"), Some(17_224_972)));
+        assert_eq!((read[1]["name"].as_str(), read[1]["kina"].as_u64()), (Some("Ksixx"), Some(7_273_016)));
     }
 
     /// A corridor given while the counters wait for the record naming you: told after them, both

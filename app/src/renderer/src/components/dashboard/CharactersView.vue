@@ -1,16 +1,18 @@
 <script setup lang="ts">
 // Characters: every character of your account the character selection screen listed, by server,
 // with what the overlay knows of each (class, level, gear score, combat power, portrait), and their
-// Odyle energy, entry counts and Abyss corridors at a glance. Counters are read at each login and worked out from
-// the game's refill times since: a character not logged in with the overlay yet shows greyed out.
+// Odyle energy, entry counts, Kina and Abyss corridors at a glance, and what a server's characters share
+// (Daily Dungeon, Shugo and invasion keys). Counters are read at each login and worked out from the
+// game's refill times since: a character not logged in with the overlay yet shows greyed out.
 import { computed, onBeforeUnmount, ref } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import Countdown from '@/components/ui/Countdown.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import { bridge } from '@/lib/bridge.ts'
-import { loc, t } from '@/lib/i18n.ts'
+import { loc, plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { ASCENSION, characterId, CORRIDORS, corridorStates, counterNow, ENERGY, nextCorridorReset, NIGHTMARE, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
+import { ASCENSION, characterId, CORRIDORS, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
+import { formatKina } from '@shared/kina.ts'
 import { serverLabel } from '@shared/servers.ts'
 
 const store = useApp()
@@ -31,26 +33,51 @@ interface Row {
   nightmare: CounterNow | null
   ascension: CounterNow | null
   corridors: CorridorState[]
+  /** Kina and bound Kina: live for the one playing, as last seen for the others; null while never seen. */
+  kina: number | null
+  boundKina: number | null
+  /** The two together; null while neither was seen. */
+  kinaTotal: number | null
 }
+
+/** What a server's characters share, with each one's bar colour. */
+const SHARED: { r: Refill; bar: string }[] = [
+  { r: DAILY_DUNGEON, bar: 'bg-sky-400' },
+  { r: SHUGO_KEYS, bar: 'bg-pink-400' },
+  { r: INVASION_KEYS, bar: 'bg-red-400' },
+]
 
 /** By server (the one playing first), each in the game's order. */
 const servers = computed(() => {
   const playing = store.status?.character && store.status.server ? characterId(store.status.server, store.status.character) : null
-  const rows: Row[] = Object.entries(store.characters).map(([id, c]) => ({
-    id,
-    c,
-    playing: id === playing,
-    energy: counterNow(ENERGY, c.counters, now.value),
-    nightmare: counterNow(NIGHTMARE, c.counters, now.value),
-    ascension: counterNow(ASCENSION, c.counters, now.value),
-    corridors: corridorStates(c.corridors, now.value),
-  }))
+  const rows: Row[] = Object.entries(store.characters).map(([id, c]) => {
+    const kina = id === playing && store.kina.balance !== null ? store.kina.balance : (c.kina?.balance ?? null)
+    const boundKina = c.boundKina?.balance ?? null
+    return {
+      id,
+      c,
+      playing: id === playing,
+      energy: counterNow(ENERGY, c.counters, now.value),
+      nightmare: counterNow(NIGHTMARE, c.counters, now.value),
+      ascension: counterNow(ASCENSION, c.counters, now.value),
+      corridors: corridorStates(c.corridors, now.value),
+      kina,
+      boundKina,
+      kinaTotal: kina === null && boundKina === null ? null : (kina ?? 0) + (boundKina ?? 0),
+    }
+  })
   const by = new Map<number, Row[]>()
   for (const r of rows) by.set(r.c.server, [...(by.get(r.c.server) ?? []), r])
   return [...by.entries()]
-    .map(([server, list]) => ({ server, rows: list.sort((a, b) => a.c.order - b.c.order || a.c.name.localeCompare(b.c.name)) }))
+    .map(([server, list]) => ({
+      server,
+      rows: list.sort((a, b) => a.c.order - b.c.order || a.c.name.localeCompare(b.c.name)),
+      shared: SHARED.map(({ r, bar }) => ({ r, bar, c: sharedNow(r, list.map((x) => x.c.counters), now.value) })),
+    }))
     .sort((a, b) => Number(b.rows.some((r) => r.playing)) - Number(a.rows.some((r) => r.playing)) || a.server - b.server)
 })
+/** The account's memberships: one for every character. */
+const memberships = computed(() => membershipsNow(Object.values(store.characters), now.value))
 const tracked = computed(() => Object.values(store.characters).filter((c) => c.counters).length)
 const total = computed(() => Object.keys(store.characters).length)
 
@@ -75,6 +102,11 @@ function ago(ms: number): string {
   if (m < 60) return t('{n} min ago', { n: m })
   const h = Math.round(m / 60)
   return h < 48 ? t('{n} h ago', { n: h }) : t('{n} d ago', { n: Math.round(h / 24) })
+}
+/** A membership's time left: days, or hours in its last day. */
+function left(end: number): string {
+  const h = Math.floor((end - now.value) / 3_600_000)
+  return h >= 24 ? plural(Math.floor(h / 24), '{n} day left', '{n} days left') : plural(Math.max(1, h), '{n} hour left', '{n} hours left')
 }
 const stamp = (ms: number): string => new Date(ms).toLocaleString(loc(), { weekday: 'short', hour: '2-digit', minute: '2-digit' })
 
@@ -107,6 +139,14 @@ function corridorTitle(list: CorridorState[]): string {
       title="Characters"
       about="Every character of your account, from the character selection screen. Log in to each one once with the overlay on to track its energy and entries: they are read at each login and refilled on the game's schedule in between."
     >
+      <span
+        v-for="m in memberships"
+        :key="m.name"
+        :class="['rounded-full border px-3 py-1 text-xs font-semibold', m.end - now < 3 * 86_400_000 ? 'border-yellow/40 bg-yellow/10 text-yellow' : 'border-accent/40 bg-accent/10 text-accent']"
+        :title="t('Ends {when}', { when: stamp(m.end) })"
+      >
+        {{ t(m.name) }}, {{ left(m.end) }}
+      </span>
       <span v-if="total" class="rounded-full border border-card bg-card px-3 py-1 text-xs text-darker">
         {{ t('{n} of {total} tracked', { n: tracked, total }) }}
       </span>
@@ -196,13 +236,34 @@ function corridorTitle(list: CorridorState[]): string {
         </div>
       </div>
 
+      <!-- Shared by the server's characters: one value for all of them. -->
+      <div v-if="s.shared.some((x) => x.c)" class="mb-4 grid grid-cols-3 gap-3">
+        <div v-for="x in s.shared" :key="x.r.id" class="rounded-xl border border-card bg-card px-4 py-2.5" :title="x.c ? counterTitle(x.r, x.c) : ''">
+          <div class="mb-1.5 flex items-baseline gap-1.5 tabular-nums">
+            <span class="text-xs font-medium uppercase tracking-wide text-darker">{{ t(x.r.label) }}</span>
+            <template v-if="x.c">
+              <span class="ml-2 font-semibold">{{ x.c.now }}</span>
+              <span class="text-xs text-darkest">/ {{ x.c.max }}</span>
+              <span class="ml-auto text-[11px] text-darker">
+                <template v-if="x.c.now >= x.c.max">{{ t('Full') }}</template>
+                <template v-else>+{{ x.r.per }} <Countdown :at="x.c.nextAt" :now="now" /></template>
+              </span>
+            </template>
+            <span v-else class="ml-auto text-darkest">–</span>
+          </div>
+          <div v-if="x.c" class="flex gap-0.5">
+            <span v-for="i in x.c.max" :key="i" :class="['h-1.5 flex-1 rounded-full', i <= x.c.now ? x.bar : 'bg-dark']" />
+          </div>
+        </div>
+      </div>
+
       <!-- At a glance: energy and entries. -->
       <div class="overflow-hidden rounded-xl border border-card">
         <table class="w-full text-sm">
           <thead class="bg-card text-xs uppercase tracking-wide text-darker">
             <tr class="border-b border-card">
               <th class="py-2.5 pl-4 text-left font-medium">{{ t('Character') }}</th>
-              <th class="px-3 text-left font-medium">
+              <th class="min-w-[17rem] px-3 text-left font-medium">
                 <span class="flex items-center gap-1.5"><img :src="ICONS.energy" alt="" draggable="false" class="size-5" />{{ t('Odyle Energy') }}</span>
               </th>
               <th class="w-48 whitespace-nowrap px-5 text-left font-medium">
@@ -211,6 +272,7 @@ function corridorTitle(list: CorridorState[]): string {
               <th class="w-48 whitespace-nowrap px-5 text-left font-medium">
                 <span class="flex items-center gap-1.5"><img :src="ICONS.ticket" alt="" draggable="false" class="size-5" />{{ t('Ascension Trial') }}</span>
               </th>
+              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('Kina and bound Kina')">Kina</th>
               <th class="w-40 whitespace-nowrap px-5 text-center font-medium" :title="t('The Abyss\'s Artifact corridors, back on Mondays, Thursdays and Saturdays at 21:00.')">{{ t('Corridors') }}</th>
               <th class="w-px whitespace-nowrap pl-5 pr-4 text-right font-medium">{{ t('Last read') }}</th>
             </tr>
@@ -227,19 +289,22 @@ function corridorTitle(list: CorridorState[]): string {
               </td>
               <template v-if="r.c.counters">
                 <td class="px-3 py-2">
-                  <div v-if="r.energy" :title="counterTitle(ENERGY, r.energy)">
-                    <div class="mb-1 flex items-baseline gap-1.5 tabular-nums">
+                  <!-- Three lines, each on one line: the energy and the next refill; the bar; how much
+                       came since login and when it is full. -->
+                  <div v-if="r.energy" class="whitespace-nowrap tabular-nums" :title="counterTitle(ENERGY, r.energy)">
+                    <div class="mb-1 flex items-baseline gap-1.5">
                       <span class="font-semibold">{{ r.energy.now }}</span>
                       <span v-if="r.energy.extra" class="font-semibold" :style="{ color: CHARGED }">(+{{ r.energy.extra }})</span>
                       <span class="text-xs text-darkest">/ {{ r.energy.max }}</span>
-                      <span v-if="r.energy.now !== r.energy.read" class="whitespace-nowrap text-[11px] text-darker">{{ t('~{n} since login', { n: `+${r.energy.now - r.energy.read}` }) }}</span>
-                      <span class="ml-auto text-[11px] text-darker">
-                        <template v-if="r.energy.now >= r.energy.max">{{ t('Full') }}</template>
-                        <template v-else>+{{ ENERGY.per }} {{ t('in') }} <Countdown :at="r.energy.nextAt" :now="now" /></template>
-                      </span>
+                      <span v-if="r.energy.now < r.energy.max" class="ml-auto text-[11px] text-darker">+{{ ENERGY.per }} {{ t('in') }} <Countdown :at="r.energy.nextAt" :now="now" /></span>
                     </div>
                     <div class="h-1.5 overflow-hidden rounded-full bg-dark">
                       <div class="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400" :style="{ width: `${pct(r.energy)}%` }" />
+                    </div>
+                    <div class="mt-1 flex items-baseline gap-1.5 text-[11px] text-darker">
+                      <span v-if="r.energy.now !== r.energy.read">{{ t('~{n} since login', { n: `+${r.energy.now - r.energy.read}` }) }}</span>
+                      <span v-if="r.energy.now >= r.energy.max" class="ml-auto font-semibold text-yellow">{{ t('Full: the next refill is lost') }}</span>
+                      <span v-else class="ml-auto">{{ t('Full at {when}', { when: stamp(r.energy.fullAt) }) }} · <Countdown :at="r.energy.fullAt" :now="now" /></span>
                     </div>
                   </div>
                   <span v-else class="text-darkest">–</span>
@@ -264,6 +329,13 @@ function corridorTitle(list: CorridorState[]): string {
                   </div>
                   <span v-else class="text-darkest">–</span>
                 </td>
+                <td
+                  class="whitespace-nowrap px-4 text-right font-semibold tabular-nums"
+                  :title="r.kinaTotal !== null ? t('{kina} Kina, {bound} bound', { kina: r.kina === null ? '?' : formatKina(r.kina), bound: r.boundKina === null ? '?' : formatKina(r.boundKina) }) : ''"
+                >
+                  <span v-if="r.kinaTotal !== null">{{ formatKina(r.kinaTotal) }}</span>
+                  <span v-else class="text-darkest">–</span>
+                </td>
                 <td class="px-5 py-2" :title="corridorTitle(r.corridors)">
                   <div class="flex items-center justify-center gap-2">
                     <div class="flex gap-1">
@@ -283,7 +355,7 @@ function corridorTitle(list: CorridorState[]): string {
                 </td>
                 <td class="whitespace-nowrap pl-5 pr-4 text-right text-xs text-darker">{{ ago(r.c.counters.at) }}</td>
               </template>
-              <td v-else colspan="5" class="px-3 py-2 text-xs">
+              <td v-else colspan="6" class="px-3 py-2 text-xs">
                 <span class="inline-flex items-center gap-1.5 rounded-full border border-dashed border-light px-2.5 py-1 text-darker">
                   <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2.5h2.5a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H10M6.5 11 9.5 8l-3-3M9.5 8H2.5" /></svg>
                   {{ t('Log in with {name} once to start tracking it', { name: r.c.name }) }}

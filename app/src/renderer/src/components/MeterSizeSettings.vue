@@ -12,7 +12,7 @@ import { useApp } from '@/stores/app.ts'
 import { SETTINGS_DEFAULTS, type Settings } from '@shared/settings.ts'
 
 const STYLES = [{ id: 'flat', label: 'Flat' }, { id: 'compact', label: 'Compact' }, { id: 'bold', label: 'Bold' }] as const
-const POWER = [{ id: 'off', label: 'Hidden' }, { id: 'beside', label: 'Next to the name' }, { id: 'below', label: 'Under the name' }] as const
+const POWER = [{ id: 'off', label: 'Hidden' }, { id: 'beside', label: 'In a column' }, { id: 'below', label: 'Under the name' }] as const
 const store = useApp()
 const cfg = computed(() => store.settings.meter)
 const set = (patch: Partial<Settings['meter']>): void => void store.set('meter', { ...cfg.value, ...patch })
@@ -29,8 +29,14 @@ const defaultSize = computed(() => cfg.value.width === SETTINGS_DEFAULTS.meter.w
   <SettingRow v-if="cfg.barsOnly" label="Bars background" hint="How dark it is behind the bars while only the bars show; 0% is none.">
     <Slider :model-value="Math.round(cfg.barsBackground * 100)" :min="0" :max="100" :step="5" :format="(v: number) => `${v}%`" @update:model-value="set({ barsBackground: $event / 100 })" />
   </SettingRow>
-  <SettingRow label="Combat power" hint="Each player's combat power, next to the name or in small type under it.">
+  <SettingRow label="Combat power" hint="Each player's combat power, in a column of its own or in small type under the name.">
     <SelectBox size="sm" :model-value="cfg.power" :options="POWER.map((o) => ({ id: o.id, label: t(o.label) }))" @update:model-value="set({ power: $event })" />
+  </SettingRow>
+  <SettingRow label="Item level" hint="Each party member's item level, in a column of its own or in small type under the name.">
+    <SelectBox size="sm" :model-value="cfg.gear" :options="POWER.map((o) => ({ id: o.id, label: t(o.label) }))" @update:model-value="set({ gear: $event })" />
+  </SettingRow>
+  <SettingRow label="Deaths" hint="How many times each player died since the meter was last cleared, in a column of its own.">
+    <Toggle :model-value="cfg.deaths" @update:model-value="set({ deaths: $event })" />
   </SettingRow>
   <SettingRow label="Size" hint="Drag the meter's bottom-right corner to resize it; a double-click there resets it.">
     <div class="flex items-center gap-3">
