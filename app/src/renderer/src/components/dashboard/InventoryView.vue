@@ -1,28 +1,30 @@
 <script setup lang="ts">
-// Your characters' items (shared/inventory.ts), as of each one's last login: a character and a place
-// picked (bag, equipped, personal warehouse, Arcana, or the account's warehouse), their items the
-// best first; or, searched by name, where an item is across all of them. The character and place
-// picked are remembered (this window's storage).
+// Your characters' items (shared/inventory.ts), kept slot by slot as they log in and as items move:
+// a character and a place picked (equipped, laid out as the game's window; bag; personal warehouse;
+// Arcana; the account's warehouse), their items as tiles, a hovered one's details beside it; or,
+// searched by name, where an item is across all of them. The character and place picked are
+// remembered (this window's storage).
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
+import ItemTile from '@/components/dashboard/ItemTile.vue'
 import { gradeClass, ICON } from '@/components/panel/sessionIcons.ts'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import { loc, plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
-import { PLACES, whereIs, type CharacterInventory, type Storage } from '@shared/inventory.ts'
+import { PLACES, placeItems, placeSlots, whereIs, WORN_LAYOUT, type CharacterInventory, type Place, type SlotItem } from '@shared/inventory.ts'
 import { itemIcon, itemInfo } from '@shared/sessions.ts'
 
 const store = useApp()
 
-type Place = Storage | 'account'
 const STORAGE_KEY = 'inventory.view'
 function saved(): { who: string | null; place: Place } {
   try {
-    return { who: null, place: 'bag', ...(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as object) }
+    const v = { who: null, place: 'worn', ...(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as object) } as { who: string | null; place: Place }
+    return PLACES.some((p) => p.id === v.place) ? v : { ...v, place: 'worn' }
   } catch {
-    return { who: null, place: 'bag' }
+    return { who: null, place: 'worn' }
   }
 }
 const view = ref(saved())
@@ -39,53 +41,82 @@ watch(
 )
 const query = ref('')
 
-/** The characters known, the latest login first. */
+/** The characters known, the latest first. */
 const characters = computed(() => Object.entries(store.inventories.characters).sort((a, b) => b[1].at - a[1].at))
 const picked = computed<[string, CharacterInventory] | null>(() => characters.value.find(([id]) => id === view.value.who) ?? characters.value[0] ?? null)
 const className = (c: CharacterInventory): string | null => (c.server !== null ? (store.characters[characterId(c.server, c.name)]?.className ?? null) : null)
 
-interface Row {
-  id: string
-  name: string
-  grade: number
-  icon: string | null
-  amount: number
-}
-function row(id: string, amount: number): Row {
-  const item = itemInfo(id)
-  return { id, name: (item?.name ?? `#${id}`).replace(' (Bound)', ''), grade: item?.grade ?? 11, icon: itemIcon(item?.icon), amount }
-}
-const byGrade = (a: Row, b: Row): number => b.grade - a.grade || a.name.localeCompare(b.name)
-
-/** The place picked's items: the account's warehouse, or the character's. */
-const placeItems = computed(() => (view.value.place === 'account' ? (store.inventories.account?.items ?? {}) : (picked.value?.[1].items[view.value.place] ?? {})))
-const rows = computed(() => Object.entries(placeItems.value).map(([id, n]) => row(id, n)).sort(byGrade))
-const asOf = computed(() => (view.value.place === 'account' ? store.inventories.account?.at : picked.value?.[1].at) ?? null)
-const placeOptions = computed(() =>
-  PLACES.map((p) => ({ id: p.id, label: p.label, count: Object.keys(p.id === 'account' ? (store.inventories.account?.items ?? {}) : (picked.value?.[1].items[p.id] ?? {})).length })),
+/** The place picked: its slots, by number. */
+const slots = computed(() => placeSlots(store.inventories, picked.value?.[1] ?? null, view.value.place))
+/** Its items as tiles: the bag and the warehouses slot by slot, as in game; the Arcana the best first. */
+const tiles = computed(() =>
+  Object.entries(slots.value)
+    .map(([n, s]) => ({ n: Number(n), s }))
+    .sort((a, b) => (view.value.place === 'arcana' ? (itemInfo(b.s.item)?.grade ?? 0) - (itemInfo(a.s.item)?.grade ?? 0) : 0) || a.n - b.n),
 )
+const asOf = computed(() => (view.value.place === 'account' ? store.inventories.account?.at : picked.value?.[1].at) ?? null)
+const placeOptions = computed(() => PLACES.map((p) => ({ id: p.id, label: p.label, count: Object.keys(placeSlots(store.inventories, picked.value?.[1] ?? null, p.id)).length })))
 
-/** Searched: every item of that name anywhere, with where it is. */
+// ---- a hovered item's details ---------------------------------------------------------------
+
+const hovered = ref<{ item: SlotItem; x: number; y: number } | null>(null)
+function hover(item: SlotItem | null, at: { x: number; y: number }): void {
+  hovered.value = item ? { item, ...at } : null
+}
+const GRADE_NAMES: [number, string][] = [
+  [71, 'Mythic'],
+  [61, 'Ancient'],
+  [51, 'Legendary'],
+  [41, 'Unique'],
+  [31, 'Rare'],
+  [21, 'Uncommon'],
+  [0, 'Common'],
+]
+const details = computed(() => {
+  const h = hovered.value
+  if (!h) return null
+  const info = itemInfo(h.item.item)
+  const grade = info?.grade ?? 11
+  // Its stones together, by kind: "Lesser Manastone ×4".
+  const stones = new Map<number, number>()
+  for (const s of h.item.stones ?? []) stones.set(s, (stones.get(s) ?? 0) + 1)
+  return {
+    name: (info?.name ?? `#${h.item.item}`).replace(' (Bound)', ''),
+    bound: info?.name.includes('(Bound)') ?? false,
+    grade,
+    gradeName: GRADE_NAMES.find(([g]) => grade >= g)![1],
+    icon: itemIcon(info?.icon),
+    enchant: h.item.enchant ?? 0,
+    amount: h.item.amount,
+    stones: [...stones].map(([id, n]) => ({ name: (itemInfo(id)?.name ?? `#${id}`).replace(' (Bound)', ''), grade: itemInfo(id)?.grade ?? 11, n })),
+    // Beside the pointer, kept on the screen.
+    style: { left: `${Math.min(h.x + 16, window.innerWidth - 300)}px`, top: `${Math.min(h.y + 12, window.innerHeight - 220)}px` },
+  }
+})
+
+// ---- searched: where each item is ----------------------------------------------------------
+
 const found = computed(() => {
   const q = query.value.trim().toLowerCase()
   if (q.length < 2) return null
   const ids = new Set<string>()
-  for (const [, c] of characters.value) for (const items of Object.values(c.items)) for (const id of Object.keys(items ?? {})) ids.add(id)
-  for (const id of Object.keys(store.inventories.account?.items ?? {})) ids.add(id)
+  for (const [, c] of characters.value) for (const s of Object.values(c.slots)) ids.add(String(s.item))
+  for (const s of Object.values(store.inventories.account?.slots ?? {})) ids.add(String(s.item))
   return [...ids]
-    .map((id) => ({ row: row(id, 0), where: whereIs(store.inventories, id) }))
-    .filter((f) => f.row.name.toLowerCase().includes(q))
-    .map((f) => ({ ...f, row: { ...f.row, amount: f.where.reduce((n, w) => n + w[2], 0) } }))
-    .sort((a, b) => byGrade(a.row, b.row))
+    .map((id) => ({ id, info: itemInfo(id), where: whereIs(store.inventories, id) }))
+    .filter((f) => (f.info?.name ?? '').toLowerCase().includes(q))
+    .map((f) => ({ ...f, name: (f.info?.name ?? `#${f.id}`).replace(' (Bound)', ''), grade: f.info?.grade ?? 11, icon: itemIcon(f.info?.icon), total: f.where.reduce((n, w) => n + w[2], 0) }))
+    .sort((a, b) => b.grade - a.grade || a.name.localeCompare(b.name))
 })
 const placeLabel = (p: Place): string => t(PLACES.find((x) => x.id === p)!.label)
 const when = (ms: number): string => new Date(ms).toLocaleString(loc(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 const amountText = (n: number): string => (n >= 10_000 ? n.toLocaleString('en-US') : `×${n}`)
+const itemCount = computed(() => Object.keys(placeItems(slots.value)).length)
 </script>
 
 <template>
   <div>
-    <PageHeader title="Inventory" about="What each of your characters has, as the game lists it when they log in: their bag, what they wear, their own warehouse and their Arcana, and the account's shared warehouse. Search an item to see where it is across all of them." />
+    <PageHeader title="Inventory" about="What each of your characters has: their equipment, bag, own warehouse and Arcana, and the account's shared warehouse, as the game lists them at login and as items move. Hover an item for its details; search one to see where it is across all of them." />
 
     <div v-if="!characters.length" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
       <div class="text-sm font-medium">{{ t('No inventory yet.') }}</div>
@@ -105,11 +136,11 @@ const amountText = (n: number): string => (n >= 10_000 ? n.toLocaleString('en-US
       <!-- Searched: where each item is. -->
       <div v-if="found" class="rounded-xl border border-card">
         <p v-if="!found.length" class="px-4 py-6 text-center text-xs text-darker">{{ t('None of your characters has that.') }}</p>
-        <div v-for="f in found" :key="f.row.id" class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-card px-4 py-2 text-sm last:border-b-0">
-          <img v-if="f.row.icon" :src="f.row.icon" alt="" class="size-6 rounded-sm" draggable="false" />
-          <svg v-else viewBox="0 0 16 16" :class="['size-6', gradeClass(f.row.grade)]" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path :d="ICON.box" /></svg>
-          <span :class="['font-medium', gradeClass(f.row.grade)]">{{ f.row.name }}</span>
-          <span class="font-semibold tabular-nums">{{ amountText(f.row.amount) }}</span>
+        <div v-for="f in found" :key="f.id" class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-card px-4 py-2 text-sm last:border-b-0">
+          <img v-if="f.icon" :src="f.icon" alt="" class="size-7 rounded-sm" draggable="false" loading="lazy" />
+          <svg v-else viewBox="0 0 16 16" :class="['size-7', gradeClass(f.grade)]" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path :d="ICON.box" /></svg>
+          <span :class="['font-medium', gradeClass(f.grade)]">{{ f.name }}</span>
+          <span class="font-semibold tabular-nums">{{ amountText(f.total) }}</span>
           <span class="flex flex-wrap gap-1.5 text-xs">
             <span v-for="(w, i) in f.where" :key="i" class="rounded-full bg-dark px-2 py-0.5">
               {{ w[0] ?? t('Account') }} · {{ placeLabel(w[1]) }} <span class="font-semibold tabular-nums">{{ amountText(w[2]) }}</span>
@@ -135,19 +166,41 @@ const amountText = (n: number): string => (n >= 10_000 ? n.toLocaleString('en-US
           <Segmented v-model="view.place" size="sm" :options="placeOptions" />
           <span v-if="asOf" class="text-xs text-darker">{{ t('As of {when}', { when: when(asOf) }) }}</span>
         </div>
-        <div class="rounded-xl border border-card">
-          <p v-if="!rows.length" class="px-4 py-6 text-center text-xs text-darker">{{ t('Nothing there.') }}</p>
-          <div v-else class="grid gap-x-4 sm:grid-cols-2 xl:grid-cols-3">
-            <div v-for="r in rows" :key="r.id" class="flex items-center gap-2 border-b border-card px-4 py-1.5 text-sm">
-              <img v-if="r.icon" :src="r.icon" alt="" class="size-6 shrink-0 rounded-sm" draggable="false" />
-              <svg v-else viewBox="0 0 16 16" :class="['size-6 shrink-0', gradeClass(r.grade)]" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path :d="ICON.box" /></svg>
-              <span :class="['min-w-0 flex-1 truncate', gradeClass(r.grade)]" :title="r.name">{{ r.name }}</span>
-              <span class="tabular-nums text-dark">{{ amountText(r.amount) }}</span>
-            </div>
+
+        <!-- Equipped: the game's window, two columns. -->
+        <div v-if="view.place === 'worn'" class="inline-flex flex-col gap-1.5 rounded-xl border border-card bg-card/40 p-3">
+          <div v-for="(row, i) in WORN_LAYOUT" :key="i" class="flex gap-1.5">
+            <ItemTile v-for="n in row" :key="n" :slot-item="slots[n] ?? null" @hover="hover" />
           </div>
-          <div class="px-4 py-2 text-xs text-darker">{{ plural(rows.length, '{n} item', '{n} items') }}</div>
+        </div>
+
+        <!-- The bag, the warehouses, the Arcana: a grid of tiles. -->
+        <div v-else class="rounded-xl border border-card p-3">
+          <p v-if="!tiles.length" class="py-6 text-center text-xs text-darker">{{ t('Nothing there.') }}</p>
+          <div v-else class="flex flex-wrap gap-1.5">
+            <ItemTile v-for="x in tiles" :key="x.n" :slot-item="x.s" :size="48" @hover="hover" />
+          </div>
+          <div class="mt-2 text-xs text-darker">{{ plural(itemCount, '{n} item', '{n} items') }}</div>
         </div>
       </template>
     </template>
+
+    <!-- A hovered item's details, beside the pointer. -->
+    <div v-if="details" class="pointer-events-none fixed z-50 w-72 rounded-lg border border-light bg-default p-3 text-xs shadow-xl" :style="details.style">
+      <div class="flex items-start gap-2">
+        <img v-if="details.icon" :src="details.icon" alt="" class="size-10 shrink-0 rounded-sm" draggable="false" />
+        <div class="min-w-0">
+          <div :class="['text-sm font-semibold', gradeClass(details.grade)]">
+            <template v-if="details.enchant">+{{ details.enchant }} </template>{{ details.name }}
+          </div>
+          <div class="text-darker">{{ t(details.gradeName) }}<template v-if="details.bound"> · {{ t('Bound') }}</template></div>
+        </div>
+      </div>
+      <div v-if="details.amount > 1" class="mt-2 tabular-nums">{{ t('Count') }} <span class="font-semibold">{{ details.amount.toLocaleString('en-US') }}</span></div>
+      <div v-if="details.stones.length" class="mt-2 border-t border-card pt-2">
+        <div class="mb-1 text-darker">{{ t('Stones set') }}</div>
+        <div v-for="s in details.stones" :key="s.name" :class="gradeClass(s.grade)">{{ s.name }} <span class="text-default">×{{ s.n }}</span></div>
+      </div>
+    </div>
   </div>
 </template>

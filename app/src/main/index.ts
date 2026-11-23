@@ -9,6 +9,7 @@ import { startApplicants } from './applicants.ts'
 import { startCharacters } from './characters.ts'
 import { startSessions } from './sessions.ts'
 import { startInventory } from './inventory.ts'
+import { registerIconScheme, startIcons } from './icons.ts'
 import { startGuild } from './guild.ts'
 import { applyGameMap, onGameMapStatus, startGameMap } from './gameMap.ts'
 import { startFieldBosses } from './fieldBosses.ts'
@@ -36,6 +37,8 @@ import { applyWindowSettings, closeMerchant, markQuitting, merchantBounds, merch
 // The name is also the data folder's (%APPDATA%\<name>): Lokthar's is copied in on the first start,
 // older names' are moved across once.
 app.setName(DISPLAY_NAME)
+// The item icons not bundled come through their own scheme (icons.ts): declared before ready.
+registerIconScheme()
 const copied = copyDataFolder(join(app.getPath('appData'), LOKTHAR_FOLDER), app.getPath('userData'))
 /** A moment after a merchant tab opens before anything is taken as you having left the shop (a position the same tab's traffic brings). */
 const SHOP_SETTLE_MS = 1_500
@@ -52,6 +55,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('second-instance', () => showPanel())
 
   void app.whenReady().then(() => {
+    startIcons()
     if (migrated) log(`data folder: ${migrated}`)
     if (copied !== 'nothing to copy') log(`data folder: ${copied}`)
     applyLayoutUpdates()

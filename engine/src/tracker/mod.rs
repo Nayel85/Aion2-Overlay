@@ -129,7 +129,7 @@ pub struct Tracker {
     /// The login's Kina and bound Kina (`11 56`), the same way.
     pending_wallet: Option<(i64, Option<u64>, Option<u64>)>,
     /// The login's whole item list, waiting with the wallet for the record naming its character.
-    pending_depot: Vec<(u8, u32, u64)>,
+    pending_depot: Vec<p::DepotItem>,
     /// The Abyss Points total the game just sent (when, points, limit), waiting to know whose.
     pending_abyss: Option<(i64, u64, u64)>,
     /// Each character's Abyss Points balance as last seen (`1b 56`, item byte 0x23).
@@ -193,6 +193,11 @@ pub struct Tracker {
     duty: HashMap<u32, (u32, Vec<p::DutyReward>)>,
     /// Missions handed in before their place was known (the board follows them): (place, indexes, when).
     duty_pending: Vec<(u32, Vec<u32>, i64)>,
+}
+
+/// An item where it lies, as the app keeps it (shared/inventory.ts).
+fn depot_json(i: &p::DepotItem) -> Value {
+    json!({ "storage": i.storage, "slot": i.slot, "item": i.item, "amount": i.amount, "enchant": i.enchant, "stones": i.stones })
 }
 
 fn pet_view(id: u32, pet: &Pet, name: Option<&str>, session: u32) -> Value {
@@ -946,6 +951,15 @@ impl Tracker {
                 }
             }
             p::OP_ITEM => {
+                // The slots it says anew (a transfer, loot, a sale): the inventory as it goes.
+                let slots = p::item_slots(f);
+                if !slots.is_empty() && self.pending_wallet.is_none() {
+                    if let Some(name) = self.store.current.clone() {
+                        let server = self.store.characters.get(&name).and_then(|c| c.server);
+                        let slots: Vec<Value> = slots.iter().map(depot_json).collect();
+                        (self.emit)(json!({ "type": "inventorySlots", "ts": ts, "name": name, "server": server, "slots": slots }));
+                    }
+                }
                 if let Some(balance) = p::abyss_balance(f) {
                     self.abyss_wallet(ts, balance);
                 }
@@ -1346,7 +1360,7 @@ impl Tracker {
         let Some((at, kina, bound)) = self.pending_wallet.take() else { return };
         (self.emit)(json!({ "type": "wallet", "ts": at, "name": name, "server": server, "kina": kina, "boundKina": bound }));
         // And everything they have, where it lies (the Inventory page).
-        let items: Vec<Value> = std::mem::take(&mut self.pending_depot).into_iter().map(|(storage, item, amount)| json!({ "storage": storage, "item": item, "amount": amount })).collect();
+        let items: Vec<Value> = std::mem::take(&mut self.pending_depot).iter().map(depot_json).collect();
         if !items.is_empty() {
             (self.emit)(json!({ "type": "inventory", "ts": at, "name": name, "server": server, "items": items }));
         }

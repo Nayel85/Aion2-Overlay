@@ -236,8 +236,12 @@ export const LOOT_KINDS: { key: keyof LootCounts; label: string }[] = [
   { key: 'cards', label: 'Arcana cards' },
 ]
 
-/** An item's icon (the game's, from questlog: scripts/fetch-loot.mjs, fetch-items.mjs), as the app serves it. */
-export const itemIcon = (icon: string | null | undefined): string | null => (icon ? `items/loot/${icon}.webp` : null)
+/**
+ * An item's icon (the game's, from questlog: scripts/fetch-loot.mjs, fetch-items.mjs), as the app
+ * serves it: a bundled one by its name, one with a path ("Item/Armor/...") through the main
+ * process, which fetches it once and keeps it (main/icons.ts).
+ */
+export const itemIcon = (icon: string | null | undefined): string | null => (icon ? (icon.includes('/') ? `itemicon://icon/${icon}.webp` : `items/loot/${icon}.webp`) : null)
 
 /** One line of what a run gave: an item, how many, and whether it is a currency (Kina, Abyss Points...). */
 export interface RewardRow {

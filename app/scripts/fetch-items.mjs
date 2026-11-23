@@ -12,7 +12,7 @@
  * Grades: 11 common, 21 green, 31 blue, 41 gold (Unique), 51 and up. Kind: `currency`, else its
  * sub-category (`gatherresource`, `skinshop`, `guarder`...), else its main one. Each icon once, in
  * src/renderer/public/items/loot/<icon>.webp: not the usable items' nor the lesser equipment's (too
- * many: the page shows a generic one).
+ * many: those are fetched by the app when first shown, main/icons.ts).
  *
  * Source: questlog.gg's item database (global client, `en`): database.getItems, every page. It
  * serves at most 25 pages (1,000 items) a list, so a longer one is read a sub-category at a time,
@@ -64,6 +64,18 @@ async function icon(path) {
   return name
 }
 
+/**
+ * An icon not bundled, as the app asks for it (main/icons.ts fetches it from questlog's CDN once and
+ * keeps it): its path under Texture/, without the extension ("Item/Armor/Icon_GM_0062_T06_Boots").
+ * Told from a bundled one's bare name by its slashes.
+ */
+const TEXTURES = '/assets/Game/UI/Resource/Texture/'
+function remoteIcon(path) {
+  if (!path?.startsWith(TEXTURES)) return null
+  const rel = path.slice(TEXTURES.length).replace(/\.[^/]+$/, '')
+  return /^[\w/-]+$/.test(rel) ? rel : null
+}
+
 async function page(filter, n) {
   const input = { language: 'en', page: n, ...filter }
   const res = await fetch(`${API}/database.getItems?input=${encodeURIComponent(JSON.stringify(input))}`, { headers: HEADERS })
@@ -105,7 +117,7 @@ for (const [main, iconFrom, subs] of CATEGORIES) {
   for (const i of await category(main, subs)) {
     if (i.mainCategory !== main || i.isDisabled) continue
     const withIcon = iconFrom !== null && (i.grade ?? 0) >= iconFrom
-    items[i.id] = [i.name, i.grade ?? 11, withIcon ? await icon(i.icon) : null, main === 'currency' ? 'currency' : (i.subCategory ?? main)]
+    items[i.id] = [i.name, i.grade ?? 11, withIcon ? await icon(i.icon) : remoteIcon(i.icon), main === 'currency' ? 'currency' : (i.subCategory ?? main)]
   }
   console.log(`${main}: ${Object.keys(items).length} items so far`)
 }
