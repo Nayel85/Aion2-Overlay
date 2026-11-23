@@ -29,6 +29,8 @@ const LOOT_AFTER_MS = 2 * 60_000
 const COUNTER_BEFORE_MS = 2 * 60_000
 /** A field boss's chest opened this soon after it fell in view is that kill's. */
 const BOSS_CHEST_MS = 30 * 60_000
+/** A run opened this soon before a login (the zone comes first) goes with the new session. */
+const RUN_CARRY_MS = 30_000
 
 let sessions: Sessions = NO_SESSIONS
 /** The character selection was shown (its list of characters): the next counters are a login. */
@@ -91,10 +93,15 @@ function changed(): void {
 /** The session going on into the history (if it earned anything), and a new one for `name`. */
 function begin(name: string, server: number | null, at: number): PlaySession {
   const old = sessions.current
+  // The zone comes a moment before the login says who you are (entering the world, or the app
+  // started as you went into a Shugo Festival's game): a run opened just now is the new session's.
+  const open = old?.runs?.at(-1)
+  const carried = open && open.end === null && at - open.start <= RUN_CARRY_MS ? open : null
+  if (old && carried) old.runs = old.runs!.slice(0, -1)
   const kept = old && (old.ap > 0 || old.kina > 0 || (old.runs?.length ?? 0) > 0 || Object.keys(old.currencies ?? {}).length > 0 || (old.gathering?.done ?? 0) > 0)
   const history = kept ? [old, ...sessions.history].slice(0, HISTORY_MAX) : sessions.history
   if (old) closeRun(old, at)
-  const current: PlaySession = { name, server, start: at, last: at, ap: 0, sources: {}, kina: 0, kinaSources: {}, currencies: {}, runs: [] }
+  const current: PlaySession = { name, server, start: carried?.start ?? at, last: at, ap: 0, sources: {}, kina: 0, kinaSources: {}, currencies: {}, runs: carried ? [carried] : [] }
   sessions = { current, history }
   kinaSeen = null
   currencySeen = new Map()
