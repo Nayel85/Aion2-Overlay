@@ -8,7 +8,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { loc, plural, t } from '@/lib/i18n.ts'
-import { dungeonFor, DUNGEON_KINDS, type Dungeon } from '@shared/dungeons.ts'
+import { difficultyOf, DIFFICULTY_LABEL, dungeonFor, DUNGEON_KINDS, type Dungeon } from '@shared/dungeons.ts'
 import { CLASS_NAMES, type FightSummary } from '@shared/meter.ts'
 
 const api = bridge()
@@ -52,7 +52,12 @@ const groups = computed<Group[]>(() => {
   const out: Group[] = []
   for (const f of newest) {
     const d: Dungeon | null = where.get(f.id) ?? null
-    const name = d?.name ?? ''
+    let tier: string | null = null
+    try {
+      const k = difficultyOf(f.dungeonId)
+      tier = k ? t(DIFFICULTY_LABEL[k]) : null
+    } catch { /* the label is a bonus: without it the group is just the dungeon */ }
+    const name = d ? (tier ? `${d.name} · ${tier}` : d.name) : ''
     let g = out.at(-1)
     if (!g || g.name !== name) {
       g = { key: f.id, name, kind: d ? (DUNGEON_KINDS.find((k) => k.id === d.kind)?.label ?? null) : null, fights: [], last: 0 }

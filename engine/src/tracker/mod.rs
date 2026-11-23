@@ -1161,6 +1161,24 @@ impl Tracker {
                     self.player_card(ts, card);
                 }
             }
+            p::OP_APPLICANT => {
+                if let Some((character, card)) = p::applicant(f) {
+                    (self.emit)(json!({
+                        "type": "applicant", "ts": ts, "character": character, "name": card.name, "server": card.server,
+                        "className": p::roster_class(card.class), "level": card.level, "gearScore": card.gear_score, "combatPower": card.combat_power,
+                    }));
+                }
+            }
+            p::OP_APPLICANT_GONE => {
+                if let Some(character) = p::applicant_gone(f) {
+                    (self.emit)(json!({ "type": "applicantGone", "ts": ts, "character": character }));
+                }
+            }
+            p::OP_MEMBER_JOINED => {
+                if let Some(character) = p::member_joined(f) {
+                    (self.emit)(json!({ "type": "applicantGone", "ts": ts, "character": character }));
+                }
+            }
             p::OP_PLAYER => {
                 if let Some(player) = p::player(f) {
                     let enemy = matches!((player.faction, self.my_faction()), (Some(theirs), Some(mine)) if theirs != mine);

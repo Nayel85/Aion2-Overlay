@@ -51,7 +51,41 @@ const tracker = () => ({
   fieldBosses, pvp, cubes, enemies, target,
 })
 
+/** Join requests, as main keeps them (the Applicants widget). */
+let applicants: { list: unknown[]; lastAt: number } = { list: [], lastAt: 0 }
+
+/** A roster for the Guild page: members with their main and alts. */
+function guildSample(): unknown {
+  const classes = ['gladiator', 'templar', 'assassin', 'ranger', 'sorcerer', 'summoner', 'cleric', 'chanter']
+  const people: [string, string[]][] = [
+    ['Ksix', ['Ksix', 'Ksixx', 'TremendoHeal', 'Ksixxx']], ['Shiggly', ['Shiggly', 'Shigglypuff']], ['Bombon', ['Bombon', 'Bomboncito']], ['Athraia', ['Athraia']],
+    ['Notsky', ['Notsky', 'Notskyy', 'Notskyyy']], ['YIYATESANO', ['YIYATESANO']], ['Vellari', ['Vellari', 'iVellari']], ['Hine', ['Hine']], ['Tadalafila', ['Tadalafila', 'Tadalafilo']],
+    ['Clerigod', ['Clerigod']], ['Lezadinha', ['Lezadinha', 'Lezado']], ['Orenjikun', ['Orenjikun']],
+  ]
+  let n = 3
+  const rnd = (): number => ((n = (n * 9301 + 49297) % 233280) / 233280)
+  const at = now()
+  const members = people.map(([name, chars], i) => ({
+    id: i + 1,
+    name,
+    you: i === 0,
+    characters: chars.map((c, j) => {
+      const base = 2600 - j * 380 - Math.round(rnd() * 250)
+      const energy = rnd() > 0.15 ? Math.round(rnd() * 56) * 15 : null
+      return {
+        name: c, server: 1406, className: classes[Math.floor(rnd() * classes.length)], level: 45, gearScore: base, combatPower: Math.round(base * (38 + rnd() * 16)),
+        main: j === 0, portraitUrl: null, legion: 'Lokthar', reportedAt: at,
+        energy: energy === null ? null : { value: energy, extra: rnd() > 0.6 ? Math.round(rnd() * 150) : 0, max: 840, per: 15, nextAt: at + 3_600_000, fullAt: at + 86_400_000, readAt: at },
+        nightmare: null, ascension: null,
+      }
+    }),
+  }))
+  return { state: 'ok', message: null, roster: 'Main', main: { name: 'Ksix', server: 1406 }, members, at }
+}
+
 const data: Record<string, () => unknown> = {
+  'guild:get': guildSample,
+  'applicants:get': () => applicants,
   'settings:all': () => settings,
   'tracker:get': tracker,
   // Odyle energy 610 (+45 charged) as of an hour ago: what the HUD's energy figure works from.
@@ -79,6 +113,10 @@ export function installStub(): void {
       if (channel === 'killfeed:open' || channel === 'killfeed:close') {
         settings.killFeed.open = channel === 'killfeed:open'
         return void emit('settings:changed', JSON.parse(JSON.stringify(settings)))
+      }
+      if (channel === 'applicants:dismiss') {
+        applicants = { ...applicants, list: applicants.list.filter((a) => (a as { character: number }).character !== args[0]) }
+        return void emit('applicants:changed', applicants)
       }
       if (channel === 'unified:resize' || channel === 'unified:moveTo' || channel === 'unified:dragEnd') return undefined
       const read = data[channel]
@@ -188,6 +226,21 @@ export const sim = {
       { entity: 4, name: 'Calm', server: 2104, legion: null, pvp: false },
     ] as Enemy[]
     emit('tracker:enemies', enemies)
+  },
+  /** One more join request: they arrive one by one (the widget animates each). */
+  apply(): void {
+    const pool = [
+      ['Vellari', 'Cleric', 102_709, 2222, 2404], ['Hine', 'Chanter', 105_405, 2090, 2405], ['Tadalafila', 'Cleric', 66_513, 1446, 1401], ['Clerigod', 'Cleric', 86_323, 1506, 2401],
+      ['TempestaD', 'Cleric', 85_919, 1826, 2401], ['Biaa', 'Chanter', 97_663, 1745, 2403], ['Block', 'Gladiator', 88_489, 1509, 2401], ['JumpingQQQ', 'Assassin', 100_375, 1745, 2404],
+    ] as const
+    const [name, className, combatPower, gearScore, server] = pool[applicants.list.length % pool.length]!
+    const at = now()
+    applicants = { list: [...applicants.list, { character: at, name, server, className, level: 45, gearScore, combatPower, at }], lastAt: at }
+    emit('applicants:changed', applicants)
+  },
+  noApplicants(): void {
+    applicants = { list: [], lastAt: applicants.lastAt }
+    emit('applicants:changed', applicants)
   },
   noEnemies(): void {
     enemies = []

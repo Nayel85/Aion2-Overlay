@@ -13,6 +13,8 @@ import type { FieldBosses, TimerAlert, TimerId } from '@shared/timers.ts'
 import type { Buff } from '@shared/buffs.ts'
 import type { Characters } from '@shared/characters.ts'
 import { NO_SESSIONS, type Sessions } from '@shared/sessions.ts'
+import { NO_APPLICANTS, type Applicants } from '@shared/applicants.ts'
+import { NO_GUILD, type GuildState } from '@shared/guild.ts'
 import { NO_GUILD_EVENTS, type GuildEventsState } from '@shared/guildEvents.ts'
 import { bridge } from '@/lib/bridge.ts'
 import type { Genus } from '@/lib/petDb.ts'
@@ -37,6 +39,10 @@ export const useApp = defineStore('app', () => {
   const characters = ref<Characters>({})
   /** The play sessions: the character playing's since their login, and the past ones. */
   const sessions = ref<Sessions>(NO_SESSIONS)
+  /** Join requests to your party (the Applicants widget). */
+  const applicants = ref<Applicants>(NO_APPLICANTS)
+  /** The guild as the Lokthar site has it, and your main there (the Guild page). */
+  const guild = ref<GuildState>(NO_GUILD)
   /** The Lokthar site's guild events that ask who comes, and your answers (main/guildEvents.ts). */
   const guildEvents = ref<GuildEventsState>({ ...NO_GUILD_EVENTS })
   /** Timers to scroll to and highlight in the Event Alerts and Field Bosses pages (the bubble was clicked on their alert). */
@@ -146,6 +152,8 @@ export const useApp = defineStore('app', () => {
     api.on('tracker:fieldBosses', (b) => (fieldBosses.value = b))
     api.on('characters:changed', (c) => (characters.value = c))
     api.on('sessions:changed', (s) => (sessions.value = s))
+    api.on('applicants:changed', (a) => (applicants.value = a))
+    api.on('guild:changed', (g) => (guild.value = g))
     api.on('guildEvents:state', (g) => (guildEvents.value = g))
     api.on('tracker:pvp', (k) => {
       pvpStats.value = pvpSummary(k)
@@ -183,6 +191,8 @@ export const useApp = defineStore('app', () => {
     fieldBosses.value = t.fieldBosses
     characters.value = await api.invoke('characters:get')
     sessions.value = await api.invoke('sessions:get')
+    applicants.value = await api.invoke('applicants:get')
+    guild.value = await api.invoke('guild:get')
     guildEvents.value = await api.invoke('guildEvents:get')
     alerting.value = await api.invoke('timers:get')
     buffs.value = await api.invoke('buffs:get')
@@ -215,7 +225,7 @@ export const useApp = defineStore('app', () => {
   }
 
   return {
-    settings, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, guildEvents, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
+    settings, applicants, guild, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, guildEvents, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
     init, set, setHud, togglePin, openPet, hiddenPet,
   }
 })

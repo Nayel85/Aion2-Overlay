@@ -6,6 +6,8 @@
 import type { Buff } from './buffs.ts'
 import type { Characters } from './characters.ts'
 import type { Sessions } from './sessions.ts'
+import type { Applicants } from './applicants.ts'
+import type { GuildState } from './guild.ts'
 import type { GameMapState, MapDetail } from './gameMap.ts'
 import type { DummyState } from './dummy.ts'
 import type { UpdateState } from './update.ts'
@@ -55,6 +57,16 @@ export interface InvokeChannels {
   'characters:get': { args: []; result: Characters }
   /** The play sessions: the one going on and the past ones (shared/sessions.ts). */
   'sessions:get': { args: []; result: Sessions }
+  /** The guild as the Lokthar site has it (the Guild page). */
+  'guild:get': { args: []; result: GuildState }
+  'guild:refresh': { args: []; result: void }
+  /** Join requests to your party (the Applicants widget). */
+  'applicants:get': { args: []; result: Applicants }
+  'applicants:dismiss': { args: [character: number]; result: void }
+  'applicants:clear': { args: []; result: void }
+  'applicants:moveTo': { args: [to: Point]; result: void }
+  'applicants:dragEnd': { args: []; result: void }
+  'applicants:resize': { args: [size: { width: number; height: number }]; result: void }
   /** Ask NCSoft for a character's combat power and portrait again. */
   'characters:refresh': { args: [id: string]; result: void }
   /** Stop tracking a character. */
@@ -239,6 +251,10 @@ export interface EventChannels {
   /** Your characters, whenever one changes. */
   'characters:changed': Characters
   'sessions:changed': Sessions
+  /** The join requests, whenever one comes, goes or the list clears. */
+  'applicants:changed': Applicants
+  /** The guild, whenever the site answers (or the connection changes). */
+  'guild:changed': GuildState
   /** A timer started alerting (once per start: the chime). */
   'timers:alert': TimerAlert
   /** Every timer alerting now (the bubble shakes while there are any). */
@@ -302,10 +318,10 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'meter:get', 'meter:reset', 'meter:moveTo', 'meter:dragEnd', 'meter:resize',
   'minimap:moveTo', 'minimap:dragEnd', 'minimap:resize',
   'skills:get', 'skills:moveTo', 'skills:dragEnd', 'skills:resize',
-  'buffs:get', 'buffs:moveTo', 'buffs:dragEnd', 'buffs:resize', 'cc:moveTo', 'cc:dragEnd', 'cc:resize', 'enemies:moveTo', 'enemies:dragEnd', 'enemies:resize', 'bossruns:moveTo', 'bossruns:dragEnd', 'bossruns:resize', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'eventtoast:resize', 'training:moveTo', 'training:dragEnd', 'training:resize', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'packets:resize', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
+  'buffs:get', 'buffs:moveTo', 'buffs:dragEnd', 'buffs:resize', 'cc:moveTo', 'cc:dragEnd', 'cc:resize', 'enemies:moveTo', 'enemies:dragEnd', 'enemies:resize', 'guild:get', 'guild:refresh', 'applicants:get', 'applicants:dismiss', 'applicants:clear', 'applicants:moveTo', 'applicants:dragEnd', 'applicants:resize', 'bossruns:moveTo', 'bossruns:dragEnd', 'bossruns:resize', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'eventtoast:resize', 'training:moveTo', 'training:dragEnd', 'training:resize', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'packets:resize', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
   'details:open', 'details:get', 'details:view', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:delete',
 ]
 
 export const EVENT_CHANNELS: readonly EventChannel[] = [
-  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'characters:changed', 'sessions:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'panel:showCharacters', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', 'guildEvents:state', 'guildEvents:changed',
+  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'guild:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', 'guildEvents:state', 'guildEvents:changed',
 ]

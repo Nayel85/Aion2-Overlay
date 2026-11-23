@@ -11,7 +11,7 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
-import { ABYSS_TIME, ASCENSION, characterId, corridorReset, CORRIDORS, ncsoftRegion, NIGHTMARE, portraitUrl, type Characters, type TrackedCharacter } from '../shared/characters.ts'
+import { ABYSS_TIME, ASCENSION, characterId, corridorReset, CORRIDORS, ENERGY, ncsoftRegion, NIGHTMARE, portraitUrl, type Characters, type TrackedCharacter } from '../shared/characters.ts'
 
 /** How long NCSoft's combat power and portrait are kept before asking again. */
 const FETCH_EVERY_MS = 24 * 3_600_000
@@ -192,7 +192,7 @@ export function startCharacters(): void {
     void fetchMissing()
   })
   /** Runs entered, kept up to date as they happen (energy changes with every fight: it waits for the next login). */
-  const RUNS = new Set([NIGHTMARE.id, ASCENSION.id])
+  const RUNS = new Set([NIGHTMARE.id, ASCENSION.id, ENERGY.id])
   // The login's counters.
   tracker.onEvent('counters', (ev) => {
     const server = ev['server'] as number | null
@@ -203,7 +203,7 @@ export function startCharacters(): void {
     log(`characters: ${c.name}'s counters, energy ${JSON.stringify(c.counters.values['60000001'] ?? null)}`)
     changed()
   })
-  // A counter changed while playing: a Nightmare or Ascension Trial entered, the corridors given or
+  // A counter changed while playing: a Nightmare or Ascension Trial entered, Odyle energy spent (the loot chest), the corridors given or
   // done, and your Abyss time ticking.
   tracker.onEvent('counter', (ev) => {
     const server = ev['server'] as number | null
@@ -225,7 +225,7 @@ export function startCharacters(): void {
       const values = ev['values'] as number[]
       c.counters.values[id] = values
       c.counters.changedAt = { ...c.counters.changedAt, [id]: at }
-      log(`characters: ${c.name}'s ${id === NIGHTMARE.id ? 'Nightmare' : 'Ascension Trial'} now ${JSON.stringify(values)}`)
+      log(`characters: ${c.name}'s ${id === NIGHTMARE.id ? 'Nightmare' : id === ENERGY.id ? 'Odyle energy' : 'Ascension Trial'} now ${JSON.stringify(values)}`)
       changed()
       return
     }

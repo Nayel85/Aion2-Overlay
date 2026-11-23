@@ -20,6 +20,7 @@
  *   killfeed  #/killfeed  player kills around you, as they happen: opened from the PvP page
  *   bossruns  #/bossruns  Verteron's field bosses about to spawn, with their Kibelisk: up by itself
  *                         when several spawn close together; moved by its header, sized by its corner
+ *   applicants #/applicants join requests to your party, as people apply (its own widget; up while there are any)
  *   eventtoast #/eventtoast a guild event to answer (going, maybe, not going): popped up in the
  *                         bottom right corner of the screen the game is on, above the taskbar
  *   meter     #/meter     the DPS meter: open while the game is (and the meter is on), movable by
@@ -780,6 +781,22 @@ export const createPacketsHud = packetsOverlay.create
 export const closePacketsHud = packetsOverlay.close
 export const resizePacketsHud = packetsOverlay.resize
 
+/** Join requests: left of centre, a fifth of the way down (clickable: it has buttons). */
+const applicantsOverlay = measuredOverlay({
+  route: 'applicants',
+  enabled: () => settings.get('applicants').enabled,
+  saved: () => settings.get('applicants').position,
+  fallback: () => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: Math.round(area.x + area.width * 0.3), y: Math.round(area.y + area.height * 0.2) }
+  },
+  save: (position) => settings.set('applicants', { ...settings.get('applicants'), position }),
+})
+export const createApplicants = applicantsOverlay.create
+export const resizeApplicants = applicantsOverlay.resize
+export const moveApplicants = applicantsOverlay.move
+export const applicantsDragEnded = applicantsOverlay.dragEnded
+
 /** Boss Runs: right of centre, a third of the way down. */
 const bossRunsOverlay = measuredOverlay({
   route: 'bossruns',
@@ -815,7 +832,7 @@ const eventToastOverlay = measuredOverlay({
 export const createEventToast = eventToastOverlay.create
 export const resizeEventToast = eventToastOverlay.resize
 
-const MEASURED = [skillsOverlay, miniMapOverlay, buffsOverlay, ccOverlay, enemiesOverlay, trainingOverlay, packetsOverlay, bossRunsOverlay, eventToastOverlay]
+const MEASURED = [applicantsOverlay, skillsOverlay, miniMapOverlay, buffsOverlay, ccOverlay, enemiesOverlay, trainingOverlay, packetsOverlay, bossRunsOverlay, eventToastOverlay]
 /** The measured overlays that are open. */
 const measuredWins = (): BrowserWindow[] => MEASURED.map((m) => m.win()).filter((w): w is BrowserWindow => w !== null)
 
@@ -1167,6 +1184,8 @@ export function applyWindowSettings(): void {
   else if (alive(bubble)) createCc()
   if (!enemiesOn()) enemiesOverlay.close()
   else if (alive(bubble)) createEnemies()
+  if (!settings.get('applicants').enabled) applicantsOverlay.close()
+  else if (alive(bubble)) createApplicants()
   if (!bossRunsOn()) bossRunsOverlay.close()
   else if (alive(bubble)) createBossRuns()
   if (!eventToastEnabled()) eventToastOverlay.close()
@@ -1236,7 +1255,7 @@ export function rebuildWindow(win: BrowserWindow): string | null {
     showMerchant()
     return 'merchant'
   }
-  for (const [m, route] of [[skillsOverlay, 'skills'], [miniMapOverlay, 'minimap'], [buffsOverlay, 'buffs'], [ccOverlay, 'cc'], [enemiesOverlay, 'enemies'], [trainingOverlay, 'training'], [packetsOverlay, 'packets'], [bossRunsOverlay, 'bossruns'], [eventToastOverlay, 'eventtoast']] as const) {
+  for (const [m, route] of [[applicantsOverlay, 'applicants'], [skillsOverlay, 'skills'], [miniMapOverlay, 'minimap'], [buffsOverlay, 'buffs'], [ccOverlay, 'cc'], [enemiesOverlay, 'enemies'], [trainingOverlay, 'training'], [packetsOverlay, 'packets'], [bossRunsOverlay, 'bossruns'], [eventToastOverlay, 'eventtoast']] as const) {
     if (win !== m.win()) continue
     m.close()
     m.create()

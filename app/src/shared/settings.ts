@@ -3,7 +3,8 @@
  * file or a renderer bug can never store something the app then trips over.
  */
 
-import { BOSS_RUNS } from './bossRuns.ts'
+import { APPLICANTS_HIDE } from './applicants.ts'
+import { BOSS_RUNS, DEFAULT_LOW_PRIORITY } from './bossRuns.ts'
 import type { Lang } from './i18n.ts'
 import { DUMMY_DAMAGE_GOALS, DUMMY_LIMITS, type DummyGoal } from './dummy.ts'
 import { isSound, type SoundId } from './sounds.ts'
@@ -135,6 +136,8 @@ export interface Settings {
    * once bring it up too (0: never), the bosses of low priority (list ids), and whether those are
    * left out of that count.
    */
+  /** Join requests to your party: a widget that comes up when someone applies. */
+  applicants: { enabled: boolean; position: Point | null; opacity: number; collapsed: boolean; /** Seconds it stays after the last application. */ hideAfter: number }
   bossRuns: { enabled: boolean; position: Point | null; opacity: number; windowMinutes: number; rows: number; collapsed: boolean; scale: number; aliveMin: number; ignoreLow: boolean; lowPriority: number[] }
 
   /**
@@ -368,6 +371,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   timerBar: { enabled: true, position: { x: 859, y: 141 }, opacity: 0.92, layout: 'list' },
   unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, buttons: 'hover', events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, earningsMinutes: 10, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, guild: false, clock: true, odyle: true, runsPinned: false, replace: false },
   muted: false,
+  applicants: { enabled: true, position: null, opacity: 0.85, collapsed: false, hideAfter: 60 },
   bossRuns: { enabled: false, position: { x: 1890, y: 30 }, opacity: 0.85, windowMinutes: 15, rows: 4, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: [101001, 101002, 101006, 101007, 101019, 101017, 101005, 101004, 101003, 101015, 101010, 101008, 101009, 101016, 101012, 101014, 101020, 101013, 101011, 101018] },
   killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null },
   enemies: { enabled: false, position: null, opacity: 0.75, collapsed: false, mapPins: true, sound: true, pvpOnly: true, soundId: 'enemy-spotted', volume: 0.7, customName: null },
@@ -562,6 +566,16 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         odyle: bool(v.odyle, u.odyle),
         runsPinned: bool(v.runsPinned, u.runsPinned),
         replace: bool(v.replace, u.replace),
+      } as Settings[K]
+    }
+    case 'applicants': {
+      const v = (value ?? {}) as Partial<Settings['applicants']>
+      return {
+        enabled: bool(v.enabled, d.applicants.enabled),
+        position: point(v.position),
+        opacity: num(v.opacity, 0, 1, d.applicants.opacity),
+        collapsed: bool(v.collapsed, false),
+        hideAfter: Math.round(num(v.hideAfter, APPLICANTS_HIDE[0], APPLICANTS_HIDE[1], d.applicants.hideAfter)),
       } as Settings[K]
     }
     case 'bossRuns': {
