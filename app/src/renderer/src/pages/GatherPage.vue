@@ -91,7 +91,7 @@ const gauges = computed(() => {
   const fullFail = g.rolls.reduce((n, r) => n + r.failure, 0)
   // The gauge's top: what a success fills (360 for an Odyle node), else what a failure does.
   const top = Math.max(g.outcome === 'fail' ? fullFail : fullOk, fullOk, fullFail, 1)
-  let t = elapsed.value - 690
+  let t = elapsed.value - 110
   let ok = 0
   let bad = 0
   let playing: (typeof g.rolls)[number] | null = null
@@ -103,7 +103,7 @@ const gauges = computed(() => {
     if (part < 1) playing = r
     t -= r.ms
   }
-  // Past its rolls (steps not read yet): the outcome's gauge fills to its top.
+  // Past its rolls (a rank up playing, or a roll not read): the outcome's gauge at its top.
   if (t > 0) {
     if (g.outcome === 'fail') bad = top
     else ok = top

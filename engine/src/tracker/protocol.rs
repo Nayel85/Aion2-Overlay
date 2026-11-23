@@ -730,17 +730,11 @@ pub fn craft_start(frame: &[u8]) -> Option<(u32, u8, u32)> {
     Some((recipe, outcome, ms))
 }
 
-/// How long a gathering takes, from the steps its start lists (`<count u8>`, then each `<kind u8>
-/// <actions u8> (<action u32> <u8> <u32>)×actions` and its values): each pushes the success bar
-/// (action 800, or 300) or the failure one (100), or doubles it (71000). Kinds 1, 2, 3 and 5 take
-/// 1.56 s, 0, 4 and 6 1.1 s (a craft's steps too have two lengths), a step without an action 1.05 s,
-/// a rank up 1.35 s more, and 0.69 s besides: the owner's 17 gatherings of 2026-11-22 to 0.23 s on
-/// average. `b` from the gathering's try counter on.
+/// How long a gathering takes, from its rolls (`gather_rolls`): a roll of kind 1, 2, 3 or 5 plays
+/// 1.51 s, of kind 0, 4 or 6 1.21 s, the doubling 1.01 s more, a rank up 1.01 s more, and 0.11 s
+/// besides. The owner's 17 gatherings of 2026-11-22: within 0.04 s each. `b` from its try counter on.
 fn gather_ms(b: &[u8], grade: u8) -> u32 {
-    let rolls = gather_rolls(b);
-    let steps = b.get(11).copied().unwrap_or(0) as u32;
-    let other = steps.saturating_sub(rolls.len() as u32);
-    690 + rolls.iter().map(|r| r.ms).sum::<u32>() + 1050 * other + if grade > 1 { 1345 } else { 0 }
+    110 + gather_rolls(b).iter().map(|r| r.ms).sum::<u32>() + if grade > 1 { 1010 } else { 0 }
 }
 
 /// One roll of a gathering (its start lists them): how long it plays (ms), what it adds to the success
@@ -755,40 +749,40 @@ pub struct GatherRoll {
     pub doubled: bool,
 }
 
-/// A gathering start's rolls, those with an action told (`b` from its try counter on): each
-/// `<kind u8> <actions u8> (<action u32> <u8> <action u32>)×actions` then its gains as u32s, the
-/// success's second (800: 110 then 160 with the skill), the failure's fourth (100: 144 then 104).
+/// A gathering start's rolls (`b` from its try counter on): `<count u8>` at 11, then each `<kind u8>
+/// [00] <actions u8> (<skill u32> 01 <skill u32>)×actions <success u32> <success after skills u32>
+/// <failure u32> <failure after skills u32>`. The skills are those that fired: 800 a success (with
+/// Proficient Handling 810), 100 a failure (Delicate Touch 105), 300 Lady Luck, 71000 the doubling;
+/// none, a roll as it fell. The `00` comes before the actions' count on some later rolls. The owner's
+/// gatherings filled their gauge to 360 (Odyle) or 630 with them.
 pub fn gather_rolls(b: &[u8]) -> Vec<GatherRoll> {
-    const ACTIONS: [u32; 4] = [100, 300, 800, 71_000];
-    let mut starts = Vec::new();
+    let u = |at: usize| b.get(at..at + 4).map(|x| u32::from_le_bytes([x[0], x[1], x[2], x[3]]));
+    let count = b.get(11).copied().unwrap_or(0);
+    let mut rolls = Vec::new();
     let mut p = 12;
-    while p + 6 <= b.len() {
-        let actions = b[p + 1] as usize;
-        let action = u32::from_le_bytes([b[p + 2], b[p + 3], b[p + 4], b[p + 5]]);
-        if (1..=4).contains(&actions) && ACTIONS.contains(&action) {
-            starts.push(p);
-            p += 2 + 9 * actions;
-        } else {
-            p += 1;
+    for _ in 0..count {
+        let (Some(&kind), Some(&next)) = (b.get(p), b.get(p + 1)) else { break };
+        let (actions, at) = match b.get(p + 2) {
+            Some(&k) if next == 0 && k <= 4 => (k as usize, p + 3),
+            _ => (next as usize, p + 2),
+        };
+        if actions > 4 {
+            break;
         }
+        let skills: Vec<u32> = (0..actions).filter_map(|m| u(at + 9 * m)).collect();
+        let values = at + 9 * actions;
+        let (Some(success), Some(failure)) = (u(values + 4), u(values + 12)) else { break };
+        let doubled = skills.contains(&71_000);
+        rolls.push(GatherRoll {
+            ms: if matches!(kind, 0 | 4 | 6) { 1210 } else { 1510 } + if doubled { 1010 } else { 0 },
+            success,
+            failure,
+            luck: skills.contains(&300),
+            doubled,
+        });
+        p = values + 16;
     }
-    let u = |at: usize| b.get(at..at + 4).map_or(0, |x| u32::from_le_bytes([x[0], x[1], x[2], x[3]]));
-    starts
-        .iter()
-        .map(|&s| {
-            let actions = b[s + 1] as usize;
-            let ids: Vec<u32> = (0..actions).map(|m| u(s + 2 + 9 * m)).collect();
-            let values = s + 2 + 9 * actions;
-            let failed = ids.contains(&100) && !ids.contains(&800);
-            GatherRoll {
-                ms: if matches!(b[s], 0 | 4 | 6) { 1102 } else { 1557 },
-                success: if failed { 0 } else { u(values + 4) },
-                failure: if failed { u(values + 12) } else { 0 },
-                luck: ids.contains(&300),
-                doubled: ids.contains(&71_000),
-            }
-        })
-        .collect()
+    rolls
 }
 
 /// A gathering's outcome (`33 8D <result u8> <u32> <item u32> <amount u32> <bonus u32> ...`), sent
@@ -1665,19 +1659,19 @@ mod tests {
             Some((111_086_001, 13, 16_700))
         );
         // Their starts, which already said it: gathered, ranked up, failed.
-        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000a3b70102000000070000020000000305"))).map(|g| (g.0, g.1, g.2, g.3, g.4, g.5)), Some((23459, 2, 7, 2, false, 5185)));
-        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000b3b20101000000000000010000000605"))).map(|g| (g.0, g.1, g.2, g.3, g.4, g.5)), Some((22835, 1, 0, 1, false, 6990)));
+        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000a3b70102000000070000020000000305"))).map(|g| (g.0, g.1, g.2, g.3, g.4, g.5)), Some((23459, 2, 7, 2, false, 1120)));
+        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000b3b20101000000000000010000000605"))).map(|g| (g.0, g.1, g.2, g.3, g.4, g.5)), Some((22835, 1, 0, 1, false, 110)));
         // Its rolls: two successes with Proficient Handling (110 + 50), then the doubling's 40: the 360 gauge.
         let rolls = gather_start(&frame(OP_GATHER_START, &hex("0000b8c701010000000100000100000003030120030000012a0300006e000000a00000000000000000000000030120030000012a0300006e000000a00000000000000000000000030158150100015a15010028000000280000000000000000000000"))).unwrap().6;
         assert_eq!(rolls.iter().map(|r| (r.success, r.failure, r.doubled)).collect::<Vec<_>>(), vec![(160, 0, false), (160, 0, false), (40, 0, true)]);
         // Gathered twice (x2), then once.
         assert_eq!(
             gather_start(&frame(OP_GATHER_START, &hex("0000b8c701010000000100000100000003030120030000012a0300006e000000a00000000000000000000000030120030000012a0300006e000000a00000000000000000000000030158150100015a15010028000000280000000000000000000000"))).map(|g| (g.0, g.1, g.2, g.3, g.4, g.5)),
-            Some((25528, 1, 1, 1, true, 5361))
+            Some((25528, 1, 1, 1, true, 5650))
         );
         assert_eq!(
             gather_start(&frame(OP_GATHER_START, &hex("0000b8c701020000000100000100000006060164000000016900000000000000000000006000000038000000040120030000012a03000032000000640000000000000000000000050164000000016900000000000000000000009000000068000000040120030000012a03000032000000640000000000000000000000040120030000012a0300003200000064000000000000000000000004000120030000012a030000320000003c0000000000000000000000"))).map(|g| (g.0, g.1, g.2, g.3, g.4, g.5)),
-            Some((25528, 2, 1, 1, false, 7757))
+            Some((25528, 2, 1, 1, false, 7670))
         );
         // A failed one: nothing gathered.
         assert_eq!(gather(&frame(OP_GATHER, &hex("023ab3b2015d2b652400000000000000000000000000000000"))), Some((2, 610_610_013, 0, 0)));
