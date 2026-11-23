@@ -691,7 +691,8 @@ pub fn gather_start(frame: &[u8]) -> Option<(u32, u32, u8, u8, bool)> {
     // The grade rolled: 1 the plain item, 2 ranked up (Fine), 3, 4 (questlog's drop groups).
     let grade = *b.get(at + 7)?;
     let doubled = b[at..].windows(DOUBLED.len()).any(|w| w == DOUBLED);
-    matches!(outcome, 0 | 1 | 7).then_some((node, tries, outcome, grade, doubled))
+    // Outcomes other than 0, 1 and 7 come too (a Fine Odyle on 2026-11-23 had one): told as they are.
+    (grade >= 1 && grade <= 9).then_some((node, tries, outcome, grade, doubled))
 }
 
 /// A supply request handed in (`3F E2 <u32> <request u32> <u32> <n u8> (<item u32> <amount u32>)×n`):

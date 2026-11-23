@@ -39,10 +39,13 @@ export function startGather(): void {
   }
   tracker.onEvent('gatherStart', (ev) => {
     const code = ev['outcome'] as number
-    const outcome = code === 0 ? 'fail' : code === 7 ? 'rankUp' : 'ok'
+    const grade = (ev['grade'] as number | undefined) ?? 1
+    // 0 failed; else the grade rolled says it: above 1 ranked up (7 the code seen with it, others too).
+    const outcome = code === 0 ? 'fail' : grade > 1 || code === 7 ? 'rankUp' : 'ok'
+    if (code !== 0 && code !== 1 && code !== 7) log(`gathering: outcome ${code} (grade ${grade}) not known before`)
     pendingTemplate = (ev['template'] as number | null | undefined) ?? null
     const plain = pendingTemplate !== null ? templates[pendingTemplate] : undefined
-    const item = gatherItem(plain, outcome === 'fail' ? 1 : ((ev['grade'] as number | undefined) ?? 1))
+    const item = gatherItem(plain, outcome === 'fail' ? 1 : grade)
     set({ kind: 'gather', outcome, doubled: ev['doubled'] === true, item, at: Date.now() })
   })
   tracker.onEvent('gather', (ev) => {

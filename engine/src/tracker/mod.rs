@@ -1134,7 +1134,10 @@ impl Tracker {
             }
             p::OP_GATHER_START => {
                 if let Some((node, tries, outcome, grade, doubled)) = p::gather_start(f) {
-                    tracing::info!("gathering {node} (try {tries}): will be {outcome}, doubled {doubled}");
+                    tracing::info!("gathering {node} (try {tries}): will be {outcome}, grade {grade}, doubled {doubled}");
+                    if !matches!(outcome, 0 | 1 | 7) {
+                        tracing::info!("gathering start with outcome {outcome}: {}", f.iter().map(|b| format!("{b:02x}")).collect::<String>());
+                    }
                     let template = self.objects.get(&node);
                     (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled }));
                 }
