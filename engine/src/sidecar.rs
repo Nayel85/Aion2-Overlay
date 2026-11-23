@@ -49,6 +49,7 @@
 //!   {"type": "shop", "tab": 104, "nextAt": ms | null, "items": [{"slot", "item", "quantity", "currency", "base", "price"}]}
 //!   {"type": "fieldBosses", "world": 1010, "bosses": [{"id": 101021, "up": false, "at": ms}]}
 //!   {"type": "bossKilled", "npc": 2100003}   a field boss died in view (its monster code)
+//!   {"type": "inventory", "name", "server", "items": [{"storage", "item", "amount"}]}   a login's whole item list (1 bag, 2 account warehouse, 11 worn, 14 Arcana, 15 own warehouse)
 //!   {"type": "dutyDone", "quest", "rewards": [{"item", "amount"}], "offered": [{"item", "amount", "chance", "got"}]}   a duty mission handed in: what it gave, of its list
 //!   {"type": "boxOpened", "items": [{"item", "spent", "amount"}]}   a box opened from your bags (`47 56`): the box spent, what it gave
 //!   {"type": "pvpKill", "killer": {"name", "server", "guild"}, "victim": {...} | null, "mine", "died", "legion"}

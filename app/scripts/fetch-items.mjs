@@ -6,12 +6,13 @@
  *
  * Writes src/shared/items.ts: item id -> [name, grade, icon, kind], for every currency
  * (Kina, Centuryroot Tokens...), every material (`misc`: gathered resources, Odyle, refining and
- * crafting materials, Silentium...), every usable item (seeds, skins, boxes, scrolls...), and the
- * equipment that is Unique or better (grade 41 up: gold weapons, armor, accessories; the lesser
- * equipment is not listed, and so not kept). Grades: 11 common, 21 green, 31 blue, 41 gold
- * (Unique), 51 and up. Kind: `currency`, else its sub-category (`gatherresource`, `skinshop`,
- * `guarder`...), else its main one. Each icon once, in src/renderer/public/items/loot/<icon>.webp;
- * not the usable items' (too many: the page shows a generic one).
+ * crafting materials, Silentium...), every usable item (seeds, skins, boxes, scrolls...), and all
+ * the equipment (weapons, armor, accessories, belts, amulets, runes), every grade: the Inventory
+ * page names all you have; the loot keeps only the Unique-or-better equipment (sessions.ts).
+ * Grades: 11 common, 21 green, 31 blue, 41 gold (Unique), 51 and up. Kind: `currency`, else its
+ * sub-category (`gatherresource`, `skinshop`, `guarder`...), else its main one. Each icon once, in
+ * src/renderer/public/items/loot/<icon>.webp: not the usable items' nor the lesser equipment's (too
+ * many: the page shows a generic one).
  *
  * Source: questlog.gg's item database (global client, `en`): database.getItems, every page. It
  * serves at most 25 pages (1,000 items) a list, so a longer one is read a sub-category at a time,
@@ -32,14 +33,19 @@ const HEADERS = { 'user-agent': 'aion2-drop-tracker (personal pet collection tra
 const PAUSE_MS = 250
 /** The most pages questlog serves a list. */
 const MAX_PAGES = 25
-/** Each main category, the least grade kept of it, whether its icons are fetched, and its sub-categories (more are found on the way). */
+/**
+ * Each main category, the least grade whose icons are fetched (null: none), and its sub-categories
+ * (more are found on the way). Every grade is listed (the Inventory page names all you have); the
+ * lesser equipment without its icon, to keep the app light.
+ */
 const CATEGORIES = [
-  ['currency', 0, true, []],
-  ['misc', 0, true, []],
-  ['usable', 0, false, ['gather', 'skinshop', 'rewardbox', 'kinabox', 'food', 'potion', 'drink', 'scroll', 'magicstone', 'polymorph', 'gettitle']],
-  ['weapon', 41, true, ['greatsword', 'sword', 'magicbook', 'staff', 'guarder', 'dagger', 'bow', 'orb', 'mace']],
-  ['armor', 41, true, ['torso', 'pants', 'helmet', 'shoulder', 'gloves', 'boots', 'cape']],
-  ['accessory', 41, true, ['necklace', 'earring', 'ring', 'bracelet']],
+  ['currency', 0, []],
+  ['misc', 0, []],
+  ['usable', null, ['gather', 'skinshop', 'rewardbox', 'kinabox', 'food', 'potion', 'drink', 'scroll', 'magicstone', 'polymorph', 'gettitle']],
+  ['weapon', 41, ['greatsword', 'sword', 'magicbook', 'staff', 'guarder', 'dagger', 'bow', 'orb', 'mace']],
+  ['armor', 41, ['torso', 'pants', 'helmet', 'shoulder', 'gloves', 'boots', 'cape']],
+  ['accessory', 41, ['necklace', 'earring', 'ring', 'bracelet']],
+  ['equip', 41, ['belt', 'amulet', 'rune']],
 ]
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -95,10 +101,11 @@ async function category(mainCategory, subs) {
 
 mkdirSync(ICONS, { recursive: true })
 const items = {}
-for (const [main, least, icons, subs] of CATEGORIES) {
+for (const [main, iconFrom, subs] of CATEGORIES) {
   for (const i of await category(main, subs)) {
-    if (i.mainCategory !== main || i.isDisabled || (i.grade ?? 0) < least) continue
-    items[i.id] = [i.name, i.grade ?? 11, icons ? await icon(i.icon) : null, main === 'currency' ? 'currency' : (i.subCategory ?? main)]
+    if (i.mainCategory !== main || i.isDisabled) continue
+    const withIcon = iconFrom !== null && (i.grade ?? 0) >= iconFrom
+    items[i.id] = [i.name, i.grade ?? 11, withIcon ? await icon(i.icon) : null, main === 'currency' ? 'currency' : (i.subCategory ?? main)]
   }
   console.log(`${main}: ${Object.keys(items).length} items so far`)
 }

@@ -6,6 +6,7 @@
 import type { Buff } from './buffs.ts'
 import type { Characters } from './characters.ts'
 import type { Sessions } from './sessions.ts'
+import type { Inventories } from './inventory.ts'
 import type { Applicants } from './applicants.ts'
 import type { GuildState } from './guild.ts'
 import type { GameMapState, MapDetail } from './gameMap.ts'
@@ -57,6 +58,8 @@ export interface InvokeChannels {
   'characters:get': { args: []; result: Characters }
   /** The play sessions: the one going on and the past ones (shared/sessions.ts). */
   'sessions:get': { args: []; result: Sessions }
+  /** Your characters' items, as of each one's last login (shared/inventory.ts). */
+  'inventory:get': { args: []; result: Inventories }
   /** The guild as the Lokthar site has it (the Guild page). */
   'guild:get': { args: []; result: GuildState }
   'guild:refresh': { args: []; result: void }
@@ -251,6 +254,7 @@ export interface EventChannels {
   /** Your characters, whenever one changes. */
   'characters:changed': Characters
   'sessions:changed': Sessions
+  'inventory:changed': Inventories
   /** The join requests, whenever one comes, goes or the list clears. */
   'applicants:changed': Applicants
   /** The guild, whenever the site answers (or the connection changes). */
@@ -307,7 +311,7 @@ export interface Bridge {
 export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'app:info', 'app:quit', 'app:openPath',
   'settings:all', 'settings:set',
-  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
+  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
   'killfeed:open', 'killfeed:close', 'killfeed:moveTo', 'killfeed:dragEnd', 'killfeed:resize',
   'timerbar:moveTo', 'timerbar:dragEnd', 'timerbar:resize',
   'unified:moveTo', 'unified:dragEnd', 'unified:resize', 'panel:open', 'panel:characters',
@@ -323,5 +327,5 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
 ]
 
 export const EVENT_CHANNELS: readonly EventChannel[] = [
-  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'guild:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', 'guildEvents:state', 'guildEvents:changed',
+  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'guild:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', 'guildEvents:state', 'guildEvents:changed',
 ]

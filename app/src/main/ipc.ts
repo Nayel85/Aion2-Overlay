@@ -9,6 +9,7 @@ import { applicantStore } from './applicants.ts'
 import { guild } from './guild.ts'
 import { characterStore } from './characters.ts'
 import { sessionStore } from './sessions.ts'
+import { inventoryStore } from './inventory.ts'
 import { gameMap, regionDisplay } from './gameMap.ts'
 import { mapDetail } from './gameMapDetail.ts'
 import { lokthar } from './lokthar.ts'
@@ -183,6 +184,7 @@ export function registerIpc(): void {
   })
   handle('characters:get', () => characterStore.all())
   handle('sessions:get', () => sessionStore.all())
+  handle('inventory:get', () => inventoryStore.all())
   handle('characters:refresh', (id) => characterStore.refresh(id))
   handle('characters:forget', (id) => characterStore.forget(id))
   handle('lokthar:test', () => lokthar.test())

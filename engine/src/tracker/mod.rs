@@ -128,6 +128,8 @@ pub struct Tracker {
     pending_subscriptions: Option<(i64, Vec<(u32, u64)>)>,
     /// The login's Kina and bound Kina (`11 56`), the same way.
     pending_wallet: Option<(i64, Option<u64>, Option<u64>)>,
+    /// The login's whole item list, waiting with the wallet for the record naming its character.
+    pending_depot: Vec<(u8, u32, u64)>,
     /// The Abyss Points total the game just sent (when, points, limit), waiting to know whose.
     pending_abyss: Option<(i64, u64, u64)>,
     /// Each character's Abyss Points balance as last seen (`1b 56`, item byte 0x23).
@@ -227,6 +229,7 @@ impl Tracker {
             pending_counter: Vec::new(),
             pending_subscriptions: None,
             pending_wallet: None,
+            pending_depot: Vec::new(),
             pending_abyss: None,
             abyss_balance: HashMap::new(),
             me_stats: None,
@@ -765,7 +768,10 @@ impl Tracker {
                     let server = self.store.characters.get(&name).and_then(|c| c.server);
                     self.wallet_read(&name, server);
                 }
-                None => self.pending_wallet = None,
+                None => {
+                    self.pending_wallet = None;
+                    self.pending_depot.clear();
+                }
             }
         }
         if self.pending_subscriptions.as_ref().is_some_and(|(at, _)| ts - at > COUNTERS_WAIT_MS) {
@@ -1093,6 +1099,8 @@ impl Tracker {
                     // one): it waits for it, as the counters do.
                     tracing::info!("wallet: kina {kina:?}, bound {bound:?}");
                     self.pending_wallet = Some((ts, kina, bound));
+                    self.pending_depot = p::depot(f);
+                    tracing::info!("item list: {} items", self.pending_depot.len());
                 }
             }
             p::OP_SUBSCRIPTIONS => {
@@ -1337,6 +1345,11 @@ impl Tracker {
     fn wallet_read(&mut self, name: &str, server: Option<u16>) {
         let Some((at, kina, bound)) = self.pending_wallet.take() else { return };
         (self.emit)(json!({ "type": "wallet", "ts": at, "name": name, "server": server, "kina": kina, "boundKina": bound }));
+        // And everything they have, where it lies (the Inventory page).
+        let items: Vec<Value> = std::mem::take(&mut self.pending_depot).into_iter().map(|(storage, item, amount)| json!({ "storage": storage, "item": item, "amount": amount })).collect();
+        if !items.is_empty() {
+            (self.emit)(json!({ "type": "inventory", "ts": at, "name": name, "server": server, "items": items }));
+        }
     }
 
     /// The subscriptions, for `name`: each id and when it ends (the app knows which are memberships).

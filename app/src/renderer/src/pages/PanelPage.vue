@@ -18,6 +18,7 @@ import GatherablesView from '@/components/dashboard/GatherablesView.vue'
 import HistoryView from '@/components/dashboard/HistoryView.vue'
 import LootView from '@/components/dashboard/LootView.vue'
 import SessionsView from '@/components/dashboard/SessionsView.vue'
+import InventoryView from '@/components/dashboard/InventoryView.vue'
 import DetailsPage from '@/pages/DetailsPage.vue'
 import StorageView from '@/components/dashboard/StorageView.vue'
 import HomeView from '@/components/dashboard/HomeView.vue'
@@ -43,7 +44,7 @@ import { needsAnswer } from '@shared/guildEvents.ts'
 import { TIMERS, type TimerId } from '@shared/timers.ts'
 import type { UpdateState } from '@shared/update.ts'
 
-type PageId = 'home' | 'characters' | 'roster' | 'guild' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'bossRuns' | 'applicants' | 'history' | 'session' | 'sessions' | 'loot' | 'cache' | 'settings' | 'updates' | 'changes'
+type PageId = 'home' | 'characters' | 'roster' | 'guild' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'bossRuns' | 'applicants' | 'history' | 'session' | 'sessions' | 'loot' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
 interface Page {
   id: PageId
   label: string
@@ -74,6 +75,7 @@ const PAGES: Record<PageId, Page> = {
   history: { id: 'history', label: 'Combat history', icon: 'M2 8a6 6 0 1 0 1.8-4.3M2 2.5v3h3M8 5v3l2 1.5', emoji: '💪' },
   cache: { id: 'cache', label: 'Cache', icon: 'M2.5 4.5C2.5 3.4 5 2.5 8 2.5s5.5.9 5.5 2S11 6.5 8 6.5 2.5 5.6 2.5 4.5ZM2.5 4.5v7c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-7M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2' },
   sessions: { id: 'sessions', label: 'Past sessions', icon: 'M2.5 3.5h11M2.5 8h11M2.5 12.5h7M12 11l1.5 1.5L16 10' },
+  inventory: { id: 'inventory', label: 'Inventory', icon: 'M3 5.5h10v8H3zM5.5 5.5V4a2.5 2.5 0 0 1 5 0v1.5M3 9h10' },
   loot: { id: 'loot', label: 'Loot', icon: 'M2.5 6.5h11v7h-11zM2 4h12v2.5H2zM8 4v9.5M8 4C6.5 1.5 4 2 4.5 3.5 5 4.5 8 4 8 4zm0 0c1.5-2.5 4-2 3.5-.5-.5 1-3.5.5-3.5.5z' },
   session: { id: 'session', label: 'Session', icon: 'M2.5 11.5 6 8l2.5 2.5 5-5M10 5.5h3.5V9' },
   updates: { id: 'updates', label: 'Updates', icon: 'M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 13.5h11' },
@@ -83,7 +85,7 @@ const PAGES: Record<PageId, Page> = {
 const SECTIONS: { title: string | null; pages: PageId[] }[] = [
   { title: null, pages: ['home', 'characters', 'roster', 'guild'] },
   { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'bossRuns', 'applicants'] },
-  { title: 'Records', pages: ['history', 'session', 'sessions', 'loot', 'cache'] },
+  { title: 'Records', pages: ['history', 'session', 'sessions', 'loot', 'inventory', 'cache'] },
   { title: 'App', pages: ['updates', 'changes'] },
 ]
 /** The pages kept as they were (their old tabs), with the title and text above them. */
@@ -343,6 +345,7 @@ onBeforeUnmount(() => {
           <HistoryView v-else-if="page === 'history'" />
           <LootView v-else-if="page === 'loot'" />
           <SessionsView v-else-if="page === 'sessions'" />
+          <InventoryView v-else-if="page === 'inventory'" />
           <StorageView v-else-if="page === 'cache'" />
           <SettingsView v-else-if="page === 'settings'" @go="go" />
           <UpdatesView v-else-if="page === 'updates'" @go="go" />

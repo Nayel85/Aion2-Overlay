@@ -186,15 +186,20 @@ export function itemInfo(id: string | number): ItemInfo | undefined {
   if (i) return { name: i[0], grade: i[1], icon: i[2], kind: i[3] === 'currency' ? 'currency' : 'item' }
   return undefined
 }
-/** What a reward gave (a cube's `15 57`, a Shugo Festival's chests) worth keeping, by item id: all but the lesser equipment, which no table lists. */
+/** Equipment under Unique (grey, green, blue): listed for the Inventory page, never kept as loot. */
+export const lesserEquipment = (id: string | number): boolean => {
+  const i = ITEMS[id]
+  return !!i && i[1] < UNIQUE_GRADE && EQUIPMENT_SUBS.has(i[3])
+}
+/** What a reward gave (a cube's `15 57`, a Shugo Festival's chests) worth keeping, by item id: all but the lesser equipment. */
 export function notableLoot(items: { item: number; amount: number }[]): Record<string, number> {
   const out: Record<string, number> = {}
-  for (const { item, amount } of items) if (itemInfo(item)) out[item] = (out[item] ?? 0) + amount
+  for (const { item, amount } of items) if (itemInfo(item) && !lesserEquipment(item)) out[item] = (out[item] ?? 0) + amount
   return out
 }
 /** The kinds of Unique-or-better loot counted apart: equipment, crafting materials, wings and artworks. */
 export type GoldKind = 'equipment' | 'craft' | 'wings'
-const EQUIPMENT_SUBS = new Set(['greatsword', 'sword', 'dagger', 'bow', 'magicbook', 'orb', 'mace', 'staff', 'guarder', 'torso', 'pants', 'helmet', 'shoulder', 'gloves', 'boots', 'cape', 'necklace', 'earring', 'ring', 'bracelet'])
+const EQUIPMENT_SUBS = new Set(['greatsword', 'sword', 'dagger', 'bow', 'magicbook', 'orb', 'mace', 'staff', 'guarder', 'torso', 'pants', 'helmet', 'shoulder', 'gloves', 'boots', 'cape', 'necklace', 'earring', 'ring', 'bracelet', 'belt', 'amulet', 'rune'])
 const CRAFT_SUBS = new Set(['craftresource', 'gatherresource', 'material', 'elevate', 'conversionresource', 'conversionresource_special', 'createarcanamaterial', 'arcanamaterial', 'misc'])
 /** A Unique-or-better item's kind (its questlog sub-category, its name), or null: not counted (a skin, a title, a box...). */
 export function goldKind(id: string | number): GoldKind | null {

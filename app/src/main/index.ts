@@ -8,6 +8,7 @@ import { broadcast } from './broadcast.ts'
 import { startApplicants } from './applicants.ts'
 import { startCharacters } from './characters.ts'
 import { startSessions } from './sessions.ts'
+import { startInventory } from './inventory.ts'
 import { startGuild } from './guild.ts'
 import { applyGameMap, onGameMapStatus, startGameMap } from './gameMap.ts'
 import { startFieldBosses } from './fieldBosses.ts'
@@ -59,6 +60,7 @@ if (!app.requestSingleInstanceLock()) {
     startFieldBosses()
     startCharacters()
     startSessions()
+    startInventory()
     startApplicants()
     startGuild()
     startGameMap()

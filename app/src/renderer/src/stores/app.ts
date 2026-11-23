@@ -13,6 +13,7 @@ import type { FieldBosses, TimerAlert, TimerId } from '@shared/timers.ts'
 import type { Buff } from '@shared/buffs.ts'
 import type { Characters } from '@shared/characters.ts'
 import { NO_SESSIONS, type Sessions } from '@shared/sessions.ts'
+import { NO_INVENTORIES, type Inventories } from '@shared/inventory.ts'
 import { NO_APPLICANTS, type Applicants } from '@shared/applicants.ts'
 import { NO_GUILD, type GuildState } from '@shared/guild.ts'
 import { NO_GUILD_EVENTS, type GuildEventsState } from '@shared/guildEvents.ts'
@@ -39,6 +40,8 @@ export const useApp = defineStore('app', () => {
   const characters = ref<Characters>({})
   /** The play sessions: the character playing's since their login, and the past ones. */
   const sessions = ref<Sessions>(NO_SESSIONS)
+  /** Your characters' items, as of each one's last login. */
+  const inventories = ref<Inventories>(NO_INVENTORIES)
   /** Join requests to your party (the Applicants widget). */
   const applicants = ref<Applicants>(NO_APPLICANTS)
   /** The guild as the Lokthar site has it, and your main there (the Guild page). */
@@ -152,6 +155,7 @@ export const useApp = defineStore('app', () => {
     api.on('tracker:fieldBosses', (b) => (fieldBosses.value = b))
     api.on('characters:changed', (c) => (characters.value = c))
     api.on('sessions:changed', (s) => (sessions.value = s))
+    api.on('inventory:changed', (i) => (inventories.value = i))
     api.on('applicants:changed', (a) => (applicants.value = a))
     api.on('guild:changed', (g) => (guild.value = g))
     api.on('guildEvents:state', (g) => (guildEvents.value = g))
@@ -191,6 +195,7 @@ export const useApp = defineStore('app', () => {
     fieldBosses.value = t.fieldBosses
     characters.value = await api.invoke('characters:get')
     sessions.value = await api.invoke('sessions:get')
+    inventories.value = await api.invoke('inventory:get')
     applicants.value = await api.invoke('applicants:get')
     guild.value = await api.invoke('guild:get')
     guildEvents.value = await api.invoke('guildEvents:get')
@@ -225,7 +230,7 @@ export const useApp = defineStore('app', () => {
   }
 
   return {
-    settings, applicants, guild, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, guildEvents, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
+    settings, applicants, guild, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, inventories, guildEvents, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
     init, set, setHud, togglePin, openPet, hiddenPet,
   }
 })
