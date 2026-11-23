@@ -24,7 +24,12 @@ export interface SlotItem {
   item: number
   amount: number
   enchant?: number
-  stones?: number[]
+  /** Its item level, enchantment's included (an equipment's). */
+  level?: number
+  /** The stones set in it: [stone item, stat code, rank] (shared/equipment.ts). */
+  stones?: [number, number, number][]
+  /** Its soul binding's stats: [stat code, value]. */
+  soul?: [number, number][]
 }
 /** Slots by `<storage>:<slot>` (a character's; the Arcana `14:u<uid>`, all in slot 0) or `<slot>` (the account's warehouse). */
 export type Slots = Record<string, SlotItem>
@@ -51,11 +56,20 @@ export interface DepotItem {
   item: number
   amount: number
   enchant?: number
-  stones?: number[]
+  level?: number
+  stones?: [number, number, number][]
+  soul?: [number, number][]
 }
 /** A character's slot key: storage and slot; an Arcana's by its uid (they all lie in slot 0). */
 const ownKey = (d: DepotItem): string => (d.storage === 14 && d.uid !== undefined ? `14:u${d.uid}` : `${d.storage}:${d.slot}`)
-const held = (d: DepotItem): SlotItem => ({ item: d.item, amount: d.amount, ...(d.enchant ? { enchant: d.enchant } : {}), ...(d.stones?.length ? { stones: d.stones } : {}) })
+const held = (d: DepotItem): SlotItem => ({
+  item: d.item,
+  amount: d.amount,
+  ...(d.enchant ? { enchant: d.enchant } : {}),
+  ...(d.level ? { level: d.level } : {}),
+  ...(d.stones?.length ? { stones: d.stones } : {}),
+  ...(d.soul?.length ? { soul: d.soul } : {}),
+})
 
 /** A login's list, sorted into the character's own slots and the account's warehouse's. */
 export function fromList(items: DepotItem[]): { own: Slots; account: Slots } {

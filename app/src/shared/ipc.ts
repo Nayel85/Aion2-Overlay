@@ -7,6 +7,7 @@ import type { Buff } from './buffs.ts'
 import type { Characters } from './characters.ts'
 import type { Sessions } from './sessions.ts'
 import type { Inventories } from './inventory.ts'
+import type { ItemDetails } from './equipment.ts'
 import type { Applicants } from './applicants.ts'
 import type { GuildState } from './guild.ts'
 import type { GameMapState, MapDetail } from './gameMap.ts'
@@ -60,6 +61,8 @@ export interface InvokeChannels {
   'sessions:get': { args: []; result: Sessions }
   /** Your characters' items, as of each one's last login (shared/inventory.ts). */
   'inventory:get': { args: []; result: Inventories }
+  /** An equipment's base stats and enchantment bonuses (questlog's, asked once: main/itemDetails.ts). */
+  'items:details': { args: [item: number]; result: ItemDetails | null }
   /** The guild as the Lokthar site has it (the Guild page). */
   'guild:get': { args: []; result: GuildState }
   'guild:refresh': { args: []; result: void }
@@ -311,7 +314,7 @@ export interface Bridge {
 export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'app:info', 'app:quit', 'app:openPath',
   'settings:all', 'settings:set',
-  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
+  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'items:details', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
   'killfeed:open', 'killfeed:close', 'killfeed:moveTo', 'killfeed:dragEnd', 'killfeed:resize',
   'timerbar:moveTo', 'timerbar:dragEnd', 'timerbar:resize',
   'unified:moveTo', 'unified:dragEnd', 'unified:resize', 'panel:open', 'panel:characters',

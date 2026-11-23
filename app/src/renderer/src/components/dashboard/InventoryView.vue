@@ -15,6 +15,8 @@ import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
 import { PLACES, placeItems, placeSlots, whereIs, WORN_LAYOUT, type CharacterInventory, type Place, type SlotItem } from '@shared/inventory.ts'
 import { itemIcon, itemInfo } from '@shared/sessions.ts'
+import { baseLines, soulLine, stoneLine, type ItemDetails } from '@shared/equipment.ts'
+import { bridge } from '@/lib/bridge.ts'
 
 const store = useApp()
 
@@ -72,25 +74,38 @@ const GRADE_NAMES: [number, string][] = [
   [21, 'Uncommon'],
   [0, 'Common'],
 ]
+/** An equipment's base stats, asked once of the main process (questlog's): by item id, null while asked or none. */
+const bases = ref(new Map<number, ItemDetails | null>())
+watch(hovered, (h) => {
+  const id = h?.item.item
+  if (id === undefined || bases.value.has(id) || !h?.item.level) return
+  bases.value = new Map(bases.value).set(id, null)
+  void bridge()
+    .invoke('items:details', id)
+    .then((d) => (bases.value = new Map(bases.value).set(id, d)))
+})
 const details = computed(() => {
   const h = hovered.value
   if (!h) return null
   const info = itemInfo(h.item.item)
   const grade = info?.grade ?? 11
-  // Its stones together, by kind: "Lesser Manastone ×4".
-  const stones = new Map<number, number>()
-  for (const s of h.item.stones ?? []) stones.set(s, (stones.get(s) ?? 0) + 1)
+  const base = bases.value.get(h.item.item) ?? null
+  const enchant = h.item.enchant ?? 0
   return {
     name: (info?.name ?? `#${h.item.item}`).replace(' (Bound)', ''),
     bound: info?.name.includes('(Bound)') ?? false,
     grade,
     gradeName: GRADE_NAMES.find(([g]) => grade >= g)![1],
     icon: itemIcon(info?.icon),
-    enchant: h.item.enchant ?? 0,
+    enchant,
     amount: h.item.amount,
-    stones: [...stones].map(([id, n]) => ({ name: (itemInfo(id)?.name ?? `#${id}`).replace(' (Bound)', ''), grade: itemInfo(id)?.grade ?? 11, n })),
+    // "70 (+21)": the base's level and what enchanting it added; its total alone without the base.
+    level: h.item.level ? (base?.itemLevel ? `${base.itemLevel}${h.item.level > base.itemLevel ? ` (+${h.item.level - base.itemLevel})` : ''}` : String(h.item.level)) : null,
+    base: base ? baseLines(base, enchant) : [],
+    soul: (h.item.soul ?? []).map(([code, value]) => soulLine(code, value)),
+    stones: (h.item.stones ?? []).filter((s): s is [number, number, number] => Array.isArray(s)).map(([stone, code, rank]) => stoneLine(stone, code, rank)),
     // Beside the pointer, kept on the screen.
-    style: { left: `${Math.min(h.x + 16, window.innerWidth - 300)}px`, top: `${Math.min(h.y + 12, window.innerHeight - 220)}px` },
+    style: { left: `${Math.min(h.x + 16, window.innerWidth - 300)}px`, top: `${Math.max(8, Math.min(h.y + 12, window.innerHeight - 420))}px` },
   }
 })
 
@@ -194,12 +209,22 @@ const itemCount = computed(() => Object.keys(placeItems(slots.value)).length)
             <template v-if="details.enchant">+{{ details.enchant }} </template>{{ details.name }}
           </div>
           <div class="text-darker">{{ t(details.gradeName) }}<template v-if="details.bound"> · {{ t('Bound') }}</template></div>
+          <div v-if="details.level" class="text-darker">{{ t('Item Level') }} <span class="font-semibold text-default">{{ details.level }}</span></div>
         </div>
       </div>
       <div v-if="details.amount > 1" class="mt-2 tabular-nums">{{ t('Count') }} <span class="font-semibold">{{ details.amount.toLocaleString('en-US') }}</span></div>
-      <div v-if="details.stones.length" class="mt-2 border-t border-card pt-2">
-        <div class="mb-1 text-darker">{{ t('Stones set') }}</div>
-        <div v-for="s in details.stones" :key="s.name" :class="gradeClass(s.grade)">{{ s.name }} <span class="text-default">×{{ s.n }}</span></div>
+      <!-- Its base stats (questlog's), with its enchantment's bonus. -->
+      <div v-if="details.base.length" class="mt-2 space-y-0.5 border-t border-card pt-2 tabular-nums">
+        <div v-for="l in details.base" :key="l.label" class="flex justify-between gap-3"><span>{{ t(l.label) }}</span><span>{{ l.value }}</span></div>
+      </div>
+      <!-- Its soul binding. -->
+      <div v-if="details.soul.length" class="mt-2 space-y-0.5 border-t border-card pt-2 tabular-nums">
+        <div class="text-accent">{{ t('Soul Binding') }}</div>
+        <div v-for="(l, i) in details.soul" :key="i" class="flex justify-between gap-3"><span>{{ t(l.label) }}</span><span>{{ l.value }}</span></div>
+      </div>
+      <!-- Its stones, in their grade's colour, as the game's grid. -->
+      <div v-if="details.stones.length" class="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 border-t border-card pt-2 tabular-nums">
+        <div v-for="(l, i) in details.stones" :key="i" :class="gradeClass(l.grade ?? 11)">{{ t(l.label) }} {{ l.value }}</div>
       </div>
     </div>
   </div>
