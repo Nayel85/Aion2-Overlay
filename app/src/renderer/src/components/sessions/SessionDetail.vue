@@ -14,7 +14,7 @@ import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
-import { countedRuns, CURRENCY_LABELS, gatheredByResource, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
+import { countedRuns, CURRENCY_LABELS, gatheredByResource, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type GatheredResource, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
 import { RECIPES } from '@shared/recipes.ts'
 
 const props = withDefaults(defineProps<{ session: PlaySession; live?: boolean; header?: boolean }>(), { live: false, header: true })
@@ -61,6 +61,15 @@ const kinaOf = (r: DungeonRun): number => Math.max(r.kina, r.loot?.['930100031']
 
 /** The gathering by resource (shared/sessions.ts). */
 const resources = computed(() => gatheredByResource(props.session))
+/** Each resource's gatherings and failures, when some have them (counted since 2026-11-23). */
+const countsShown = computed(() => resources.value.some((r) => r.counts))
+/** A resource's grades in their columns: plain (white), Fine (green), Pure (blue), Radiant (gold and above). */
+function gradeSlots(r: GatheredResource): (GatheredResource['grades'][number] | null)[] {
+  const slot = (grade: number): number => (grade >= 41 ? 3 : grade >= 31 ? 2 : grade >= 21 ? 1 : 0)
+  const slots: (GatheredResource['grades'][number] | null)[] = [null, null, null, null]
+  for (const g of r.grades) slots[slot(g.grade)] = g
+  return slots
+}
 /** The crafts by recipe, the most made first: its name, icon, how many, how many procced, and the proc's item. */
 const craftRows = computed(() => {
   const by = new Map<number, { made: number; procs: number; fails: number }>()
@@ -302,22 +311,22 @@ function toggle(r: DungeonRun): void {
         <svg viewBox="0 0 16 16" class="size-3.5 text-green" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.leaf" /></svg>{{ t('Gathering') }}
       </div>
       <GatherStats :stats="session.gathering" class="mb-2" />
-      <!-- By resource: what came by grade (plain, Fine, Pure, Radiant), then its gatherings and failures
-           when counted. A compact grid: the names in a column, the rest right after. -->
-      <div :class="['grid items-center gap-x-4 gap-y-1 tabular-nums', resources.some((r) => r.counts) ? 'grid-cols-[auto_auto_auto]' : 'grid-cols-[auto_auto]', 'justify-start']">
+      <!-- By resource, a line each: what came in a column per grade (plain, Fine, Pure, Radiant; empty
+           without), then its gatherings and failures when counted (since 2026-11-23). -->
+      <div class="grid items-center justify-start gap-x-4 gap-y-1 tabular-nums" :style="{ gridTemplateColumns: `repeat(${countsShown ? 6 : 5}, auto)` }">
         <template v-for="r in resources" :key="r.item">
           <span class="flex items-center gap-1.5">
             <img v-if="r.icon" :src="r.icon" alt="" class="size-4 rounded-sm" draggable="false" />
             <span class="font-semibold">{{ r.name }}</span>
           </span>
-          <span class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-            <span v-for="g in r.grades" :key="g.item" :class="['flex items-center gap-1', gradeClass(g.grade)]" :title="g.name">
+          <span v-for="(g, i) in gradeSlots(r)" :key="i" :class="['flex items-center gap-1', g && gradeClass(g.grade)]" :title="g?.name">
+            <template v-if="g">
               <img v-if="g.icon && g.item !== r.item" :src="g.icon" alt="" class="size-4 rounded-sm" draggable="false" />
               {{ g.item === r.item ? '' : g.name.replace(r.name, '').trim() || g.name }} ×{{ g.n }}
-            </span>
+            </template>
           </span>
-          <span v-if="resources.some((x) => x.counts)" class="text-darker" :title="t('Gatherings')">
-            <template v-if="r.counts">{{ t('{n} gatherings', { n: r.counts.done }) }}<span v-if="r.counts.failed" class="ml-1.5 text-red">✕{{ r.counts.failed }}</span></template>
+          <span v-if="countsShown" class="text-darker" :title="t('Gatherings')">
+            <template v-if="r.counts">{{ t(r.counts.done === 1 ? '{n} gathering' : '{n} gatherings', { n: r.counts.done }) }}<span v-if="r.counts.failed" class="ml-1.5 text-red">✕{{ r.counts.failed }}</span></template>
           </span>
         </template>
       </div>
