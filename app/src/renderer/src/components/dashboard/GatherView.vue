@@ -8,6 +8,7 @@ import Toggle from '@/components/Toggle.vue'
 import Button from '@/components/Button.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'
+import Segmented from '@/components/ui/Segmented.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { t } from '@/lib/i18n.ts'
 import { playSound } from '@/lib/sound.ts'
@@ -20,6 +21,10 @@ const cfg = computed(() => store.settings.gather)
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('gather', { ...cfg.value, ...patch })
 const pct = (v: number): string => `${Math.round(v * 100)}%`
 const times = (v: number): string => `×${v.toFixed(1)}`
+const STYLES = [
+  { id: 'pill', label: 'Pill' },
+  { id: 'ring', label: 'Ring' },
+] as const
 /** The shipped sounds (your own mp3 belongs to the cube and enemy alerts). */
 const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, label: t(s.label) }))
 </script>
@@ -33,6 +38,9 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
         <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />
       </SettingRow>
       <template v-if="cfg.enabled">
+        <SettingRow label="Look" hint="A ring as the flight timer's: the item inside, the outcome's colour around it running down to the result, x2 when it doubles. Or a pill that says it in words.">
+          <Segmented size="sm" :model-value="cfg.style" :options="STYLES" @update:model-value="set({ style: $event })" />
+        </SettingRow>
         <SettingRow label="Item icon" hint="What it will give. Each spot's kind is learnt from its first gathering (Odyle is known already).">
           <Toggle :model-value="cfg.icon" @update:model-value="set({ icon: $event })" />
         </SettingRow>

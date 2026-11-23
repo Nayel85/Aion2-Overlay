@@ -178,6 +178,8 @@ export interface Settings {
    */
   gather: {
     enabled: boolean
+    /** A pill with words, or a ring as the flight timer's: the item inside, running down to the result. */
+    style: 'pill' | 'ring'
     position: Point | null
     opacity: number
     scale: number
@@ -438,7 +440,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   },
   flight: { enabled: true, position: null, opacity: 1 },
   gather: {
-    enabled: true, position: null, opacity: 1, scale: 1, icon: true, fail: true, rare: true, plain: false, crafts: true,
+    enabled: true, style: 'ring', position: null, opacity: 1, scale: 1, icon: true, fail: true, rare: true, plain: false, crafts: true,
     failColor: GATHER_DEFAULT_COLORS.fail, rareColor: GATHER_DEFAULT_COLORS.rare, soundFail: false, soundRare: false, soundId: 'bell', volume: 0.6,
   },
   bossRuns: { enabled: false, position: { x: 1890, y: 30 }, opacity: 0.85, windowMinutes: 15, rows: 4, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: [101001, 101002, 101006, 101007, 101019, 101017, 101005, 101004, 101003, 101015, 101010, 101008, 101009, 101016, 101012, 101014, 101020, 101013, 101011, 101018] },
@@ -654,6 +656,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       const g = d.gather
       return {
         enabled: bool(v.enabled, g.enabled),
+        style: v.style === 'pill' ? 'pill' : 'ring',
         position: point(v.position),
         opacity: num(v.opacity, 0.2, 1, g.opacity),
         scale: num(v.scale, 0.6, 2, g.scale),

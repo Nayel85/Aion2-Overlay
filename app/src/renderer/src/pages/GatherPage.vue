@@ -1,7 +1,9 @@
 <script setup lang="ts">
 // A gathering's outcome, as it starts (main/gather.ts): the game decides it then, about 7 s before
 // the result. A pill with what it will give (its icon, once its spot's kind is known) saying it will
-// fail, rank up (Fine Odyle) or give twice as much; a plain one only if wanted. Gone when the result comes. Size, colours, which to show and a sound are settings
+// fail, rank up (Fine Odyle) or give twice as much; a plain one only if wanted. Gone when the result
+// comes. Or (the default) a ring as the flight timer's: the item inside, its outcome's colour around,
+// running down to the result (how long one takes is learnt). Size, colours, which to show and a sound are settings
 // (dashboard/GatherView). Clicks go through to the game; while the dashboard is up it shows a sample,
 // and can be dragged into place. Nothing to show measures 0, and main keeps the window hidden.
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -52,6 +54,47 @@ const item = computed(() => {
   return it ? { name: it.count > 1 ? `${it.name} x${it.count}` : it.name, icon: itemIcon(it.icon) } : null
 })
 
+// ---- the ring: how long a gathering or a craft takes, learnt from the last ones ------------------
+
+const now = ref(Date.now())
+const ticker = setInterval(() => (now.value = Date.now()), 50)
+const LASTED_KEY = 'gather.lasted'
+const lasted = ref<Record<string, number>>((() => {
+  try {
+    return JSON.parse(localStorage.getItem(LASTED_KEY) ?? '{}') as Record<string, number>
+  } catch {
+    return {}
+  }
+})())
+/** Until it has seen one: about 5 s a gathering (4.3 to 7.1 in the owner's), 7 s a craft. */
+const lastsMs = (kind: string): number => lasted.value[kind] ?? (kind === 'craft' ? 7000 : 5000)
+// One gone with its result: how long it took, kept (half of the last, half of before).
+watch(
+  () => store.gather,
+  (next, before) => {
+    if (next || !before) return
+    const took = Date.now() - before.at
+    if (took < 1000 || took > 20_000) return
+    const was = lasted.value[before.kind]
+    lasted.value = { ...lasted.value, [before.kind]: was ? Math.round((was + took) / 2) : took }
+    try {
+      localStorage.setItem(LASTED_KEY, JSON.stringify(lasted.value))
+    } catch {
+      // Learnt again next time.
+    }
+  },
+)
+/** The ring's share left, 1 at the start to 0 at the result as it should come; the sample loops. */
+const left = computed(() => {
+  const g = shownGather.value
+  if (!g) return 0
+  const span = lastsMs(g.kind)
+  const elapsed = preview.value ? now.value % span : now.value - g.at
+  return Math.max(0, 1 - elapsed / span)
+})
+/** The ring's length (2πr, r 21). */
+const RING = 2 * Math.PI * 21
+
 // A sound as one starts, for those wanted.
 watch(
   () => store.gather?.at,
@@ -74,7 +117,7 @@ function report(): void {
   sent = key
   void api.invoke('gather:resize', { width: r.width, height: r.height })
 }
-watch([shown, () => cfg.value.scale, () => shownGather.value && textOf(shownGather.value)], () => void nextTick(report))
+watch([shown, () => cfg.value.scale, () => cfg.value.style, () => shownGather.value && textOf(shownGather.value)], () => void nextTick(report))
 
 let observer: ResizeObserver | null = null
 onMounted(() => {
@@ -82,7 +125,10 @@ onMounted(() => {
   if (root.value) observer.observe(root.value)
   report()
 })
-onBeforeUnmount(() => observer?.disconnect())
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  clearInterval(ticker)
+})
 </script>
 
 <template>
@@ -95,7 +141,43 @@ onBeforeUnmount(() => observer?.disconnect())
         :title="preview ? t('drag to move') : undefined"
         @pointerdown="preview && drag.onPointerDown($event)"
       >
+        <!-- The ring: its outcome's colour around, running down; the item inside (greyed on a failure). -->
+        <div
+          v-if="cfg.style === 'ring'"
+          class="relative"
+          :style="{ width: `${52 * cfg.scale}px`, height: `${52 * cfg.scale}px` }"
+          :title="textOf(shownGather)"
+        >
+          <svg viewBox="0 0 52 52" class="absolute inset-0 size-full -rotate-90 drop-shadow-[0_0_3px_rgba(0,0,0,0.9)]">
+            <circle cx="26" cy="26" r="23" fill="rgba(9,9,11,0.72)" />
+            <circle cx="26" cy="26" r="21" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3.5" />
+            <circle
+              cx="26" cy="26" r="21" fill="none" :stroke="colour" stroke-width="3.5" stroke-linecap="round"
+              :stroke-dasharray="RING" :stroke-dashoffset="RING * (1 - left)"
+              :style="{ filter: kind !== 'plain' ? `drop-shadow(0 0 3px ${colour})` : undefined }"
+            />
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <img
+              v-if="item?.icon"
+              :src="item.icon"
+              :alt="item.name"
+              draggable="false"
+              :class="['rounded-full', kind === 'fail' && 'opacity-60 grayscale']"
+              :style="{ width: `${30 * cfg.scale}px`, height: `${30 * cfg.scale}px` }"
+            />
+            <svg v-else viewBox="0 0 16 16" fill="none" :stroke="colour" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" :style="{ width: `${20 * cfg.scale}px`, height: `${20 * cfg.scale}px` }"><path d="M3 13c0-6 4-10 10-10 0 6-4 10-10 10ZM3 13l5-5" /></svg>
+          </div>
+          <!-- Twice as much: x2, in a corner (the colour alone does not say it). -->
+          <span
+            v-if="shownGather.doubled"
+            class="absolute -bottom-0.5 -right-1 rounded-full px-1 font-bold leading-tight text-black shadow ring-1 ring-black/50"
+            :style="{ background: colour, fontSize: `${11 * cfg.scale}px` }"
+          >x2</span>
+        </div>
+
         <span
+          v-else
           class="flex items-center gap-1.5 whitespace-nowrap rounded-full font-bold shadow-[0_2px_8px_rgba(0,0,0,0.6)] ring-1 ring-black/40"
           :style="{
             fontSize: `${15 * cfg.scale}px`,
