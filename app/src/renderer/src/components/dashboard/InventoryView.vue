@@ -13,9 +13,9 @@ import Segmented from '@/components/ui/Segmented.vue'
 import { loc, plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
-import { PLACES, placeItems, placeSlots, whereIs, WORN_LAYOUT, type CharacterInventory, type Place, type SlotItem } from '@shared/inventory.ts'
+import { PLACES, placeItems, placeSlots, whereIs, WORN_ARCANA, WORN_LAYOUT, type CharacterInventory, type Place, type SlotItem } from '@shared/inventory.ts'
 import { itemIcon, itemInfo } from '@shared/sessions.ts'
-import { baseLines, soulLine, stoneLine, type ItemDetails } from '@shared/equipment.ts'
+import { arcanaStatLine, baseLines, skillLine, soulLine, stoneLine, type ItemDetails } from '@shared/equipment.ts'
 import { bridge } from '@/lib/bridge.ts'
 
 const store = useApp()
@@ -102,7 +102,9 @@ const details = computed(() => {
     // "70 (+21)": the base's level and what enchanting it added; its total alone without the base.
     level: h.item.level ? (base?.itemLevel ? `${base.itemLevel}${h.item.level > base.itemLevel ? ` (+${h.item.level - base.itemLevel})` : ''}` : String(h.item.level)) : null,
     base: base ? baseLines(base, enchant) : [],
-    soul: (h.item.soul ?? []).map(([code, value]) => soulLine(code, value)),
+    soul: (h.item.soul ?? []).map(([code, value]) => soulLine(code, value, base?.soulMax)),
+    skills: (h.item.skills ?? []).map(([skill, levels]) => skillLine(skill, levels)),
+    stats: (h.item.stats ?? []).map(([code, value]) => arcanaStatLine(code, value)),
     stones: (h.item.stones ?? []).filter((s): s is [number, number, number] => Array.isArray(s)).map(([stone, code, rank]) => stoneLine(stone, code, rank)),
     // Beside the pointer, kept on the screen.
     style: { left: `${Math.min(h.x + 16, window.innerWidth - 300)}px`, top: `${Math.max(8, Math.min(h.y + 12, window.innerHeight - 420))}px` },
@@ -183,9 +185,18 @@ const itemCount = computed(() => Object.keys(placeItems(slots.value)).length)
         </div>
 
         <!-- Equipped: the game's window, two columns. -->
-        <div v-if="view.place === 'worn'" class="inline-flex flex-col gap-1.5 rounded-xl border border-card bg-card/40 p-3">
-          <div v-for="(row, i) in WORN_LAYOUT" :key="i" class="flex gap-1.5">
-            <ItemTile v-for="n in row" :key="n" :slot-item="slots[n] ?? null" @hover="hover" />
+        <div v-if="view.place === 'worn'" class="flex flex-wrap items-start gap-4">
+          <div class="inline-flex flex-col gap-1.5 rounded-xl border border-card bg-card/40 p-3">
+            <div v-for="(row, i) in WORN_LAYOUT" :key="i" class="flex gap-1.5">
+              <ItemTile v-for="n in row" :key="n" :slot-item="slots[n] ?? null" @hover="hover" />
+            </div>
+          </div>
+          <!-- The Arcana worn. -->
+          <div class="rounded-xl border border-card bg-card/40 p-3">
+            <div class="mb-2 text-xs font-medium text-darker">{{ t('Arcana') }}</div>
+            <div class="flex gap-1.5">
+              <ItemTile v-for="n in WORN_ARCANA" :key="n" :slot-item="slots[n] ?? null" @hover="hover" />
+            </div>
           </div>
         </div>
 
@@ -217,10 +228,18 @@ const itemCount = computed(() => Object.keys(placeItems(slots.value)).length)
       <div v-if="details.base.length" class="mt-2 space-y-0.5 border-t border-card pt-2 tabular-nums">
         <div v-for="l in details.base" :key="l.label" class="flex justify-between gap-3"><span>{{ t(l.label) }}</span><span>{{ l.value }}</span></div>
       </div>
+      <!-- An Arcana's own stats. -->
+      <div v-if="details.stats.length" class="mt-2 space-y-0.5 border-t border-card pt-2 tabular-nums">
+        <div v-for="(l, i) in details.stats" :key="i" class="flex justify-between gap-3"><span>{{ t(l.label) }}</span><span>{{ l.value }}</span></div>
+      </div>
       <!-- Its soul binding. -->
       <div v-if="details.soul.length" class="mt-2 space-y-0.5 border-t border-card pt-2 tabular-nums">
         <div class="text-accent">{{ t('Soul Binding') }}</div>
         <div v-for="(l, i) in details.soul" :key="i" class="flex justify-between gap-3"><span>{{ t(l.label) }}</span><span>{{ l.value }}</span></div>
+      </div>
+      <!-- The skills it raises. -->
+      <div v-if="details.skills.length" class="mt-2 space-y-0.5 border-t border-card pt-2 tabular-nums">
+        <div v-for="(l, i) in details.skills" :key="i" class="flex justify-between gap-3 text-accent"><span>{{ l.label }}</span><span class="text-default">{{ l.value }}</span></div>
       </div>
       <!-- Its stones, in their grade's colour, as the game's grid. -->
       <div v-if="details.stones.length" class="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 border-t border-card pt-2 tabular-nums">

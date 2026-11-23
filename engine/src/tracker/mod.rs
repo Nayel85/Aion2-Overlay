@@ -201,6 +201,8 @@ fn depot_json(i: &p::DepotItem) -> Value {
         "uid": i.uid, "storage": i.storage, "slot": i.slot, "item": i.item, "amount": i.amount, "enchant": i.enchant, "level": i.level,
         "stones": i.stones.iter().map(|&(item, stat, rank)| json!([item, stat, rank])).collect::<Vec<_>>(),
         "soul": i.soul.iter().map(|&(stat, value)| json!([stat, value])).collect::<Vec<_>>(),
+        "skills": i.skills.iter().map(|&(skill, levels)| json!([skill, levels])).collect::<Vec<_>>(),
+        "stats": i.stats.iter().map(|&(stat, value)| json!([stat, value])).collect::<Vec<_>>(),
     })
 }
 

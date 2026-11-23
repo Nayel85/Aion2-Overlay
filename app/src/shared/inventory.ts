@@ -30,6 +30,10 @@ export interface SlotItem {
   stones?: [number, number, number][]
   /** Its soul binding's stats: [stat code, value]. */
   soul?: [number, number][]
+  /** The skills it raises: [skill, levels]. */
+  skills?: [number, number][]
+  /** An Arcana's own stats: [stat code, value]. */
+  stats?: [number, number][]
 }
 /** Slots by `<storage>:<slot>` (a character's; the Arcana `14:u<uid>`, all in slot 0) or `<slot>` (the account's warehouse). */
 export type Slots = Record<string, SlotItem>
@@ -59,6 +63,8 @@ export interface DepotItem {
   level?: number
   stones?: [number, number, number][]
   soul?: [number, number][]
+  skills?: [number, number][]
+  stats?: [number, number][]
 }
 /** A character's slot key: storage and slot; an Arcana's by its uid (they all lie in slot 0). */
 const ownKey = (d: DepotItem): string => (d.storage === 14 && d.uid !== undefined ? `14:u${d.uid}` : `${d.storage}:${d.slot}`)
@@ -69,6 +75,8 @@ const held = (d: DepotItem): SlotItem => ({
   ...(d.level ? { level: d.level } : {}),
   ...(d.stones?.length ? { stones: d.stones } : {}),
   ...(d.soul?.length ? { soul: d.soul } : {}),
+  ...(d.skills?.length ? { skills: d.skills } : {}),
+  ...(d.stats?.length ? { stats: d.stats } : {}),
 })
 
 /** A login's list, sorted into the character's own slots and the account's warehouse's. */
@@ -150,3 +158,5 @@ export const WORN_LAYOUT: [number, number][] = [
   [15, 16],
   [23, 24],
 ]
+/** The Arcana worn: slots 41 to 45 of the worn ones (the owner's Nayoul: Chalice, Parchment, Compass, Bell and Mirror of Vigor). */
+export const WORN_ARCANA = [41, 42, 43, 44, 45]

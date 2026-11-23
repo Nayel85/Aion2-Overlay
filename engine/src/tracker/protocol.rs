@@ -726,6 +726,11 @@ pub struct DepotItem {
     /// Its soul binding's stats: (stat code, value) (the bow's HP 0xC1 308, Combat Speed 0x11A 972
     /// (9.7%), Critical Hit 0x80 51).
     pub soul: Vec<(u16, u32)>,
+    /// The skills it raises: (skill, levels) (the bow's Tempest Shot +1; an Arcana's four).
+    pub skills: Vec<(u32, u8)>,
+    /// An Arcana's own stats, not bound: (stat code, value) (the owner's Chalice of Vigor: 0x0B 21,
+    /// "Time [Siel] 21" in game).
+    pub stats: Vec<(u16, u32)>,
 }
 
 /// The item records of a list (`11 56` at login, `1B 56` as they change): each `<uid u32> 00 <u16>
@@ -763,7 +768,7 @@ fn depot_records(b: &[u8], empty: bool) -> Vec<DepotItem> {
                     let lvl = if extra[q - 4] != 0 { q - 4 } else { q - 5 };
                     (extra[q] == slot && (1..=200).contains(&extra[lvl]) && extra[lvl + 1..q].iter().all(|&v| v == 0) && extra[q + 1] <= 6).then_some((q, lvl))
                 });
-            let (mut enchant, mut level, mut stones, mut soul) = (0, 0, Vec::new(), Vec::new());
+            let (mut enchant, mut level, mut stones, mut soul, mut skills, mut stats) = (0, 0, Vec::new(), Vec::new(), Vec::new(), Vec::new());
             if let Some((q, lvl)) = mark {
                 level = extra[lvl];
                 enchant = extra[8..lvl].iter().copied().find(|&v| v != 0).filter(|&v| v <= 30).unwrap_or(0);
@@ -774,9 +779,16 @@ fn depot_records(b: &[u8], empty: bool) -> Vec<DepotItem> {
                         _ => break,
                     }
                 }
-                soul = soul_binding(&extra[q + 2 + 7 * stones.len()..]);
+                let rest = &extra[q + 2 + 7 * stones.len()..];
+                soul = soul_binding(rest);
+                if let Some((at, list)) = skill_list(rest) {
+                    skills = list;
+                    if soul.is_empty() {
+                        stats = stat_list_before(rest, at);
+                    }
+                }
             }
-            DepotItem { uid: u32_at(b, i - 8).unwrap_or(0), storage, slot, item: u32_at(b, i).unwrap_or(0), amount: u64_at(b, i + 4).unwrap_or(0), enchant, level, stones, soul }
+            DepotItem { uid: u32_at(b, i - 8).unwrap_or(0), storage, slot, item: u32_at(b, i).unwrap_or(0), amount: u64_at(b, i + 4).unwrap_or(0), enchant, level, stones, soul, skills, stats }
         })
         .collect()
 }
@@ -793,6 +805,36 @@ fn soul_binding(x: &[u8]) -> Vec<(u16, u32)> {
         let again = q + 1 + 6 * n;
         if x[again] as usize == n && list.iter().enumerate().all(|(s, &(c, _))| c > 0 && c < 0x400 && u16_at(x, again + 1 + 6 * s) == Some(c)) {
             return list;
+        }
+    }
+    Vec::new()
+}
+
+/// The skills an equipment raises: `<n>` (1-6) of `<skill u32> <levels u8>`, then `<n>` again with
+/// the same skills (the owner's bow: Tempest Shot, 14340000, +1). Where it starts, and the list.
+fn skill_list(x: &[u8]) -> Option<(usize, Vec<(u32, u8)>)> {
+    (0..x.len()).find_map(|q| {
+        let n = x[q] as usize;
+        if !(1..=6).contains(&n) || q + 2 + 10 * n > x.len() {
+            return None;
+        }
+        let list: Vec<(u32, u8)> = (0..n).map(|s| (u32_at(x, q + 1 + 5 * s).unwrap_or(0), x[q + 5 + 5 * s])).collect();
+        let again = q + 1 + 5 * n;
+        let ok = x[again] as usize == n && list.iter().enumerate().all(|(s, &(id, lv))| (10_000_000..30_000_000).contains(&id) && (1..=10).contains(&lv) && u32_at(x, again + 1 + 5 * s) == Some(id));
+        ok.then_some((q, list))
+    })
+}
+
+/// An Arcana's stats, just before its skills: `<n>` of `<code u16> <value u32>`, then a few zeros
+/// (two on the owner's Chalice of Vigor).
+fn stat_list_before(x: &[u8], skills: usize) -> Vec<(u16, u32)> {
+    for (n, gap) in (1..=4usize).flat_map(|n| (1..=3usize).map(move |g| (n, g))) {
+        let Some(q) = skills.checked_sub(1 + 6 * n + gap) else { continue };
+        if x[q] as usize == n && x[skills - gap..skills].iter().all(|&v| v == 0) {
+            let list: Vec<(u16, u32)> = (0..n).map(|s| (u16_at(x, q + 1 + 6 * s).unwrap_or(0), u32_at(x, q + 3 + 6 * s).unwrap_or(0))).collect();
+            if list.iter().all(|&(c, v)| c > 0 && c < 0x400 && v < 1_000_000) {
+                return list;
+            }
         }
     }
     Vec::new()
@@ -1498,6 +1540,13 @@ mod tests {
         assert_eq!((bow.enchant, bow.level), (10, 91));
         assert_eq!(bow.stones, vec![(531360004, 0x13D, 3), (531360004, 0x13D, 1), (531360004, 0xC1, 1), (531360004, 0x13D, 2)]);
         assert_eq!(bow.soul, vec![(0xC1, 308), (0x11A, 972), (0x80, 51)]);
+        assert_eq!(bow.skills, vec![(14_340_000, 1)]);
+        // His Chalice of Vigor, an Arcana worn in slot 41: +1, item level 81 (80 + 1), Time [Siel] 21,
+        // four skills (Wind Vigor 14730000 among them).
+        let chalice = his.iter().find(|i| i.storage == 11 && i.slot == 41).unwrap();
+        assert_eq!((chalice.enchant, chalice.level, chalice.stats.clone()), (1, 81, vec![(0x0B, 21)]));
+        assert_eq!(chalice.skills.len(), 4);
+        assert!(chalice.skills.contains(&(14_730_000, 1)));
         let greaves = his.iter().find(|i| i.storage == 11 && i.slot == 6).unwrap();
         assert_eq!((greaves.enchant, greaves.stones.len(), greaves.soul.len()), (10, 4, 3));
         // Her two Arcana, both in slot 0, each its own uid.

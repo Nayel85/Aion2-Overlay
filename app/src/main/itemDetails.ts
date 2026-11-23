@@ -13,16 +13,21 @@ import type { ItemDetails } from '../shared/equipment.ts'
 const API = 'https://questlog.gg/aion-2/api/trpc'
 const HEADERS = { 'user-agent': 'aion2-drop-tracker (personal pet collection tracker)', accept: 'application/json' }
 const asked = new Map<string, Promise<ItemDetails | null>>()
+/** What a kept file holds: the details, as first kept (an older app's had no soulMax: asked again). */
+const complete = (d: ItemDetails): boolean => d.soulMax !== undefined
 
 interface QuestlogItem {
   equipmentInfo?: { itemLevel?: number }
-  itemStats?: { mainStats?: Record<string, number>; enchants?: { level: number; stats: Record<string, { value: number }> }[] }
+  itemStats?: { mainStats?: Record<string, number>; enchants?: { level: number; stats: Record<string, { value: number }> }[]; subStats?: { id: string; maxValue: number }[] }
 }
 
 async function fetchDetails(id: string): Promise<ItemDetails | null> {
   const dir = join(app.getPath('userData'), 'itemdetails')
   const file = join(dir, `${id}.json`)
-  if (existsSync(file)) return JSON.parse(readFileSync(file, 'utf8')) as ItemDetails
+  if (existsSync(file)) {
+    const kept = JSON.parse(readFileSync(file, 'utf8')) as ItemDetails
+    if (complete(kept)) return kept
+  }
   const res = await fetch(`${API}/database.getItem?input=${encodeURIComponent(JSON.stringify({ language: 'en', id }))}`, { headers: HEADERS })
   if (!res.ok) throw new Error(`HTTP ${res.status}`)
   const item = ((await res.json()) as { result?: { data?: QuestlogItem | null } }).result?.data
@@ -31,6 +36,7 @@ async function fetchDetails(id: string): Promise<ItemDetails | null> {
     itemLevel: item.equipmentInfo?.itemLevel ?? null,
     main: item.itemStats?.mainStats ?? {},
     enchants: Object.fromEntries((item.itemStats?.enchants ?? []).map((e) => [e.level, Object.fromEntries(Object.entries(e.stats).map(([k, s]) => [k, s.value]))])),
+    soulMax: Object.fromEntries((item.itemStats?.subStats ?? []).map((s) => [s.id, s.maxValue])),
   }
   mkdirSync(dir, { recursive: true })
   writeFileSync(file, JSON.stringify(details))

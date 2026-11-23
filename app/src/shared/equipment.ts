@@ -6,14 +6,29 @@
  * The codes were matched on the owner's items against the game's windows (2026-11-23): the stones
  * of nine of Nayoul's items (Bakarma Boots: Critical Hit 0x80 +5, Accuracy Bonus 0x68 +7, Defense
  * 0x133 +10, Attack 0x13D +3...) and his Aulamus Bow's soul binding (HP 0xC1 308, Combat Speed 0x11A
- * 9.7%, Critical Hit 0x80 51); the soul-binding-only ones by their values against each item's
- * possible stats (questlog's subStats ranges), over the three characters' worn items.
+ * 9.7%, Critical Hit 0x80 51), Vakron Greaves' (Front Defense 0x24C, Evasion 0x138, Critical Damage
+ * Defense 0x29), Bakarma Boots' (Natural HP Regen 0xC2, Dexterity 0x2, Back Defense 0x63) and Gartua
+ * Breastplate's (Weapon Damage Tolerance 0x4A 7.32%); the others by their values against each item's
+ * possible stats (questlog's subStats ranges), over the three characters' worn items: the base
+ * stats 1 to 6 in the game's order (Strength, Dexterity, Intelligence, Constitution, Agility,
+ * Willpower; 3 not seen yet).
  */
+import { SKILLS } from './skills.ts'
 import { STONES } from './stones.ts'
 
 /** The game's stat codes, by questlog's stat ids. */
 export const STAT_CODES: Record<number, string> = {
+  0x1: 'str',
+  0x2: 'dex',
   0x4: 'con',
+  0x5: 'agi',
+  0x6: 'wis',
+  0x29: 'criticaldamagedefense',
+  0x63: 'backattackdefense',
+  0xc2: 'hpregen',
+  0x138: 'armorevasion',
+  0x13e: 'weaponaccuracy',
+  0x24c: 'frontattackdefense',
   0x4a: 'decreaseweapondamage',
   0x68: 'accuracy',
   0x74: 'evasion',
@@ -43,9 +58,18 @@ const STATS: Record<string, { label: string; pct?: boolean }> = {
   mpmax: { label: 'MP' },
   mpregen: { label: 'MP Recovery' },
   fpmax: { label: 'Flight Time' },
-  con: { label: 'Health' },
+  str: { label: 'Strength' },
+  dex: { label: 'Dexterity' },
+  con: { label: 'Constitution' },
+  agi: { label: 'Agility' },
+  wis: { label: 'Willpower' },
   abnormalresistance: { label: 'Status Effect Resistance' },
-  decreaseweapondamage: { label: 'Damage Reduction', pct: true },
+  decreaseweapondamage: { label: 'Weapon Damage Tolerance', pct: true },
+  frontattackdefense: { label: 'Front Defense' },
+  backattackdefense: { label: 'Back Defense' },
+  criticaldamagedefense: { label: 'Critical Damage Defense' },
+  armorevasion: { label: 'Evasion' },
+  hpregen: { label: 'Natural HP Regen' },
   combatspeed: { label: 'Combat Speed', pct: true },
   weaponaccuracy: { label: 'Accuracy' },
   amplifyalldamage: { label: 'Damage Amplification', pct: true },
@@ -62,7 +86,8 @@ export interface StatLine {
   /** Its grade's colour (a stone's rank: 11 white, 21 green, 31 blue, 41 gold), or none. */
   grade?: number
 }
-const formatValue = (id: string, v: number): string => (STATS[id]?.pct ? `${(v / 100).toFixed(1)}%` : v.toLocaleString('en-US'))
+/** As the game's soul binding window writes it: a percent to two places ("9.72%"). */
+const formatValue = (id: string, v: number): string => (STATS[id]?.pct ? `${(v / 100).toFixed(2)}%` : v.toLocaleString('en-US'))
 const labelOf = (id: string | undefined, code: number): string => (id ? (STATS[id]?.label ?? id) : `Stat 0x${code.toString(16)}`)
 
 /** A stone set in an equipment: its stat and value at its rank, in its grade's colour. */
@@ -72,10 +97,22 @@ export function stoneLine(stone: number, code: number, rank: number): StatLine {
   return { label: labelOf(id, code), value: r ? `+${formatValue(id!, r[1])}` : `rank ${rank}`, grade: r?.[0] }
 }
 
-/** A soul binding's stat: named and valued. */
-export function soulLine(code: number, value: number): StatLine {
+/** A soul binding's stat: named and valued, out of the most it can roll on that item ("308/361"). */
+export function soulLine(code: number, value: number, max?: Record<string, number>): StatLine {
   const id = STAT_CODES[code]
-  return { label: labelOf(id, code), value: id ? formatValue(id, value) : String(value) }
+  const most = id ? max?.[id] : undefined
+  return { label: labelOf(id, code), value: id ? `${formatValue(id, value)}${most ? `/${formatValue(id, most)}` : ''}` : String(value) }
+}
+
+/** An Arcana's own stats, by code: the game's names where seen (the Chalice of Vigor's "Time [Siel]"). */
+const ARCANA_STATS: Record<number, string> = { 0x0b: 'Time [Siel]' }
+export function arcanaStatLine(code: number, value: number): StatLine {
+  return { label: ARCANA_STATS[code] ?? `Stat 0x${code.toString(16)}`, value: String(value) }
+}
+
+/** A skill an equipment raises: its name and "Lv. +1". */
+export function skillLine(skill: number, levels: number): StatLine {
+  return { label: SKILLS[skill] ?? `Skill ${skill}`, value: `Lv. +${levels}` }
 }
 
 /** What questlog has of an equipment, as the main process keeps it (main/itemDetails.ts). */
@@ -86,6 +123,8 @@ export interface ItemDetails {
   main: Record<string, number>
   /** The bonus each enchantment level adds, by stat id. */
   enchants: Record<number, Record<string, number>>
+  /** The most each soul binding stat can roll on it, by stat id (questlog's subStats). */
+  soulMax?: Record<string, number>
 }
 
 /** Its base stats as the window's lines, with its enchantment's bonus: "Attack 278–350 (+79)". */
