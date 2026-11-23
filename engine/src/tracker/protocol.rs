@@ -47,6 +47,9 @@ pub const OP_DUNGEON_CLEAR: [u8; 2] = [0x01, 0x61];
 pub const OP_NIGHTMARE_START: [u8; 2] = [0x35, 0xE2];
 pub const OP_LOOT: [u8; 2] = [0x15, 0x57];
 pub const OP_GATHER: [u8; 2] = [0x33, 0x8D];
+/// A craft starting: its outcome already in it (`craft_start`); and done, its item next in the bags.
+pub const OP_CRAFT_START: [u8; 2] = [0x6F, 0x8D];
+pub const OP_CRAFT_DONE: [u8; 2] = [0x71, 0x8D];
 /// A gathering starting: its outcome already in it (`gather_start`).
 pub const OP_GATHER_START: [u8; 2] = [0x31, 0x8D];
 pub const OP_REWARD_BOARD: [u8; 2] = [0x0A, 0x57];
@@ -684,6 +687,17 @@ pub fn gather_start(frame: &[u8]) -> Option<(u32, u32, u8, bool)> {
     let outcome = *b.get(at + 4)?;
     let doubled = b[at..].windows(DOUBLED.len()).any(|w| w == DOUBLED);
     matches!(outcome, 0 | 1 | 7).then_some((node, tries, outcome, doubled))
+}
+
+/// A craft starting (`6F 8D 00 05 <you varint> <recipe u32> <outcome u8> 00 <steps>...`), its outcome
+/// in it as a gathering's is: 1 the plain item, 13 the better one (a proc: the green Splendent
+/// Orichalcum Guard where an Orichalcum Guard is crafted). The owner's 2026-11-23 crafts: 24 plain
+/// and 1 proc, each as its start said. (recipe, outcome).
+pub fn craft_start(frame: &[u8]) -> Option<(u32, u8)> {
+    let b = body(frame, OP_CRAFT_START)?;
+    let (_, n) = varint(b, 2)?;
+    let recipe = u32_at(b, 2 + n)?;
+    Some((recipe, *b.get(2 + n + 4)?))
 }
 
 /// A gathering's outcome (`33 8D <result u8> <u32> <item u32> <amount u32> <bonus u32> ...`), sent
@@ -1550,6 +1564,9 @@ mod tests {
         assert_eq!(gather(&frame(OP_GATHER, &hex("003ab8c7015d2b652401000000000000000000000000000000"))), Some((0, 610_610_013, 1, 0)));
         // Ranked up (and doubled).
         assert_eq!(gather(&frame(OP_GATHER, &hex("013aa3b7015e2b652401000000010000000000000000000000"))), Some((1, 610_610_014, 1, 1)));
+        // The owner's crafts: an Orichalcum Guard (recipe 111086001), then the one that procced.
+        assert_eq!(craft_start(&frame(OP_CRAFT_START, &hex("0005b08701b1099f0601000304006500000065000000"))), Some((111_086_001, 1)));
+        assert_eq!(craft_start(&frame(OP_CRAFT_START, &hex("0005b08701b1099f060d00050300eb000000eb000000"))), Some((111_086_001, 13)));
         // Their starts, which already said it: gathered, ranked up, failed.
         assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000a3b70102000000070000020000000305"))), Some((23459, 2, 7, false)));
         assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000b3b20101000000000000010000000605"))), Some((22835, 1, 0, false)));

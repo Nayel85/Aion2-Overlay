@@ -199,6 +199,9 @@ pub struct Tracker {
     /// Objects in view but cubes (gathering spots...), their template by id: a gathering's start
     /// names only its spot, whose template says what it gives.
     objects: HashMap<u32, u32>,
+    /// The craft going on (its recipe), and once done, when: the bags' next change is its item.
+    craft: Option<u32>,
+    craft_done: Option<(u32, i64)>,
 }
 
 /// An item where it lies, as the app keeps it (shared/inventory.ts).
@@ -284,6 +287,8 @@ impl Tracker {
             party_told: json!([]),
             party_checked: 0,
             objects: HashMap::new(),
+            craft: None,
+            craft_done: None,
         }
     }
 
@@ -1011,6 +1016,13 @@ impl Tracker {
             p::OP_ITEM => {
                 // The slots it says anew (a transfer, loot, a sale): the inventory as it goes.
                 let slots = p::item_slots(f);
+                // Right after a craft: what it made.
+                if let Some((recipe, at)) = self.craft_done.take()
+                    && ts - at < 2_000
+                    && let Some(made) = slots.iter().find(|s| s.amount > 0)
+                {
+                    (self.emit)(json!({ "type": "craftResult", "ts": ts, "recipe": recipe, "item": made.item }));
+                }
                 if !slots.is_empty() && self.pending_wallet.is_none() {
                     if let Some(name) = self.store.current.clone() {
                         let server = self.store.characters.get(&name).and_then(|c| c.server);
@@ -1099,6 +1111,18 @@ impl Tracker {
             p::OP_NIGHTMARE_START => {
                 if let Some((boss, level)) = p::nightmare_start(f) {
                     (self.emit)(json!({ "type": "nightmare", "ts": ts, "boss": boss, "level": level }));
+                }
+            }
+            p::OP_CRAFT_START => {
+                if let Some((recipe, outcome)) = p::craft_start(f) {
+                    tracing::info!("craft {recipe}: will be {outcome}");
+                    self.craft = Some(recipe);
+                    (self.emit)(json!({ "type": "craftStart", "ts": ts, "recipe": recipe, "outcome": outcome }));
+                }
+            }
+            p::OP_CRAFT_DONE => {
+                if let Some(recipe) = self.craft.take() {
+                    self.craft_done = Some((recipe, ts));
                 }
             }
             p::OP_GATHER_START => {

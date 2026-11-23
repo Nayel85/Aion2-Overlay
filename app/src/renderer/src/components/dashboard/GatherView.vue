@@ -26,7 +26,7 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
 
 <template>
   <div>
-    <PageHeader title="Gathering outcome" :about="t('The game decides a gathering as it starts, about 7 seconds before the result: whether it fails, ranks up (Fine Odyle) or gives twice as much. This says it over the game as soon as it starts.')" />
+    <PageHeader title="Gathering outcome" :about="t('The game decides a gathering or a craft as it starts, seconds before the result: whether it fails, ranks up (Fine Odyle), gives twice as much, or procs (a craft\'s green item). This says it over the game as soon as it starts, with what it will give.')" />
 
     <Section title="Over the game">
       <SettingRow label="Gathering outcome" hint="A pill as each gathering starts, gone with its result. Clicks go through it; while the dashboard is open it shows a sample you can drag into place.">
@@ -53,14 +53,17 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
           <Toggle :model-value="cfg.fail" @update:model-value="set({ fail: $event })" />
         </span>
       </SettingRow>
-      <SettingRow label="Rank up or x2" hint="A Fine Odyle from an Odyle node, or twice as much.">
+      <SettingRow label="Rank up, x2 or proc" hint="A Fine Odyle from an Odyle node, twice as much, or a craft's better item (a green Splendent one where a white one is crafted).">
         <span class="flex items-center gap-2">
           <button v-if="cfg.rareColor !== GATHER_DEFAULT_COLORS.rare" type="button" class="text-xs text-darker hover:text-default" @click="set({ rareColor: GATHER_DEFAULT_COLORS.rare })">{{ t('Reset') }}</button>
           <input type="color" class="h-7 w-10 cursor-pointer rounded border border-light bg-transparent" :value="cfg.rareColor" @change="set({ rareColor: ($event.target as HTMLInputElement).value })" />
           <Toggle :model-value="cfg.rare" @update:model-value="set({ rare: $event })" />
         </span>
       </SettingRow>
-      <SettingRow label="Plain ones" hint="Also the gatherings that will give the usual amount, in grey.">
+      <SettingRow label="Crafts" hint="Crafts too: as each one starts, whether it will proc.">
+        <Toggle :model-value="cfg.crafts" @update:model-value="set({ crafts: $event })" />
+      </SettingRow>
+      <SettingRow label="Plain ones" hint="Also the gatherings and crafts that will give the usual, in grey.">
         <Toggle :model-value="cfg.plain" @update:model-value="set({ plain: $event })" />
       </SettingRow>
     </Section>
@@ -69,7 +72,7 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
       <SettingRow label="When it will fail">
         <Toggle :model-value="cfg.soundFail" @update:model-value="set({ soundFail: $event })" />
       </SettingRow>
-      <SettingRow label="When it will rank up or give x2">
+      <SettingRow label="When it will rank up, give x2 or proc">
         <Toggle :model-value="cfg.soundRare" @update:model-value="set({ soundRare: $event })" />
       </SettingRow>
       <template v-if="cfg.soundFail || cfg.soundRare">

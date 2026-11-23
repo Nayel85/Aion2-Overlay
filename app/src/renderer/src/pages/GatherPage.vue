@@ -20,18 +20,23 @@ const cfg = computed(() => store.settings.gather)
 
 /** While the dashboard is up and nothing is being gathered: a sample to place it by. */
 const preview = computed(() => store.panelVisible && !store.gather)
-const SAMPLE: GatherForecast = { outcome: 'rankUp', doubled: true, item: 610_610_014, at: 0 }
+const SAMPLE: GatherForecast = { kind: 'gather', outcome: 'rankUp', doubled: true, item: 610_610_014, at: 0 }
 
 type Kind = 'fail' | 'rare' | 'plain'
-const kindOf = (g: GatherForecast): Kind => (g.outcome === 'fail' ? 'fail' : g.outcome === 'rankUp' || g.doubled ? 'rare' : 'plain')
+const kindOf = (g: GatherForecast): Kind => (g.outcome === 'fail' ? 'fail' : g.outcome === 'rankUp' || g.outcome === 'proc' || g.doubled ? 'rare' : 'plain')
 const textOf = (g: GatherForecast): string => {
+  if (g.kind === 'craft') return g.outcome === 'proc' ? t('Craft procs') : t('Plain craft')
   if (g.outcome === 'fail') return t('Gathering will fail')
   if (g.outcome === 'rankUp') return g.doubled ? t('Rank up, x2') : t('Rank up')
   return g.doubled ? t('Gathering x2') : t('Gathering succeeds')
 }
-const wanted = (k: Kind): boolean => (k === 'fail' ? cfg.value.fail : k === 'rare' ? cfg.value.rare : cfg.value.plain)
+const wanted = (g: GatherForecast): boolean => {
+  if (g.kind === 'craft' && !cfg.value.crafts) return false
+  const k = kindOf(g)
+  return k === 'fail' ? cfg.value.fail : k === 'rare' ? cfg.value.rare : cfg.value.plain
+}
 
-const shownGather = computed<GatherForecast | null>(() => (preview.value ? SAMPLE : store.gather && wanted(kindOf(store.gather)) ? store.gather : null))
+const shownGather = computed<GatherForecast | null>(() => (preview.value ? SAMPLE : store.gather && wanted(store.gather) ? store.gather : null))
 const kind = computed(() => (shownGather.value ? kindOf(shownGather.value) : null))
 const colour = computed(() => (kind.value === 'fail' ? cfg.value.failColor : kind.value === 'rare' ? cfg.value.rareColor : '#9aa0ac'))
 const shown = computed(() => cfg.value.enabled && !!shownGather.value)
@@ -47,7 +52,7 @@ watch(
   () => store.gather?.at,
   (at) => {
     const g = store.gather
-    if (!at || !g || !cfg.value.enabled) return
+    if (!at || !g || !cfg.value.enabled || !wanted(g)) return
     const k = kindOf(g)
     if ((k === 'fail' && cfg.value.soundFail) || (k === 'rare' && cfg.value.soundRare)) void playSound('cube', cfg.value.soundId, cfg.value.volume)
   },
