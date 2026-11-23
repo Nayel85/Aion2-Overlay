@@ -16,7 +16,7 @@ const root = ref<HTMLElement | null>(null)
 const cfg = computed(() => store.settings.flight)
 
 const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 50)
+const ticker = setInterval(() => (now.value = Date.now()), 33)
 
 /** While the dashboard is up: a flight to place it by. */
 const preview = computed(() => store.panelVisible)

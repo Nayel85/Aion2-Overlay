@@ -17,7 +17,7 @@ export interface FlightPower {
  * In the air the game sends a reading about every 0.1 s; with none for this long you have landed,
  * though the last reading still says flying (the next, on the ground, comes up to a second later).
  */
-const LANDED_MS = 350
+const LANDED_MS = 250
 
 /** In the air now: the last reading says so, and is recent. */
 export function airborne(fp: FlightPower, now: number): boolean {

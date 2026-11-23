@@ -479,13 +479,13 @@ impl Sidecar {
         });
     }
 
-    /// Your flight power (A2Tools' `capture::flight_power`) when it changes, looked at 10 times a
+    /// Your flight power (A2Tools' `capture::flight_power`) when it changes, looked at 50 times a
     /// second while capturing, for the flight timer: in hundredths, with how fast it refills and
     /// drains and whether you are in the air.
     fn flight(self: &Arc<Self>) {
         let me = self.clone();
         self.runtime.spawn(async move {
-            let mut tick = tokio::time::interval(Duration::from_millis(100));
+            let mut tick = tokio::time::interval(Duration::from_millis(20));
             let mut told = None;
             loop {
                 tick.tick().await;
