@@ -37,5 +37,5 @@ test("an equipment's window as the game shows it: base stats with the enchantmen
   assert.deepEqual(skillLine(14730000, 1), { label: 'Wind Vigor', value: 'Lv. +1' })
   // The Chalice of Vigor's Time [Siel] 21; a code not matched yet, told by its number.
   assert.deepEqual(arcanaStatLine(0x0b, 21), { label: 'Time [Siel]', value: '21' })
-  assert.equal(soulLine(0x1aa, 285).label, 'Stat 0x1aa')
+  assert.equal(soulLine(0x92, 750).label, 'Stat 0x92')
 })

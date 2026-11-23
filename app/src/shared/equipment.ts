@@ -9,20 +9,35 @@
  * 9.7%, Critical Hit 0x80 51), Vakron Greaves' (Front Defense 0x24C, Evasion 0x138, Critical Damage
  * Defense 0x29), Bakarma Boots' (Natural HP Regen 0xC2, Dexterity 0x2, Back Defense 0x63) and Gartua
  * Breastplate's (Weapon Damage Tolerance 0x4A 7.32%); the others by their values against each item's
- * possible stats (questlog's subStats ranges), over the three characters' worn items: the base
- * stats 1 to 6 in the game's order (Strength, Dexterity, Intelligence, Constitution, Agility,
- * Willpower; 3 not seen yet).
+ * possible stats (questlog's subStats ranges), over the three characters' 119 soul-bound items
+ * (worn, bags, warehouses): the one id that fits every time, else the one the others left. Where two
+ * still fit, by how the game numbers them (`~`): an attack's damage next to its defense (Back Attack
+ * 0x62 by Back Defense 0x63, Front Attack 0x24B by 0x24C, Critical Damage 0x26 by Critical Damage
+ * Defense 0x29), a stat 4 before its resist (Perfect 0x1BA, Perfect Resist 0x1BE: Hard Hit 0x1BB, so
+ * 0x1BD Iron Wall), the base stats in their usual order (Strength 1, Agility 5). 0x20 and 0x92
+ * (Additional Hit Rate or Weapon Damage Amplification, the same ranges everywhere) stay apart.
  */
 import { SKILLS } from './skills.ts'
 import { STONES } from './stones.ts'
 
 /** The game's stat codes, by questlog's stat ids. */
 export const STAT_CODES: Record<number, string> = {
-  0x1: 'str',
+  0x1: 'str', // ~
+  0x5: 'agi', // ~
+  0x6: 'wis',
+  0x26: 'criticaladddamage', // ~
+  0x62: 'backattackdamage', // ~
+  0x9e: 'abnormalaccuracy',
+  0xeb: 'amplifyhphealget',
+  0x1aa: 'defenseratio',
+  0x1ba: 'perfect',
+  0x1bb: 'hardhit', // ~
+  0x1bc: 'restoration',
+  0x1bd: 'ironwall', // ~
+  0x1be: 'perfectresist',
+  0x24b: 'frontattackdamage', // ~
   0x2: 'dex',
   0x4: 'con',
-  0x5: 'agi',
-  0x6: 'wis',
   0x29: 'criticaldamagedefense',
   0x63: 'backattackdefense',
   0xc2: 'hpregen',
@@ -70,6 +85,17 @@ const STATS: Record<string, { label: string; pct?: boolean }> = {
   criticaldamagedefense: { label: 'Critical Damage Defense' },
   armorevasion: { label: 'Evasion' },
   hpregen: { label: 'Natural HP Regen' },
+  criticaladddamage: { label: 'Critical Damage' },
+  backattackdamage: { label: 'Back Attack' },
+  frontattackdamage: { label: 'Front Attack' },
+  abnormalaccuracy: { label: 'Status Effect Accuracy' },
+  amplifyhphealget: { label: 'Healing Received', pct: true },
+  defenseratio: { label: 'Defense Rate' },
+  perfect: { label: 'Perfect' },
+  perfectresist: { label: 'Perfect Resist' },
+  hardhit: { label: 'Hard Hit' },
+  ironwall: { label: 'Iron Wall' },
+  restoration: { label: 'Restoration' },
   combatspeed: { label: 'Combat Speed', pct: true },
   weaponaccuracy: { label: 'Accuracy' },
   amplifyalldamage: { label: 'Damage Amplification', pct: true },
