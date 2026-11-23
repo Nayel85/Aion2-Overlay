@@ -37,6 +37,8 @@ test("an equipment's window as the game shows it: base stats with the enchantmen
   assert.deepEqual(skillLine(14730000, 1), { label: 'Wind Vigor', value: 'Lv. +1' })
   // The Chalice of Vigor's Time [Siel] 21; a code not matched yet, told by its number.
   assert.deepEqual(arcanaStatLine(0x0b, 21), { label: 'Time [Siel]', value: '21' })
+  // The rest of the Vigor set: Bell Justice 16, Compass Freedom 15, Mirror Illusion 16, Parchment Life 12.
+  assert.deepEqual([arcanaStatLine(0x07, 16).label, arcanaStatLine(0x08, 15).label, arcanaStatLine(0x09, 16).label, arcanaStatLine(0x0a, 12).label], ['Justice [Nezekan]', 'Freedom [Vaizel]', 'Illusion [Kaisinel]', 'Life [Yustiel]'])
   // Nayoul's Wisdom Guard: Weapon Damage Boost 4.65%, Multi-hit Chance 4.81%; Holy Spirit Knife's Might.
   assert.deepEqual([soulLine(0x20, 465), soulLine(0x92, 481), soulLine(0x1, 18).label], [{ label: 'Weapon Damage Boost', value: '4.65%' }, { label: 'Multi-hit Chance', value: '4.81%' }, 'Might'])
   // Nayel's Vakron Greaves: Endurance 2.68%, Natural MP Regen 20.

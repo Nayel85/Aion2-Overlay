@@ -164,8 +164,12 @@ export function soulLine(code: number, value: number, range?: Record<string, [nu
   return { label: labelOf(id, code), value: id ? `${formatValue(id, value)}${most ? `/${formatValue(id, most)}` : ''}` : String(value), ...(roll !== null ? { roll: Math.round(roll * 100) } : {}) }
 }
 
-/** An Arcana's own stats, by code: the game's names where seen (the Chalice of Vigor's "Time [Siel]"). */
-const ARCANA_STATS: Record<number, string> = { 0x0b: 'Time [Siel]' }
+/**
+ * An Arcana's own stats, by code: the game's names, seen on Nayoul's Vigor set (Bell: Justice 16,
+ * Compass: Freedom 15, Mirror: Illusion 16, Parchment: Life 12, Chalice: Time 21). Death, Destiny,
+ * Destruction, Space and Wisdom not seen yet: told by their number.
+ */
+const ARCANA_STATS: Record<number, string> = { 0x07: 'Justice [Nezekan]', 0x08: 'Freedom [Vaizel]', 0x09: 'Illusion [Kaisinel]', 0x0a: 'Life [Yustiel]', 0x0b: 'Time [Siel]' }
 export function arcanaStatLine(code: number, value: number): StatLine {
   return { label: ARCANA_STATS[code] ?? `Stat 0x${code.toString(16)}`, value: String(value) }
 }
