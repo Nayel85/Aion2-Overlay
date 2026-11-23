@@ -78,7 +78,7 @@ mémoire du jeu, et n'envoie aucune touche. Ce qu'elle lit reste sur ton PC.
 
 Elle ne va sur Internet que pour :
 - les mises à jour, quand tu les demandes (ce dépôt) ;
-- **le site lokthar.com, activé par défaut** (page Guild Events, premier interrupteur) : les events de guilde, et
+- **le site lokthar.com, activé par défaut** (page Guild Events, réglage « Guild events ») : les events de guilde, et
   tes personnages (nom, classe, niveau, gear score, puissance de combat, énergie d'Odyle) envoyés
   au site, qui renvoie le roster de ta guilde s'il y est. Coupe ce réglage pour que rien ne parte ;
 - la synchro des field bosses avec le site Lokthar, désactivée par défaut ;
