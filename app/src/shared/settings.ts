@@ -348,7 +348,7 @@ export interface Settings {
   /** Which one-time layout updates were applied to these settings (main/settings.ts `applyLayoutUpdates`). */
   layoutVersion: number
 
-  /** The app's language (shared/i18n.ts): Spanish unless changed. */
+  /** The app's language (shared/i18n.ts): French unless changed. */
   language: Lang
 
   /** Your side: its zones are listed first where a soul drops. */
@@ -458,7 +458,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   meter: { enabled: true, position: { x: 410, y: 206 }, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'beside', gear: 'beside', deaths: true, style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
   layoutVersion: 1,
-  language: 'en',
+  language: 'fr',
   faction: 'elyos',
   playerLevel: 45,
   hideMaxed: true,
@@ -809,7 +809,8 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       } as Settings[K]
     }
     case 'language':
-      return (value === 'en' ? 'en' : 'es') as Settings[K]
+      // French or English; Spanish, gone, reads as English.
+      return (value === 'fr' ? 'fr' : 'en') as Settings[K]
     case 'faction':
       return (value === 'asmodians' ? 'asmodians' : 'elyos') as Settings[K]
     case 'layoutVersion':

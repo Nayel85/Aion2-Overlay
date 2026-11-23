@@ -1,6 +1,6 @@
 /**
- * What changed in each version, newest first: one short line per change (its Spanish in
- * shared/i18n.es.ts), shown on the dashboard's
+ * What changed in each version, newest first: one short line per change (its French in
+ * shared/i18n.fr.ts), shown on the dashboard's
  * What's new page (the sidebar's App group), and this version's on the Updates page. Add the next
  * version's lines at the top as they land; the release takes them as they are (updates.md).
  */

@@ -279,7 +279,7 @@ function corridorTitle(list: CorridorState[]): string {
                 <span class="flex items-center gap-1.5"><img :src="ICONS.ticket" alt="" draggable="false" class="size-5" />{{ t('Ascension Trial') }}</span>
               </th>
               <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('Kina and bound Kina')">Kina</th>
-              <th class="w-40 whitespace-nowrap px-5 text-center font-medium" :title="t('The Abyss\'s Artifact corridors, back on Mondays, Thursdays and Saturdays at 21:00.')">{{ t('Corridors') }}</th>
+              <th class="w-40 whitespace-nowrap px-5 text-center font-medium" :title="t('The Abyss\'s Artifact corridors, back as the Artifact siege starts (Thursdays and Saturdays at 21:00 in Europe).')">{{ t('Corridors') }}</th>
               <th class="w-px whitespace-nowrap pl-5 pr-4 text-right font-medium">{{ t('Last read') }}</th>
             </tr>
           </thead>

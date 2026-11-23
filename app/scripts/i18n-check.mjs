@@ -1,13 +1,15 @@
 // Lists the text wrapped in t(), plural() or tr(), or given to the components that translate their
-// own (SettingRow, Section, PageHeader, option lists), that has no Spanish in src/shared/i18n.es.ts.
-// Only literal strings are checked: run it after adding text. `npm run i18n:check`
+// own (SettingRow, Section, PageHeader, option lists), that has no French in src/shared/i18n.fr.ts;
+// and the French lines whose English is nowhere in the code any more (short ones may be the game's
+// words looked up as they come, a stat's name: only listed). `npm run i18n:check`
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const root = new URL('../src/', import.meta.url).pathname
-const es = readFileSync(join(root, 'shared/i18n.es.ts'), 'utf8')
+const root = fileURLToPath(new URL('../src/', import.meta.url))
+const fr = readFileSync(join(root, 'shared/i18n.fr.ts'), 'utf8')
 const keys = new Set()
-for (const m of es.matchAll(/^\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"):/gm)) keys.add((m[1] ?? m[2]).replace(/\\(.)/g, '$1'))
+for (const m of fr.matchAll(/^\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"):/gm)) keys.add((m[1] ?? m[2]).replace(/\\(.)/g, '$1'))
 
 const files = []
 const walk = (dir) => {
@@ -20,9 +22,11 @@ const walk = (dir) => {
 walk(root)
 
 const missing = new Map()
+const sources = []
 const plurals = /\bplural\([^,]+,\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)"),\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")/g
 for (const f of files) {
   const src = readFileSync(f, 'utf8')
+  sources.push(src)
   const found = []
   for (const m of src.matchAll(/\b(?:t|tr)\(\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")/g)) found.push(m[1] ?? m[2])
   for (const m of src.matchAll(plurals)) found.push(m[1] ?? m[2], m[3] ?? m[4])
@@ -40,6 +44,10 @@ for (const f of files) {
     if (!keys.has(text)) missing.set(text, f.replace(root, ''))
   }
 }
+const all = sources.join('\n')
+const unused = [...keys].filter((k) => ![k, k.replace(/'/g, "\\'"), k.replace(/"/g, '\\"')].some((form) => all.includes(form)) && k.split(' ').length > 4)
 for (const [text, file] of missing) console.log(`${file}: ${text}`)
-console.log(missing.size ? `${missing.size} without Spanish` : 'All text has Spanish.')
-process.exit(missing.size ? 1 : 0)
+for (const text of unused) console.log(`unused: ${text}`)
+console.log(missing.size ? `${missing.size} without French` : 'All text has French.')
+if (unused.length) console.log(`${unused.length} French lines no longer used`)
+process.exit(missing.size || unused.length ? 1 : 0)
