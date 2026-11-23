@@ -811,7 +811,8 @@ fn soul_binding(x: &[u8]) -> Vec<(u16, u32)> {
 }
 
 /// The skills an equipment raises: `<n>` (1-6) of `<skill u32> <levels u8>`, then `<n>` again with
-/// the same skills (the owner's bow: Tempest Shot, 14340000, +1). Where it starts, and the list.
+/// the same skills and the levels they add on top (the owner's bow: Tempest Shot, 14340000, 1 + 0;
+/// his Chalice of Vigor: Deadshot 1 + 1, +2 in game). Where it starts, and each skill's levels in all.
 fn skill_list(x: &[u8]) -> Option<(usize, Vec<(u32, u8)>)> {
     (0..x.len()).find_map(|q| {
         let n = x[q] as usize;
@@ -821,7 +822,7 @@ fn skill_list(x: &[u8]) -> Option<(usize, Vec<(u32, u8)>)> {
         let list: Vec<(u32, u8)> = (0..n).map(|s| (u32_at(x, q + 1 + 5 * s).unwrap_or(0), x[q + 5 + 5 * s])).collect();
         let again = q + 1 + 5 * n;
         let ok = x[again] as usize == n && list.iter().enumerate().all(|(s, &(id, lv))| (10_000_000..30_000_000).contains(&id) && (1..=10).contains(&lv) && u32_at(x, again + 1 + 5 * s) == Some(id));
-        ok.then_some((q, list))
+        ok.then(|| (q, list.iter().enumerate().map(|(s, &(id, lv))| (id, lv + x[again + 5 + 5 * s])).collect()))
     })
 }
 
@@ -1547,6 +1548,7 @@ mod tests {
         assert_eq!((chalice.enchant, chalice.level, chalice.stats.clone()), (1, 81, vec![(0x0B, 21)]));
         assert_eq!(chalice.skills.len(), 4);
         assert!(chalice.skills.contains(&(14_730_000, 1)));
+        assert!(chalice.skills.contains(&(14_010_000, 2)), "Deadshot +2");
         let greaves = his.iter().find(|i| i.storage == 11 && i.slot == 6).unwrap();
         assert_eq!((greaves.enchant, greaves.stones.len(), greaves.soul.len()), (10, 4, 3));
         // Her two Arcana, both in slot 0, each its own uid.
