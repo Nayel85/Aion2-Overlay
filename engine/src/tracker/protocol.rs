@@ -707,7 +707,7 @@ pub fn supply_done(frame: &[u8]) -> Option<(u32, Vec<(u32, u32)>)> {
 }
 
 /// A craft starting (`6F 8D 00 05 <you varint> <recipe u32> <outcome u8> 00 <steps>...`), its outcome
-/// in it as a gathering's is: 1 the plain item, 13 the better one (a proc: the green Splendent
+/// in it as a gathering's is: 0 failed (nothing made), 1 the plain item, 13 the better one (a proc: the green Splendent
 /// Orichalcum Guard where an Orichalcum Guard is crafted). The owner's 2026-11-23 crafts: 24 plain
 /// and 1 proc, each as its start said. (recipe, outcome, how long it takes in ms).
 pub fn craft_start(frame: &[u8]) -> Option<(u32, u8, u32)> {

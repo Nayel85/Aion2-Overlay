@@ -65,12 +65,12 @@ export function startGather(): void {
   })
   tracker.onEvent('craftStart', (ev) => {
     const code = ev['outcome'] as number
-    if (code !== 1 && code !== 13) log(`craft: outcome ${code} not known (recipe ${ev['recipe']})`)
+    if (code !== 0 && code !== 1 && code !== 13) log(`craft: outcome ${code} not known (recipe ${ev['recipe']})`)
     const proc = code === 13
     const { item, doubled } = craftItem(ev['recipe'] as number, proc)
-    set({ kind: 'craft', outcome: proc ? 'proc' : 'ok', doubled, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls: [] })
+    set({ kind: 'craft', outcome: code === 0 ? 'fail' : proc ? 'proc' : 'ok', doubled, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls: [] })
   })
-  tracker.onEvent('craftResult', () => {
+  tracker.onEvent('craftDone', () => {
     if (state?.kind === 'craft') set(null)
   })
 }

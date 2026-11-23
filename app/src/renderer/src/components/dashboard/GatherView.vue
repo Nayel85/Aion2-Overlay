@@ -62,6 +62,12 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
           <Toggle :model-value="cfg.fail" @update:model-value="set({ fail: $event })" />
         </span>
       </SettingRow>
+      <SettingRow label="Craft procs" hint="A craft's better item (a green Splendent one where a white one is crafted, often with the same icon) or its double: shown with the rank ups and x2, in a colour of its own.">
+        <span class="flex items-center gap-2">
+          <button v-if="cfg.procColor !== GATHER_DEFAULT_COLORS.proc" type="button" class="text-xs text-darker hover:text-default" @click="set({ procColor: GATHER_DEFAULT_COLORS.proc })">{{ t('Reset') }}</button>
+          <input type="color" class="h-7 w-10 cursor-pointer rounded border border-light bg-transparent" :value="cfg.procColor" @change="set({ procColor: ($event.target as HTMLInputElement).value })" />
+        </span>
+      </SettingRow>
       <SettingRow label="Rank up, x2 or proc" hint="A Fine Odyle from an Odyle node, twice as much, or a craft's better item (a green Splendent one where a white one is crafted).">
         <span class="flex items-center gap-2">
           <button v-if="cfg.rareColor !== GATHER_DEFAULT_COLORS.rare" type="button" class="text-xs text-darker hover:text-default" @click="set({ rareColor: GATHER_DEFAULT_COLORS.rare })">{{ t('Reset') }}</button>

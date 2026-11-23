@@ -310,6 +310,20 @@ export function startSessions(): void {
   let crafting: { recipe: number; proc: boolean } | null = null
   tracker.onEvent('craftStart', (ev) => {
     crafting = { recipe: ev['recipe'] as number, proc: ev['outcome'] === 13 }
+    // A failed one (0) makes nothing: recorded as it ends.
+    if (ev['outcome'] === 0) failing = ev['recipe'] as number
+  })
+  let failing: number | null = null
+  tracker.onEvent('craftDone', (ev) => {
+    const s = sessions.current
+    if (failing === null || failing !== ev['recipe']) return
+    failing = null
+    crafting = null
+    if (!s) return
+    const at = Date.now()
+    s.crafts = [...(s.crafts ?? []), { at, recipe: ev['recipe'] as number, proc: false, failed: true, item: 0, count: 0 }]
+    s.last = at
+    changed()
   })
   tracker.onEvent('craftResult', (ev) => {
     const s = sessions.current

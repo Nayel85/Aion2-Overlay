@@ -61,11 +61,12 @@ const kinaOf = (r: DungeonRun): number => Math.max(r.kina, r.loot?.['930100031']
 
 /** The crafts by recipe, the most made first: its name, icon, how many, how many procced, and the proc's item. */
 const craftRows = computed(() => {
-  const by = new Map<number, { made: number; procs: number }>()
+  const by = new Map<number, { made: number; procs: number; fails: number }>()
   for (const c of props.session.crafts ?? []) {
-    const r = by.get(c.recipe) ?? { made: 0, procs: 0 }
+    const r = by.get(c.recipe) ?? { made: 0, procs: 0, fails: 0 }
     r.made++
     if (c.proc) r.procs++
+    if (c.failed) r.fails++
     by.set(c.recipe, r)
   }
   return [...by]
@@ -240,6 +241,7 @@ function toggle(r: DungeonRun): void {
         <span v-if="c.procs" class="flex items-center gap-1 tabular-nums text-green" :title="c.procName">
           <img v-if="c.procIcon" :src="c.procIcon" alt="" class="size-4 rounded-sm" draggable="false" />{{ t('{n} procs', { n: c.procs }) }}
         </span>
+        <span v-if="c.fails" class="tabular-nums text-red">{{ t('{n} failed', { n: c.fails }) }}</span>
       </div>
     </div>
 

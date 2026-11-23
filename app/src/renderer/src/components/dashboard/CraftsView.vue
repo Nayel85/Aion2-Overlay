@@ -168,6 +168,7 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
             <tr class="text-xs text-darker">
               <th class="px-4 py-2 text-left font-normal" />
               <th class="px-3 py-2 text-center font-normal">{{ t('Crafts') }}</th>
+              <th class="px-3 py-2 text-center font-normal text-red">{{ t('Fails') }}</th>
               <th class="px-3 py-2 text-center font-normal">{{ t('That can proc') }}</th>
               <th class="px-3 py-2 text-center font-normal text-green">{{ t('Procs') }}</th>
               <th class="px-3 py-2 text-center font-normal">{{ t('Your rate') }}</th>
@@ -182,6 +183,7 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
                 <span v-else>{{ t('All') }}</span>
               </td>
               <td class="px-3 py-2 text-center">{{ r.crafts }}</td>
+              <td class="px-3 py-2 text-center text-red">{{ r.fails || '–' }}</td>
               <td class="px-3 py-2 text-center text-dark">{{ r.canProc }}</td>
               <td class="px-3 py-2 text-center text-green">{{ r.procs }}</td>
               <td class="px-3 py-2 text-center">{{ rate(r) }}</td>
@@ -203,6 +205,7 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
             <tr class="text-xs text-darker">
               <th class="px-4 py-2 text-left font-normal">{{ t('Recipe') }}</th>
               <th class="px-3 py-2 text-center font-normal">{{ t('Crafts') }}</th>
+              <th class="px-3 py-2 text-center font-normal text-red">{{ t('Fails') }}</th>
               <th class="px-3 py-2 text-left font-normal">{{ t('Proc gives') }}</th>
               <th class="px-3 py-2 text-center font-normal text-green">{{ t('Procs') }}</th>
               <th class="px-3 py-2 text-center font-normal">{{ t('Your rate') }}</th>
@@ -221,6 +224,7 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
                 </span>
               </td>
               <td class="px-3 py-1.5 text-center">{{ r.crafts }}</td>
+              <td class="px-3 py-1.5 text-center text-red">{{ r.fails || '–' }}</td>
               <td class="px-3 py-1.5">
                 <span v-if="r.proc" class="flex items-center gap-1.5 text-xs">
                   <img v-if="itemIcon(r.proc.icon)" :src="itemIcon(r.proc.icon)!" alt="" class="size-4 rounded-sm" draggable="false" />

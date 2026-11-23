@@ -40,6 +40,8 @@ export interface CraftSummary {
   /** The character, '' for all of them. */
   name: string
   crafts: number
+  /** Failed: nothing made. */
+  fails: number
   /** Of those whose recipe can proc. */
   canProc: number
   procs: number
@@ -57,7 +59,7 @@ function summary(name: string, list: CraftDone[]): CraftSummary {
       expected += chance
     }
   }
-  return { name, crafts: list.length, canProc, procs: list.filter((c) => c.proc).length, expected }
+  return { name, crafts: list.length, fails: list.filter((c) => c.failed).length, canProc, procs: list.filter((c) => c.proc).length, expected }
 }
 
 /** By character (by name), then all of them (named ''). */
@@ -74,6 +76,7 @@ export interface RecipeStats {
   grade: number
   icon: string | null
   crafts: number
+  fails: number
   procs: number
   /** The game's chance of a proc, 0 for a recipe without one. */
   chance: number
@@ -100,10 +103,11 @@ export function recipeStats(crafts: NamedCraft[]): RecipeStats[] {
         grade: plain?.[3] ?? 11,
         icon: plain?.[4] ?? null,
         crafts: list.length,
+        fails: list.filter((c) => c.failed).length,
         procs: list.filter((c) => c.proc).length,
         chance: def?.[2] ?? 0,
         proc: better ? { name: better[2], grade: better[3], icon: better[4], count: better[1], doubled: better[0] === plain?.[0] } : null,
-        madePlain: list.filter((c) => !c.proc).reduce((n, c) => n + c.count, 0),
+        madePlain: list.filter((c) => !c.proc && !c.failed).reduce((n, c) => n + c.count, 0),
         madeProc: list.filter((c) => c.proc).reduce((n, c) => n + c.count, 0),
       }
     })

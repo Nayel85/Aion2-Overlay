@@ -1123,6 +1123,8 @@ impl Tracker {
             p::OP_CRAFT_DONE => {
                 if let Some(recipe) = self.craft.take() {
                     self.craft_done = Some((recipe, ts));
+                    // Done, made or failed: a failed one puts nothing in the bags (no craftResult).
+                    (self.emit)(json!({ "type": "craftDone", "ts": ts, "recipe": recipe }));
                 }
             }
             p::OP_GATHER_START => {

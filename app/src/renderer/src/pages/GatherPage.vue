@@ -37,10 +37,10 @@ const SAMPLE: GatherForecast = {
   ],
 }
 
-type Kind = 'fail' | 'rare' | 'plain'
-const kindOf = (g: GatherForecast): Kind => (g.outcome === 'fail' ? 'fail' : g.outcome === 'rankUp' || g.outcome === 'proc' || g.doubled ? 'rare' : 'plain')
+type Kind = 'fail' | 'rare' | 'proc' | 'plain'
+const kindOf = (g: GatherForecast): Kind => (g.outcome === 'fail' ? 'fail' : g.outcome === 'proc' ? 'proc' : g.outcome === 'rankUp' || g.doubled ? 'rare' : 'plain')
 const textOf = (g: GatherForecast): string => {
-  if (g.kind === 'craft') return g.outcome === 'proc' ? (g.doubled ? t('Craft procs, x2') : t('Craft procs')) : t('Plain craft')
+  if (g.kind === 'craft') return g.outcome === 'fail' ? t('Craft will fail') : g.outcome === 'proc' ? (g.doubled ? t('Craft procs, x2') : t('Craft procs')) : t('Plain craft')
   if (g.outcome === 'fail') return t('Gathering will fail')
   if (g.outcome === 'rankUp') return g.doubled ? t('Rank up, x2') : t('Rank up')
   return g.doubled ? t('Gathering x2') : t('Gathering succeeds')
@@ -48,12 +48,12 @@ const textOf = (g: GatherForecast): string => {
 const wanted = (g: GatherForecast): boolean => {
   if (g.kind === 'craft' && !cfg.value.crafts) return false
   const k = kindOf(g)
-  return k === 'fail' ? cfg.value.fail : k === 'rare' ? cfg.value.rare : cfg.value.plain
+  return k === 'fail' ? cfg.value.fail : k === 'rare' || k === 'proc' ? cfg.value.rare : cfg.value.plain
 }
 
 const shownGather = computed<GatherForecast | null>(() => (preview.value ? SAMPLE : store.gather && wanted(store.gather) ? store.gather : null))
 const kind = computed(() => (shownGather.value ? kindOf(shownGather.value) : null))
-const colour = computed(() => (kind.value === 'fail' ? cfg.value.failColor : kind.value === 'rare' ? cfg.value.rareColor : '#9aa0ac'))
+const colour = computed(() => (kind.value === 'fail' ? cfg.value.failColor : kind.value === 'proc' ? cfg.value.procColor : kind.value === 'rare' ? cfg.value.rareColor : '#9aa0ac'))
 const shown = computed(() => cfg.value.enabled && !!shownGather.value)
 /** What it will give, as an icon and a name (none for a spot whose kind is not learnt yet). */
 const item = computed(() => {
@@ -121,7 +121,7 @@ watch(
     const g = store.gather
     if (!at || !g || !cfg.value.enabled || !wanted(g)) return
     const k = kindOf(g)
-    if ((k === 'fail' && cfg.value.soundFail) || (k === 'rare' && cfg.value.soundRare)) void playSound('cube', cfg.value.soundId, cfg.value.volume)
+    if ((k === 'fail' && cfg.value.soundFail) || ((k === 'rare' || k === 'proc') && cfg.value.soundRare)) void playSound('cube', cfg.value.soundId, cfg.value.volume)
   },
 )
 
@@ -222,7 +222,7 @@ onBeforeUnmount(() => {
             fontSize: `${15 * cfg.scale}px`,
             padding: `${4 * cfg.scale}px ${14 * cfg.scale}px`,
             background: colour,
-            color: kind === 'plain' ? '#111' : kind === 'fail' ? '#fff' : '#1a1206',
+            color: kind === 'plain' ? '#111' : kind === 'fail' || kind === 'proc' ? '#fff' : '#1a1206',
           }"
         >
           <img

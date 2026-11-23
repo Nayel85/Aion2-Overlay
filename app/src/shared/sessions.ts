@@ -479,6 +479,8 @@ export interface CraftDone {
   at: number
   recipe: number
   proc: boolean
+  /** Failed: nothing made (item 0, count 0). */
+  failed?: boolean
   item: number
   count: number
 }
