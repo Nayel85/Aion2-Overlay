@@ -324,9 +324,13 @@ function toggle(r: DungeonRun): void {
               <img v-if="g.icon && g.item !== r.item" :src="g.icon" alt="" class="size-4 rounded-sm" draggable="false" />
               {{ g.item === r.item ? '' : g.name.replace(r.name, '').trim() || g.name }} ×{{ g.n }}
             </template>
+            <!-- None plain: ×0, dimmed, so its line does not look empty. -->
+            <span v-else-if="i === 0" class="text-darkest">×0</span>
           </span>
           <span v-if="countsShown" class="text-darker" :title="t('Gatherings')">
             <template v-if="r.counts">{{ t(r.counts.done === 1 ? '{n} gathering' : '{n} gatherings', { n: r.counts.done }) }}<span v-if="r.counts.failed" class="ml-1.5 text-red">✕{{ r.counts.failed }}</span></template>
+            <!-- Gathered before each resource's gatherings were counted. -->
+            <span v-else class="text-darkest" :title="t('Gathered before they were counted')">{{ t('? gatherings') }}</span>
           </span>
         </template>
       </div>

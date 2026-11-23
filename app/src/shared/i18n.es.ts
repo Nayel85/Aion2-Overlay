@@ -136,6 +136,8 @@ export const ES: Record<string, string> = {
   'All characters': 'Todos los personajes',
   '{n} in all': '{n} en total',
   'Runs': 'Partidas',
+  '? gatherings': '? recolecciones',
+  'Gathered before they were counted': 'Recolectado antes de contarlas',
   'Stats': 'Estadísticas',
   'Resource': 'Recurso',
   'All resources': 'Todos los recursos',
