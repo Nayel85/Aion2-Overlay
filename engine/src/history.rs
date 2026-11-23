@@ -14,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{info, warn};
 
 use a2tools_dps_meter_lib::entity::fight_record::{FightRecord, FightSummary};
+use crate::bests::personal_bests::PersonalBests;
 
 /// How many fights to keep on disk.
 ///
@@ -38,7 +39,10 @@ fn check_id(id: &str) -> Result<(), String> {
     }
 }
 
-const INDEX_FILE: &str = ".fight-summaries-v1";
+// v2: the summaries tell you in each fight (the library's history::summary); v1's are made again.
+const INDEX_FILE: &str = ".fight-summaries-v2";
+/// The personal bests, apart from the fights (the library's PersonalBests).
+const BESTS_FILE: &str = "personal_bests.json";
 
 #[derive(Deserialize, Eq, PartialEq, Serialize)]
 struct FileStamp {
@@ -150,49 +154,82 @@ impl HistoryIndex {
     }
 }
 
+/// A saved fight's summary: the library's (`history::summary`, copied: bests/summary.rs), which tells you in it (your name,
+/// class, server, damage: the one name kept unmasked, or the actor it recorded as you) and the
+/// fight's outcome; the personal bests are made of those.
 fn summarize(record: &FightRecord) -> FightSummary {
-    FightSummary {
-        id: record.id.clone(),
-        boss_name: record.boss_name.clone(),
-        target_id: record.target_id,
-        start_time_ms: record.start_time_ms,
-        duration_ms: record.duration_ms,
-        total_damage: record.total_damage,
-        jobs: record.jobs.clone(),
-        job_ids: record.job_ids.clone(),
-        is_train: record.is_train,
-        is_live: false,
-        app_version: record.app_version.clone(),
-        mob_code: record.mob_code,
-        dungeon_id: record.dungeon_id,
-        member_jobs: record.member_jobs(),
-        // Used by upstream's desktop history. Lokthar does not display these fields.
-        my_name: String::new(),
-        my_job: String::new(),
-        my_server: 0,
-        my_damage: 0,
-        my_certain: false,
-        outcome: "unconfirmed".into(),
-        final_boss: false,
-        raid: false,
-        dungeon_tier: 0,
-    }
+    crate::bests::summary::of(record)
+}
+
+/// A personal best just beaten (a kill): which boss, whose, the damage per second now and before.
+#[derive(Clone, Debug)]
+pub struct NewBest {
+    pub boss_name: String,
+    pub character: String,
+    pub dps: i64,
+    pub before: i64,
+    pub fight_id: String,
 }
 
 /// Manages full fight records and a rebuildable index of their summaries.
 pub struct FightHistoryManager {
     history_dir: PathBuf,
     index: OnceLock<Mutex<HistoryIndex>>,
+    /// Each character's bests on each dungeon boss (the library's), kept in `personal_bests.json`
+    /// apart from the fights: pruned fights don't take a best away.
+    bests: Mutex<PersonalBests>,
+    /// Bests beaten since the app last asked (`take_new_bests`), each fight told once.
+    beaten: Mutex<Vec<NewBest>>,
+    told: Mutex<std::collections::HashSet<String>>,
 }
 
 impl FightHistoryManager {
     /// Fights are kept in `history_dir`, one JSON file each.
     pub fn new(history_dir: PathBuf) -> Self {
         let _ = fs::create_dir_all(&history_dir);
+        let bests = Mutex::new(PersonalBests::load(&history_dir.join(BESTS_FILE)));
         Self {
             history_dir,
             index: OnceLock::new(),
+            bests,
+            beaten: Mutex::new(Vec::new()),
+            told: Mutex::new(std::collections::HashSet::new()),
         }
+    }
+
+    /// Take the fights' kills into the bests, saved if they changed. `tell`: a kill that beats its
+    /// character's best damage per second on that boss (one there already, from another fight) is
+    /// noted for the app, once (not for the history read again, the fights already there).
+    fn note_bests(&self, fights: &[FightSummary], tell: bool) {
+        let mut bests = self.bests.lock();
+        let key = |f: &FightSummary| format!("{}|{}|{}|{}", f.my_name, f.my_server, f.dungeon_id, f.mob_code);
+        let before: Vec<Option<(String, i64)>> = fights.iter().map(|f| bests.encounters.get(&key(f)).and_then(|e| e.my_dps.as_ref()).map(|b| (b.fight_id.clone(), b.value))).collect();
+        if !bests.update(fights) {
+            return;
+        }
+        bests.save(&self.history_dir.join(BESTS_FILE));
+        if !tell {
+            return;
+        }
+        let mut told = self.told.lock();
+        for (f, before) in fights.iter().zip(before) {
+            let Some((was_fight, was)) = before else { continue };
+            let Some(now) = bests.encounters.get(&key(f)).and_then(|e| e.my_dps.as_ref()) else { continue };
+            if f.outcome == "kill" && now.fight_id == f.id && was_fight != f.id && told.insert(f.id.clone()) {
+                info!("Personal best: {} on {}, {} dps (was {})", f.my_name, f.boss_name, now.value, was);
+                self.beaten.lock().push(NewBest { boss_name: f.boss_name.clone(), character: f.my_name.clone(), dps: now.value, before: was, fight_id: f.id.clone() });
+            }
+        }
+    }
+
+    /// The bests beaten since the last call.
+    pub fn take_new_bests(&self) -> Vec<NewBest> {
+        std::mem::take(&mut *self.beaten.lock())
+    }
+
+    /// Every character's bests, each dungeon boss.
+    pub fn bests(&self) -> serde_json::Value {
+        serde_json::to_value(&*self.bests.lock()).unwrap_or(serde_json::Value::Null)
     }
 
     fn index(&self) -> MutexGuard<'_, HistoryIndex> {
@@ -215,13 +252,9 @@ impl FightHistoryManager {
             .map_err(|e| format!("Write error: {}", e))?;
         match FileStamp::read(&file_path) {
             Ok(stamp) => {
-                index.fights.insert(
-                    name,
-                    IndexedFight {
-                        stamp,
-                        summary: summarize(record),
-                    },
-                );
+                let summary = summarize(record);
+                self.note_bests(std::slice::from_ref(&summary), true);
+                index.fights.insert(name, IndexedFight { stamp, summary });
                 index.dirty = true;
             }
             Err(_) => index.remove(&name),
@@ -260,6 +293,10 @@ impl FightHistoryManager {
         fights.sort_unstable();
         let doomed = fights.len() - keep;
         for (_, name) in fights.into_iter().take(doomed) {
+            // Its outcome stays in its boss's totals (the bests outlive the fights).
+            if let Some(entry) = index.fights.get(&name) {
+                self.bests.lock().archive(&entry.summary);
+            }
             let path = self.history_dir.join(&name);
             match fs::remove_file(&path) {
                 Ok(()) => {
@@ -287,6 +324,11 @@ impl FightHistoryManager {
             .map_err(|e| format!("Delete error: {}", e))?;
         index.remove(&name);
         index.store(&self.history_dir);
+        // Deleted by hand: not a best any more.
+        let mut bests = self.bests.lock();
+        if bests.forget(id) {
+            bests.save(&self.history_dir.join(BESTS_FILE));
+        }
         info!("Fight deleted: {}", id);
         Ok(())
     }
@@ -312,6 +354,10 @@ impl FightHistoryManager {
                 .cmp(&a.start_time_ms)
                 .then_with(|| a.id.cmp(&b.id))
         });
+        drop(index);
+        // The fights from before the bests were kept count too (oldest first: the first is no beating).
+        let oldest_first: Vec<FightSummary> = summaries.iter().rev().cloned().collect();
+        self.note_bests(&oldest_first, false);
         summaries
     }
 

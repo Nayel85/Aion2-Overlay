@@ -10,28 +10,7 @@ import { settings } from './settings.ts'
 import { command, tracker } from './tracker.ts'
 import type { Buff, BuffTrack, FightBuffs } from '../shared/buffs.ts'
 import { pveInstance } from '../shared/sessions.ts'
-import {
-  CLASS_NAMES,
-  detailsView,
-  meterData,
-  NO_METER,
-  unmaskName,
-  type DetailsActor,
-  type DetailsDefense,
-  type DetailsSkill,
-  type DetailsSource,
-  type DetailsView,
-  type DpsEvent,
-  type FightRecord,
-  type FightSummary,
-  type MeterData,
-  type PersonalView,
-  type TargetDetails,
-  NO_PERSONAL,
-  NO_RECORDINGS,
-  type Recordings,
-  type TargetMode,
-} from '../shared/meter.ts'
+import { CLASS_NAMES, detailsView, meterData, NO_METER, unmaskName, type DetailsActor, type DetailsDefense, type DetailsSkill, type DetailsSource, type DetailsView, type DpsEvent, type FightRecord, type FightSummary, type MeterData, type PersonalView, type TargetDetails, NO_PERSONAL, NO_RECORDINGS, type Recordings, type TargetMode, type Encounter, type NewBest } from '../shared/meter.ts'
 
 const ASK_TIMEOUT_MS = 5000
 
@@ -132,7 +111,9 @@ export function startMeter(): void {
     broadcast('buffs:list', buffs)
   })
   tracker.onEvent('historyChanged', () => broadcast('history:changed', Date.now()))
-  for (const type of ['details', 'history', 'fight', 'pvpFight', 'recordings']) tracker.onEvent(type, answer)
+  // A kill beat its character's best damage per second there: the meter tells it.
+  tracker.onEvent('personalBest', (ev) => broadcast('meter:personalBest', ev as unknown as NewBest))
+  for (const type of ['details', 'history', 'bests', 'fight', 'pvpFight', 'recordings']) tracker.onEvent(type, answer)
   // A recording started or stopped: the list again, with it.
   tracker.onEvent('recording', () => void meterState.recordings().then((r) => broadcast('recordings:changed', r)))
   let last = JSON.stringify([settings.get('meter').enabled, settings.get('meter').targetMode, settings.get('unified').enabled, settings.get('unified').target, settings.get('unified').targetMode, settings.get('buffs').enabled, settings.get('buffs').cc])
@@ -287,6 +268,11 @@ export const meterState = {
   async history(): Promise<FightSummary[]> {
     const ev = await ask({ cmd: 'history' }, 'history')
     return (ev?.['fights'] as FightSummary[] | undefined) ?? []
+  },
+  /** Each character's personal bests, each dungeon boss. */
+  async bests(): Promise<Encounter[]> {
+    const ev = await ask({ cmd: 'bests' }, 'bests')
+    return Object.values(((ev?.['bests'] as { encounters?: Record<string, Encounter> } | null)?.encounters ?? {}))
   },
   deleteFight(id: string): void {
     command({ cmd: 'deleteFight', id })

@@ -16,7 +16,7 @@ import type { UpdateState } from './update.ts'
 import type { KinaSession } from './kina.ts'
 import type { AbyssSession, RiftFarm } from './abyss.ts'
 import type { StorageId, StorageUsage } from './storage.ts'
-import type { DetailsSource, DetailsView, FightSummary, MeterData, PacketLog, PersonalView, Recordings } from './meter.ts'
+import type { DetailsSource, DetailsView, Encounter, FightSummary, MeterData, NewBest, PacketLog, PersonalView, Recordings } from './meter.ts'
 import type { SyncResult } from './lokthar.ts'
 import type { GuildEventDetail, GuildEventsState, Rsvp } from './guildEvents.ts'
 import type { CustomSoundResult, SoundSlot } from './sounds.ts'
@@ -213,6 +213,8 @@ export interface InvokeChannels {
   'details:dragEnd': { args: []; result: void }
   /** The saved boss fights, newest first; and deleting one. */
   'history:list': { args: []; result: FightSummary[] }
+  /** Each character's personal bests, each dungeon boss (the engine's). */
+  'history:bests': { args: []; result: Encounter[] }
   'history:delete': { args: [id: string]; result: void }
   'meter:moveTo': { args: [to: Point]; result: void }
   'meter:dragEnd': { args: []; result: void }
@@ -282,6 +284,8 @@ export interface EventChannels {
   'details:source': DetailsSource
   /** Boss fights were saved or deleted. */
   'history:changed': number
+  /** A personal best just beaten (its fight saved). */
+  'meter:personalBest': NewBest
   /** What is on your character, whenever it changes (while the buffs overlay is on). */
   'buffs:list': Buff[]
   /** An update check or download moved on. */
@@ -326,9 +330,9 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'minimap:moveTo', 'minimap:dragEnd', 'minimap:resize',
   'skills:get', 'skills:moveTo', 'skills:dragEnd', 'skills:resize',
   'buffs:get', 'buffs:moveTo', 'buffs:dragEnd', 'buffs:resize', 'cc:moveTo', 'cc:dragEnd', 'cc:resize', 'enemies:moveTo', 'enemies:dragEnd', 'enemies:resize', 'guild:get', 'guild:refresh', 'applicants:get', 'applicants:dismiss', 'applicants:clear', 'applicants:moveTo', 'applicants:dragEnd', 'applicants:resize', 'bossruns:moveTo', 'bossruns:dragEnd', 'bossruns:resize', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'eventtoast:resize', 'training:moveTo', 'training:dragEnd', 'training:resize', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'packets:resize', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
-  'details:open', 'details:get', 'details:view', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:delete',
+  'details:open', 'details:get', 'details:view', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:bests', 'history:delete',
 ]
 
 export const EVENT_CHANNELS: readonly EventChannel[] = [
-  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'guild:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', 'guildEvents:state', 'guildEvents:changed',
+  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'guild:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'meter:personalBest', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', 'guildEvents:state', 'guildEvents:changed',
 ]

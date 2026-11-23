@@ -355,6 +355,36 @@ export interface PersonalView {
 export const NO_PERSONAL: PersonalView = { target: null, battleTime: 0, dps: 0, damage: 0, skills: [] }
 
 /** One saved fight in the list: A2Tools DPS Meter's `FightSummary`. */
+/** One personal best: its value (ms for the fastest kill, damage per second for the others), its fight, when, your class, whether the kill was recorded. */
+export interface Best {
+  value: number
+  fightId: string
+  atMs: number
+  job: string
+  confirmed: boolean
+}
+/** A character's bests on one boss of one instance (its difficulty with it): the engine's (A2Tools' personal_bests). */
+export interface Encounter {
+  character: string
+  server: number
+  dungeonId: number
+  mobCode: number
+  bossName: string
+  finalBoss: boolean
+  raid: boolean
+  fastest: Best | null
+  myDps: Best | null
+  partyDps: Best | null
+}
+/** A personal best just beaten: whose, on which boss, the damage per second now and before. */
+export interface NewBest {
+  boss: string
+  character: string
+  dps: number
+  before: number
+  fight: string
+}
+
 export interface FightSummary {
   id: string
   bossName: string

@@ -63,6 +63,8 @@
 //!   {"type": "buffs", "buffs": [{"id", "stacks", "endsAt", "startedAt", "by", "skill", "mine", "debuff", "passive"}]}
 //!                                                     what is on your character, when it changes (while "buffs" is on)
 //!   {"type": "historyChanged", "count": 1}            boss fights were saved (every 30 s, and before a reset)
+//!   {"type": "personalBest", "boss", "character", "dps", "before", "fight"}   a kill just beat its character's best damage per second there
+//!   {"type": "bests", "bests": {"encounters": {...}}}  answer to "bests": each character's bests, each dungeon boss
 //!   {"type": "history", "fights": [FightSummary]}     answer to "history"
 //!   {"type": "fight", "id", "fight": FightRecord}     answer to "fight"
 //!   {"type": "pvpFight", "id", "fight": Fight|null}   answer to "pvpFight" (tracker/pvp.rs)
@@ -159,10 +161,14 @@ impl Options {
     }
 }
 
-/// Tell the app its fight history changed (`n` fights saved or deleted).
-fn announce_saved(n: usize) {
+/// Tell the app its fight history changed (`n` fights saved or deleted), and the personal bests the
+/// fights just saved beat.
+fn announce_saved(n: usize, history: Option<&crate::history::FightHistoryManager>) {
     if n > 0 {
         emit(&event("historyChanged", json!({ "count": n })));
+    }
+    for b in history.map(|h| h.take_new_bests()).unwrap_or_default() {
+        emit(&event("personalBest", json!({ "boss": b.boss_name, "character": b.character, "dps": b.dps, "before": b.before, "fight": b.fight_id })));
     }
 }
 
@@ -210,7 +216,7 @@ pub fn run(opts: Options) -> Result<(), String> {
         let saver = Arc::downgrade(&meter);
         meter.storage.set_before_reset(move || {
             if let Some(meter) = saver.upgrade() {
-                announce_saved(meter.save_fights(true));
+                announce_saved(meter.save_fights(true), meter.history.get());
             }
         });
     }
@@ -417,7 +423,7 @@ impl Sidecar {
                 if ticks % SAVE_FIGHTS_EVERY == 0 {
                     let meter = me.meter.clone();
                     if let Ok(saved) = tokio::task::spawn_blocking(move || meter.save_fights(false)).await {
-                        announce_saved(saved);
+                        announce_saved(saved, me.meter.history.get());
                     }
                 }
                 // Your ping to the game server, as upstream measures it.
@@ -563,6 +569,10 @@ impl Sidecar {
                     let fights = self.meter.history.get().map(|h| h.list_fights()).unwrap_or_default();
                     emit(&event("history", json!({ "fights": fights })));
                 }
+                "bests" => {
+                    let bests = self.meter.history.get().map(|h| h.bests()).unwrap_or(Value::Null);
+                    emit(&event("bests", json!({ "bests": bests })));
+                }
                 "pvpFight" => {
                     let id = msg["id"].as_str().ok_or("no id")?;
                     let fight = self.tracker.lock().pvp_fight(id);
@@ -616,7 +626,7 @@ impl Sidecar {
                 "deleteFight" => {
                     let id = msg["id"].as_str().ok_or("no id")?;
                     self.meter.history.get().ok_or("no history")?.delete_fight(id).map_err(|_| "no such fight")?;
-                    announce_saved(1);
+                    announce_saved(1, None);
                 }
                 "targetMode" => {
                     if !self.meter.set_target_mode(msg["mode"].as_str().unwrap_or_default()) {

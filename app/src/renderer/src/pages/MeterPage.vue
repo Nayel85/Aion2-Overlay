@@ -29,6 +29,7 @@ import {
   type MeterPlayers,
   type MeterStat,
   type TargetMode,
+  type NewBest,
 } from '@shared/meter.ts'
 import { METER_HEIGHT, METER_WIDTH } from '@shared/settings.ts'
 import type { TrackerState } from '@shared/tracker.ts'
@@ -171,8 +172,22 @@ watch([rows, () => meter.value.target, status, () => store.ready, () => cfg.valu
 
 let observer: ResizeObserver | null = null
 const offs: (() => void)[] = []
+/** A personal best just beaten, shown a while over the meter. */
+const BEST_SHOWN_MS = 12_000
+const newBest = ref<NewBest | null>(null)
+let bestTimer: ReturnType<typeof setTimeout> | null = null
+const bestGain = computed(() => (newBest.value && newBest.value.before > 0 ? Math.round(((newBest.value.dps - newBest.value.before) / newBest.value.before) * 100) : null))
+const shortDps = (n: number): string => (n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}k` : String(n))
+
 onMounted(async () => {
   offs.push(api.on('meter:dps', (m) => (meter.value = m)))
+  offs.push(
+    api.on('meter:personalBest', (b) => {
+      newBest.value = b
+      if (bestTimer) clearTimeout(bestTimer)
+      bestTimer = setTimeout(() => (newBest.value = null), BEST_SHOWN_MS)
+    }),
+  )
   meter.value = await api.invoke('meter:get')
   observer = new ResizeObserver(report)
   if (root.value) observer.observe(root.value)
@@ -197,6 +212,14 @@ onBeforeUnmount(() => {
         :class="['group relative m-1.5 flex flex-col rounded-xl border', lean ? 'border-transparent' : 'border-card bg-darker/95 shadow-card']"
         :style="{ opacity: cfg.opacity, width: `${width}px`, height: height === null ? undefined : `${height}px` }"
       >
+        <!-- A personal best just beaten. -->
+        <div v-if="newBest" class="mx-2 mt-2 flex items-center gap-2 rounded-lg bg-yellow/15 px-2.5 py-1.5 text-xs">
+          <svg viewBox="0 0 16 16" class="size-4 shrink-0 text-yellow" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.5h6v3a3 3 0 0 1-6 0zM5 3.5H3v1a2 2 0 0 0 2 2M11 3.5h2v1a2 2 0 0 1-2 2M8 8.5v3M5.5 13.5h5" /></svg>
+          <span class="min-w-0 flex-1 truncate">
+            <span class="font-semibold text-yellow">{{ t('New personal best') }}</span> · {{ newBest.boss }}
+          </span>
+          <span class="font-semibold tabular-nums">{{ shortDps(newBest.dps) }} DPS<span v-if="bestGain !== null" class="ml-1 text-green">+{{ bestGain }}%</span></span>
+        </div>
         <header v-if="!lean" :class="['cursor-move px-3', cfg.collapsed ? 'py-1.5' : 'pb-1.5 pt-2.5']" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
           <div class="flex items-center gap-2">
             <span :class="['size-1.5 shrink-0 rounded-full', statusDot]" :title="status.detail ?? t(STATUS_TEXT[status.state])" />

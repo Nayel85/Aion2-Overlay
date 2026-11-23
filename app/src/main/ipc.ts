@@ -355,6 +355,7 @@ export function registerIpc(): void {
   })
   handle('details:dragEnd', () => detailsDragEnded())
   handle('history:list', () => meterState.history())
+  handle('history:bests', () => meterState.bests())
   handle('history:delete', (id) => {
     if (isPlainId(id)) meterState.deleteFight(id)
   })

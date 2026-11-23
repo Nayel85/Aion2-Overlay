@@ -12,6 +12,7 @@
 //!
 //! Logs go to stderr.
 
+mod bests;
 mod capture;
 mod focus;
 #[allow(dead_code)] // copied whole from upstream; export_fight_json unused
