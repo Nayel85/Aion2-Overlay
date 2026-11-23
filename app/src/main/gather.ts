@@ -10,7 +10,9 @@ import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, spotKind, type GatherForecast, type GatherRoll, type GatherTemplates } from '../shared/gather.ts'
 
-/** Gone this long after its start, if no result came (cancelled): a long craft takes 16 s. */
+/** Gone this long after it should have ended, if nothing said it did. */
+const FORGET_AFTER_MS = 2_000
+/** And without a duration told, this long after its start (a long craft takes 16 s). */
 const FORGET_MS = 25_000
 
 let state: GatherForecast | null = null
@@ -22,7 +24,7 @@ const file = (): string => join(app.getPath('userData'), 'gather-kinds.json')
 
 function set(next: GatherForecast | null): void {
   if (timer) clearTimeout(timer)
-  timer = next ? setTimeout(() => set(null), FORGET_MS) : null
+  timer = next ? setTimeout(() => set(null), next.durationMs !== null ? next.durationMs + FORGET_AFTER_MS : FORGET_MS) : null
   state = next
   broadcast('gather:changed', state)
 }
@@ -48,6 +50,10 @@ export function startGather(): void {
     const item = gatherItem(plain, outcome === 'fail' ? 1 : grade)
     const rolls = (ev['rolls'] as GatherRoll[] | undefined) ?? []
     set({ kind: 'gather', outcome, doubled: ev['doubled'] === true, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls })
+  })
+  // Over: done (its result just after) or given up, walking away. Its spot's kind waits for a result.
+  tracker.onEvent('gatherEnd', () => {
+    if (state?.kind === 'gather') set(null)
   })
   tracker.onEvent('gather', (ev) => {
     // Its result says the spot's plain item, even failed (a ranked-up one is its next grade's).

@@ -50,6 +50,9 @@ pub const OP_GATHER: [u8; 2] = [0x33, 0x8D];
 /// A craft starting: its outcome already in it (`craft_start`); and done, its item next in the bags.
 pub const OP_CRAFT_START: [u8; 2] = [0x6F, 0x8D];
 pub const OP_CRAFT_DONE: [u8; 2] = [0x71, 0x8D];
+/// An interaction with an object over (`3A 36 <object varint> <who varint> ...`): a gathering done or
+/// given up (walked away from), 0.1 s before its result when done.
+pub const OP_INTERACTION_OVER: [u8; 2] = [0x3A, 0x36];
 /// A gathering starting: its outcome already in it (`gather_start`).
 pub const OP_GATHER_START: [u8; 2] = [0x31, 0x8D];
 pub const OP_REWARD_BOARD: [u8; 2] = [0x0A, 0x57];
@@ -783,6 +786,12 @@ pub fn gather_rolls(b: &[u8]) -> Vec<GatherRoll> {
         p = values + 16;
     }
     rolls
+}
+
+/// The object an interaction ended with (`OP_INTERACTION_OVER`).
+pub fn interaction_over(frame: &[u8]) -> Option<u32> {
+    let b = body(frame, OP_INTERACTION_OVER)?;
+    varint(b, 0).map(|(object, _)| object)
 }
 
 /// A gathering's outcome (`33 8D <result u8> <u32> <item u32> <amount u32> <bonus u32> ...`), sent

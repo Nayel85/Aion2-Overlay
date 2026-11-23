@@ -202,6 +202,8 @@ pub struct Tracker {
     /// The craft going on (its recipe), and once done, when: the bags' next change is its item.
     craft: Option<u32>,
     craft_done: Option<(u32, i64)>,
+    /// The spot being gathered: its interaction's end (done or given up) is told.
+    gathering: Option<u32>,
 }
 
 /// An item where it lies, as the app keeps it (shared/inventory.ts).
@@ -289,6 +291,7 @@ impl Tracker {
             objects: HashMap::new(),
             craft: None,
             craft_done: None,
+            gathering: None,
         }
     }
 
@@ -1127,12 +1130,21 @@ impl Tracker {
                     (self.emit)(json!({ "type": "craftDone", "ts": ts, "recipe": recipe }));
                 }
             }
+            p::OP_INTERACTION_OVER => {
+                if let Some(object) = p::interaction_over(f)
+                    && self.gathering == Some(object)
+                {
+                    self.gathering = None;
+                    (self.emit)(json!({ "type": "gatherEnd", "ts": ts, "node": object }));
+                }
+            }
             p::OP_GATHER_START => {
                 if let Some((node, tries, outcome, grade, doubled, ms, rolls)) = p::gather_start(f) {
                     tracing::info!("gathering {node} (try {tries}): will be {outcome}, grade {grade}, doubled {doubled}");
                     if !matches!(outcome, 0 | 1 | 7) {
                         tracing::info!("gathering start with outcome {outcome}: {}", f.iter().map(|b| format!("{b:02x}")).collect::<String>());
                     }
+                    self.gathering = Some(node);
                     let (template, kind) = self.objects.get(&node).map_or((None, None), |&(t, k)| (Some(t), k));
                     (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "kind": kind, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled, "durationMs": ms,
                         "rolls": rolls.iter().map(|r| json!({ "ms": r.ms, "success": r.success, "failure": r.failure, "luck": r.luck, "doubled": r.doubled })).collect::<Vec<_>>() }));
