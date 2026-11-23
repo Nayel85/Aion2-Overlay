@@ -10,6 +10,7 @@
  * 80000001 (70000001 is its weekly cap, 3 either way) and Nightmare's values are [daily entries,
  * tickets], from a friend's captures (server 1406).
  */
+import { currentRegion, lastStart, nextStart, TIMERS } from './timers.ts'
 
 export interface CharacterCounters {
   /** When the game sent them (unix ms). */
@@ -87,8 +88,11 @@ export const CORRIDORS = [
 ] as const
 /** Your time in the Abyss: it ticks only while you are there. */
 export const ABYSS_TIME = '3'
-/** The corridors come back on Mondays, Thursdays and Saturdays at 21:00 (your clock), after the Artifact siege. */
-const CORRIDOR_RESET = { days: [1, 4, 6], hour: 21 }
+/**
+ * The corridors come back as the Artifact siege starts: its days and hour on the server's clock
+ * (Thursday and Saturday 21:00 in Europe; Monday too elsewhere), shared/timers.ts.
+ */
+const SIEGE = TIMERS.find((t) => t.id === 'siege')!.schedule
 
 export interface CorridorLog {
   /** By corridor id: its passage time left (ms; 0 when there is none) and when the game said so. */
@@ -97,20 +101,14 @@ export interface CorridorLog {
   abyssAt: number | null
 }
 
-/** When the corridors last came back. */
+/** When the corridors last came back (the player's region). */
 export function corridorReset(now: number): number {
-  const d = new Date(now)
-  d.setHours(CORRIDOR_RESET.hour, 0, 0, 0)
-  while (d.getTime() > now || !CORRIDOR_RESET.days.includes(d.getDay())) d.setDate(d.getDate() - 1)
-  return d.getTime()
+  return lastStart(SIEGE, now)
 }
 
 /** When they come back next. */
 export function nextCorridorReset(now: number): number {
-  const d = new Date(corridorReset(now))
-  do d.setDate(d.getDate() + 1)
-  while (!CORRIDOR_RESET.days.includes(d.getDay()))
-  return d.getTime()
+  return nextStart(SIEGE, now + 1, currentRegion())
 }
 
 /**

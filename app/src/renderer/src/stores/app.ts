@@ -16,6 +16,7 @@ import { NO_SESSIONS, type Sessions } from '@shared/sessions.ts'
 import { NO_INVENTORIES, type Inventories } from '@shared/inventory.ts'
 import { NO_APPLICANTS, type Applicants } from '@shared/applicants.ts'
 import { NO_PARTY, type Party } from '@shared/party.ts'
+import { setPlayerRegion } from '@shared/timers.ts'
 import type { FlightPower } from '@shared/flight.ts'
 import type { GatherForecast } from '@shared/gather.ts'
 import { NO_GUILD, type GuildState } from '@shared/guild.ts'
@@ -149,6 +150,7 @@ export const useApp = defineStore('app', () => {
     const api = bridge()
     api.on('settings:changed', (s) => {
       settings.value = s
+      setPlayerRegion(s.timers.region)
       armIdle()
     })
     api.on('tracker:combat', (at) => activity(at))
@@ -192,6 +194,8 @@ export const useApp = defineStore('app', () => {
     api.on('hud:editing', (e) => (hudEditing.value = e))
     api.on('panel:visible', (v) => (panelVisible.value = v))
     settings.value = await api.invoke('settings:all')
+    // The player's region: the rift windows and the corridors' returns shown on its clock.
+    setPlayerRegion(settings.value.timers.region)
     const t = await api.invoke('tracker:get', false)
     status.value = t.status
     pvpStats.value = t.pvpSummary ?? pvpSummary(t.pvp)

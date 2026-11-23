@@ -34,7 +34,7 @@ import { startMeter } from './meter.ts'
 import { startTimers } from './timers.ts'
 import { finishLog, killTrackerNow, log, startNpcapWatch, stopTracker, tracker } from './tracker.ts'
 import { tr } from './i18n.ts'
-import { setRiftRegion } from '../shared/abyss.ts'
+import { setPlayerRegion } from '../shared/timers.ts'
 import { createTray, setTrayTooltip } from './tray.ts'
 import { applyWindowSettings, closeMerchant, markQuitting, merchantBounds, merchantOpen, refreshHud, setForeground, showMerchant, showPanel, startOnTopWatch } from './windows.ts'
 
@@ -85,13 +85,13 @@ if (!app.requestSingleInstanceLock()) {
     // The dashboard is the app: up when it starts, and in the taskbar from then on.
     showPanel()
 
-    // The rifts' windows (Abyss Points' sources, the rift farms) on the region's clock.
-    setRiftRegion(settings.get('timers').region)
+    // The player's region: the rifts' windows (Abyss Points' sources) and the corridors' returns on its clock.
+    setPlayerRegion(settings.get('timers').region)
     settings.onChanged((all) => {
       broadcast('settings:changed', all)
       applyWindowSettings()
       applyGameMap()
-      setRiftRegion(all.timers.region)
+      setPlayerRegion(all.timers.region)
     })
     startMeter()
     startDummy()

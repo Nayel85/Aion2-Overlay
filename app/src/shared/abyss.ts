@@ -12,7 +12,7 @@
  * points in its window) does not show.
  */
 import { NO_EARNINGS, type Earnings } from './earnings.ts'
-import { nextStart, TIMERS, type Region } from './timers.ts'
+import { currentRegion, nextStart, TIMERS, type Region } from './timers.ts'
 
 export interface AbyssSession extends Earnings {
   /** The week's total and its limit as the game last said; null until it has. */
@@ -88,14 +88,8 @@ const RIFT = TIMERS.find((t) => t.id === 'rift')!.schedule
 if (RIFT.kind !== 'every') throw new Error('the rift timer is expected every few hours')
 const PERIOD_MS = RIFT.every * 60_000
 
-/** The region the rifts are timed for (its own in Europe: the server's clock): the settings', set by main; UTC's until then. */
-let riftRegion: Region = 'na-east'
-export const setRiftRegion = (region: Region): void => {
-  riftRegion = region
-}
-
-/** The opening of the rift whose window `at` falls in, or null (between two rifts). */
-export function riftOf(at: number, region: Region = riftRegion): number | null {
+/** The opening of the rift whose window `at` falls in, or null (between two rifts). Timed for the player's region by default. */
+export function riftOf(at: number, region: Region = currentRegion()): number | null {
   // The last opening at or before `at`: the first one after a period before it.
   const start = nextStart(RIFT, at - PERIOD_MS + 1, region)
   return at - start < RIFT_MS ? start : null

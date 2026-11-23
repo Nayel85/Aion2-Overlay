@@ -252,3 +252,14 @@ test('Watcher Kaira in Europe: 01:00, 04:00 ... Berlin, winter and summer', asyn
   // In summer, 04:00 Berlin is 02:00 UTC.
   assert.equal(new Date(nextStart(kaira, Date.UTC(2026, 6, 1, 0, 30), 'europe')).toISOString(), '2026-07-01T02:00:00.000Z')
 })
+
+test("Europe's corridors come back with the siege: Thursday and Saturday 21:00 Berlin, not Monday", async () => {
+  const { setPlayerRegion } = await import('../src/shared/timers.ts')
+  const { corridorReset, nextCorridorReset } = await import('../src/shared/characters.ts')
+  setPlayerRegion('europe')
+  // Monday 2026-11-23, 23:12 Berlin: the last return was Saturday the 21st, 21:00 Berlin (20:00 UTC).
+  const monday = Date.UTC(2026, 10, 23, 22, 12)
+  assert.equal(new Date(corridorReset(monday)).toISOString(), '2026-11-21T20:00:00.000Z')
+  assert.equal(new Date(nextCorridorReset(monday)).toISOString(), '2026-11-26T20:00:00.000Z')
+  setPlayerRegion('na-east')
+})

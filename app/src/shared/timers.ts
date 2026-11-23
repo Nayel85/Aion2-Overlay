@@ -60,7 +60,7 @@ export type Schedule =
   /** On these weekdays (0 = Sunday), at these times (minutes after midnight), in the server
    *  region's time zone, or in `zone` for every region. `bosses`: the field bosses it is (their
    *  ids in the map's list), whose respawn the list gives, when it has, over the schedule. */
-  | { kind: 'zoned'; days: number[]; times: number[]; zone?: string; bosses?: number[] }
+  | { kind: 'zoned'; days: number[]; times: number[]; zone?: string; bosses?: number[]; regionDays?: Partial<Record<Region, number[]>> }
   /** A field boss: when it respawns, from the map's field boss list (see FieldBossState). */
   | { kind: 'boss'; boss: number }
 
@@ -265,7 +265,9 @@ export const TIMERS: TimerDef[] = [
     id: 'siege',
     name: 'Artifact Siege',
     detail: 'Elyos and Asmodians fight over the artifacts in Lower Reshanta',
-    schedule: { kind: 'zoned', days: [1, 4, 6], times: [hm(21)] },
+    // Europe: Thursday and Saturday only (kisk.app, aion2tierlist; the owner's corridors did not come
+    // back on Monday 2026-11-23, as they do after a siege).
+    schedule: { kind: 'zoned', days: [1, 4, 6], times: [hm(21)], regionDays: { europe: [4, 6] } },
     lead: 10,
     confirmed: true,
     defaultOn: false,
@@ -274,7 +276,7 @@ export const TIMERS: TimerDef[] = [
     id: 'siegeBosses',
     name: 'Siege Bosses',
     detail: 'The bosses, 30 minutes into the siege',
-    schedule: { kind: 'zoned', days: [1, 4, 6], times: [hm(21, 30)] },
+    schedule: { kind: 'zoned', days: [1, 4, 6], times: [hm(21, 30)], regionDays: { europe: [4, 6] } },
     lead: 5,
     confirmed: true,
     defaultOn: false,
@@ -357,6 +359,23 @@ function zoneOffset(zone: string, t: number): number {
   return wall - Math.floor(t / 1000) * 1000
 }
 
+/**
+ * The player's region (their server's, as the settings say): what the rift windows and the corridors'
+ * returns are timed for where no region is given. Set by main and each window; UTC's region until.
+ */
+let playerRegion: Region = 'na-east'
+export const setPlayerRegion = (region: Region): void => {
+  playerRegion = region
+}
+export const currentRegion = (): Region => playerRegion
+
+/** The last start at or before `at` (ms since epoch), within a week back. */
+export function lastStart(s: Schedule, at: number, region: Region = playerRegion): number {
+  let start = nextStart(s, at - 8 * DAY, region)
+  for (let next = start; next <= at; next = nextStart(s, next + MINUTE, region)) start = next
+  return start
+}
+
 /** The first start at or after `from` (ms since epoch). Zoned ones in `region`'s time zone. */
 export function nextStart(s: Schedule, from: number, region: Region = 'south-america', bosses: FieldBosses = {}): number {
   if (s.kind === 'boss') {
@@ -381,9 +400,10 @@ export function nextStart(s: Schedule, from: number, region: Region = 'south-ame
   const today = from + zoneOffset(zone, from)
   const midnight = Math.floor(today / DAY) * DAY
   const times = [...s.times].sort((a, b) => a - b)
+  const days = s.regionDays?.[region] ?? s.days
   for (let d = 0; d <= 7; d++) {
     const day = midnight + d * DAY
-    if (!s.days.includes(new Date(day).getUTCDay())) continue
+    if (!days.includes(new Date(day).getUTCDay())) continue
     for (const t of times) {
       const wall = day + t * MINUTE
       // The offset that applies at the start itself (it can differ from today's across a change).
