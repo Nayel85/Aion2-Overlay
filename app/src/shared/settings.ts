@@ -164,6 +164,10 @@ export interface Settings {
     icon: boolean
     hpText: PartyHpText
     debuffIcons: boolean
+    /** A shield's mark on a member's bar while one is on them. */
+    shields: boolean
+    /** A mark on the member a boss is on (the last it hit). */
+    bossTarget: boolean
     width: number
     barHeight: number
     gap: number
@@ -442,7 +446,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   muted: false,
   applicants: { enabled: true, position: null, opacity: 0.85, collapsed: false, hideAfter: 60 },
   party: {
-    enabled: true, position: null, opacity: 1, collapsed: false, self: true, header: false, icon: true, hpText: 'none', debuffIcons: false,
+    enabled: true, position: null, opacity: 1, collapsed: false, self: true, header: false, icon: true, hpText: 'none', debuffIcons: false, shields: true, bossTarget: true,
     width: 180, barHeight: 22, gap: 2, fontSize: 12, hpColor: PARTY_DEFAULT_COLORS.hp, afflictedColor: PARTY_DEFAULT_COLORS.afflicted, afflictedBy: 'any',
   },
   flight: { enabled: true, position: null, opacity: 1 },
@@ -698,6 +702,8 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         icon: bool(v.icon, d.party.icon),
         hpText: (PARTY_HP_TEXT as readonly unknown[]).includes(v.hpText) ? v.hpText! : d.party.hpText,
         debuffIcons: bool(v.debuffIcons, d.party.debuffIcons),
+        shields: bool(v.shields, d.party.shields),
+        bossTarget: bool(v.bossTarget, d.party.bossTarget),
         width: Math.round(num(v.width, 100, 320, d.party.width)),
         barHeight: Math.round(num(v.barHeight, 14, 40, d.party.barHeight)),
         gap: Math.round(num(v.gap, 0, 12, d.party.gap)),

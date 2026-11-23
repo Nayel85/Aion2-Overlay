@@ -33,13 +33,17 @@ export interface PartyDebuff {
   endsAt: number | null
   startedAt: number
   skill: number | null
+  /** A debuff (a monster's or the other faction's); else a buff, a shield among them. */
+  debuff?: boolean
 }
 
 export interface Party {
   members: PartyMember[]
   /** By entity. */
   vitals: Record<number, Vitals>
-  /** By entity: those with any. */
+  /** What is on each member, by entity (those with any): debuffs and buffs. */
   debuffs: Record<number, PartyDebuff[]>
+  /** The member a boss hit last, and when (ms): the one it is on. */
+  bossTarget?: { entity: number; at: number } | null
 }
-export const NO_PARTY: Party = { members: [], vitals: {}, debuffs: {} }
+export const NO_PARTY: Party = { members: [], vitals: {}, debuffs: {}, bossTarget: null }

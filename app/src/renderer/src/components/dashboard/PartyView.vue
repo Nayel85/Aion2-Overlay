@@ -60,6 +60,12 @@ const AFFLICTED_BY = [
       <SettingRow label="Debuff icons" hint="Under the bar, with the seconds left; those taking control ringed in red.">
         <Toggle :model-value="cfg.debuffIcons" @update:model-value="set({ debuffIcons: $event })" />
       </SettingRow>
+      <SettingRow label="Shields" hint="A shield on the bar of a member with one on them (a Damage Absorption, a barrier).">
+        <Toggle :model-value="cfg.shields" @update:model-value="set({ shields: $event })" />
+      </SettingRow>
+      <SettingRow label="Boss's target" hint="A red target on the member the boss is on: the last it hit, for 6 seconds.">
+        <Toggle :model-value="cfg.bossTarget" @update:model-value="set({ bossTarget: $event })" />
+      </SettingRow>
       <SettingRow label="Width">
         <Slider :model-value="cfg.width" :min="100" :max="320" :step="5" :format="px" @update:model-value="set({ width: $event })" />
       </SettingRow>

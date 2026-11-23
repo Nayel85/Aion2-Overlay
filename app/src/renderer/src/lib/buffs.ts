@@ -42,6 +42,11 @@ export function hiddenBuff(id: number, skill: number | null, timed: boolean, len
   return lengthMs > ACCOUNT_BUFF_MS
 }
 
+/** A shield (a damage barrier: the game's ICON_Common_Abnormal_HpBarrier, "Damage Absorption"...). */
+export function isShield(id: number): boolean {
+  return ABNORMALS[String(id)]?.[1] === 'ICON_Common_Abnormal_HpBarrier'
+}
+
 /** A buff from an item you used: a scroll, food or a drink (their icons are the items'). */
 export function consumable(id: number): boolean {
   return /^Icon_Item_Usable_(Scroll|Food|Drink)/i.test(ABNORMALS[String(id)]?.[1] ?? '')

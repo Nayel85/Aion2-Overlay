@@ -9,7 +9,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
-import { buffIcon, buffName, ccKind, hiddenBuff } from '@/lib/buffs.ts'
+import { buffIcon, buffName, ccKind, hiddenBuff, isShield } from '@/lib/buffs.ts'
 import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
 import { panelStyle } from '@/lib/overlayLook.ts'
@@ -22,6 +22,8 @@ const api = bridge()
 const root = ref<HTMLElement | null>(null)
 const cfg = computed(() => store.settings.party)
 
+/** A boss is on whom it hit last, for this long after. */
+const BOSS_ON_MS = 6_000
 /** Not heard of for this long: out of range (the game sends nothing of them). */
 const STALE_MS = 10_000
 const now = ref(Date.now())
@@ -41,10 +43,15 @@ interface Row {
   you: boolean
   /** Those worth showing, control effects first. */
   debuffs: PartyDebuff[]
+  /** A shield on them now. */
+  shielded: boolean
+  /** The one a boss is on (it hit them last, within the last few seconds). */
+  bossOn: boolean
 }
+const live = (d: PartyDebuff): boolean => d.endsAt === null || d.endsAt > now.value
 const shownDebuffs = (list: PartyDebuff[]): PartyDebuff[] =>
   list
-    .filter((d) => !hiddenBuff(d.id, d.skill, d.endsAt !== null, d.endsAt !== null ? d.endsAt - d.startedAt : 0) && (d.endsAt === null || d.endsAt > now.value))
+    .filter((d) => d.debuff !== false && !hiddenBuff(d.id, d.skill, d.endsAt !== null, d.endsAt !== null ? d.endsAt - d.startedAt : 0) && (d.endsAt === null || d.endsAt > now.value))
     .sort((a, b) => Number(!!ccKind(b.id)) - Number(!!ccKind(a.id)))
 /** Afflicted, as the setting says: any debuff, or one taking control. */
 const afflicted = (r: Row): boolean => (cfg.value.afflictedBy === 'control' ? r.debuffs.some((d) => ccKind(d.id)) : r.debuffs.length > 0)
@@ -54,10 +61,10 @@ const SAMPLE = computed<Row[]>(() => {
   const stun: PartyDebuff = { id: 12000001, stacks: 1, endsAt: now.value + 4000 - (now.value % 4000), startedAt: now.value - 1000, skill: null }
   const at = now.value
   return [
-    { member: { name: t('You'), slot: 1, level: 45, combatPower: 0, server: 0, className: 'Cleric', entity: -1 }, vitals: { hp: 26_672, maxHp: 26_672, flight: 0, maxFlight: 0, at }, you: true, debuffs: [] },
-    { member: { name: t('A tank'), slot: 2, level: 45, combatPower: 0, server: 0, className: 'Templar', entity: -2 }, vitals: { hp: 24_100, maxHp: 31_400, flight: 0, maxFlight: 0, at }, you: false, debuffs: [] },
-    { member: { name: t('A healer'), slot: 3, level: 45, combatPower: 0, server: 0, className: 'Chanter', entity: -3 }, vitals: { hp: 11_240, maxHp: 19_235, flight: 0, maxFlight: 0, at }, you: false, debuffs: [stun] },
-    { member: { name: t('A ranger'), slot: 4, level: 45, combatPower: 0, server: 0, className: 'Ranger', entity: -4 }, vitals: { hp: 0, maxHp: 22_000, flight: 0, maxFlight: 0, at }, you: false, debuffs: [] },
+    { member: { name: t('You'), slot: 1, level: 45, combatPower: 0, server: 0, className: 'Cleric', entity: -1 }, vitals: { hp: 26_672, maxHp: 26_672, flight: 0, maxFlight: 0, at }, you: true, debuffs: [], shielded: true, bossOn: false },
+    { member: { name: t('A tank'), slot: 2, level: 45, combatPower: 0, server: 0, className: 'Templar', entity: -2 }, vitals: { hp: 24_100, maxHp: 31_400, flight: 0, maxFlight: 0, at }, you: false, debuffs: [], shielded: false, bossOn: true },
+    { member: { name: t('A healer'), slot: 3, level: 45, combatPower: 0, server: 0, className: 'Chanter', entity: -3 }, vitals: { hp: 11_240, maxHp: 19_235, flight: 0, maxFlight: 0, at }, you: false, debuffs: [stun], shielded: false, bossOn: false },
+    { member: { name: t('A ranger'), slot: 4, level: 45, combatPower: 0, server: 0, className: 'Ranger', entity: -4 }, vitals: { hp: 0, maxHp: 22_000, flight: 0, maxFlight: 0, at }, you: false, debuffs: [], shielded: false, bossOn: false },
   ]
 })
 const rows = computed<Row[]>(() =>
@@ -66,6 +73,8 @@ const rows = computed<Row[]>(() =>
     vitals: m.entity !== null ? (store.party.vitals[m.entity] ?? null) : null,
     you: m.name === store.status?.character,
     debuffs: m.entity !== null ? shownDebuffs(store.party.debuffs[m.entity] ?? []) : [],
+    shielded: m.entity !== null && (store.party.debuffs[m.entity] ?? []).some((d) => d.debuff === false && isShield(d.id) && live(d)),
+    bossOn: m.entity !== null && store.party.bossTarget?.entity === m.entity && now.value - store.party.bossTarget.at < BOSS_ON_MS,
   })),
 )
 /** Out of a party while the dashboard is up: a sample to place it by. */
@@ -153,6 +162,10 @@ onBeforeUnmount(() => {
                   :style="{ width: `${cfg.barHeight - 4}px`, height: `${cfg.barHeight - 4}px` }"
                 />
                 <span :class="['min-w-0 flex-1 truncate font-semibold leading-none [text-shadow:0_1px_2px_#000,0_0_2px_#000]', down(r.vitals) ? 'text-white/50 line-through' : 'text-white']">{{ r.member.name }}</span>
+                <!-- The boss is on them: a red target. -->
+                <svg v-if="cfg.bossTarget && r.bossOn && !down(r.vitals)" viewBox="0 0 16 16" class="size-3.5 shrink-0 text-[#ff5b5b] drop-shadow-[0_0_2px_#000]" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><title>{{ t('The boss is on them') }}</title><circle cx="8" cy="8" r="5.5" /><circle cx="8" cy="8" r="2" /><path d="M8 1v2.5M8 12.5V15M1 8h2.5M12.5 8H15" /></svg>
+                <!-- A shield on them. -->
+                <svg v-if="cfg.shields && r.shielded && !down(r.vitals)" viewBox="0 0 16 16" class="size-3.5 shrink-0 text-[#9ecbff] drop-shadow-[0_0_2px_#000]" fill="currentColor"><title>{{ t('Shielded') }}</title><path d="M8 1.5l5.5 2v4c0 3.5-2.4 6-5.5 7-3.1-1-5.5-3.5-5.5-7v-4z" /></svg>
                 <svg v-if="down(r.vitals)" viewBox="0 0 16 16" class="size-3.5 shrink-0 text-white/70" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2a5 5 0 0 0-3.5 8.5V13h7v-2.5A5 5 0 0 0 8 2zM6 8.5h.01M10 8.5h.01M7 13v-1.5M9 13v-1.5" /></svg>
                 <span v-else-if="hpText(r.vitals)" class="shrink-0 font-semibold tabular-nums leading-none text-white [text-shadow:0_1px_2px_#000,0_0_2px_#000]">{{ hpText(r.vitals) }}</span>
               </div>

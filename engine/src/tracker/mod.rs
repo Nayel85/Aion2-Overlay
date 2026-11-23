@@ -204,6 +204,8 @@ pub struct Tracker {
     craft_done: Option<(u32, i64)>,
     /// The spot being gathered: its interaction's end (done or given up) is told.
     gathering: Option<u32>,
+    /// The last player a boss hit, and when it was told: the one it is on, for the party frames.
+    boss_target: Option<(u32, u32, i64)>,
 }
 
 /// An item where it lies, as the app keeps it (shared/inventory.ts).
@@ -292,6 +294,7 @@ impl Tracker {
             craft: None,
             craft_done: None,
             gathering: None,
+            boss_target: None,
         }
     }
 
@@ -576,6 +579,14 @@ impl Tracker {
         let me = self.me();
         let storage = self.storage.clone();
         for h in damage::hits(frame, |v| storage.is_plausible_entity_id(v)) {
+            // A boss hitting a player: the one it is on (told on a change, or again after 3 s).
+            if h.actor != h.target && (Some(h.target) == me || self.players.contains_key(&h.target)) && storage.is_boss(h.actor as i32) {
+                let changed = self.boss_target.is_none_or(|(boss, target, at)| boss != h.actor || target != h.target || ts - at > 3_000);
+                if changed {
+                    self.boss_target = Some((h.actor, h.target, ts));
+                    (self.emit)(json!({ "type": "bossTarget", "ts": ts, "boss": h.actor, "target": h.target }));
+                }
+            }
             if self.players.contains_key(&h.actor) || Some(h.actor) == me {
                 if let Some(class) = pvp::skill_class(h.skill) {
                     let before = self.classes.insert(h.actor, class);

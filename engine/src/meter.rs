@@ -291,21 +291,17 @@ impl Meter {
         self.buffs_of(me, &HashSet::new())
     }
 
-    /// The debuffs on each member of your party but you (by their entity, those with any), as
-    /// `my_buffs` reads them, for the party frames: what monsters put on them, and what players of
-    /// the other faction did (`enemies`: those in view, the tracker's) unless in your party (a
-    /// dungeon's party can have both factions; its members' are buffs).
+    /// What is on each member of your party, you too (by their entity, those with any), as `my_buffs`
+    /// reads it, for the party frames: its debuffs (what monsters put on them, and what players of
+    /// the other faction did: `enemies`, those in view, the tracker's, unless in your party, a
+    /// dungeon's party can have both factions) and its buffs, among them the shields.
     pub fn party_debuffs(&self, enemies: &HashSet<u32>) -> serde_json::Value {
-        let me = self.storage.local_player_id();
         let party: Vec<i32> = self.storage.get_party_members().into_keys().filter_map(|name| self.storage.find_id_by_nickname(&name)).collect();
         let hostile: HashSet<i32> = enemies.iter().filter_map(|&e| i32::try_from(e).ok()).filter(|e| !party.contains(e)).collect();
         let mut out = serde_json::Map::new();
         for id in party {
-            if me == Some(i64::from(id)) {
-                continue;
-            }
-            let list: Vec<serde_json::Value> =
-                self.buffs_of(id, &hostile).as_array().into_iter().flatten().filter(|b| b["debuff"] == true).cloned().collect();
+            // Every effect: the app shows the debuffs and the shields (their barrier icon).
+            let list: Vec<serde_json::Value> = self.buffs_of(id, &hostile).as_array().cloned().unwrap_or_default();
             if !list.is_empty() {
                 out.insert(id.to_string(), serde_json::json!(list));
             }

@@ -58,7 +58,8 @@
 //!   {"type": "spot", "template", "world", "position": [x, y]}   a gathering spot in view (the map's frame)
 //!   {"type": "gatherEnd", "node"}   the gathering over: done (its result follows) or given up
 //!   {"type": "gatherStart", "node", "template" | null, "kind" | null, "try", "outcome": 1 gathered | 7 ranked up | 0 failed, "grade", "doubled", "durationMs"}   a gathering starting, its outcome already known
-//!   {"type": "partyDebuffs", "debuffs": {"<entity>": [buff as in "buffs"]}}   what monsters and the other faction put on your party (but you), as it changes
+//!   {"type": "partyDebuffs", "debuffs": {"<entity>": [buff as in "buffs"]}}   what is on your party, you too (debuffs, shields...), as it changes
+//!   {"type": "bossTarget", "boss", "target"}   a boss hit a player: the one it is on
 //!   {"type": "partyVitals", "entity", "hp", "maxHp", "flight", "maxFlight"}   a member's vitals (`1B 92`, about once a second each)
 //!   {"type": "inventory", "name", "server", "items": [{"storage", "slot", "item", "amount", "enchant", "stones"}]}   a login's whole item list (1 bag, 2 account warehouse, 11 worn, 14 Arcana, 15 own warehouse)
 //!   {"type": "inventorySlots", "name", "server", "slots": [...]}   slots said anew as items move (amount 0: emptied)

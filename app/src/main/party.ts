@@ -37,6 +37,10 @@ export function startParty(): void {
     state = { ...state, debuffs: (ev['debuffs'] as Record<number, PartyDebuff[]> | undefined) ?? {} }
     changed()
   })
+  tracker.onEvent('bossTarget', (ev) => {
+    state = { ...state, bossTarget: { entity: ev['target'] as number, at: Date.now() } }
+    changed()
+  })
   tracker.onEvent('partyVitals', (ev) => {
     const entity = ev['entity'] as number
     state = {
