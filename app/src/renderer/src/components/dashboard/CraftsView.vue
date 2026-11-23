@@ -17,7 +17,8 @@ import { luck } from '@shared/lootStats.ts'
 import { itemIcon } from '@shared/sessions.ts'
 
 /** Inside the Stats page (StatsView): its header is the page's. */
-defineProps<{ embedded?: boolean }>()
+/** `details`: what the game's chances make expected, your luck, the crafts that can proc. */
+defineProps<{ embedded?: boolean; details?: boolean }>()
 
 const store = useApp()
 
@@ -172,11 +173,12 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
               <th class="px-4 py-2 text-left font-normal" />
               <th class="px-3 py-2 text-center font-normal">{{ t('Crafts') }}</th>
               <th class="px-3 py-2 text-center font-normal text-red">{{ t('Fails') }}</th>
-              <th class="px-3 py-2 text-center font-normal">{{ t('That can proc') }}</th>
+              <th v-if="details" class="px-3 py-2 text-center font-normal">{{ t('That can proc') }}</th>
               <th class="px-3 py-2 text-center font-normal text-green">{{ t('Procs') }}</th>
               <th class="px-3 py-2 text-center font-normal">{{ t('Your rate') }}</th>
-              <th class="px-3 py-2 text-center font-normal">{{ t('Expected') }}</th>
-              <th class="px-3 py-2 text-center font-normal">{{ t('Your luck') }}</th>
+              <th class="px-3 py-2 text-center font-normal">{{ t('Recipes\' rate') }}</th>
+              <th v-if="details" class="px-3 py-2 text-center font-normal">{{ t('Expected') }}</th>
+              <th v-if="details" class="px-3 py-2 text-center font-normal">{{ t('Your luck') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -187,11 +189,12 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
               </td>
               <td class="px-3 py-2 text-center">{{ r.crafts }}</td>
               <td class="px-3 py-2 text-center text-red">{{ r.fails || '–' }}</td>
-              <td class="px-3 py-2 text-center text-dark">{{ r.canProc }}</td>
+              <td v-if="details" class="px-3 py-2 text-center text-dark">{{ r.canProc }}</td>
               <td class="px-3 py-2 text-center text-green">{{ r.procs }}</td>
               <td class="px-3 py-2 text-center">{{ rate(r) }}</td>
-              <td class="px-3 py-2 text-center text-dark">{{ r.expected.toFixed(1) }}</td>
-              <td class="px-3 py-2 text-center">
+              <td class="px-3 py-2 text-center text-dark">{{ r.canProc ? pct(r.expected / r.canProc) : '–' }}</td>
+              <td v-if="details" class="px-3 py-2 text-center text-dark">{{ r.expected.toFixed(1) }}</td>
+              <td v-if="details" class="px-3 py-2 text-center">
                 <span v-if="luckOf(r.procs, r.expected)" :class="luckOf(r.procs, r.expected)!.class">{{ luckOf(r.procs, r.expected)!.text }}</span>
                 <span v-else class="text-darker">–</span>
               </td>
@@ -212,8 +215,8 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
               <th class="px-3 py-2 text-left font-normal">{{ t('Proc gives') }}</th>
               <th class="px-3 py-2 text-center font-normal text-green">{{ t('Procs') }}</th>
               <th class="px-3 py-2 text-center font-normal">{{ t('Your rate') }}</th>
-              <th class="px-3 py-2 text-center font-normal">{{ t('Game') }}</th>
-              <th class="px-3 py-2 text-center font-normal">{{ t('Your luck') }}</th>
+              <th class="px-3 py-2 text-center font-normal">{{ t('Recipe\'s rate') }}</th>
+              <th v-if="details" class="px-3 py-2 text-center font-normal">{{ t('Your luck') }}</th>
               <th class="px-3 py-2 text-center font-normal">{{ t('Made') }}</th>
             </tr>
           </thead>
@@ -238,7 +241,7 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
               <td class="px-3 py-1.5 text-center text-green">{{ r.chance ? r.procs : '–' }}</td>
               <td class="px-3 py-1.5 text-center">{{ r.chance ? pct(r.procs / r.crafts) : '–' }}</td>
               <td class="px-3 py-1.5 text-center text-dark">{{ r.chance ? pct(r.chance) : '–' }}</td>
-              <td class="px-3 py-1.5 text-center">
+              <td v-if="details" class="px-3 py-1.5 text-center">
                 <span v-if="r.chance && luckOf(r.procs, r.crafts * r.chance)" :class="luckOf(r.procs, r.crafts * r.chance)!.class">{{ luckOf(r.procs, r.crafts * r.chance)!.text }}</span>
                 <span v-else class="text-darker">–</span>
               </td>

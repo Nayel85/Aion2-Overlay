@@ -14,6 +14,9 @@ import { allGatherings, filterGatherings, gatherResources, gatherRows, gatherTot
 import { luck } from '@shared/lootStats.ts'
 import { itemIcon } from '@shared/sessions.ts'
 
+/** `details`: the x2 Plentiful Harvest makes expected, your luck, Lady Luck's triggers, the skills seen. */
+defineProps<{ details?: boolean }>()
+
 const store = useApp()
 
 type Period = 'today' | 'week' | 'month' | 'all'
@@ -127,9 +130,11 @@ function luckOf(got: number, expected: number | null): { text: string; class: st
             <th class="px-3 py-2 text-center font-normal text-green">{{ t('Rank up') }}</th>
             <th class="px-3 py-2 text-center font-normal">x3</th>
             <th class="px-3 py-2 text-center font-normal text-yellow">x2</th>
-            <th class="px-3 py-2 text-center font-normal">{{ t('Your luck') }}</th>
-            <th class="px-3 py-2 text-center font-normal">{{ t('Lady Luck') }}</th>
-            <th class="px-3 py-2 text-left font-normal">{{ t('Skills seen') }}</th>
+            <template v-if="details">
+              <th class="px-3 py-2 text-center font-normal">{{ t('Your luck') }}</th>
+              <th class="px-3 py-2 text-center font-normal">{{ t('Lady Luck') }}</th>
+              <th class="px-3 py-2 text-left font-normal">{{ t('Skills seen') }}</th>
+            </template>
           </tr>
         </thead>
         <tbody>
@@ -146,31 +151,35 @@ function luckOf(got: number, expected: number | null): { text: string; class: st
             <td class="px-3 py-1.5 text-center">{{ r.multiplied || '–' }} <span v-if="r.multiplied" class="text-[11px] text-darker">{{ pct(r.multiplied, r.done - r.failed) }}</span></td>
             <td class="px-3 py-1.5 text-center text-yellow">
               {{ r.doubled || '–' }} <span v-if="r.doubled" class="text-[11px] text-darker">{{ pct(r.doubled, r.done - r.failed) }}</span>
-              <div v-if="r.expectedDoubled !== null" class="text-[10px] text-darker">{{ t('expected {n}', { n: r.expectedDoubled.toFixed(1) }) }}</div>
+              <div v-if="details && r.expectedDoubled !== null" class="text-[10px] text-darker">{{ t('expected {n}', { n: r.expectedDoubled.toFixed(1) }) }}</div>
             </td>
-            <td class="px-3 py-1.5 text-center">
-              <span v-if="luckOf(r.doubled, r.expectedDoubled)" :class="luckOf(r.doubled, r.expectedDoubled)!.class">{{ luckOf(r.doubled, r.expectedDoubled)!.text }}</span>
-              <span v-else class="text-darker">–</span>
-            </td>
-            <td class="px-3 py-1.5 text-center">{{ r.luck || '–' }}</td>
-            <td class="px-3 py-1.5 text-xs text-dark">
-              <span v-for="[name, level] in r.skills" :key="name" class="mr-2 whitespace-nowrap">{{ t(name) }} <span class="text-default">{{ t('Lv. {n}', { n: level }) }}</span></span>
-            </td>
+            <template v-if="details">
+              <td class="px-3 py-1.5 text-center">
+                <span v-if="luckOf(r.doubled, r.expectedDoubled)" :class="luckOf(r.doubled, r.expectedDoubled)!.class">{{ luckOf(r.doubled, r.expectedDoubled)!.text }}</span>
+                <span v-else class="text-darker">–</span>
+              </td>
+              <td class="px-3 py-1.5 text-center">{{ r.luck || '–' }}</td>
+              <td class="px-3 py-1.5 text-xs text-dark">
+                <span v-for="[name, level] in r.skills" :key="name" class="mr-2 whitespace-nowrap">{{ t(name) }} <span class="text-default">{{ t('Lv. {n}', { n: level }) }}</span></span>
+              </td>
+            </template>
           </tr>
           <tr v-if="rows.length > 1" class="border-t border-card bg-card/40 font-semibold">
             <td class="px-4 py-2" colspan="2">{{ t('All') }}</td>
             <td class="px-3 py-2 text-center">{{ total.done }}</td>
             <td class="px-3 py-2 text-center text-red">{{ total.failed }} <span class="text-[11px] font-normal text-darker">{{ pct(total.failed, total.done) }}</span></td>
-            <td class="px-3 py-2 text-center text-green">{{ total.rankUps }}</td>
-            <td class="px-3 py-2 text-center">{{ total.multiplied }}</td>
-            <td class="px-3 py-2 text-center text-yellow">{{ total.doubled }}</td>
-            <td class="px-3 py-2" />
-            <td class="px-3 py-2 text-center">{{ total.luck }}</td>
-            <td class="px-3 py-2" />
+            <td class="px-3 py-2 text-center text-green">{{ total.rankUps }} <span class="text-[11px] font-normal text-darker">{{ pct(total.rankUps, total.done - total.failed) }}</span></td>
+            <td class="px-3 py-2 text-center">{{ total.multiplied }} <span class="text-[11px] font-normal text-darker">{{ pct(total.multiplied, total.done - total.failed) }}</span></td>
+            <td class="px-3 py-2 text-center text-yellow">{{ total.doubled }} <span class="text-[11px] font-normal text-darker">{{ pct(total.doubled, total.done - total.failed) }}</span></td>
+            <template v-if="details">
+              <td class="px-3 py-2" />
+              <td class="px-3 py-2 text-center">{{ total.luck }}</td>
+              <td class="px-3 py-2" />
+            </template>
           </tr>
         </tbody>
       </table>
     </div>
-    <p class="mt-3 text-xs text-darker">{{ t('x2: Plentiful Harvest, its chance taken as 10% a level (30% at Lv. 3, the game says), on every success; its level shows once it has fired. Skills seen: those the rolls fired, at their level, for each character.') }}</p>
+    <p v-if="details" class="mt-3 text-xs text-darker">{{ t('x2: Plentiful Harvest, its chance taken as 10% a level (30% at Lv. 3, the game says), on every success; its level shows once it has fired. Skills seen: those the rolls fired, at their level, for each character.') }}</p>
   </div>
 </template>

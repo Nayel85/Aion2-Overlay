@@ -19,7 +19,8 @@ import { itemIcon, LOOT_KINDS } from '@shared/sessions.ts'
 import { gradeClass, ICON, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
 
 /** Inside the Stats page (StatsView): its header is the page's. */
-defineProps<{ embedded?: boolean }>()
+/** `details`: what the drop rates make expected, your luck, the runs with an item. */
+defineProps<{ embedded?: boolean; details?: boolean }>()
 
 const store = useApp()
 
@@ -218,7 +219,7 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
               <td v-for="k in LOOT_KINDS" :key="k.key" class="px-3 py-2 text-center" :title="t('{n} in all; expected from the drop rates: {e}', { n: r[k.key], e: r.expected[k.key].toFixed(1) })">
                 <span :class="!r[k.key] ? 'text-darker' : LOOT_KIND_STYLE[k.key]!.class">{{ rate(r, r[k.key]) }}</span>
                 <span class="ml-1 text-[11px] font-normal text-darker">({{ r[k.key] }})</span>
-                <span v-if="luckOf(r[k.key], r.expected[k.key])" :class="['ml-1 text-[11px] font-normal', luckOf(r[k.key], r.expected[k.key])!.class]">{{ luckOf(r[k.key], r.expected[k.key])!.text }}</span>
+                <span v-if="details && luckOf(r[k.key], r.expected[k.key])" :class="['ml-1 text-[11px] font-normal', luckOf(r[k.key], r.expected[k.key])!.class]">{{ luckOf(r[k.key], r.expected[k.key])!.text }}</span>
               </td>
             </tr>
           </tbody>
@@ -243,12 +244,14 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
             <tr class="text-xs text-darker">
               <th class="px-4 py-2 text-left font-normal">{{ plural(items.length, '{n} item', '{n} items') }}</th>
               <th class="px-3 py-2 text-center font-normal">{{ t('In all') }}</th>
-              <th class="px-3 py-2 text-center font-normal">{{ t(UNITS.find((u) => u.id === f.unit)!.label) }}</th>
+              <th class="px-3 py-2 text-center font-normal">{{ t('Your rate') }} <span class="text-darkest">{{ t(UNITS.find((u) => u.id === f.unit)!.label).toLowerCase() }}</span></th>
               <th class="px-3 py-2 text-center font-normal">{{ t('Game rate') }}</th>
-              <th class="px-3 py-2 text-center font-normal">{{ t('Expected') }}</th>
-              <th class="px-3 py-2 text-center font-normal">{{ t('Your luck') }}</th>
-              <th class="px-3 py-2 text-center font-normal">{{ t('Runs with it') }}</th>
-              <th class="px-3 py-2 text-center font-normal">{{ t('Chance a run') }}</th>
+              <template v-if="details">
+                <th class="px-3 py-2 text-center font-normal">{{ t('Expected') }}</th>
+                <th class="px-3 py-2 text-center font-normal">{{ t('Your luck') }}</th>
+                <th class="px-3 py-2 text-center font-normal">{{ t('Runs with it') }}</th>
+                <th class="px-3 py-2 text-center font-normal">{{ t('Chance a run') }}</th>
+              </template>
             </tr>
           </thead>
           <tbody>
@@ -263,16 +266,18 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
               <td class="px-3 py-1.5 text-center">{{ i.total.toLocaleString('en-US') }}</td>
               <td class="px-3 py-1.5 text-center">{{ rate(total, i.total) }}</td>
               <td class="px-3 py-1.5 text-center text-dark">{{ i.expected ? rate(total, i.expected) : '–' }}</td>
-              <td class="px-3 py-1.5 text-center text-dark">{{ i.expected ? i.expected.toFixed(1) : '–' }}</td>
-              <td class="px-3 py-1.5 text-center">
-                <span v-if="luckOf(i.total, i.expected)" :class="luckOf(i.total, i.expected)!.class">{{ luckOf(i.total, i.expected)!.text }}</span>
-                <template v-else>–</template>
-              </td>
-              <td class="px-3 py-1.5 text-center text-dark">{{ i.runs }} / {{ total.runs }}</td>
-              <td class="px-3 py-1.5 text-center">
-                {{ Math.round((i.runs / total.runs) * 100) }}%
-                <span class="ml-1 text-[11px] text-darker">{{ oneIn(i.runs / total.runs) }}</span>
-              </td>
+              <template v-if="details">
+                <td class="px-3 py-1.5 text-center text-dark">{{ i.expected ? i.expected.toFixed(1) : '–' }}</td>
+                <td class="px-3 py-1.5 text-center">
+                  <span v-if="luckOf(i.total, i.expected)" :class="luckOf(i.total, i.expected)!.class">{{ luckOf(i.total, i.expected)!.text }}</span>
+                  <template v-else>–</template>
+                </td>
+                <td class="px-3 py-1.5 text-center text-dark">{{ i.runs }} / {{ total.runs }}</td>
+                <td class="px-3 py-1.5 text-center">
+                  {{ Math.round((i.runs / total.runs) * 100) }}%
+                  <span class="ml-1 text-[11px] text-darker">{{ oneIn(i.runs / total.runs) }}</span>
+                </td>
+              </template>
             </tr>
           </tbody>
         </table>
