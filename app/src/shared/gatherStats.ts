@@ -32,7 +32,7 @@ export const filterGatherings = (list: NamedGathering[], f: GatherFilter): Named
 export function gatherResources(list: NamedGathering[]): [number, string, number][] {
   const n = new Map<number, number>()
   for (const { gathering } of list) n.set(gathering.resource, (n.get(gathering.resource) ?? 0) + 1)
-  return [...n].map(([id, count]): [number, string, number] => [id, id ? (ITEMS[id]?.[0] ?? `#${id}`).replace(' (Bound)', '') : 'Unknown resource', count]).sort((a, b) => b[2] - a[2])
+  return [...n].map(([id, count]): [number, string, number] => [id, (ITEMS[id]?.[0] ?? `#${id}`).replace(' (Bound)', ''), count]).sort((a, b) => b[2] - a[2])
 }
 
 export interface GatherRow {
@@ -77,8 +77,7 @@ function row(name: string, resource: number, list: GatheringDone[]): GatherRow {
   return {
     name,
     resource,
-    // An abandoned gathering of a spot not known yet has none (0).
-    resourceName: resource ? (info?.[0] ?? `#${resource}`).replace(' (Bound)', '') : 'Unknown resource',
+    resourceName: (info?.[0] ?? `#${resource}`).replace(' (Bound)', ''),
     icon: info?.[2] ?? null,
     done: list.length,
     failed: list.length - made.length,

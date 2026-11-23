@@ -284,6 +284,12 @@ const BACKGROUND_HINT = 'At None the text keeps a dark glow, readable on the gam
           <SettingRow label="Enemies on the map" hint="A pin on the map overlay where each enemy was last seen: as they come into view, then as effects and skills land on them. Red when they can attack you (PvP on, or anyone in the Abyss), grey with their PvP off.">
             <Toggle :model-value="store.settings.enemies.mapPins" @update:model-value="setEnemies({ mapPins: $event })" />
           </SettingRow>
+          <SettingRow label="Their item level" hint="Each one's gear score (ilvl), once the game has sent their card: as you target them, or in a fight.">
+            <Toggle :model-value="store.settings.enemies.gearScore" @update:model-value="setEnemies({ gearScore: $event })" />
+          </SettingRow>
+          <SettingRow label="Their combat power" hint="Each one's CP, once the game has sent it.">
+            <Toggle :model-value="store.settings.enemies.combatPower" @update:model-value="setEnemies({ combatPower: $event })" />
+          </SettingRow>
           <SettingRow label="Enemies background" :hint="BACKGROUND_HINT">
             <Slider :model-value="store.settings.enemies.opacity" :min="0" :max="1" :step="0.05" :format="background" @update:model-value="setEnemies({ opacity: $event })" />
           </SettingRow>

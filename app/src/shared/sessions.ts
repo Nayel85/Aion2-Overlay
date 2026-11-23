@@ -477,9 +477,8 @@ export const GATHER_FAILED = 2
 /** A gathering into a session: its stats, and what it gave (`bonus` more when it doubled). */
 export function noteGathering(s: PlaySession, item: number, amount: number, result: number, bonus = 0): void {
   const g = (s.gathering ??= { done: 0, failed: 0, doubles: 0, rankUps: 0, byGrade: {} })
-  // Its resource's own counts too (a failed one says its resource's plain item; an abandoned one of
-  // a spot not known says none, item 0: in the totals only).
-  const r = item ? ((g.byResource ??= {})[resourceOf(item)] ??= { done: 0, failed: 0, doubles: 0, rankUps: 0 }) : { done: 0, failed: 0, doubles: 0, rankUps: 0 }
+  // Its resource's own counts too (a failed one says its resource's plain item).
+  const r = ((g.byResource ??= {})[resourceOf(item)] ??= { done: 0, failed: 0, doubles: 0, rankUps: 0 })
   g.done++
   r.done++
   if (result === GATHER_FAILED || amount <= 0) {

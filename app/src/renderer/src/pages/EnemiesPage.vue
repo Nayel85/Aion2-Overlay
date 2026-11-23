@@ -22,7 +22,7 @@ const cfg = computed(() => store.settings.enemies)
 
 const ROWS = 8
 const SAMPLE = computed<Enemy[]>(() => [
-  { entity: -1, name: t('Enemy player'), server: 2104, legion: t('Their legion'), pvp: true, combatPower: 123_186, className: 'Assassin' },
+  { entity: -1, name: t('Enemy player'), server: 2104, legion: t('Their legion'), pvp: true, combatPower: 123_186, gearScore: 2222, className: 'Assassin' },
   { entity: -2, name: t('Another one'), server: 2104, legion: null },
 ])
 /** Nobody around while the dashboard is up: a sample to place it by. */
@@ -79,10 +79,11 @@ onBeforeUnmount(() => observer?.disconnect())
             <span class="max-w-[150px] shrink-0 truncate font-medium text-default">{{ e.name }}</span>
             <span v-if="e.pvp && !e.openPvp" class="shrink-0 self-center rounded bg-red/20 px-1 text-[10px] font-semibold leading-4 text-red" :title="t('Their PvP is on: they can attack you')">PvP</span>
             <span v-if="e.server" class="shrink-0 text-[11px] tabular-nums text-red">[{{ serverTag(e.server) }}]</span>
+            <span v-if="cfg.gearScore && e.gearScore" class="shrink-0 text-[11px] font-semibold tabular-nums text-blue" :title="t('Gear score (item level)')">{{ t('ilvl {n}', { n: e.gearScore }) }}</span>
             <span
-              v-if="e.combatPower"
+              v-if="cfg.combatPower && e.combatPower"
               class="shrink-0 text-[11px] font-semibold tabular-nums text-yellow"
-              :title="`${t('Combat power')}${e.level ? `, Lv${e.level}` : ''}${e.gearScore ? `, ${t('gear score {n}', { n: e.gearScore })}` : ''}`"
+              :title="`${t('Combat power')}${e.level ? `, Lv${e.level}` : ''}`"
             >
               [{{ e.combatPower.toLocaleString('en-US') }}]
             </span>

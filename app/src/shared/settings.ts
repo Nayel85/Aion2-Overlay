@@ -266,6 +266,9 @@ export interface Settings {
     collapsed: boolean
     /** Their pins on the map overlay. */
     mapPins: boolean
+    /** Each one's gear score (item level) and combat power, when their card was read. */
+    gearScore: boolean
+    combatPower: boolean
     sound: boolean
     /** The sound only for enemies with their PvP on. */
     pvpOnly: boolean
@@ -448,7 +451,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   },
   bossRuns: { enabled: false, position: { x: 1890, y: 30 }, opacity: 0.85, windowMinutes: 15, rows: 4, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: [101001, 101002, 101006, 101007, 101019, 101017, 101005, 101004, 101003, 101015, 101010, 101008, 101009, 101016, 101012, 101014, 101020, 101013, 101011, 101018] },
   killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null },
-  enemies: { enabled: false, position: null, opacity: 0.75, collapsed: false, mapPins: true, sound: true, pvpOnly: true, soundId: 'enemy-spotted', volume: 0.7, customName: null },
+  enemies: { enabled: false, position: null, opacity: 0.75, collapsed: false, mapPins: true, gearScore: true, combatPower: true, sound: true, pvpOnly: true, soundId: 'enemy-spotted', volume: 0.7, customName: null },
   skills: { enabled: false, position: { x: 500, y: 413 }, rows: 6, opacity: 0.92 },
   dummy: { overlay: false, position: null, autoStart: true, goal: 'time', limitMs: 60000, damageGoal: 10000000, collapsed: false },
   buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1145, y: 359 }, ccDebuffs: false },
@@ -724,6 +727,8 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         opacity: num(v.opacity, 0, 1, d.enemies.opacity),
         collapsed: bool(v.collapsed, d.enemies.collapsed),
         mapPins: bool(v.mapPins, d.enemies.mapPins),
+        gearScore: bool(v.gearScore, d.enemies.gearScore),
+        combatPower: bool(v.combatPower, d.enemies.combatPower),
         sound: bool(v.sound, d.enemies.sound),
         pvpOnly: bool(v.pvpOnly, d.enemies.pvpOnly),
         soundId: isSound(v.soundId) ? v.soundId : d.enemies.soundId,

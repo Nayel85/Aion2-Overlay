@@ -416,14 +416,16 @@ export function startSessions(): void {
   })
   tracker.onEvent('gatherEnd', () => {
     // A done one's result comes just after; with none, it was given up: counted as a failure, its
-    // resource the spot's (as known). The next gathering's start, coming meanwhile, is left alone.
+    // resource the spot's; not counted at all when the spot's resource is not known. The next
+    // gathering's start, coming meanwhile, is left alone.
     const over = gatherStart
     setTimeout(() => {
       if (!over || gatherStart !== over) return
       gatherStart = null
       const s = sessions.current
       if (!s) return
-      const plain = gatherStore.plainOf(over.template) ?? 0
+      const plain = gatherStore.plainOf(over.template)
+      if (!plain) return
       s.gatherings = [...(s.gatherings ?? []), { at: Date.now(), resource: plain, outcome: over.outcome, grade: over.grade, doubled: over.doubled, failed: true, abandoned: true, item: plain, amount: 0, skills: over.skills }]
       noteGathering(s, plain, 0, GATHER_FAILED)
       s.last = Date.now()
