@@ -22,6 +22,8 @@ export interface GatherForecast {
   times: number
   /** What it will give (on a failed gathering, what it would have); null while not known. */
   item: ForecastItem | null
+  /** The grade rolled (1 plain, 2 Fine, 3 Pure, 4 Radiant): its colour while the item is not known. */
+  grade?: number
   /** When it started (ms), and how long it takes, as its steps say (null when not told). */
   at: number
   durationMs: number | null

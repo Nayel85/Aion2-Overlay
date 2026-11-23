@@ -10,6 +10,7 @@ import { app } from 'electron'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { GATHERABLES } from '../shared/gatherables.ts'
+import { resourceOf } from '../shared/sessions.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, plainItem, type GatherForecast, type GatherRoll, type GatherTemplates } from '../shared/gather.ts'
@@ -122,17 +123,18 @@ export function startGather(): void {
     const base = plainItem(plain)
     const times = outcome === 'rankUp' && item && base && item.id === base.id ? item.count : 1
     const rolls = (ev['rolls'] as GatherRoll[] | undefined) ?? []
-    set({ kind: 'gather', outcome: times > 1 ? 'ok' : outcome, times, doubled: ev['doubled'] === true, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls })
+    set({ kind: 'gather', grade, outcome: times > 1 ? 'ok' : outcome, times, doubled: ev['doubled'] === true, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls })
   })
   // Over: done (its result just after) or given up, walking away. Its spot's kind waits for a result.
   tracker.onEvent('gatherEnd', () => {
     if (state?.kind === 'gather') set(null)
   })
   tracker.onEvent('gather', (ev) => {
-    // Its result says the spot's plain item, even failed (a ranked-up one is its next grade's).
+    // Its result says the spot's resource, even failed or ranked up (a Fine Yggdrasil Log's plain one).
     const item = ev['item'] as number | undefined
-    if (pendingTemplate !== null && item && ev['result'] !== 1 && templates[pendingTemplate] !== item) {
-      templates = { ...templates, [pendingTemplate]: item }
+    const plain = item ? resourceOf(item) : undefined
+    if (pendingTemplate !== null && plain && templates[pendingTemplate] !== plain) {
+      templates = { ...templates, [pendingTemplate]: plain }
       votes.delete(Number(pendingTemplate))
       keep()
     }

@@ -62,7 +62,9 @@ const colour = computed(() => {
   const g = shownGather.value
   if (kind.value === 'fail') return cfg.value.failColor
   if (kind.value === 'proc') return cfg.value.procColor
-  if (kind.value === 'rare') return (cfg.value.gradeColours && g?.outcome === 'rankUp' && g.item && gradeColour(g.item.grade)) || cfg.value.rareColor
+  // A rank up in its item's grade colour, or, the item not known, the grade rolled's (2 Fine...).
+  const grade = g?.item ? g.item.grade : g?.grade ? g.grade * 10 + 1 : 0
+  if (kind.value === 'rare') return (cfg.value.gradeColours && g?.outcome === 'rankUp' && gradeColour(grade)) || cfg.value.rareColor
   return '#9aa0ac'
 })
 const shown = computed(() => cfg.value.enabled && !!shownGather.value)
