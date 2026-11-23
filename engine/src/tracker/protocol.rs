@@ -1556,8 +1556,11 @@ pub fn target_info(frame: &[u8]) -> Option<TargetInfo> {
     let class = u32_at(b, end)?;
     let level = u32_at(b, end + 6)?;
     let gear_score = u32_at(b, end + 14)?;
+    // Their home server, then the one they are on: not the same for one visiting yours (Arïse of
+    // 2307 on 1305, 2026-11-23); the home one is theirs.
     let server = u16_at(b, end + 18)?;
-    if !(1000..=9999).contains(&server) || u16_at(b, end + 20) != Some(server) || !(1..=99).contains(&level) || gear_score >= 100_000 {
+    let here = u16_at(b, end + 20)?;
+    if !(1000..=9999).contains(&server) || !(1000..=9999).contains(&here) || !(1..=99).contains(&level) || gear_score >= 100_000 {
         return None;
     }
     let legion = (end + 22..(end + 60).min(b.len().saturating_sub(2)))
@@ -2068,5 +2071,9 @@ mod tests {
             TargetInfo { name: "Wolf".into(), server: 1406, level: 45, gear_score: 2429, class: 13, legion: Some("Flexq".into()), combat_power: 125_122 }
         );
         assert_eq!(roster_class(t.class), Some("Ranger"));
+        // An Asmodian visiting the owner's server: their own server first, then the one they are on.
+        let arise = include_str!("testdata/target-info-arise.hex");
+        let a = target_info(&frame(OP_TARGET_INFO, &hex(arise.trim()))).unwrap();
+        assert_eq!((a.name.as_str(), a.server, a.level, a.gear_score), ("Arïse", 2307, 45, 2829));
     }
 }
