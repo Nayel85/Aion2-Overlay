@@ -2,13 +2,13 @@
 // seconds before the result), told to its pill (pages/GatherPage.vue) until the result comes
 // (`gather`, `craftResult`), or a while. What it will give: a craft's from the game's recipes
 // (shared/recipes.ts); a gathering's from its spot's kind, whose plain item each result says (kept
-// in userData/gather-kinds.json), at the grade the game rolled (shared/gatherables.ts).
+// in userData/gather-spots.json), at the grade the game rolled (shared/gatherables.ts).
 import { app } from 'electron'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
-import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, spotKind, type GatherForecast, type GatherRoll, type GatherTemplates } from '../shared/gather.ts'
+import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, plainItem, type GatherForecast, type GatherRoll, type GatherTemplates } from '../shared/gather.ts'
 
 /** Gone this long after it should have ended, if nothing said it did. */
 const FORGET_AFTER_MS = 2_000
@@ -20,7 +20,7 @@ let timer: NodeJS.Timeout | null = null
 /** The spot's kind of the gathering going on, for its result to teach. */
 let pendingTemplate: string | null = null
 let templates: GatherTemplates = { ...GATHER_TEMPLATES_SEED }
-const file = (): string => join(app.getPath('userData'), 'gather-kinds.json')
+const file = (): string => join(app.getPath('userData'), 'gather-spots.json')
 
 function set(next: GatherForecast | null): void {
   if (timer) clearTimeout(timer)
@@ -45,11 +45,15 @@ export function startGather(): void {
     // 0 failed; else the grade rolled says it: above 1 ranked up (7 the code seen with it, others too).
     const outcome = code === 0 ? 'fail' : grade > 1 || code === 7 ? 'rankUp' : 'ok'
     if (code !== 0 && code !== 1 && code !== 7) log(`gathering: outcome ${code} (grade ${grade}) not known before`)
-    pendingTemplate = spotKind(ev['template'] as number | null | undefined, ev['kind'] as number | null | undefined)
+    const template = ev['template'] as number | null | undefined
+    pendingTemplate = template === null || template === undefined ? null : String(template)
     const plain = pendingTemplate !== null ? templates[pendingTemplate] : undefined
     const item = gatherItem(plain, outcome === 'fail' ? 1 : grade)
+    // A grade that gives the plain item more times (a plant's x3) is no rank up.
+    const base = plainItem(plain)
+    const times = outcome === 'rankUp' && item && base && item.id === base.id ? item.count : 1
     const rolls = (ev['rolls'] as GatherRoll[] | undefined) ?? []
-    set({ kind: 'gather', outcome, doubled: ev['doubled'] === true, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls })
+    set({ kind: 'gather', outcome: times > 1 ? 'ok' : outcome, times, doubled: ev['doubled'] === true, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls })
   })
   // Over: done (its result just after) or given up, walking away. Its spot's kind waits for a result.
   tracker.onEvent('gatherEnd', () => {
@@ -74,7 +78,7 @@ export function startGather(): void {
     if (code !== 0 && code !== 1 && code !== 13) log(`craft: outcome ${code} not known (recipe ${ev['recipe']})`)
     const proc = code === 13
     const { item, doubled } = craftItem(ev['recipe'] as number, proc)
-    set({ kind: 'craft', outcome: code === 0 ? 'fail' : proc ? 'proc' : 'ok', doubled, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls: [] })
+    set({ kind: 'craft', times: 1, outcome: code === 0 ? 'fail' : proc ? 'proc' : 'ok', doubled, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls: [] })
   })
   tracker.onEvent('craftDone', () => {
     if (state?.kind === 'craft') set(null)

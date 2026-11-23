@@ -196,6 +196,8 @@ export interface Settings {
     rareColor: string
     /** A craft's proc (its better item can look the same: the colour says it). */
     procColor: string
+    /** A rank up in its item's grade colour (green Fine, blue Pure, gold Radiant), else `rareColor`. */
+    gradeColours: boolean
     soundFail: boolean
     soundRare: boolean
     soundId: SoundId
@@ -446,7 +448,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   flight: { enabled: true, position: null, opacity: 1 },
   gather: {
     enabled: true, style: 'ring', position: null, opacity: 1, scale: 1, icon: true, fail: true, rare: true, plain: false, crafts: true,
-    failColor: GATHER_DEFAULT_COLORS.fail, rareColor: GATHER_DEFAULT_COLORS.rare, procColor: GATHER_DEFAULT_COLORS.proc, soundFail: false, soundRare: false, soundId: 'bell', volume: 0.6,
+    failColor: GATHER_DEFAULT_COLORS.fail, rareColor: GATHER_DEFAULT_COLORS.rare, procColor: GATHER_DEFAULT_COLORS.proc, gradeColours: true, soundFail: false, soundRare: false, soundId: 'bell', volume: 0.6,
   },
   bossRuns: { enabled: false, position: { x: 1890, y: 30 }, opacity: 0.85, windowMinutes: 15, rows: 4, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: [101001, 101002, 101006, 101007, 101019, 101017, 101005, 101004, 101003, 101015, 101010, 101008, 101009, 101016, 101012, 101014, 101020, 101013, 101011, 101018] },
   killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null },
@@ -673,6 +675,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         failColor: colour(v.failColor, g.failColor),
         rareColor: colour(v.rareColor, g.rareColor),
         procColor: colour(v.procColor, g.procColor),
+        gradeColours: bool(v.gradeColours, g.gradeColours),
         soundFail: bool(v.soundFail, g.soundFail),
         soundRare: bool(v.soundRare, g.soundRare),
         soundId: isSound(v.soundId) && v.soundId !== 'custom' ? v.soundId : g.soundId,

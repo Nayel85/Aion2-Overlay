@@ -18,6 +18,8 @@ export interface GatherForecast {
   outcome: 'ok' | 'rankUp' | 'fail' | 'proc'
   /** It gives twice as much (a gathering's x2, or a craft whose proc is its item twice). */
   doubled: boolean
+  /** A grade rolled that is the plain item more times (a plant's: Coriolus x3), else 1. */
+  times: number
   /** What it will give (on a failed gathering, what it would have); null while not known. */
   item: ForecastItem | null
   /** When it started (ms), and how long it takes, as its steps say (null when not told). */
@@ -37,24 +39,28 @@ export interface GatherRoll {
 }
 
 /**
- * A gathering spot's kind -> the plain item it gives, learnt from its results. The kind is its
- * template and the number its spawn ends with (`template:number`): the template alone is shared by
- * spots of other resources (1500000), the number is the same on every spot of one (0x1f6fa332 Odyle).
+ * A gathering spot's kind (its template, as the game sends it: one per resource, Odyle 1500000 and
+ * 1500062) -> the plain item it gives, learnt from its results.
  */
 export type GatherTemplates = Record<string, number>
 
-/** Known before any gathering: the Odyle spots. */
-export const GATHER_TEMPLATES_SEED: GatherTemplates = { '1500062:527409970': 610_610_013, '1500000:527409970': 610_610_013 }
-
-/** A spot's kind as learnt by: its template and its spawn's number, or the template alone without one. */
-export const spotKind = (template: number | null | undefined, kind: number | null | undefined): string | null =>
-  template === null || template === undefined ? null : kind === null || kind === undefined ? String(template) : `${template}:${kind}`
+/** Known before any gathering: the owner's of 2026-11-22 and 23. */
+export const GATHER_TEMPLATES_SEED: GatherTemplates = {
+  '1500000': 610_610_013,
+  '1500062': 610_610_013,
+  '1500012': 610_650_011,
+  '1500021': 610_660_026,
+  '1500041': 610_680_043,
+}
 
 const asItem = (d: GatherDrop): ForecastItem => ({ id: d[0], count: d[1], name: d[2], grade: d[3], icon: d[4] })
 
 /** Each plain item's grades (1 plain, 2 ranked up...): every spot that gives one gives the same. */
 const BY_PLAIN = new Map<number, Record<string, GatherDrop>>()
 for (const [, , groups] of Object.values(GATHERABLES)) if (groups['1']) BY_PLAIN.set(groups['1'][0], groups)
+
+/** The plain item a spot's kind gives, at grade 1. */
+export const plainItem = (plain: number | undefined): ForecastItem | null => gatherItem(plain, 1)
 
 /** What a gathering gives: its spot's plain item, at the grade the game rolled (1 plain, 2 ranked up...). */
 export function gatherItem(plain: number | undefined, grade: number): ForecastItem | null {

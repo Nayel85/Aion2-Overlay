@@ -26,6 +26,7 @@ const SAMPLE: GatherForecast = {
   kind: 'gather',
   outcome: 'rankUp',
   doubled: true,
+  times: 1,
   item: { id: 610_610_014, count: 1, name: t('Fine Odyle'), grade: 21, icon: 'Icon_Item_Gather_Od_L_lv4_02a' },
   at: 0,
   durationMs: 6800,
@@ -38,12 +39,14 @@ const SAMPLE: GatherForecast = {
 }
 
 type Kind = 'fail' | 'rare' | 'proc' | 'plain'
-const kindOf = (g: GatherForecast): Kind => (g.outcome === 'fail' ? 'fail' : g.outcome === 'proc' ? 'proc' : g.outcome === 'rankUp' || g.doubled ? 'rare' : 'plain')
+const kindOf = (g: GatherForecast): Kind => (g.outcome === 'fail' ? 'fail' : g.outcome === 'proc' ? 'proc' : g.outcome === 'rankUp' || g.doubled || g.times > 1 ? 'rare' : 'plain')
+/** How many times the item comes: a plant's grade (x3) and the doubling (x2) multiply. */
+const timesOf = (g: GatherForecast): number => g.times * (g.doubled ? 2 : 1)
 const textOf = (g: GatherForecast): string => {
   if (g.kind === 'craft') return g.outcome === 'fail' ? t('Craft will fail') : g.outcome === 'proc' ? (g.doubled ? t('Craft procs, x2') : t('Craft procs')) : t('Plain craft')
   if (g.outcome === 'fail') return t('Gathering will fail')
   if (g.outcome === 'rankUp') return g.doubled ? t('Rank up, x2') : t('Rank up')
-  return g.doubled ? t('Gathering x2') : t('Gathering succeeds')
+  return timesOf(g) > 1 ? t('Gathering x{n}', { n: timesOf(g) }) : t('Gathering succeeds')
 }
 const wanted = (g: GatherForecast): boolean => {
   if (g.kind === 'craft' && !cfg.value.crafts) return false
@@ -53,7 +56,15 @@ const wanted = (g: GatherForecast): boolean => {
 
 const shownGather = computed<GatherForecast | null>(() => (preview.value ? SAMPLE : store.gather && wanted(store.gather) ? store.gather : null))
 const kind = computed(() => (shownGather.value ? kindOf(shownGather.value) : null))
-const colour = computed(() => (kind.value === 'fail' ? cfg.value.failColor : kind.value === 'proc' ? cfg.value.procColor : kind.value === 'rare' ? cfg.value.rareColor : '#9aa0ac'))
+/** The grades' colours, as the game's: green Fine, blue Pure, gold Radiant, orange above. */
+const gradeColour = (grade: number): string | null => (grade >= 51 ? '#f0883e' : grade >= 41 ? '#f5d77a' : grade >= 31 ? '#58a6ff' : grade >= 21 ? '#3fb950' : null)
+const colour = computed(() => {
+  const g = shownGather.value
+  if (kind.value === 'fail') return cfg.value.failColor
+  if (kind.value === 'proc') return cfg.value.procColor
+  if (kind.value === 'rare') return (cfg.value.gradeColours && g?.outcome === 'rankUp' && g.item && gradeColour(g.item.grade)) || cfg.value.rareColor
+  return '#9aa0ac'
+})
 const shown = computed(() => cfg.value.enabled && !!shownGather.value)
 /** What it will give, as an icon and a name (none for a spot whose kind is not learnt yet). */
 const item = computed(() => {
@@ -209,10 +220,10 @@ onBeforeUnmount(() => {
           </div>
           <!-- Twice as much: x2, in a corner (the colour alone does not say it). -->
           <span
-            v-if="shownGather.doubled"
+            v-if="timesOf(shownGather) > 1"
             class="absolute -bottom-0.5 -right-1 rounded-full px-1 font-bold leading-tight text-black shadow ring-1 ring-black/50"
             :style="{ background: colour, fontSize: `${11 * cfg.scale}px` }"
-          >x2</span>
+          >x{{ timesOf(shownGather) }}</span>
         </div>
 
         <span

@@ -62,6 +62,9 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
           <Toggle :model-value="cfg.fail" @update:model-value="set({ fail: $event })" />
         </span>
       </SettingRow>
+      <SettingRow label="Rank ups in their grade's colour" hint="A rank up in its item's colour (green Fine, blue Pure, gold Radiant) rather than the colour above.">
+        <Toggle :model-value="cfg.gradeColours" @update:model-value="set({ gradeColours: $event })" />
+      </SettingRow>
       <SettingRow label="Craft procs" hint="A craft's better item (a green Splendent one where a white one is crafted, often with the same icon) or its double: shown with the rank ups and x2, in a colour of its own.">
         <span class="flex items-center gap-2">
           <button v-if="cfg.procColor !== GATHER_DEFAULT_COLORS.proc" type="button" class="text-xs text-darker hover:text-default" @click="set({ procColor: GATHER_DEFAULT_COLORS.proc })">{{ t('Reset') }}</button>

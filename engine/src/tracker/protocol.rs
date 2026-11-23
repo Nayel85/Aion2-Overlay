@@ -1279,8 +1279,8 @@ pub struct ObjectSpawn {
     pub z: f32,
     /// When it spawned (ms since 1970); None when the record has no time.
     pub created_ms: Option<u64>,
-    /// The u32 before the record's closing `07 00 00`: the same on every Odyle node (0x1f6fa332), other
-    /// on other gathering spots of the same template: what a spot's resource is told by, it seems.
+    /// The u32 before the record's closing `07 00 00`. Not a gathering spot's resource (its template
+    /// is: Odyle spots of 2026-11-23 had another than those of the 22nd); told for reading.
     pub tail: Option<u32>,
 }
 
