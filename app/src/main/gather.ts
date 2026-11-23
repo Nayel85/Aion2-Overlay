@@ -110,8 +110,10 @@ export function startGather(): void {
     const code = ev['outcome'] as number
     const grade = (ev['grade'] as number | undefined) ?? 1
     // 0 failed; else the grade rolled says it: above 1 ranked up (7 the code seen with it, others too).
-    const outcome = code === 0 ? 'fail' : grade > 1 || code === 7 ? 'rankUp' : 'ok'
-    if (code !== 0 && code !== 1 && code !== 7) log(`gathering: outcome ${code} (grade ${grade}) not known before`)
+    // Flags: 1 made, 2 and 4 a better grade rolled. 0 failed, 1 made, 7 ranked up, 6 a rank up
+    // rolled and failed (2026-11-23: a Pure Diamond, nothing gathered).
+    const outcome = (code & 1) === 0 ? 'fail' : grade > 1 || (code & 6) !== 0 ? 'rankUp' : 'ok'
+    if (![0, 1, 6, 7].includes(code)) log(`gathering: outcome ${code} (grade ${grade}) not known before`)
     const template = ev['template'] as number | null | undefined
     pendingTemplate = template === null || template === undefined ? null : String(template)
     const plain = pendingTemplate !== null ? (templates[pendingTemplate] ?? voted(Number(pendingTemplate))?.item) : undefined
@@ -139,10 +141,12 @@ export function startGather(): void {
   })
   tracker.onEvent('craftStart', (ev) => {
     const code = ev['outcome'] as number
-    if (code !== 0 && code !== 1 && code !== 13) log(`craft: outcome ${code} not known (recipe ${ev['recipe']})`)
-    const proc = code === 13
+    // Flags as a gathering's: 1 made; 13 (1, 4, 8) a proc. Without 1 it failed, whatever else rolled.
+    if (![0, 1, 13].includes(code)) log(`craft: outcome ${code} not known (recipe ${ev['recipe']})`)
+    const made = (code & 1) === 1
+    const proc = made && (code & 12) !== 0
     const { item, doubled } = craftItem(ev['recipe'] as number, proc)
-    set({ kind: 'craft', times: 1, outcome: code === 0 ? 'fail' : proc ? 'proc' : 'ok', doubled, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls: [] })
+    set({ kind: 'craft', times: 1, outcome: !made ? 'fail' : proc ? 'proc' : 'ok', doubled, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls: [] })
   })
   tracker.onEvent('craftDone', () => {
     if (state?.kind === 'craft') set(null)

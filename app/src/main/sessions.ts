@@ -309,9 +309,10 @@ export function startSessions(): void {
   // recipe's, shared/recipes.ts: a proc can be the item twice).
   let crafting: { recipe: number; proc: boolean } | null = null
   tracker.onEvent('craftStart', (ev) => {
-    crafting = { recipe: ev['recipe'] as number, proc: ev['outcome'] === 13 }
-    // A failed one (0) makes nothing: recorded as it ends.
-    if (ev['outcome'] === 0) failing = ev['recipe'] as number
+    const code = ev['outcome'] as number
+    crafting = { recipe: ev['recipe'] as number, proc: (code & 1) === 1 && (code & 12) !== 0 }
+    // A failed one (its outcome without 1) makes nothing: recorded as it ends.
+    if ((code & 1) === 0) failing = ev['recipe'] as number
   })
   let failing: number | null = null
   tracker.onEvent('craftDone', (ev) => {

@@ -1146,7 +1146,7 @@ impl Tracker {
             p::OP_GATHER_START => {
                 if let Some((node, tries, outcome, grade, doubled, ms, rolls)) = p::gather_start(f) {
                     tracing::info!("gathering {node} (try {tries}): will be {outcome}, grade {grade}, doubled {doubled}");
-                    if !matches!(outcome, 0 | 1 | 7) {
+                    if !matches!(outcome, 0 | 1 | 6 | 7) {
                         tracing::info!("gathering start with outcome {outcome}: {}", f.iter().map(|b| format!("{b:02x}")).collect::<String>());
                     }
                     self.gathering = Some(node);

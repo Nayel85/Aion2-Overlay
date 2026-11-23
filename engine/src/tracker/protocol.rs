@@ -677,7 +677,8 @@ pub fn loot(frame: &[u8]) -> Option<(u8, Vec<(u32, u32)>)> {
 }
 
 /// A gathering starting (`31 8D 00 00 <node varint> <try u32> <outcome u8> ...`), about 7 s before its
-/// outcome (`33 8D`), which it already says: 1 gathered, 7 ranked up, 0 failed. Its doubling too: a
+/// outcome (`33 8D`), which it already says, as flags: 1 gathered, 2 and 4 a better grade rolled. So 0
+/// failed, 1 gathered, 7 ranked up, 6 a rank up rolled but failed (a Pure Diamond on 2026-11-23). Its doubling too: a
 /// record `01 58 15 01 00 01 5a 15 01 00` among those that follow is in the start of every gathering
 /// that doubled, and of no other. All 17 of the owner's gatherings of 2026-11-22 (3 failed, 4 ranked
 /// up, 6 doubled) had what their start said. The grade rolled follows: 1 plain, 2 ranked up...
