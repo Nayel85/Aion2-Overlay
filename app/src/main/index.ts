@@ -8,6 +8,7 @@ import { broadcast } from './broadcast.ts'
 import { startApplicants } from './applicants.ts'
 import { startParty } from './party.ts'
 import { startFlight } from './flight.ts'
+import { startGather } from './gather.ts'
 import { startCharacters } from './characters.ts'
 import { startSessions } from './sessions.ts'
 import { startInventory } from './inventory.ts'
@@ -70,6 +71,7 @@ if (!app.requestSingleInstanceLock()) {
     startApplicants()
     startParty()
     startFlight()
+    startGather()
     startGuild()
     startGameMap()
     startLokthar()

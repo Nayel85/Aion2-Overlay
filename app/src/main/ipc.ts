@@ -8,6 +8,7 @@ import { meterState } from './meter.ts'
 import { applicantStore } from './applicants.ts'
 import { partyStore } from './party.ts'
 import { flightStore } from './flight.ts'
+import { gatherStore } from './gather.ts'
 import { guild } from './guild.ts'
 import { characterStore } from './characters.ts'
 import { sessionStore } from './sessions.ts'
@@ -182,6 +183,7 @@ export function registerIpc(): void {
   handle('applicants:get', () => applicantStore.all())
   handle('party:get', () => partyStore.all())
   handle('flight:get', () => flightStore.get())
+  handle('gather:get', () => gatherStore.get())
   handle('flight:moveTo', (to) => {
     if (isPoint(to)) moveFlight(to)
   })

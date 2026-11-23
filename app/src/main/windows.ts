@@ -721,7 +721,7 @@ export const buffsDragEnded = buffsOverlay.dragEnded
 
 const ccOverlay = measuredOverlay({
   route: 'cc',
-  enabled: () => settings.get('buffs').cc,
+  enabled: () => settings.get('buffs').cc || settings.get('buffs').gather,
   saved: () => settings.get('buffs').ccPosition,
   fallback: () => {
     const area = screen.getPrimaryDisplay().workArea
@@ -1215,7 +1215,7 @@ export function applyWindowSettings(): void {
   else if (alive(bubble)) createSkills()
   if (!settings.get('buffs').enabled) closeBuffs()
   else if (alive(bubble)) createBuffs()
-  if (!settings.get('buffs').cc) ccOverlay.close()
+  if (!settings.get('buffs').cc && !settings.get('buffs').gather) ccOverlay.close()
   else if (alive(bubble)) createCc()
   if (!enemiesOn()) enemiesOverlay.close()
   else if (alive(bubble)) createEnemies()

@@ -264,6 +264,8 @@ export interface Settings {
     cc: boolean
     ccPosition: Point | null
     ccDebuffs: boolean
+    /** On the same banner: a gathering that will fail or rank up, said as it starts. */
+    gather: boolean
   }
 
   /**
@@ -418,7 +420,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   enemies: { enabled: false, position: null, opacity: 0.75, collapsed: false, mapPins: true, sound: true, pvpOnly: true, soundId: 'enemy-spotted', volume: 0.7, customName: null },
   skills: { enabled: false, position: { x: 500, y: 413 }, rows: 6, opacity: 0.92 },
   dummy: { overlay: false, position: null, autoStart: true, goal: 'time', limitMs: 60000, damageGoal: 10000000, collapsed: false },
-  buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1145, y: 359 }, ccDebuffs: false },
+  buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1145, y: 359 }, ccDebuffs: false, gather: true },
   meter: { enabled: true, position: { x: 410, y: 206 }, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'beside', gear: 'beside', deaths: true, style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
   layoutVersion: 1,
@@ -711,6 +713,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         cc: bool(v.cc, d.buffs.cc),
         ccPosition: point(v.ccPosition),
         ccDebuffs: bool(v.ccDebuffs, d.buffs.ccDebuffs),
+        gather: bool(v.gather, d.buffs.gather),
       } as Settings[K]
     }
     case 'dummy': {

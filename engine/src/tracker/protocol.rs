@@ -47,6 +47,8 @@ pub const OP_DUNGEON_CLEAR: [u8; 2] = [0x01, 0x61];
 pub const OP_NIGHTMARE_START: [u8; 2] = [0x35, 0xE2];
 pub const OP_LOOT: [u8; 2] = [0x15, 0x57];
 pub const OP_GATHER: [u8; 2] = [0x33, 0x8D];
+/// A gathering starting: its outcome already in it (`gather_start`).
+pub const OP_GATHER_START: [u8; 2] = [0x31, 0x8D];
 pub const OP_REWARD_BOARD: [u8; 2] = [0x0A, 0x57];
 /// A box opened from your bags (a field boss's loot chest...): what it took and gave.
 pub const OP_BOX_OPENED: [u8; 2] = [0x47, 0x56];
@@ -666,6 +668,22 @@ pub fn loot(frame: &[u8]) -> Option<(u8, Vec<(u32, u32)>)> {
     }
     let items = (0..count).map(|i| Some((u32_at(b, 4 + 8 * i)?, u32_at(b, 8 + 8 * i)?))).collect::<Option<Vec<_>>>()?;
     Some((b[2], items))
+}
+
+/// A gathering starting (`31 8D 00 00 <node varint> <try u32> <outcome u8> ...`), about 7 s before its
+/// outcome (`33 8D`), which it already says: 1 gathered, 7 ranked up, 0 failed. Its doubling too: a
+/// record `01 58 15 01 00 01 5a 15 01 00` among those that follow is in the start of every gathering
+/// that doubled, and of no other. All 17 of the owner's gatherings of 2026-11-22 (3 failed, 4 ranked
+/// up, 6 doubled) had what their start said. (node, try, outcome, doubled).
+pub fn gather_start(frame: &[u8]) -> Option<(u32, u32, u8, bool)> {
+    const DOUBLED: [u8; 10] = [0x01, 0x58, 0x15, 0x01, 0x00, 0x01, 0x5a, 0x15, 0x01, 0x00];
+    let b = body(frame, OP_GATHER_START)?;
+    let (node, n) = varint(b, 2)?;
+    let at = 2 + n;
+    let tries = u32_at(b, at)?;
+    let outcome = *b.get(at + 4)?;
+    let doubled = b[at..].windows(DOUBLED.len()).any(|w| w == DOUBLED);
+    matches!(outcome, 0 | 1 | 7).then_some((node, tries, outcome, doubled))
 }
 
 /// A gathering's outcome (`33 8D <result u8> <u32> <item u32> <amount u32> <bonus u32> ...`), sent
@@ -1532,6 +1550,18 @@ mod tests {
         assert_eq!(gather(&frame(OP_GATHER, &hex("003ab8c7015d2b652401000000000000000000000000000000"))), Some((0, 610_610_013, 1, 0)));
         // Ranked up (and doubled).
         assert_eq!(gather(&frame(OP_GATHER, &hex("013aa3b7015e2b652401000000010000000000000000000000"))), Some((1, 610_610_014, 1, 1)));
+        // Their starts, which already said it: gathered, ranked up, failed.
+        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000a3b70102000000070000020000000305"))), Some((23459, 2, 7, false)));
+        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000b3b20101000000000000010000000605"))), Some((22835, 1, 0, false)));
+        // Gathered twice (x2), then once.
+        assert_eq!(
+            gather_start(&frame(OP_GATHER_START, &hex("0000b8c701010000000100000100000003030120030000012a0300006e000000a00000000000000000000000030120030000012a0300006e000000a00000000000000000000000030158150100015a15010028000000280000000000000000000000"))),
+            Some((25528, 1, 1, true))
+        );
+        assert_eq!(
+            gather_start(&frame(OP_GATHER_START, &hex("0000b8c701020000000100000100000006060164000000016900000000000000000000006000000038000000040120030000012a03000032000000640000000000000000000000050164000000016900000000000000000000009000000068000000040120030000012a03000032000000640000000000000000000000040120030000012a0300003200000064000000000000000000000004000120030000012a030000320000003c0000000000000000000000"))),
+            Some((25528, 2, 1, false))
+        );
         // A failed one: nothing gathered.
         assert_eq!(gather(&frame(OP_GATHER, &hex("023ab3b2015d2b652400000000000000000000000000000000"))), Some((2, 610_610_013, 0, 0)));
         // The owner's "x2": one Odyle and one more.

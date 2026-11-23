@@ -1089,6 +1089,12 @@ impl Tracker {
                     (self.emit)(json!({ "type": "nightmare", "ts": ts, "boss": boss, "level": level }));
                 }
             }
+            p::OP_GATHER_START => {
+                if let Some((node, tries, outcome, doubled)) = p::gather_start(f) {
+                    tracing::info!("gathering {node} (try {tries}): will be {outcome}, doubled {doubled}");
+                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "try": tries, "outcome": outcome, "doubled": doubled }));
+                }
+            }
             p::OP_GATHER => {
                 if let Some((result, item, amount, bonus)) = p::gather(f) {
                     tracing::info!("gathered: {amount} + {bonus} x {item} (result {result})");
