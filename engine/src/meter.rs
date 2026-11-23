@@ -288,21 +288,24 @@ impl Meter {
         let Some(me) = self.storage.local_player_id().and_then(|id| i32::try_from(id).ok()) else {
             return serde_json::json!([]);
         };
-        self.buffs_of(me)
+        self.buffs_of(me, &HashSet::new())
     }
 
     /// The debuffs on each member of your party but you (by their entity, those with any), as
-    /// `my_buffs` reads them: what monsters put on them, for the party frames.
-    pub fn party_debuffs(&self) -> serde_json::Value {
+    /// `my_buffs` reads them, for the party frames: what monsters put on them, and what players of
+    /// the other faction did (`enemies`: those in view, the tracker's) unless in your party (a
+    /// dungeon's party can have both factions; its members' are buffs).
+    pub fn party_debuffs(&self, enemies: &HashSet<u32>) -> serde_json::Value {
         let me = self.storage.local_player_id();
+        let party: Vec<i32> = self.storage.get_party_members().into_keys().filter_map(|name| self.storage.find_id_by_nickname(&name)).collect();
+        let hostile: HashSet<i32> = enemies.iter().filter_map(|&e| i32::try_from(e).ok()).filter(|e| !party.contains(e)).collect();
         let mut out = serde_json::Map::new();
-        for name in self.storage.get_party_members().into_keys() {
-            let Some(id) = self.storage.find_id_by_nickname(&name) else { continue };
+        for id in party {
             if me == Some(i64::from(id)) {
                 continue;
             }
             let list: Vec<serde_json::Value> =
-                self.buffs_of(id).as_array().into_iter().flatten().filter(|b| b["debuff"] == true).cloned().collect();
+                self.buffs_of(id, &hostile).as_array().into_iter().flatten().filter(|b| b["debuff"] == true).cloned().collect();
             if !list.is_empty() {
                 out.insert(id.to_string(), serde_json::json!(list));
             }
@@ -310,8 +313,9 @@ impl Meter {
         serde_json::Value::Object(out)
     }
 
-    /// What is on one entity now, as `my_buffs` says it (`mine`: cast by that entity).
-    fn buffs_of(&self, me: i32) -> serde_json::Value {
+    /// What is on one entity now, as `my_buffs` says it (`mine`: cast by that entity); what the
+    /// `hostile` players cast is a debuff too.
+    fn buffs_of(&self, me: i32, hostile: &HashSet<i32>) -> serde_json::Value {
         let now = a2tools_dps_meter_lib::clock::now_ms();
         let players = self.storage.get_nicknames();
         let mut by_id: std::collections::BTreeMap<(u32, i32), serde_json::Value> = std::collections::BTreeMap::new();
@@ -329,7 +333,7 @@ impl Meter {
                 serde_json::json!({
                     "id": i.abnormal, "stacks": 0, "endsAt": i.server_end_ms, "startedAt": i.start_ms,
                     "by": i.caster, "skill": i.skill, "mine": i.caster == me,
-                    "debuff": i.caster != me && i.caster != 0 && !players.contains_key(&i.caster),
+                    "debuff": i.caster != me && i.caster != 0 && (!players.contains_key(&i.caster) || hostile.contains(&i.caster)),
                     "passive": i.endless,
                 })
             });

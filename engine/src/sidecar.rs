@@ -51,7 +51,7 @@
 //!   {"type": "bossKilled", "npc": 2100003}   a field boss died in view (its monster code)
 //!   {"type": "party", "members": [{"name", "slot", "level", "combatPower", "server", "className", "entity"}]}   the party as it changes
 //!   {"type": "flight", "fp": {"current", "max", "ratePerS", "flying", "drainPerS", "atMs"} | null}   your flight power (hundredths), as it changes
-//!   {"type": "partyDebuffs", "debuffs": {"<entity>": [buff as in "buffs"]}}   what monsters put on your party (but you), as it changes
+//!   {"type": "partyDebuffs", "debuffs": {"<entity>": [buff as in "buffs"]}}   what monsters and the other faction put on your party (but you), as it changes
 //!   {"type": "partyVitals", "entity", "hp", "maxHp", "flight", "maxFlight"}   a member's vitals (`1B 92`, about once a second each)
 //!   {"type": "inventory", "name", "server", "items": [{"storage", "slot", "item", "amount", "enchant", "stones"}]}   a login's whole item list (1 bag, 2 account warehouse, 11 worn, 14 Arcana, 15 own warehouse)
 //!   {"type": "inventorySlots", "name", "server", "slots": [...]}   slots said anew as items move (amount 0: emptied)
@@ -458,7 +458,8 @@ impl Sidecar {
                 // Your party's debuffs, for its frames: only in a party.
                 if ticks % BUFFS_EVERY == 0 && !me.meter.storage.get_party_members().is_empty() || party_debuffs != json!({}) {
                     let meter = me.meter.clone();
-                    if let Ok(now) = tokio::task::spawn_blocking(move || meter.party_debuffs()).await
+                    let enemies = me.tracker.lock().enemy_ids();
+                    if let Ok(now) = tokio::task::spawn_blocking(move || meter.party_debuffs(&enemies)).await
                         && now != party_debuffs
                     {
                         emit(&event("partyDebuffs", json!({ "debuffs": now })));

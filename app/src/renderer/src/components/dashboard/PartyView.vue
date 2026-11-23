@@ -87,14 +87,14 @@ const AFFLICTED_BY = [
           <input type="color" class="h-7 w-10 cursor-pointer rounded border border-light bg-transparent" :value="cfg.afflictedColor" @change="set({ afflictedColor: ($event.target as HTMLInputElement).value })" />
         </span>
       </SettingRow>
-      <SettingRow label="Afflicted by" hint="Any debuff a monster put on them, or only those taking control (stuns, roots, fear, sleep...).">
+      <SettingRow label="Afflicted by" hint="Any debuff a monster or the other faction put on them, or only those taking control (stuns, roots, fear, sleep...).">
         <Segmented size="sm" :model-value="cfg.afflictedBy" :options="AFFLICTED_BY" @update:model-value="set({ afflictedBy: $event })" />
       </SettingRow>
     </Section>
 
     <Section title="Good to know">
       <p class="px-4 py-3 text-[13px] leading-relaxed text-dark">
-        {{ t('A member at 0 HP is down: grey, struck through, with a skull. One the game has said nothing of for 10 seconds is out of range, and fades; the game sends HP and debuffs only of members near you. It names the members as the party changes: a member who joined before the overlay started shows once the party changes again. A debuff is one a monster put on them; one from a player (PvP) does not count.') }}
+        {{ t('A member at 0 HP is down: grey, struck through, with a skull. One the game has said nothing of for 10 seconds is out of range, and fades; the game sends HP and debuffs only of members near you. It names the members as the party changes: a member who joined before the overlay started shows once the party changes again. A debuff is one a monster or a player of the other faction put on them; your party\'s members\' never count, whatever their faction.') }}
       </p>
     </Section>
   </div>

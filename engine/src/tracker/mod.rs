@@ -13,7 +13,7 @@ pub mod protocol;
 pub mod pvp;
 pub mod store;
 
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -693,6 +693,11 @@ impl Tracker {
         tracing::info!("pvp fight saved: {} vs {} ({}, {} hits, {} other players)", fight.me.name, fight.opponent.name, fight.outcome, hits.len(), fight.others.len());
         self.pvp_fights.add(fight);
         Some(id)
+    }
+
+    /// The players of the other faction in view, by entity.
+    pub fn enemy_ids(&self) -> HashSet<u32> {
+        self.enemies.keys().copied().collect()
     }
 
     /// Your faction, from the server of the character playing.
