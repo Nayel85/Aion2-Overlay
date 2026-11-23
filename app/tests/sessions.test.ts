@@ -229,3 +229,26 @@ test("the gathering stats: by character and resource, the skills' levels, the x2
   assert.ok(Math.abs(row!.expectedDoubled! - 0.9) < 1e-9)
   assert.deepEqual(row!.skills, [['Delicate Touch', 5], ['Lady Luck', 10], ['Plentiful Harvest', 3], ['Proficient Handling', 10]])
 })
+
+test("the rifts in Europe are on the server's clock: 23:00 Berlin, winter and summer", async () => {
+  const { nextStart, TIMERS } = await import('../src/shared/timers.ts')
+  const { riftOf } = await import('../src/shared/abyss.ts')
+  const rift = TIMERS.find((t) => t.id === 'rift')!.schedule
+  // 2026-11-23 22:00 in Berlin (CET): the next at 23:00 Berlin, 22:00 UTC.
+  assert.equal(new Date(nextStart(rift, Date.UTC(2026, 10, 23, 21, 0), 'europe')).toISOString(), '2026-11-23T22:00:00.000Z')
+  // In summer (CEST), 23:00 Berlin is 21:00 UTC.
+  assert.equal(new Date(nextStart(rift, Date.UTC(2026, 6, 1, 20, 30), 'europe')).toISOString(), '2026-07-01T21:00:00.000Z')
+  // NA East stays on UTC: 23:00 UTC.
+  assert.equal(new Date(nextStart(rift, Date.UTC(2026, 10, 23, 21, 0), 'na-east')).toISOString(), '2026-11-23T23:00:00.000Z')
+  // A gain at 22:30 UTC in Europe is in the rift opened at 22:00 UTC.
+  assert.equal(riftOf(Date.UTC(2026, 10, 23, 22, 30), 'europe'), Date.UTC(2026, 10, 23, 22, 0))
+})
+
+test('Watcher Kaira in Europe: 01:00, 04:00 ... Berlin, winter and summer', async () => {
+  const { nextStart, TIMERS } = await import('../src/shared/timers.ts')
+  const kaira = TIMERS.find((t) => t.id === 'kaira')!.schedule
+  // 2026-11-24 00:30 UTC (01:30 Berlin): next 04:00 Berlin, 03:00 UTC (the owner's game, 2026-11-22).
+  assert.equal(new Date(nextStart(kaira, Date.UTC(2026, 10, 24, 0, 30), 'europe')).toISOString(), '2026-11-24T03:00:00.000Z')
+  // In summer, 04:00 Berlin is 02:00 UTC.
+  assert.equal(new Date(nextStart(kaira, Date.UTC(2026, 6, 1, 0, 30), 'europe')).toISOString(), '2026-07-01T02:00:00.000Z')
+})

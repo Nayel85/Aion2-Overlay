@@ -998,7 +998,9 @@ pub fn item_slots(frame: &[u8]) -> Vec<DepotItem> {
 /// A box opened from your bags (`47 56`): 9 bytes, then each item `<index u8> <item u32> <flag
 /// u8> <amount u32>`, the index from 0; flag FF the box spent, else what it gave. The owner's
 /// 2026-11-22 Kashapa's Loot Chest, opened 5 s after the boss fell: the chest (FF) x1, Artwork Scrap:
-/// Field Boss I x6. Its items (id, spent, amount), or None unless at least one reads.
+/// Field Boss I x6. After the box itself, how many it gave and those, one after the other; an entry
+/// read otherwise (an index before each, an equipment's running longer) is looked for as before.
+/// Its items (id, spent, amount), or None unless at least one reads.
 pub fn box_opened(frame: &[u8]) -> Option<Vec<(u32, bool, u32)>> {
     let b = body(frame, OP_BOX_OPENED)?;
     // An item at `at`: its index, a known id, a sane amount.
@@ -1007,6 +1009,20 @@ pub fn box_opened(frame: &[u8]) -> Option<Vec<(u32, bool, u32)>> {
         (*b.get(at)? as usize == index && (100_000_000..1_000_000_000).contains(&item) && amount > 0 && amount <= 100_000_000).then(|| (item, b[at + 5] == 0xFF, amount))
     };
     let mut items = vec![item_at(9, 0)?];
+    // Then how many it gave, and each `<item u32> <flag u8> <amount u32>` (Dartan's chest of
+    // 2026-11-23: 2, its shoulders and 8 Artwork Scraps; Kashapa's: 1, read as an index before).
+    let count = *b.get(19)? as usize;
+    let gave: Option<Vec<(u32, bool, u32)>> = (0..count)
+        .map(|k| {
+            let at = 20 + 9 * k;
+            let (item, flag, amount) = (u32_at(b, at)?, *b.get(at + 4)?, u32_at(b, at + 5)?);
+            ((100_000_000..1_000_000_000).contains(&item) && amount > 0 && amount <= 100_000_000).then_some((item, flag == 0xFF, amount))
+        })
+        .collect();
+    if let Some(gave) = gave.filter(|g| (1..=20).contains(&g.len()) && 20 + 9 * g.len() <= b.len()) {
+        items.extend(gave);
+        return Some(items);
+    }
     let mut at = 19;
     // The next item where its index reads: an equipment's entry runs longer (its enchantment...).
     while let Some(q) = (at..b.len().saturating_sub(9)).find(|&q| item_at(q, items.len()).is_some()) {
@@ -2060,6 +2076,16 @@ mod tests {
         assert_eq!(card, PlayerCard { name: "Shiggly".into(), server: 1406, class: 14, level: 45, gear_score: 2630, combat_power: 123_186 });
         // Not a card: a level of 0.
         assert_eq!(player_card(&frame(OP_PLAYER_CARD, &hex("58b00300 0000 7e05 0e000000 00000000 460a0000 0753686967676c79 7e05 00000000 32e10100"))), None);
+    }
+
+    #[test]
+    fn a_chest_says_how_many_it_gave() {
+        // Dartan's: the chest, then 2: his shoulders (210430099) and 8 Artwork Scraps.
+        let dartan = frame(OP_BOX_OPENED, &hex("5d03c49b0800002c0300149fcf1fff010000000293e88a0c0001000000a27db3250008000000"));
+        assert_eq!(box_opened(&dartan), Some(vec![(533_700_372, true, 1), (210_430_099, false, 1), (632_520_098, false, 8)]));
+        // Kashapa's: the chest, then 1.
+        let kashapa = frame(OP_BOX_OPENED, &hex("5d03126e0600009a0200159fcf1fff0100000001a27db3250006000000"));
+        assert_eq!(box_opened(&kashapa), Some(vec![(533_700_373, true, 1), (632_520_098, false, 6)]));
     }
 
     #[test]

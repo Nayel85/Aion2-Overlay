@@ -189,7 +189,7 @@ const season = computed(() => {
 /** The Spacetime Rift going on, once it is a farm (shared/abyss.ts): its total, beside the hourly rate. */
 const rift = computed(() => {
   if (!cfg.value.rift) return null
-  const start = riftOf(now.value)
+  const start = riftOf(now.value, store.settings.timers.region)
   if (start === null) return null
   const mine = store.rifts.filter((r) => r.start === start)
   return mine.find((r) => r.name === store.status?.character) ?? mine[0] ?? null

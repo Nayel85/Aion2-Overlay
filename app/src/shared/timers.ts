@@ -5,6 +5,9 @@
  * - Black Cloud Merchant: restocks every hour on the hour. Confirmed: its stock record (`91 56`)
  *   carries the next restock time, 15:00:00 UTC when captured at 14:47.
  * - Spacetime Rift: every 3 hours, 02:00, 05:00 ... 23:00 UTC since at least 2026-10-15 (lokthar.com's
+ *   timer moved then; the player saw one at 17:00 Buenos Aires, 20:00 UTC, on 2026-10-27). In Europe
+ *   the same hours on the server's clock, Berlin's (aion2timer.org, aion2status.com): 23:00 for the
+ *   owner on 2026-11-24, where the UTC schedule said midnight. Earlier:
  *   timer moved then; the player saw one at 17:00 Buenos Aires, 20:00 UTC, on 2026-10-27). On
  *   2026-10-12 it was on the multiples of 3 (the in-game countdown at 14:45 UTC, aion2hub.com).
  * - Shugo Festival: every hour on the hour, its lobby open 3 minutes before (metabot.gg).
@@ -53,7 +56,7 @@ export type TimerId =
 export type Schedule =
   /** Every `every` minutes, at `offset` minutes past each period (periods counted from 00:00 UTC);
    *  `offsets`: a region's own, where it differs. */
-  | { kind: 'every'; every: number; offset: number; offsets?: Partial<Record<Region, number>> }
+  | { kind: 'every'; every: number; offset: number; offsets?: Partial<Record<Region, number>>; local?: Region[] }
   /** On these weekdays (0 = Sunday), at these times (minutes after midnight), in the server
    *  region's time zone, or in `zone` for every region. `bosses`: the field bosses it is (their
    *  ids in the map's list), whose respawn the list gives, when it has, over the schedule. */
@@ -233,7 +236,7 @@ export const TIMERS: TimerDef[] = [
     id: 'rift',
     name: 'Spacetime Rift',
     detail: 'Rifts to the other side open (level 45+)',
-    schedule: { kind: 'every', every: 180, offset: 120 },
+    schedule: { kind: 'every', every: 180, offset: 120, local: ['europe'] },
     lead: 5,
     confirmed: true,
     defaultOn: false,
@@ -252,7 +255,8 @@ export const TIMERS: TimerDef[] = [
     name: 'Watcher Kaira',
     detail: 'Abyss boss in Lower Reshanta, at a random spot',
     // Europe: 2 hours after the others (the player's game, 2026-11-22: 03:00 UTC, not 01:00).
-    schedule: { kind: 'every', every: 180, offset: 60, offsets: { europe: 180 } },
+    // Europe: 01:00, 04:00 ... on the server's clock (Berlin), as the rift: kisk.app, aion2timer.org.
+    schedule: { kind: 'every', every: 180, offset: 60, local: ['europe'] },
     lead: 10,
     confirmed: false,
     defaultOn: false,
@@ -363,7 +367,12 @@ export function nextStart(s: Schedule, from: number, region: Region = 'south-ame
   if (s.kind === 'every') {
     const period = s.every * MINUTE
     const offset = (s.offsets?.[region] ?? s.offset) * MINUTE
-    return Math.ceil((from - offset) / period) * period + offset
+    if (!s.local?.includes(region)) return Math.ceil((from - offset) / period) * period + offset
+    // On the region's server time (its clock changes included): the next start on its wall clock.
+    const zone = zoneOf(region)
+    const wall = Math.ceil((from + zoneOffset(zone, from) - offset) / period) * period + offset
+    const start = wall - zoneOffset(zone, wall - zoneOffset(zone, wall))
+    return start >= from ? start : start + period
   }
   const told = (s.bosses ?? []).map((id) => bosses[id]).filter((b) => b && !b.up && b.at >= from).map((b) => b!.at)
   if (told.length) return Math.min(...told)
