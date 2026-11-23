@@ -43,6 +43,6 @@ export const releasePage = (version: string | null = null): string =>
 
 /** One of a release's files, as the build names them: the installer and the portable zip. */
 export const releaseFile = (version: string, kind: 'installer' | 'portable' | 'portable.sha256'): string => {
-  const name = kind === 'installer' ? `Lokthar-Setup-${version}.exe` : kind === 'portable' ? `Lokthar-${version}-portable.zip` : `Lokthar-${version}-portable.zip.sha256`
+  const name = kind === 'installer' ? `Nayel-Overlay-Setup-${version}.exe` : kind === 'portable' ? `Nayel-Overlay-${version}-portable.zip` : `Nayel-Overlay-${version}-portable.zip.sha256`
   return `https://github.com/${RELEASE_REPO.owner}/${RELEASE_REPO.repo}/releases/download/v${version}/${name}`
 }

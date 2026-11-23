@@ -81,13 +81,13 @@ let andInstall = false
 /** The portable copy's update, unpacked and ready: the folder holding the new exe, and its name. */
 let portableReady: { dir: string; exe: string } | null = null
 /** The exe's names, newest first (electron-builder.yml's executableName). */
-const EXE_NAMES = ['lokthar-overlay.exe', 'Aion2DropTracker.exe']
+const EXE_NAMES = ['nayel-overlay.exe', 'lokthar-overlay.exe', 'Aion2DropTracker.exe']
 
 const run = promisify(execFile)
 
 /** The release's zip, downloaded with progress, checked against its `.sha256`, unpacked. */
 async function downloadPortable(version: string): Promise<{ dir: string; exe: string }> {
-  const name = `Lokthar-${version}-portable.zip`
+  const name = `Nayel-Overlay-${version}-portable.zip`
   const dir = join(app.getPath('temp'), `lokthar-update-${version}`)
   await rm(dir, { recursive: true, force: true })
   await mkdir(dir, { recursive: true })

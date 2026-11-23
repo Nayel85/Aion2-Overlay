@@ -3,7 +3,7 @@
  * engine (engine/, Rust) running as a child process.
  */
 import { app, session } from 'electron'
-import { DISPLAY_NAME } from '../shared/app.ts'
+import { DISPLAY_NAME, LOKTHAR_FOLDER } from '../shared/app.ts'
 import { broadcast } from './broadcast.ts'
 import { startApplicants } from './applicants.ts'
 import { startCharacters } from './characters.ts'
@@ -18,7 +18,7 @@ import { startIdleWatch } from './idle.ts'
 import { startLokthar } from './lokthar.ts'
 import { startGuildEvents } from './guildEvents.ts'
 import { join } from 'node:path'
-import { moveDataFolder, OLD_NAMES } from './migrate.ts'
+import { copyDataFolder, moveDataFolder, OLD_NAMES } from './migrate.ts'
 import { startHotkeys, stopHotkeys } from './hotkeys.ts'
 import { startDummy } from './dummy.ts'
 import { startUpdater } from './updater.ts'
@@ -32,15 +32,17 @@ import { tr } from './i18n.ts'
 import { createTray, setTrayTooltip } from './tray.ts'
 import { applyWindowSettings, closeMerchant, markQuitting, merchantBounds, merchantOpen, refreshHud, setForeground, showMerchant, showPanel, startOnTopWatch } from './windows.ts'
 
-// The name is also the data folder's (%APPDATA%\<name>): the old one is moved across once.
+// The name is also the data folder's (%APPDATA%\<name>): Lokthar's is copied in on the first start,
+// older names' are moved across once.
 app.setName(DISPLAY_NAME)
+const copied = copyDataFolder(join(app.getPath('appData'), LOKTHAR_FOLDER), app.getPath('userData'))
 /** A moment after a merchant tab opens before anything is taken as you having left the shop (a position the same tab's traffic brings). */
 const SHOP_SETTLE_MS = 1_500
 const migrated = OLD_NAMES.map((name) => moveDataFolder(join(app.getPath('appData'), name), app.getPath('userData')))
   .filter((m) => m !== 'nothing to move')
   .join('; ')
-// Kept from the first release: Windows ties the shortcut to this id.
-app.setAppUserModelId('com.xcrov.aion2-drop-tracker')
+// Nayel85's build: its own id, so it installs beside Lokthar rather than over it (Windows ties the shortcut to it).
+app.setAppUserModelId('com.nayel85.aion2-overlay')
 
 // One instance: a second launch opens the first one's panel instead.
 if (!app.requestSingleInstanceLock()) {
@@ -50,6 +52,7 @@ if (!app.requestSingleInstanceLock()) {
 
   void app.whenReady().then(() => {
     if (migrated) log(`data folder: ${migrated}`)
+    if (copied !== 'nothing to copy') log(`data folder: ${copied}`)
     applyLayoutUpdates()
     blockNetwork()
     startHealthWatch()

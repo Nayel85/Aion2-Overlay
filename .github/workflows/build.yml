@@ -60,23 +60,23 @@ jobs:
         id: sum
         working-directory: app/dist
         run: |
-          $exe = Get-ChildItem Lokthar-Setup-*.exe | Select-Object -First 1
+          $exe = Get-ChildItem Nayel-Overlay-Setup-*.exe | Select-Object -First 1
           $hash = (Get-FileHash $exe.FullName -Algorithm SHA256).Hash.ToLower()
           "$hash  $($exe.Name)" | Out-File -Encoding ascii "$($exe.Name).sha256"
           "exe=$($exe.Name)" >> $env:GITHUB_OUTPUT
           "hash=$hash" >> $env:GITHUB_OUTPUT
-          $zip = Get-ChildItem Lokthar-*-portable.zip | Select-Object -First 1
+          $zip = Get-ChildItem Nayel-Overlay-*-portable.zip | Select-Object -First 1
           $zipHash = (Get-FileHash $zip.FullName -Algorithm SHA256).Hash.ToLower()
           "$zipHash  $($zip.Name)" | Out-File -Encoding ascii "$($zip.Name).sha256"
           "zip=$($zip.Name)" >> $env:GITHUB_OUTPUT
           "ziphash=$zipHash" >> $env:GITHUB_OUTPUT
           # The installer again, zipped: for browsers and chats that block a bare .exe.
-          $version = $exe.BaseName -replace '^Lokthar-Setup-', ''
-          $inst = "Lokthar-$version-installer.zip"
+          $version = $exe.BaseName -replace '^Nayel-Overlay-Setup-', ''
+          $inst = "Nayel-Overlay-$version-installer.zip"
           Compress-Archive -Path $exe.FullName -DestinationPath $inst
-          # And under a name without the version, so .../releases/latest/download/Lokthar-installer.zip
+          # And under a name without the version, so .../releases/latest/download/Nayel-Overlay-installer.zip
           # is always the newest (the Lokthar site links to it).
-          Copy-Item $inst Lokthar-installer.zip
+          Copy-Item $inst Nayel-Overlay-installer.zip
           $instHash = (Get-FileHash $inst -Algorithm SHA256).Hash.ToLower()
           "$instHash  $inst" | Out-File -Encoding ascii "$inst.sha256"
           "inst=$inst" >> $env:GITHUB_OUTPUT
@@ -94,7 +94,7 @@ jobs:
             app/dist/${{ steps.sum.outputs.zip }}.sha256
             app/dist/${{ steps.sum.outputs.inst }}
             app/dist/${{ steps.sum.outputs.inst }}.sha256
-            app/dist/Lokthar-installer.zip
+            app/dist/Nayel-Overlay-installer.zip
 
       - name: Release
         if: startsWith(github.ref, 'refs/tags/')
@@ -110,15 +110,15 @@ jobs:
           INSTHASH: ${{ steps.sum.outputs.insthash }}
         run: |
           # latest.yml (and the blockmap) are what the app's updater reads: Settings → Updates.
-          gh release create "$GITHUB_REF_NAME" "$EXE" "$EXE.sha256" "$EXE.blockmap" latest.yml "$ZIP" "$ZIP.sha256" "$INST" "$INST.sha256" Lokthar-installer.zip \
-            --title "Lokthar overlay $GITHUB_REF_NAME" \
-            --notes "Lokthar overlay from commit $GITHUB_SHA. No shared timers, no machine id. It goes online only for the optional Lokthar field boss sync (off by default) and when you check for updates (Settings → Updates).
+          gh release create "$GITHUB_REF_NAME" "$EXE" "$EXE.sha256" "$EXE.blockmap" latest.yml "$ZIP" "$ZIP.sha256" "$INST" "$INST.sha256" Nayel-Overlay-installer.zip \
+            --title "Nayel Overlay $GITHUB_REF_NAME" \
+            --notes "Nayel Overlay (Lokthar fork) from commit $GITHUB_SHA. No shared timers, no machine id. It goes online only for the optional Lokthar field boss sync (off by default) and when you check for updates (Settings → Updates).
 
           Needs [Npcap](https://npcap.com) installed first. The installer is not code-signed: Windows may say \"Windows protected your PC\", choose More info → Run anyway.
 
           **Installer in a zip:** \`$INST\` holds the same \`$EXE\`, for browsers or chats that block downloading an .exe.
 
-          **Portable:** \`$ZIP\` is the same app without an installer: unpack it anywhere and run \`lokthar-overlay.exe\`. To update it, unpack a newer zip over the folder (your settings and data are kept in %APPDATA%\\Lokthar).
+          **Portable:** \`$ZIP\` is the same app without an installer: unpack it anywhere and run \`nayel-overlay.exe\`. To update it, unpack a newer zip over the folder (your settings and data are kept in %APPDATA%\\Nayel Overlay).
 
           SHA-256 of \`$EXE\`: \`$HASH\`
           SHA-256 of \`$ZIP\`: \`$ZIPHASH\`

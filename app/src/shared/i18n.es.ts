@@ -821,7 +821,7 @@ export const ES: Record<string, string> = {
   'unknown error': 'error desconocido',
   'Unknown target': 'Target desconocido',
   'unlocks': 'desbloquea',
-  'Unpack it over this folder, or anywhere, and run lokthar-overlay.exe.': 'Descomprimilo sobre esta carpeta, o donde quieras, y ejecutá lokthar-overlay.exe.',
+  'Unpack it over this folder, or anywhere, and run nayel-overlay.exe.': 'Descomprimilo sobre esta carpeta, o donde quieras, y ejecutá nayel-overlay.exe.',
   'The app is now lokthar-overlay.exe (was Aion2DropTracker.exe). A taskbar pin to the old one needs pinning again; a portable copy of 0.3.6 or older updates by hand this once.': 'La app ahora es lokthar-overlay.exe (antes Aion2DropTracker.exe). Si la tenías anclada a la barra de tareas, anclala de nuevo; una copia portable de 0.3.6 o anterior se actualiza a mano esta vez.',
   'Unpin from the HUD': 'Despinear del HUD',
   'Unpin from the HUD and the map overlay': 'Despinear del HUD y del overlay del mapa',

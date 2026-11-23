@@ -61,8 +61,8 @@ const manual = computed(() => {
   const version = u?.latest ?? null
   const files = version
     ? [
-        { kind: 'installer' as const, label: t('Installer ({file})', { file: `Lokthar-Setup-${version}.exe` }), about: 'Installs over this copy, like the automatic update.' },
-        { kind: 'portable' as const, label: t('Portable zip ({file})', { file: `Lokthar-${version}-portable.zip` }), about: 'Unpack it over this folder, or anywhere, and run lokthar-overlay.exe.' },
+        { kind: 'installer' as const, label: t('Installer ({file})', { file: `Nayel-Overlay-Setup-${version}.exe` }), about: 'Installs over this copy, like the automatic update.' },
+        { kind: 'portable' as const, label: t('Portable zip ({file})', { file: `Nayel-Overlay-${version}-portable.zip` }), about: 'Unpack it over this folder, or anywhere, and run nayel-overlay.exe.' },
       ].map((f) => ({ ...f, url: releaseFile(version, f.kind) }))
     : []
   if (u?.portable) files.reverse()

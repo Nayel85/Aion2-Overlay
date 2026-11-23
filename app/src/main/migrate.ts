@@ -8,7 +8,7 @@
  * app.setName(), before the single-instance lock or anything else uses the folder. (No Electron
  * import here, so the tests can run it.)
  */
-import { existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, renameSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
 /** The data folders of older names, newest first: an install that skipped versions has the oldest. */
@@ -52,6 +52,32 @@ export function moveDataFolder(from: string, to: string): string {
   }
   if (!left.length) rmSync(from, { recursive: true, force: true })
   return `moved ${moved.join(', ') || 'nothing'} from ${from} to ${to}` + (left.length ? `; left there: ${left.join(', ')}` : '; removed the old folder')
+}
+
+/** Chromium's own files and folders in a data folder (caches and state it rebuilds): not copied. */
+const CHROMIUM = new Set(['Cache', 'Code Cache', 'GPUCache', 'GPUPersistentCache', 'GrShaderCache', 'ShaderCache', 'DawnCache', 'DawnGraphiteCache', 'DawnWebGPUCache', 'Shared Dictionary', 'Network', 'Session Storage', 'blob_storage', 'Crashpad', 'DIPS', 'DIPS-wal', 'Local State', 'Preferences', 'lockfile', 'SingletonLock', 'declarative_performance_observer.db', 'declarative_performance_observer.db-journal'])
+
+/**
+ * Lokthar's data folder (`from`) copied into this app's (`to`) on its first start: everything but
+ * Chromium's caches (the collection, settings, sessions, rifts, characters, fights, captures, logs,
+ * the windows' storage), nothing overwritten, and `from` left as it was. Only while `to` has no
+ * settings yet: once this app has run, never again. Returns what was done, for the log.
+ */
+export function copyDataFolder(from: string, to: string): string {
+  if (from === to || !existsSync(from) || existsSync(join(to, 'settings.json'))) return 'nothing to copy'
+  mkdirSync(to, { recursive: true })
+  const copied: string[] = []
+  const failed: string[] = []
+  for (const name of readdirSync(from)) {
+    if (CHROMIUM.has(name) || existsSync(join(to, name))) continue
+    try {
+      cpSync(join(from, name), join(to, name), { recursive: true, errorOnExist: false, force: false })
+      copied.push(name)
+    } catch {
+      failed.push(name)
+    }
+  }
+  return `copied ${copied.join(', ') || 'nothing'} from ${from} to ${to}` + (failed.length ? `; could not copy: ${failed.join(', ')}` : '')
 }
 
 /** The app's own files in its data folder; everything else there is Chromium's. */
