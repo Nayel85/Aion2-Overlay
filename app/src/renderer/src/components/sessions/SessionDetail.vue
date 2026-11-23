@@ -14,7 +14,7 @@ import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
-import { countedRuns, CURRENCY_LABELS, gatheredRows, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
+import { countedRuns, CURRENCY_LABELS, gatheredByResource, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
 import { RECIPES } from '@shared/recipes.ts'
 
 const props = withDefaults(defineProps<{ session: PlaySession; live?: boolean; header?: boolean }>(), { live: false, header: true })
@@ -300,13 +300,30 @@ function toggle(r: DungeonRun): void {
         <svg viewBox="0 0 16 16" class="size-3.5 text-green" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.leaf" /></svg>{{ t('Gathering') }}
       </div>
       <GatherStats :stats="session.gathering" class="mb-2" />
-      <div class="flex flex-wrap gap-x-4 gap-y-1">
-        <span v-for="[name, grade, n, icon] in gatheredRows(session)" :key="name" class="flex items-center gap-1.5">
-          <img v-if="icon" :src="icon" alt="" class="size-4 rounded-sm" draggable="false" />
-          <span :class="gradeClass(grade)">{{ name.replace(' (Bound)', '') }}</span>
-          <span class="tabular-nums">×{{ n }}</span>
-        </span>
-      </div>
+      <!-- By resource: its gatherings and failures, then what came by grade (plain, Fine, Pure, Radiant). -->
+      <table class="w-full tabular-nums">
+        <tbody>
+          <tr v-for="r in gatheredByResource(session)" :key="r.item" class="border-t border-dark first:border-t-0">
+            <td class="py-1 pr-3">
+              <span class="flex items-center gap-1.5">
+                <img v-if="r.icon" :src="r.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+                <span class="font-semibold">{{ r.name }}</span>
+              </span>
+            </td>
+            <td class="py-1 pr-3 text-dark" :title="t('Gatherings')">
+              <template v-if="r.counts">{{ r.counts.done }}<span v-if="r.counts.failed" class="ml-1.5 text-red" :title="t('Failed')">✕{{ r.counts.failed }}</span></template>
+            </td>
+            <td class="py-1">
+              <span class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                <span v-for="g in r.grades" :key="g.item" :class="['flex items-center gap-1', gradeClass(g.grade)]" :title="g.name">
+                  <img v-if="g.icon && g.item !== r.item" :src="g.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+                  {{ g.item === r.item ? '' : g.name.replace(r.name, '').trim() || g.name }} ×{{ g.n }}
+                </span>
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
 
     <p v-if="!session.runs?.length && !session.duties?.length && !session.supplies?.length && !session.crafts?.length && !session.gathering?.done && !ranked(session.sources).length && !ranked(session.kinaSources).length" class="text-xs text-darker">{{ t('Nothing more in this session.') }}</p>

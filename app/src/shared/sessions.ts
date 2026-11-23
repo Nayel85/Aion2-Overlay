@@ -15,6 +15,7 @@ import { LOOT } from './loot.ts'
 import { ITEMS } from './items.ts'
 import { QUESTS } from './quests.ts'
 import { SUPPLIES } from './supplies.ts'
+import { GATHERABLES } from './gatherables.ts'
 import { ZONES } from './zones.ts'
 
 export { ABYSS_WORLDS }
@@ -404,6 +405,47 @@ export const gatheredRows = (s: PlaySession): [string, number, number, string | 
   Object.entries(s.gathered ?? {})
     .map(([id, n]): [string, number, number, string | null] => [ITEMS[id]?.[0] ?? `#${id}`, ITEMS[id]?.[1] ?? 11, n, itemIcon(ITEMS[id]?.[2])])
     .sort((a, b) => b[1] - a[1] || b[2] - a[2] || a[0].localeCompare(b[0]))
+/** Each grade's item -> its resource's plain one (questlog's gathering tables: Fine Odyle -> Odyle). */
+const PLAIN_OF = new Map<number, number>()
+for (const [, , groups] of Object.values(GATHERABLES)) {
+  const plain = groups['1']?.[0]
+  if (plain) for (const d of Object.values(groups)) if (!PLAIN_OF.has(d[0])) PLAIN_OF.set(d[0], plain)
+}
+/** A gathered item's resource: its plain item (itself when not a gathering's). */
+export const resourceOf = (item: number | string): number => PLAIN_OF.get(Number(item)) ?? Number(item)
+
+/** A session's gathering by resource, the most gathered first: each grade it gave, and its own counts. */
+export interface GatheredResource {
+  item: number
+  name: string
+  icon: string | null
+  /** What came, by item, the plain grade first: name, grade, icon, how many. */
+  grades: { item: number; name: string; grade: number; icon: string | null; n: number }[]
+  /** Its gatherings, failures, doubles and rank ups (kept since 2026-11-23; null before). */
+  counts: GatherCounts | null
+}
+export function gatheredByResource(s: PlaySession): GatheredResource[] {
+  const by = new Map<number, GatheredResource>()
+  const add = (plain: number): GatheredResource => {
+    let r = by.get(plain)
+    if (!r) {
+      const info = ITEMS[plain]
+      r = { item: plain, name: (info?.[0] ?? `#${plain}`).replace(' (Bound)', ''), icon: itemIcon(info?.[2]), grades: [], counts: s.gathering?.byResource?.[plain] ?? null }
+      by.set(plain, r)
+    }
+    return r
+  }
+  for (const [id, n] of Object.entries(s.gathered ?? {})) {
+    const info = ITEMS[id]
+    add(resourceOf(id)).grades.push({ item: Number(id), name: (info?.[0] ?? `#${id}`).replace(' (Bound)', ''), grade: info?.[1] ?? 11, icon: itemIcon(info?.[2]), n })
+  }
+  // Those only failed so far.
+  for (const plain of Object.keys(s.gathering?.byResource ?? {})) add(Number(plain))
+  const total = (r: GatheredResource): number => r.grades.reduce((a, g) => a + g.n, 0)
+  for (const r of by.values()) r.grades.sort((a, b) => a.grade - b.grade)
+  return [...by.values()].sort((a, b) => total(b) - total(a) || a.name.localeCompare(b.name))
+}
+
 /** How many resources a session gathered by grade (11 common, 21 green, 31 blue, 41 gold), the best first. */
 export function gatheredByGrade(s: PlaySession): [number, number][] {
   const by = new Map<number, number>()
@@ -416,12 +458,16 @@ export function gatheredByGrade(s: PlaySession): [number, number][] {
  * resource came a grade better than the node's: a white Odyle node gave a green Fine Odyle), and the
  * ones that worked by the grade of what they gave.
  */
-export interface GatherStats {
+export interface GatherStats extends GatherCounts {
+  byGrade: Record<string, number>
+  /** The same counts by resource (its plain item). */
+  byResource?: Record<string, GatherCounts>
+}
+export interface GatherCounts {
   done: number
   failed: number
   doubles: number
   rankUps: number
-  byGrade: Record<string, number>
 }
 /** The grades a gathering gives, as the stats list them: common, green, blue, gold. */
 export const GATHER_GRADES = [11, 21, 31, 41]
@@ -431,13 +477,23 @@ export const GATHER_FAILED = 2
 /** A gathering into a session: its stats, and what it gave (`bonus` more when it doubled). */
 export function noteGathering(s: PlaySession, item: number, amount: number, result: number, bonus = 0): void {
   const g = (s.gathering ??= { done: 0, failed: 0, doubles: 0, rankUps: 0, byGrade: {} })
+  // Its resource's own counts too (a failed one says its resource's plain item).
+  const r = ((g.byResource ??= {})[resourceOf(item)] ??= { done: 0, failed: 0, doubles: 0, rankUps: 0 })
   g.done++
+  r.done++
   if (result === GATHER_FAILED || amount <= 0) {
     g.failed++
+    r.failed++
     return
   }
-  if (result === GATHER_RANK_UP) g.rankUps++
-  if (bonus > 0) g.doubles++
+  if (result === GATHER_RANK_UP) {
+    g.rankUps++
+    r.rankUps++
+  }
+  if (bonus > 0) {
+    g.doubles++
+    r.doubles++
+  }
   const grade = String(ITEMS[item]?.[1] ?? 11)
   g.byGrade[grade] = (g.byGrade[grade] ?? 0) + 1
   s.gathered = { ...s.gathered, [item]: (s.gathered?.[item] ?? 0) + amount + bonus }

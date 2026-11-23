@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { apSource, dungeonOf, mergeRuns, runGroups, gatheredByGrade, gatheredRows, noteGathering, pveInstance, kinaSource, goldKind, lootCounts, notableLoot, runRewards, questReward, runCounts, runIsNoise, runName, sourceLabel, type PlaySession, type RecentGain } from '../src/shared/sessions.ts'
+import { gatheredByResource, apSource, dungeonOf, mergeRuns, runGroups, gatheredByGrade, gatheredRows, noteGathering, pveInstance, kinaSource, goldKind, lootCounts, notableLoot, runRewards, questReward, runCounts, runIsNoise, runName, sourceLabel, type PlaySession, type RecentGain } from '../src/shared/sessions.ts'
 import { expectedOf, filterRuns, itemStats, lootRuns, luck, summaries, unitsOf } from '../src/shared/lootStats.ts'
 
 // 2026-11-22 03:05 UTC is in the 03:00 rift's window (opened at 02:00 UTC); 04:30 UTC is not.
@@ -190,8 +190,15 @@ test("a session's gathering stats: done, failed, doubled, ranked up, and the suc
   // The owner's 2026-11-22 gatherings: an Odyle doubled, a rank up to Fine Odyle, Odyle; Odyle three times, a failure, a Pure Odyle doubled.
   const s: PlaySession = { name: 'Nayoul', server: 1305, start: 0, last: 0, ap: 0, sources: {}, kina: 0 }
   for (const [item, amount, result, bonus] of [[610610013, 1, 0, 1], [610610014, 1, 1, 0], [610610013, 1, 0, 0], [610610013, 1, 0, 0], [610610013, 1, 0, 0], [610610013, 1, 0, 0], [610610013, 0, 2, 0], [610610015, 1, 0, 1]] as const) noteGathering(s, item, amount, result, bonus)
-  assert.deepEqual(s.gathering, { done: 8, failed: 1, doubles: 2, rankUps: 1, byGrade: { '11': 5, '21': 1, '31': 1 } })
+  // All of them Odyle: its own counts are the same.
+  assert.deepEqual(s.gathering, { done: 8, failed: 1, doubles: 2, rankUps: 1, byGrade: { '11': 5, '21': 1, '31': 1 }, byResource: { '610610013': { done: 8, failed: 1, doubles: 2, rankUps: 1 } } })
   assert.deepEqual(s.gathered, { '610610013': 6, '610610014': 1, '610610015': 2 })
+  // By resource: Odyle, its grades the plain first.
+  const [odyle, ...others] = gatheredByResource(s)
+  assert.equal(others.length, 0)
+  assert.equal(odyle!.name, 'Odyle')
+  assert.deepEqual(odyle!.grades.map((g) => [g.name, g.n]), [['Odyle', 6], ['Fine Odyle', 1], ['Pure Odyle', 2]])
+  assert.deepEqual(odyle!.counts, { done: 8, failed: 1, doubles: 2, rankUps: 1 })
 })
 
 test('runs of one dungeon and mode group together, their gains and deaths summed', () => {
