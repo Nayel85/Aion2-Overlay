@@ -691,9 +691,7 @@ pub fn gather_start(frame: &[u8]) -> Option<(u32, u32, u8, u8, bool, u32)> {
     // The grade rolled: 1 the plain item, 2 ranked up (Fine), 3, 4 (questlog's drop groups).
     let grade = *b.get(at + 7)?;
     let doubled = b[at..].windows(DOUBLED.len()).any(|w| w == DOUBLED);
-    // How long it takes, from its steps' count: 2.8 s and 0.93 s a step (the owner's 17 gatherings of
-    // 2026-11-22, 0.55 s off on average; the steps are of kinds not told apart yet).
-    let ms = 2800 + 930 * u32::from(*b.get(at + 11)?);
+    let ms = gather_ms(&b[at..], grade);
     // Outcomes other than 0, 1 and 7 come too (a Fine Odyle on 2026-11-23 had one): told as they are.
     (grade >= 1 && grade <= 9).then_some((node, tries, outcome, grade, doubled, ms))
 }
@@ -731,6 +729,36 @@ pub fn craft_start(frame: &[u8]) -> Option<(u32, u8, u32)> {
         ms += 7500;
     }
     Some((recipe, outcome, ms))
+}
+
+/// How long a gathering takes, from the steps its start lists (`<count u8>`, then each `<kind u8>
+/// <actions u8> (<action u32> <u8> <u32>)×actions` and its values): each pushes the success bar
+/// (action 800, or 300) or the failure one (100), or doubles it (71000). Kinds 1, 2, 3 and 5 take
+/// 1.56 s, 0, 4 and 6 1.1 s (a craft's steps too have two lengths), a step without an action 1.05 s,
+/// a rank up 1.35 s more, and 0.69 s besides: the owner's 17 gatherings of 2026-11-22 to 0.23 s on
+/// average. `b` from the gathering's try counter on.
+fn gather_ms(b: &[u8], grade: u8) -> u32 {
+    const ACTIONS: [u32; 4] = [100, 300, 800, 71_000];
+    let steps = b.get(11).copied().unwrap_or(0) as u32;
+    let (mut long, mut short, mut found) = (0, 0, 0);
+    let mut p = 12;
+    while p + 6 <= b.len() {
+        let actions = b[p + 1] as usize;
+        let action = u32::from_le_bytes([b[p + 2], b[p + 3], b[p + 4], b[p + 5]]);
+        if (1..=4).contains(&actions) && ACTIONS.contains(&action) {
+            if matches!(b[p], 0 | 4 | 6) {
+                short += 1;
+            } else {
+                long += 1;
+            }
+            found += 1;
+            p += 2 + 9 * actions;
+        } else {
+            p += 1;
+        }
+    }
+    let other = steps.saturating_sub(found);
+    690 + 1557 * long + 1102 * short + 1050 * other + if grade > 1 { 1345 } else { 0 }
 }
 
 /// A gathering's outcome (`33 8D <result u8> <u32> <item u32> <amount u32> <bonus u32> ...`), sent
@@ -1607,16 +1635,16 @@ mod tests {
             Some((111_086_001, 13, 16_700))
         );
         // Their starts, which already said it: gathered, ranked up, failed.
-        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000a3b70102000000070000020000000305"))), Some((23459, 2, 7, 2, false, 5590)));
-        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000b3b20101000000000000010000000605"))), Some((22835, 1, 0, 1, false, 8380)));
+        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000a3b70102000000070000020000000305"))), Some((23459, 2, 7, 2, false, 5185)));
+        assert_eq!(gather_start(&frame(OP_GATHER_START, &hex("0000b3b20101000000000000010000000605"))), Some((22835, 1, 0, 1, false, 6990)));
         // Gathered twice (x2), then once.
         assert_eq!(
             gather_start(&frame(OP_GATHER_START, &hex("0000b8c701010000000100000100000003030120030000012a0300006e000000a00000000000000000000000030120030000012a0300006e000000a00000000000000000000000030158150100015a15010028000000280000000000000000000000"))),
-            Some((25528, 1, 1, 1, true, 5590))
+            Some((25528, 1, 1, 1, true, 5361))
         );
         assert_eq!(
             gather_start(&frame(OP_GATHER_START, &hex("0000b8c701020000000100000100000006060164000000016900000000000000000000006000000038000000040120030000012a03000032000000640000000000000000000000050164000000016900000000000000000000009000000068000000040120030000012a03000032000000640000000000000000000000040120030000012a0300003200000064000000000000000000000004000120030000012a030000320000003c0000000000000000000000"))),
-            Some((25528, 2, 1, 1, false, 8380))
+            Some((25528, 2, 1, 1, false, 7757))
         );
         // A failed one: nothing gathered.
         assert_eq!(gather(&frame(OP_GATHER, &hex("023ab3b2015d2b652400000000000000000000000000000000"))), Some((2, 610_610_013, 0, 0)));
