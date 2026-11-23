@@ -61,24 +61,22 @@ onBeforeUnmount(() => {
 <template>
   <div class="inline-block">
     <div ref="root" class="inline-block">
+      <!-- Compact: the wings, the seconds (of flight left, or until full with a refill arrow), a thin gauge under. -->
       <div
         v-if="shown"
-        :class="['m-1.5 w-[190px] rounded-lg bg-black/60 px-2.5 py-1.5', preview && 'cursor-move']"
+        :class="['m-1 w-[92px] rounded-md bg-black/60 px-1.5 pb-1 pt-0.5', preview && 'cursor-move']"
         :style="{ opacity: cfg.opacity }"
+        :title="preview && !store.flight ? t('drag to move') : undefined"
         @pointerdown="preview && drag.onPointerDown($event)"
       >
-        <div class="flex items-baseline gap-1.5 [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
-          <!-- A pair of wings. -->
-          <svg viewBox="0 0 24 16" class="h-3.5 w-5 shrink-0 self-center" :style="{ color: colour }" fill="currentColor"><path d="M11 13C8 13 3 11 1 3c2 1.5 4 2 6 2-1.5-.8-2.5-2-3-3.5C7 3 9 5 11 9Zm2 0c3 0 8-2 10-10-2 1.5-4 2-6 2 1.5-.8 2.5-2 3-3.5C17 3 15 5 13 9Z" /></svg>
-          <span v-if="left !== null" class="text-[18px] font-bold tabular-nums leading-none" :style="{ color: colour }">{{ left.toFixed(1) }}s</span>
-          <span v-else-if="refill !== null" class="whitespace-nowrap text-[13px] font-semibold tabular-nums leading-none text-dark">{{ t('Full in {n}s', { n: Math.ceil(refill) }) }}</span>
-          <span class="flex-1" />
-          <span class="whitespace-nowrap text-[10px] tabular-nums text-dark">{{ Math.round(value / 100) }}<template v-if="fp?.max"> / {{ Math.round(fp.max / 100) }}</template></span>
+        <div class="flex items-center justify-center gap-1 [text-shadow:0_1px_2px_rgba(0,0,0,0.95)]">
+          <svg viewBox="0 0 24 16" class="h-3 w-4 shrink-0" :style="{ color: colour }" fill="currentColor"><path d="M11 13C8 13 3 11 1 3c2 1.5 4 2 6 2-1.5-.8-2.5-2-3-3.5C7 3 9 5 11 9Zm2 0c3 0 8-2 10-10-2 1.5-4 2-6 2 1.5-.8 2.5-2 3-3.5C17 3 15 5 13 9Z" /></svg>
+          <span v-if="left !== null" class="text-[15px] font-bold tabular-nums leading-tight" :style="{ color: colour }">{{ left.toFixed(1) }}s</span>
+          <span v-else-if="refill !== null" class="whitespace-nowrap text-[12px] font-semibold tabular-nums leading-tight text-dark" :title="t('Full in {n}s', { n: Math.ceil(refill) })">↻ {{ Math.ceil(refill) }}s</span>
         </div>
-        <div v-if="share !== null" class="mt-1 h-1.5 overflow-hidden rounded bg-white/10">
+        <div v-if="share !== null" class="h-1 overflow-hidden rounded-full bg-white/10">
           <div class="h-full" :style="{ width: `${share * 100}%`, background: colour }" />
         </div>
-        <div v-if="preview && !store.flight" class="mt-1 text-center text-[10px] text-darker">{{ t('drag to move') }}</div>
       </div>
     </div>
   </div>
