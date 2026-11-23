@@ -59,6 +59,8 @@ function meanClear(g: DungeonRun[]): string | null {
 /** Kina a run made: its own, else its cubes'. */
 const kinaOf = (r: DungeonRun): number => Math.max(r.kina, r.loot?.['930100031'] ?? 0)
 
+/** The gathering by resource (shared/sessions.ts). */
+const resources = computed(() => gatheredByResource(props.session))
 /** The crafts by recipe, the most made first: its name, icon, how many, how many procced, and the proc's item. */
 const craftRows = computed(() => {
   const by = new Map<number, { made: number; procs: number; fails: number }>()
@@ -300,30 +302,25 @@ function toggle(r: DungeonRun): void {
         <svg viewBox="0 0 16 16" class="size-3.5 text-green" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.leaf" /></svg>{{ t('Gathering') }}
       </div>
       <GatherStats :stats="session.gathering" class="mb-2" />
-      <!-- By resource: its gatherings and failures, then what came by grade (plain, Fine, Pure, Radiant). -->
-      <table class="w-full tabular-nums">
-        <tbody>
-          <tr v-for="r in gatheredByResource(session)" :key="r.item" class="border-t border-dark first:border-t-0">
-            <td class="py-1 pr-3">
-              <span class="flex items-center gap-1.5">
-                <img v-if="r.icon" :src="r.icon" alt="" class="size-4 rounded-sm" draggable="false" />
-                <span class="font-semibold">{{ r.name }}</span>
-              </span>
-            </td>
-            <td class="py-1 pr-3 text-dark" :title="t('Gatherings')">
-              <template v-if="r.counts">{{ r.counts.done }}<span v-if="r.counts.failed" class="ml-1.5 text-red" :title="t('Failed')">✕{{ r.counts.failed }}</span></template>
-            </td>
-            <td class="py-1">
-              <span class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                <span v-for="g in r.grades" :key="g.item" :class="['flex items-center gap-1', gradeClass(g.grade)]" :title="g.name">
-                  <img v-if="g.icon && g.item !== r.item" :src="g.icon" alt="" class="size-4 rounded-sm" draggable="false" />
-                  {{ g.item === r.item ? '' : g.name.replace(r.name, '').trim() || g.name }} ×{{ g.n }}
-                </span>
-              </span>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+      <!-- By resource: what came by grade (plain, Fine, Pure, Radiant), then its gatherings and failures
+           when counted. A compact grid: the names in a column, the rest right after. -->
+      <div :class="['grid items-center gap-x-4 gap-y-1 tabular-nums', resources.some((r) => r.counts) ? 'grid-cols-[auto_auto_auto]' : 'grid-cols-[auto_auto]', 'justify-start']">
+        <template v-for="r in resources" :key="r.item">
+          <span class="flex items-center gap-1.5">
+            <img v-if="r.icon" :src="r.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+            <span class="font-semibold">{{ r.name }}</span>
+          </span>
+          <span class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+            <span v-for="g in r.grades" :key="g.item" :class="['flex items-center gap-1', gradeClass(g.grade)]" :title="g.name">
+              <img v-if="g.icon && g.item !== r.item" :src="g.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+              {{ g.item === r.item ? '' : g.name.replace(r.name, '').trim() || g.name }} ×{{ g.n }}
+            </span>
+          </span>
+          <span v-if="resources.some((x) => x.counts)" class="text-darker" :title="t('Gatherings')">
+            <template v-if="r.counts">{{ t('{n} gatherings', { n: r.counts.done }) }}<span v-if="r.counts.failed" class="ml-1.5 text-red">✕{{ r.counts.failed }}</span></template>
+          </span>
+        </template>
+      </div>
     </div>
 
     <p v-if="!session.runs?.length && !session.duties?.length && !session.supplies?.length && !session.crafts?.length && !session.gathering?.done && !ranked(session.sources).length && !ranked(session.kinaSources).length" class="text-xs text-darker">{{ t('Nothing more in this session.') }}</p>
