@@ -420,7 +420,8 @@ function measuredOverlay(o: {
   saved: () => Point | null
   /** Where it goes before it is placed, given the size its page measured (0 × 0 before). */
   fallback: (size: { width: number; height: number }) => Point
-  save: (p: Point) => void
+  /** Its place kept; null: forgotten, back to where it goes first. */
+  save: (p: Point | null) => void
   /** Its place is its top centre, not its top left: it grows both ways around it (the Unified HUD). */
   centred?: boolean
   /** Taken clicks as you play (the meter, the Unified HUD): its focus does not mean it is being placed. */
@@ -505,6 +506,11 @@ function measuredOverlay(o: {
     },
     move(to: Point): void {
       if (alive(win)) win.setBounds(clampToDisplay({ x: to.x, y: to.y, ...measured(win, size) }))
+    },
+    /** Back to where it goes first (its setting's Reset). */
+    resetPosition(): void {
+      o.save(null)
+      refresh()
     },
     dragEnded(): void {
       if (!alive(win)) return
@@ -768,6 +774,7 @@ export const overlayOpen = (id: OverlayId): boolean => OVERLAYS[id].win() !== nu
 export const overlayBounds = (id: OverlayId): Rectangle | null => OVERLAYS[id].bounds()
 export const overlayMove = (id: OverlayId, to: Point): void => OVERLAYS[id].move(to)
 export const overlayDragEnded = (id: OverlayId): void => OVERLAYS[id].dragEnded()
+export const overlayResetPosition = (id: OverlayId): void => OVERLAYS[id].resetPosition()
 export const overlayResize = (id: OverlayId, size: { width: number; height: number }): void => OVERLAYS[id].resize(size)
 /** The measured overlays that are open. */
 const measuredWins = (): BrowserWindow[] => MEASURED.map((m) => m.win()).filter((w): w is BrowserWindow => w !== null)

@@ -1099,7 +1099,6 @@ export const FR: Record<string, string> = {
   'Where you are shows once you enter a zone.': 'Ta position s\'affiche dès que tu entres dans une zone.',
   'Where you are, the Hidden Cubes around you, and where the souls of the pets you are after drop.': 'Où tu es, les Hidden Cubes autour de toi, et où tombent les âmes des familiers que tu cherches.',
   'where you are: unknown': 'où tu es : inconnu',
-  'While this window is open the HUD can be dragged anywhere; it goes back to click-through when you close it.': 'Tant que cette fenêtre est ouverte, le HUD peut être glissé n\'importe où ; il redevient transparent aux clics quand tu la fermes.',
   'within ~100 m': 'à ~100 m',
   'Without Npcap, Home says so with a link to download it, and the overlay starts by itself once it is installed.': 'Sans Npcap, l\'Accueil le signale avec un lien pour le télécharger, et l\'overlay démarre tout seul une fois installé.',
   'Writes every game message to a text file (time, message type, bytes) to share for debugging or to find data for new features. Add marks as you do things in game to find their messages by time. Alt+Shift+R starts and stops it from the game. It grows fast in fights: keep it short.': 'Écrit chaque message du jeu dans un fichier texte (heure, type de message, octets) à partager pour le débogage ou pour trouver des données pour de nouvelles fonctions. Ajoute des repères quand tu fais des choses en jeu pour retrouver leurs messages par l\'heure. Alt+Maj+R le démarre et l\'arrête depuis le jeu. Il grossit vite en combat : fais court.',
@@ -1428,7 +1427,6 @@ export const FR: Record<string, string> = {
   'Local time': 'Heure locale',
   'Hide the widgets it replaces': 'Cacher les widgets qu\'elle remplace',
   'Mute every sound': 'Couper tous les sons',
-  'Drag the bar in game to move it. This puts it back at the top centre of the screen.': 'Glisse la barre en jeu pour la déplacer. Ceci la remet en haut au centre de l\'écran.',
   'Unified HUD': 'HUD unifié',
   'Always on the bar': 'Toujours sur la barre',
   'Shows up when it matters': 'S\'affiche quand ça compte',
@@ -1617,4 +1615,5 @@ export const FR: Record<string, string> = {
   'Logo': 'Logo',
   'The app\'s logo on the bar: only a mark, the cog opens the app.': 'Le logo de l\'app sur la barre : juste une marque, l\'engrenage ouvre l\'app.',
   'Abyss Points icon': 'Icône des Abyss Points',
+  'Dragged into place while this window is open. This puts it back where it goes first.': 'Se place en le glissant tant que cette fenêtre est ouverte. Ceci le remet à sa place de départ.',
 }

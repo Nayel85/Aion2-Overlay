@@ -5,6 +5,7 @@
 // Gatherables page, or all). Any zone can be picked; it opens on yours. Its switches are kept as they
 // were left (settings `mapPage`). The map overlay's settings are below it; markers on the game's own
 // map are Map V2's.
+import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import { computed, ref, watch } from 'vue'
 import Button from '@/components/Button.vue'
@@ -179,9 +180,7 @@ const setMini = (patch: Partial<typeof mini.value>): void => void store.set('min
           <Button size="sm" :disabled="mini.size === SETTINGS_DEFAULTS.minimap.size && mini.height === null" @click="setMini({ size: SETTINGS_DEFAULTS.minimap.size, height: null })">{{ t('Reset') }}</Button>
         </div>
       </SettingRow>
-      <SettingRow v-if="mini.enabled" label="Opacity">
-        <Slider :model-value="mini.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="setMini({ opacity: $event })" />
-      </SettingRow>
+      <OverlayWindowSettings v-if="mini.enabled" overlay="minimap" setting="minimap" />
       <SettingRow v-if="mini.enabled" label="Gatherables" hint="Ores, gemstones, logs and plants around you, as their icons: the ones pinned on the Gatherables page, or all of them while none is.">
         <Toggle :model-value="mini.gatherables" @update:model-value="setMini({ gatherables: $event })" />
       </SettingRow>

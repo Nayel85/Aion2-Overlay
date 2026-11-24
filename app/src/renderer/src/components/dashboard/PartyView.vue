@@ -2,6 +2,7 @@
 // Party frames: the widget over the game with a bar per member of your party (pages/PartyPage.vue),
 // and its settings: what each bar shows, its size and colours, and when it turns to the afflicted
 // colour.
+import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed } from 'vue'
@@ -45,10 +46,7 @@ const AFFLICTED_BY = [
         <SettingRow label="Title bar" hint="A header with a button to minimize it and one to hide it until the next party.">
           <Toggle :model-value="cfg.header" @update:model-value="set({ header: $event })" />
         </SettingRow>
-        <SettingRow label="Opacity">
-          <Slider :model-value="cfg.opacity" :min="0.2" :max="1" :step="0.05" :format="percent" @update:model-value="set({ opacity: $event })" />
-        </SettingRow>
-        <IdleHideRow :value="cfg" @set="set" />
+        <OverlayWindowSettings overlay="party" setting="party" :opacity-min="0.2" idle />
       </template>
     </Section>
 

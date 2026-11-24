@@ -2,6 +2,7 @@
 // Buffs: what is on your character now, as the buffs overlay shows it, in a list with names; and
 // the overlay's settings. From A2Tools DPS Meter's buff timeline (the game's buff records). A
 // fight's buffs, each player's and the target's, are in the Details window's Buffs tab.
+import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
@@ -101,6 +102,7 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('buffs', 
       <SettingRow v-if="cfg.cc" label="Monsters' other debuffs" hint="Under the banner: the other debuffs monsters put on you (poisons, slows...), with their time left.">
         <Toggle :model-value="cfg.ccDebuffs" @update:model-value="set({ ccDebuffs: $event })" />
       </SettingRow>
+      <OverlayWindowSettings v-if="cfg.cc" overlay="cc" setting="buffs" :opacity-min="null" />
 
     </Section>
 
@@ -124,10 +126,7 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('buffs', 
         <SettingRow label="Icons per row">
           <Slider :model-value="cfg.perRow" :min="4" :max="20" :step="1" @update:model-value="set({ perRow: $event })" />
         </SettingRow>
-        <SettingRow label="Opacity">
-          <Slider :model-value="cfg.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="set({ opacity: $event })" />
-        </SettingRow>
-        <IdleHideRow :value="cfg" @set="set" />
+        <OverlayWindowSettings overlay="buffs" setting="buffs" idle />
       </template>
     </Section>
   </div>

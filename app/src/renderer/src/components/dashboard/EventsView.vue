@@ -3,6 +3,8 @@
 // off, and how early). The bar above: the server region, the chime and its volume, the bubble's
 // shake, and the countdown bar over the game. A click on the bubble during an alert opens this page
 // with that event highlighted.
+import Section from '@/components/ui/Section.vue'
+import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import Button from '@/components/Button.vue'
@@ -108,10 +110,6 @@ onBeforeUnmount(() => flashTimer && clearTimeout(flashTimer))
         :options="[{ id: 'bar', label: 'Bar' }, { id: 'list', label: 'List' }] as const"
         @update:model-value="store.set('timerBar', { ...bar, layout: $event })"
       />
-      <label v-if="bar.enabled" class="flex items-center gap-2">
-        <span class="text-xs font-medium uppercase tracking-wide text-darker">{{ t('Opacity') }}</span>
-        <Slider :model-value="bar.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="store.set('timerBar', { ...bar, opacity: $event })" />
-      </label>
     </div>
 
     <div ref="list" class="overflow-hidden rounded-xl border border-card">
@@ -174,5 +172,9 @@ onBeforeUnmount(() => flashTimer && clearTimeout(flashTimer))
       </table>
     </div>
     <p class="mt-3 text-xs text-darkest">{{ t("Weekly events (the siege) are at your region's own time; the region follows your server when you enter the world.") }}</p>
+
+    <Section v-if="bar.enabled" title="Countdown bar" class="mt-6">
+      <OverlayWindowSettings overlay="timerbar" setting="timerBar" />
+    </Section>
   </div>
 </template>

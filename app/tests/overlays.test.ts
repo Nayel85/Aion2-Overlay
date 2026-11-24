@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 import { OVERLAY_IDS } from '../src/shared/ipc.ts'
 
@@ -32,4 +32,14 @@ test("every overlay's page measures itself with the common tool, and has its sam
     // bar (the time, the ping, its buttons): it is its own sample.
     if (id !== 'packets' && id !== 'unified') assert.match(src, /placing|store\.panelVisible|store\.hudEditing/, `${page}: no sample while placed`)
   }
+})
+
+test("every overlay's settings page has the common window rows (opacity, size, idle, its place)", () => {
+  const files = ['components/dashboard', 'components/panel', 'components'].flatMap((dir) => {
+    const path = new URL(`../src/renderer/src/${dir}/`, import.meta.url)
+    return readdirSync(path).filter((f) => f.endsWith('.vue')).map((f) => readFileSync(new URL(f, path), 'utf8'))
+  })
+  const all = files.join('\n')
+  // The packet log's pill is the only overlay with no settings of its own.
+  for (const id of OVERLAY_IDS.filter((i) => i !== 'packets')) assert.match(all, new RegExp(`<OverlayWindowSettings[^>]*overlay="${id}"`), `${id}: no window rows`)
 })

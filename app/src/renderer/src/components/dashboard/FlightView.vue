@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // The flight timer: the ring over the game with your seconds of flight left (pages/FlightPage.vue),
 // and its settings.
+import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
@@ -24,9 +25,7 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('flight',
       <SettingRow label="Flight timer" hint="Up while flying or refilling, gone at full. Clicks go through it; while the dashboard is open, drag it into place.">
         <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />
       </SettingRow>
-      <SettingRow v-if="cfg.enabled" label="Opacity">
-        <Slider :model-value="cfg.opacity" :min="0.2" :max="1" :step="0.05" :format="percent" @update:model-value="set({ opacity: $event })" />
-      </SettingRow>
+      <OverlayWindowSettings v-if="cfg.enabled" overlay="flight" setting="flight" :opacity-min="0.2" />
     </Section>
 
     <Section title="Good to know">

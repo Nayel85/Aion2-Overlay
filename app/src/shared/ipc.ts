@@ -76,6 +76,8 @@ export interface InvokeChannels {
   'overlay:moveTo': { args: [id: OverlayId, to: Point]; result: void }
   'overlay:dragEnd': { args: [id: OverlayId]; result: void }
   'overlay:resize': { args: [id: OverlayId, size: { width: number; height: number }]; result: void }
+  /** Its place forgotten: back to where it goes first. */
+  'overlay:resetPosition': { args: [id: OverlayId]; result: void }
   /** Your flight power (the flight timer). */
   'flight:get': { args: []; result: FlightPower | null }
   /** A gathering's outcome, known as it starts (the CC banner). */
@@ -284,7 +286,7 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'meter:get', 'meter:reset', 
   
   'skills:get', 
-  'buffs:get', 'applicants:get', 'gather:get', 'flight:get', 'party:get', 'overlay:moveTo', 'overlay:dragEnd', 'overlay:resize', 'applicants:dismiss', 'applicants:clear', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
+  'buffs:get', 'applicants:get', 'gather:get', 'flight:get', 'party:get', 'overlay:moveTo', 'overlay:dragEnd', 'overlay:resize', 'overlay:resetPosition', 'applicants:dismiss', 'applicants:clear', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
   'details:open', 'details:get', 'details:view', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:bests', 'history:delete',
 ]
 

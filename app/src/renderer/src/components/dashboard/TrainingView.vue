@@ -5,6 +5,8 @@
 // Each run is saved with its skills; open one for its skills' DPS, or its Details for the whole
 // breakdown (hits, rotation, buffs...), or tick two to compare them (DPS, damage, crits, hits, and
 // skill by skill). Runs are kept in groups: "New group" starts the next.
+import Section from '@/components/ui/Section.vue'
+import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { dateTime } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -135,10 +137,6 @@ onBeforeUnmount(() => off?.())
           <label class="flex items-center gap-2" :title="t('A small panel over the game while you train: the clock, your DPS, start and stop')">
             <Toggle :model-value="cfg.overlay" @update:model-value="set({ overlay: $event })" />
             {{ t('Training overlay over the game') }}
-          </label>
-          <label v-if="cfg.overlay" class="flex items-center gap-2" :title="t('Hidden after this long with no fight (no hit, heal or damage taken, yours or your party\'s); back with the next one.')">
-            <Toggle :model-value="cfg.hideIdle" @update:model-value="set({ hideIdle: $event })" />
-            {{ t('Hide while idle') }}
           </label>
           <span class="text-xs text-darker">
             {{ inGroup ? plural(inGroup, 'Group {g} has {n} run.', 'Group {g} has {n} runs.', { g: state.group }) : t('{name} starts a new group.', { name: placeholder }) }}
@@ -291,5 +289,9 @@ onBeforeUnmount(() => off?.())
         </table>
       </div>
     </section>
+
+    <Section v-if="cfg.overlay" title="Training overlay over the game" class="mt-6">
+      <OverlayWindowSettings overlay="training" setting="dummy" :opacity-min="null" idle />
+    </Section>
   </div>
 </template>

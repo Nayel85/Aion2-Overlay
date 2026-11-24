@@ -2,6 +2,7 @@
 // Join requests: the widget over the game that lists everyone who asks to join your party
 // (pages/ApplicantsPage.vue), and its settings. The game shows only the first request until it is
 // answered; this shows all of them, with class, combat power and gear score.
+import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
@@ -37,9 +38,7 @@ const choices = computed(() => [...new Set([...HIDE, cfg.value.hideAfter])].sort
         <SettingRow label="Hides after" hint="With no new request for this long, the list goes away. A new request brings it back, and starts the time over.">
           <SelectBox size="sm" :model-value="cfg.hideAfter" :options="choices" @update:model-value="set({ hideAfter: $event })" />
         </SettingRow>
-        <SettingRow label="Opacity">
-          <Slider :model-value="cfg.opacity" :min="0" :max="1" :step="0.05" :format="percent" @update:model-value="set({ opacity: $event })" />
-        </SettingRow>
+        <OverlayWindowSettings overlay="applicants" setting="applicants" :opacity-min="0" />
       </template>
     </Section>
 

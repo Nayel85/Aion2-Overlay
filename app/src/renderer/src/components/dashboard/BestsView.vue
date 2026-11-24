@@ -2,6 +2,7 @@
 // Personal bests: each character's best on each dungeon boss (the engine keeps them apart from the
 // fights), by character, then dungeon and boss. A row opens the fight of your best DPS on it; each
 // figure opens its own fight (the party's best, the fastest kill). The fight opens in this page.
+import { onHistory } from '@/lib/history.ts'
 import { compact } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import DetailsPage from '@/pages/DetailsPage.vue'
@@ -43,12 +44,7 @@ const rowFight = (e: Encounter): Best | null => e.myDps ?? e.fastest ?? e.partyD
 async function load(): Promise<void> {
   bests.value = await api.invoke('history:bests')
 }
-let off: (() => void) | null = null
-onMounted(() => {
-  void load()
-  off = api.on('history:changed', () => void load())
-})
-onBeforeUnmount(() => off?.())
+onHistory(load)
 </script>
 
 <template>

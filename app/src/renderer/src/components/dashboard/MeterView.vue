@@ -3,6 +3,7 @@
 // Which targets and players it counts and what it ranks by (shared with the overlay), each player's
 // numbers (a click opens their details), the meter and My skills overlays' settings, and recordings
 // of the game's traffic.
+import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { classIconUrl, dateTime } from '@/lib/format.ts'
 import { compact, duration, percent } from '@shared/format.ts'
 import IdleHideRow from '@/components/IdleHideRow.vue'
@@ -189,9 +190,7 @@ onBeforeUnmount(() => offs.forEach((off) => off()))
       <SettingRow v-if="cfg.enabled && cfg.height === null" label="Players listed" hint="With a height of its own, the meter lists every player it fits.">
         <Slider :model-value="cfg.rows" :min="1" :max="24" :step="1" @update:model-value="setMeter({ rows: $event })" />
       </SettingRow>
-      <SettingRow v-if="cfg.enabled" label="Opacity">
-        <Slider :model-value="cfg.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="setMeter({ opacity: $event })" />
-      </SettingRow>
+      <OverlayWindowSettings v-if="cfg.enabled" overlay="meter" setting="meter" />
       <MeterSizeSettings v-if="cfg.enabled" />
     </Section>
 
@@ -222,10 +221,7 @@ onBeforeUnmount(() => offs.forEach((off) => off()))
       <SettingRow v-if="skills.enabled" label="Skills listed">
         <Slider :model-value="skills.rows" :min="1" :max="20" :step="1" @update:model-value="setSkills({ rows: $event })" />
       </SettingRow>
-      <SettingRow v-if="skills.enabled" label="Opacity">
-        <Slider :model-value="skills.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="setSkills({ opacity: $event })" />
-      </SettingRow>
-      <IdleHideRow v-if="skills.enabled" :value="skills" @set="setSkills" />
+      <OverlayWindowSettings v-if="skills.enabled" overlay="skills" setting="skills" idle />
     </Section>
   </div>
 </template>

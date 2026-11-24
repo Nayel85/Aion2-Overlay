@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Home: who is playing and whether the game is being read, every overlay with its switch (the
 // overlays' own settings are on their pages), and a card per page with what it has now.
+import HomeCard from '@/components/HomeCard.vue'
 import { compact } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
@@ -231,58 +232,32 @@ const ICONS: Record<string, string> = {
     <section class="mb-6">
       <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-darker">{{ t('In game') }}</h2>
       <div class="grid grid-cols-2 gap-3">
-        <button v-for="card in [
+        <HomeCard v-for="card in [
           { page: 'meter', title: t('Combat Meter'), line: meter.target ? `${meter.target.name}: ${myDps ? t('you {dps}/s', { dps: compact(myDps.dps) }) : plural(meter.rows.length, '{n} player', '{n} players')}` : t('No fight right now.') },
           { page: 'map', title: t('Map'), line: zone ? `${zone}${store.cubes.length ? ` · ${plural(store.cubes.length, '{n} Hidden Cube nearby', '{n} Hidden Cubes nearby')}` : ''}` : t('Where you are shows once you enter a zone.') },
           { page: 'pets', title: 'Pets', line: `${plural(store.sessionSouls, '{n} soul this session', '{n} souls this session')} · ${plural(nearbyCount, '{n} pet around you', '{n} pets around you')}` },
           { page: 'buffs', title: 'Buffs', line: store.settings.buffs.enabled ? t('{n} on you now', { n: store.buffs.length }) : t('The buffs overlay is off.') },
           { page: 'pvp', title: 'PvP', line: t('{n} kills seen · yours {kills}, deaths {deaths}', { n: pvp.total, kills: pvp.kills, deaths: pvp.deaths }) },
           { page: 'bosses', title: 'Field Bosses', line: Object.keys(store.fieldBosses).length ? t('{n} alive in Verteron', { n: bossesUp }) : t('Open the map in game to read them.') },
-        ]" :key="card.page" type="button" class="group flex items-center gap-4 rounded-xl border border-card bg-card px-4 py-3.5 text-left transition hover:border-light hover:bg-dark" @click="emit('go', card.page)">
-          <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-dark text-accent group-hover:bg-light">
-            <svg viewBox="0 0 16 16" class="size-5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS[card.page]" /></svg>
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="block text-sm font-semibold">{{ card.title }}</span>
-            <span class="block truncate text-xs text-darker">{{ card.line }}</span>
-          </span>
-          <svg viewBox="0 0 16 16" class="size-4 shrink-0 text-darkest" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m6 4 4 4-4 4" /></svg>
-        </button>
-        <button type="button" class="group flex items-center gap-4 rounded-xl border border-card bg-card px-4 py-3.5 text-left transition hover:border-light hover:bg-dark" @click="emit('go', 'events')">
-          <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-dark text-accent group-hover:bg-light">
-            <svg viewBox="0 0 16 16" class="size-5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS.events" /></svg>
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="block text-sm font-semibold">{{ t('Event Alerts') }}</span>
-            <span v-if="nextEvent" class="block truncate text-xs text-darker">{{ t('{name} in', { name: nextEvent.def.name }) }} <span class="text-yellow"><Countdown :at="nextEvent.at" :now="now" /></span></span>
-            <span v-else class="block truncate text-xs text-darker">{{ t('No alerts on: pick the events to hear about.') }}</span>
-          </span>
-          <svg viewBox="0 0 16 16" class="size-4 shrink-0 text-darkest" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m6 4 4 4-4 4" /></svg>
-        </button>
+        ]" :key="card.page" :icon="ICONS[card.page]" :title="card.title" :line="card.line" @click="emit('go', card.page)" />
+        <HomeCard :icon="ICONS.events" :title="t('Event Alerts')" @click="emit('go', 'events')">
+          <template v-if="nextEvent">{{ t('{name} in', { name: nextEvent.def.name }) }} <span class="text-yellow"><Countdown :at="nextEvent.at" :now="now" /></span></template>
+          <template v-else>{{ t('No alerts on: pick the events to hear about.') }}</template>
+        </HomeCard>
       </div>
     </section>
 
     <section>
       <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-darker">{{ t('Records') }}</h2>
       <div class="grid grid-cols-2 gap-3">
-        <button v-for="card in [
+        <HomeCard v-for="card in [
           { page: 'history', title: t('Combat history'), line: fights === null ? '…' : plural(fights, '{n} boss fight saved', '{n} boss fights saved') },
           { page: 'bests', title: t('Personal bests'), line: bests === null ? '…' : bests ? plural(bests, '{n} boss with a record', '{n} bosses with a record') : t('No personal best yet.') },
           { page: 'session', title: t('Session'), line: store.kinaRate !== null ? t('{kina} Kina per hour · {n} souls', { kina: formatKina(store.kinaRate), n: store.sessionSouls }) : t('{n} souls so far', { n: store.sessionSouls }) },
           { page: 'sessions', title: t('Past sessions'), line: plural(store.sessions.history.length, '{n} session', '{n} sessions') },
           { page: 'stats', title: t('Stats'), line: `${plural(crafts, '{n} craft', '{n} crafts')} · ${plural(gatherings, '{n} gathering', '{n} gatherings')}` },
           { page: 'inventory', title: t('Inventory'), line: stocked ? plural(stocked, '{n} character', '{n} characters') : t('No inventory yet.') },
-        ]" :key="card.page" type="button" class="group flex items-center gap-4 rounded-xl border border-card bg-card px-4 py-3.5 text-left transition hover:border-light hover:bg-dark" @click="emit('go', card.page)">
-          <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-dark text-accent group-hover:bg-light">
-            <span v-if="card.page === 'history'" class="text-xl leading-none" aria-hidden="true">💪</span>
-            <svg v-else viewBox="0 0 16 16" class="size-5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS[card.page]" /></svg>
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="block text-sm font-semibold">{{ card.title }}</span>
-            <span class="block truncate text-xs text-darker">{{ card.line }}</span>
-          </span>
-          <svg viewBox="0 0 16 16" class="size-4 shrink-0 text-darkest" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m6 4 4 4-4 4" /></svg>
-        </button>
+        ]" :key="card.page" :icon="ICONS[card.page]" :emoji="card.page === 'history' ? '💪' : undefined" :title="card.title" :line="card.line" @click="emit('go', card.page)" />
       </div>
     </section>
   </div>

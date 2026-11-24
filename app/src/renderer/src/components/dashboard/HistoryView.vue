@@ -2,6 +2,7 @@
 // History: the boss fights the engine saved (every 30 s while one goes on, and before the meter is
 // cleared), newest first. A click opens one in the Details window: each player's damage, skills and
 // buffs. The last 500 are kept.
+import { onHistory } from '@/lib/history.ts'
 import { classIconUrl, dateTime } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
 import { useStored } from '@/lib/now.ts'
@@ -75,12 +76,7 @@ function remove(id: string): void {
   fights.value = (fights.value ?? []).filter((f) => f.id !== id)
 }
 
-let off: (() => void) | null = null
-onMounted(() => {
-  void load()
-  off = api.on('history:changed', () => void load())
-})
-onBeforeUnmount(() => off?.())
+onHistory(load)
 </script>
 
 <template>

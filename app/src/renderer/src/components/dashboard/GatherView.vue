@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Gathering outcome: the pill over the game that says, as a gathering starts, how it will end
 // (pages/GatherPage.vue), and its settings.
+import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
@@ -44,12 +45,7 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
         <SettingRow label="Item icon" hint="What it will give. Each spot's kind is learnt from its first gathering (Odyle is known already).">
           <Toggle :model-value="cfg.icon" @update:model-value="set({ icon: $event })" />
         </SettingRow>
-        <SettingRow label="Size">
-          <Slider :model-value="cfg.scale" :min="0.6" :max="2" :step="0.1" :format="times" @update:model-value="set({ scale: $event })" />
-        </SettingRow>
-        <SettingRow label="Opacity">
-          <Slider :model-value="cfg.opacity" :min="0.2" :max="1" :step="0.05" :format="percent" @update:model-value="set({ opacity: $event })" />
-        </SettingRow>
+        <OverlayWindowSettings overlay="gather" setting="gather" :opacity-min="0.2" :scale="[0.6, 2]" />
       </template>
     </Section>
 

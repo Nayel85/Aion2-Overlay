@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // The pets HUD's settings (pages/HudPage.vue), on the Pets page: what it shows, its look, and the
 // pets left out (maxed) and the Black Cloud Merchant's window.
+import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import Button from '@/components/Button.vue'
 import SettingRow from '@/components/SettingRow.vue'
@@ -69,15 +70,7 @@ const HUD_MODES = [
           @update:model-value="store.setHud({ idleHideSeconds: $event })"
         />
       </SettingRow>
-      <SettingRow label="Opacity">
-        <Slider :model-value="store.settings.hud.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="store.setHud({ opacity: $event })" />
-      </SettingRow>
-      <SettingRow label="Size">
-        <Slider :model-value="store.settings.hud.scale" :min="0.75" :max="1.75" :step="0.05" :format="percent" @update:model-value="store.setHud({ scale: $event })" />
-      </SettingRow>
-      <SettingRow label="Position" hint="While this window is open the HUD can be dragged anywhere; it goes back to click-through when you close it.">
-        <Button size="sm" @click="bridge().invoke('hud:setEditing', !store.hudEditing)">{{ store.hudEditing ? t('Done') : t('Move HUD') }}</Button>
-      </SettingRow>
+      <OverlayWindowSettings overlay="hud" setting="hud" :scale="[0.75, 1.75]" />
     </template>
     <SettingRow label="Hide maxed (Lv3) pets" hint="They earn no more souls: left out of the Pets page, Nearby and the HUD.">
       <Toggle :model-value="store.settings.hideMaxed" @update:model-value="store.set('hideMaxed', $event)" />
@@ -85,5 +78,6 @@ const HUD_MODES = [
     <SettingRow label="Black Cloud Merchant pets" hint="When you open one of its tabs, a window lists the pets it sells that you have not maxed: prices, and where they spawn.">
       <Toggle :model-value="store.settings.hud.merchant" @update:model-value="store.setHud({ merchant: $event })" />
     </SettingRow>
+    <OverlayWindowSettings v-if="store.settings.hud.merchant" overlay="merchant" setting="hud" :opacity-min="null" />
   </Section>
 </template>

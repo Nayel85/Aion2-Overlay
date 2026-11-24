@@ -39,6 +39,7 @@ import {
   openDetails,
   overlayDragEnded,
   overlayMove,
+  overlayResetPosition,
   overlayResize,
   overlaysHidden,
   setHudEditing,
@@ -123,6 +124,9 @@ export function registerIpc(): void {
   })
   handle('overlay:dragEnd', (id) => {
     if (isOverlay(id)) overlayDragEnded(id)
+  })
+  handle('overlay:resetPosition', (id) => {
+    if (isOverlay(id)) overlayResetPosition(id)
   })
   handle('overlay:resize', (id, size) => {
     if (isOverlay(id) && isPoint({ x: size?.width, y: size?.height })) overlayResize(id, size)

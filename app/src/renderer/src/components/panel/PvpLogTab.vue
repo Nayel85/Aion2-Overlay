@@ -6,6 +6,7 @@
 // servers carry their server's tag ([LUM]).
 // Lokthar: the rift farms on top (shared/abyss.ts), each the Abyss Points one character earned in a
 // Spacetime Rift's window, with your kills, deaths and assists in it; picking one lists those.
+import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed, onBeforeUnmount, ref, shallowRef, triggerRef } from 'vue'
 import Button from '@/components/Button.vue'
@@ -274,10 +275,7 @@ const BACKGROUND_HINT = 'At None the text keeps a dark glow, readable on the gam
           <SettingRow label="Your target" hint="Under the kills and deaths: the player you last targeted, with level, server, class and combat power (enemies in red). For 2 minutes, or until you target another.">
             <Toggle :model-value="store.settings.killFeed.target" @update:model-value="setKillFeed({ target: $event })" />
           </SettingRow>
-          <SettingRow label="Kill feed background" :hint="BACKGROUND_HINT">
-            <Slider :model-value="store.settings.killFeed.opacity" :min="0" :max="1" :step="0.05" :format="background" @update:model-value="setKillFeed({ opacity: $event })" />
-          </SettingRow>
-          <IdleHideRow :value="store.settings.killFeed" @set="setKillFeed" />
+          <OverlayWindowSettings overlay="killfeed" setting="killFeed" :opacity-min="0" opacity-label="Kill feed background" :opacity-hint="BACKGROUND_HINT" idle />
         </template>
         <SettingRow label="Enemies nearby" hint="Players of the other faction your game has loaded around you, with server, combat power and legion. Hidden while there are none; drag it while this window is open.">
           <Toggle :model-value="store.settings.enemies.enabled" @update:model-value="setEnemies({ enabled: $event })" />
@@ -292,9 +290,7 @@ const BACKGROUND_HINT = 'At None the text keeps a dark glow, readable on the gam
           <SettingRow label="Their combat power" hint="Each one's CP, once the game has sent it.">
             <Toggle :model-value="store.settings.enemies.combatPower" @update:model-value="setEnemies({ combatPower: $event })" />
           </SettingRow>
-          <SettingRow label="Enemies background" :hint="BACKGROUND_HINT">
-            <Slider :model-value="store.settings.enemies.opacity" :min="0" :max="1" :step="0.05" :format="background" @update:model-value="setEnemies({ opacity: $event })" />
-          </SettingRow>
+          <OverlayWindowSettings overlay="enemies" setting="enemies" :opacity-min="0" opacity-label="Enemies background" :opacity-hint="BACKGROUND_HINT" />
           <SettingRow label="Sound for an enemy" hint="When one comes into view (the same player at most once a minute).">
             <Toggle :model-value="store.settings.enemies.sound" @update:model-value="setEnemies({ sound: $event })" />
           </SettingRow>
