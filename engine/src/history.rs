@@ -161,6 +161,13 @@ fn summarize(record: &FightRecord) -> FightSummary {
     crate::bests::summary::of(record)
 }
 
+/// The fights kept: the dungeon bosses' and your training dummy runs. Not the world's (field and
+/// Abyss bosses: no dungeon), nor a dummy others hit while you did nothing (your damage 0): those
+/// are never saved, and the ones saved before are deleted as the history is read.
+fn kept(f: &FightSummary) -> bool {
+    if f.is_train { f.my_damage > 0 } else { f.dungeon_id != 0 }
+}
+
 /// A personal best just beaten (a kill): which boss, whose, the damage per second now and before.
 #[derive(Clone, Debug)]
 pub struct NewBest {
@@ -240,6 +247,9 @@ impl FightHistoryManager {
 
     pub fn save_fight(&self, record: &FightRecord) -> Result<(), String> {
         check_id(&record.id)?;
+        if !kept(&summarize(record)) {
+            return Ok(());
+        }
         let name = format!("{}.json", record.id);
         let file_path = self.history_dir.join(&name);
         let json = serde_json::to_string_pretty(record)
@@ -342,6 +352,15 @@ impl FightHistoryManager {
             }
             warn!("Could not read fight history: {e}");
         } else {
+            let gone: Vec<String> = index.fights.iter().filter(|(_, entry)| !kept(&entry.summary)).map(|(name, _)| name.clone()).collect();
+            for name in &gone {
+                if fs::remove_file(self.history_dir.join(name)).is_ok() || !self.history_dir.join(name).exists() {
+                    index.remove(name);
+                }
+            }
+            if !gone.is_empty() {
+                info!("Fight history: {} not kept (world bosses, dummies you did not hit) deleted", gone.len());
+            }
             index.store(&self.history_dir);
         }
         let mut summaries: Vec<_> = index
@@ -379,6 +398,8 @@ mod tests {
             "durationMs": 150,
             "totalDamage": 200,
             "jobs": ["Cleric"],
+            // A dungeon's boss: the world's are not kept.
+            "dungeonId": 600022,
             "actors": [{"actorId": 1, "nickname": "Player", "job": "Cleric"}],
             "details": {
                 "targetId": 12,
@@ -438,6 +459,25 @@ mod tests {
         assert_eq!(restarted.list_fights()[0].id, "legacy");
         fs::remove_file(dir.join("legacy.json")).unwrap();
         assert!(restarted.list_fights().is_empty());
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn world_bosses_and_dummies_you_did_not_hit_are_not_kept() {
+        let dir = std::env::temp_dir().join(format!("a2t-history-kept-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        let history = FightHistoryManager::new(dir.clone());
+        // A world boss (no dungeon): never written.
+        let mut world = record("world", 100);
+        world.dungeon_id = 0;
+        history.save_fight(&world).unwrap();
+        assert!(!dir.join("world.json").exists());
+        // One saved before: deleted as the history is read; a dungeon's stays.
+        history.save_fight(&record("dungeon", 200)).unwrap();
+        fs::write(dir.join("world.json"), serde_json::to_string(&world).unwrap()).unwrap();
+        let ids: Vec<String> = history.list_fights().into_iter().map(|f| f.id).collect();
+        assert_eq!(ids, ["dungeon"]);
+        assert!(!dir.join("world.json").exists());
         fs::remove_dir_all(dir).unwrap();
     }
 
