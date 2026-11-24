@@ -8,6 +8,7 @@
 // The minimize button shrinks it to its header (the zone and the cubes in view). Its bottom-right
 // corner resizes it (a double-click there makes it the default square again); hovering the map shows
 // a slider for its opacity.
+import { BOSS_NPCS } from '@/lib/petSources.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
@@ -73,7 +74,7 @@ const layers = computed<MapLayer[]>(() =>
   tracked.value.flatMap(({ id, color }) =>
     (spawns.value?.pets[id] ?? []).flatMap((d) => {
       const w = d.worlds.find((x) => x.world === worldId.value)
-      return w ? [{ key: `${id}-${d.npc}`, points: w.points, color, active: false, pet: id }] : []
+      return w ? [{ key: `${id}-${d.npc}`, points: w.points, color, active: false, pet: id, boss: BOSS_NPCS.has(d.npc) }] : []
     }),
   ),
 )

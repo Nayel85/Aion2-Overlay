@@ -18,6 +18,8 @@ export interface MapLayer {
   active: boolean
   /** The pet whose soul monsters these are: its portrait over each group of them. */
   pet?: number
+  /** Its monster is a boss (lib/petSources.ts): its spawns and portrait ringed in red. */
+  boss?: boolean
 }
 
 const props = defineProps<{
@@ -80,26 +82,30 @@ const shownLayers = computed(() => (picked.value ? projected.value.filter((l) =>
 const petMarkers = computed(() => {
   const { w, h } = boxSize()
   const reach = 36 / (Math.min(w, h) / SIZE) / view.value.k
-  const byPet = new Map<number, { color: string; active: boolean; xy: [number, number][] }>()
+  const byPet = new Map<number, { color: string; active: boolean; xy: [number, number][]; boss: boolean[] }>()
   for (const l of shownLayers.value) {
     if (l.pet === undefined) continue
-    const e = byPet.get(l.pet) ?? { color: l.color, active: l.active, xy: [] }
+    const e = byPet.get(l.pet) ?? { color: l.color, active: l.active, xy: [], boss: [] }
     e.xy.push(...l.xy)
+    e.boss.push(...l.xy.map(() => l.boss === true))
     byPet.set(l.pet, e)
   }
-  const out: { key: string; pet: number; icon: string; name: string; color: string; active: boolean; at: [number, number] }[] = []
+  const out: { key: string; pet: number; icon: string; name: string; color: string; active: boolean; boss: boolean; at: [number, number] }[] = []
   for (const [pet, e] of byPet) {
     const icon = petIcon(pet)
     if (!icon) continue
-    const groups: [number, number][][] = []
-    for (const p of e.xy) {
-      const near = groups.find((g) => Math.hypot(g[0]![0] - p[0], g[0]![1] - p[1]) < reach)
-      if (near) near.push(p)
-      else groups.push([p])
-    }
-    groups.forEach((g, i) => {
+    // Bosses apart from the others: a boss's spot is its own marker.
+    const groups: { boss: boolean; xy: [number, number][] }[] = []
+    e.xy.forEach((p, k) => {
+      const boss = e.boss[k]!
+      const near = groups.find((g) => g.boss === boss && Math.hypot(g.xy[0]![0] - p[0], g.xy[0]![1] - p[1]) < reach)
+      if (near) near.xy.push(p)
+      else groups.push({ boss, xy: [p] })
+    })
+    groups.forEach(({ boss, xy: g }, i) => {
       const at: [number, number] = [g.reduce((n, p) => n + p[0], 0) / g.length, g.reduce((n, p) => n + p[1], 0) / g.length]
-      out.push({ key: `${pet}-${i}`, pet, icon, name: petInfo(pet)?.name ?? `#${pet}`, color: e.color, active: e.active, at })
+      const name = petInfo(pet)?.name ?? `#${pet}`
+      out.push({ key: `${pet}-${i}`, pet, icon, name: boss ? `${name} (${t('boss')})` : name, color: e.color, active: e.active, boss, at })
     })
   }
   // The tracked ones over the others.
@@ -284,11 +290,11 @@ defineExpose({ fit, recentre })
             :key="i"
             :cx="p[0]"
             :cy="p[1]"
-            :r="(picked ? 7 : layer.active ? 5.5 : 3.5) / view.k"
+            :r="(picked ? 7 : layer.boss ? 6.5 : layer.active ? 5.5 : 3.5) / view.k"
             :fill="picked && !layer.active ? '#facc15' : layer.color"
-            :fill-opacity="picked || layer.active ? 0.95 : 0.55"
-            :stroke="picked ? '#ffffff' : '#09090b'"
-            :stroke-width="(picked ? 2 : layer.active ? 1.5 : 1) / view.k"
+            :fill-opacity="picked || layer.active || layer.boss ? 0.95 : 0.55"
+            :stroke="layer.boss ? '#ef4444' : picked ? '#ffffff' : '#09090b'"
+            :stroke-width="(layer.boss ? 2.5 : picked ? 2 : layer.active ? 1.5 : 1) / view.k"
           />
         </template>
         <!-- The pets: their portraits over their soul monsters' spawns. -->
@@ -303,6 +309,8 @@ defineExpose({ fit, recentre })
           @pointerdown.stop="pickPet(m)"
         >
           <title>{{ m.name }}</title>
+          <!-- A boss: a red ring around its own. -->
+          <circle v-if="m.boss" :r="(m.active ? PET_PX.active : PET_PX.other) / 2 / view.k + 3.5 / view.k" fill="none" stroke="#ef4444" :stroke-width="2.5 / view.k" />
           <circle :r="(m.active ? PET_PX.active : PET_PX.other) / 2 / view.k" fill="#09090b" :stroke="m.color" :stroke-width="2.5 / view.k" />
           <image
             :href="m.icon"

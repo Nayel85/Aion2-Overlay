@@ -14,6 +14,7 @@ import { characterStore } from './characters.ts'
 import { sessionStore } from './sessions.ts'
 import { inventoryStore } from './inventory.ts'
 import { dutyStore } from './duty.ts'
+import { merchantSeen } from './merchantSeen.ts'
 import { itemDetails } from './itemDetails.ts'
 import { gameMap, regionDisplay } from './gameMap.ts'
 import { mapDetail } from './gameMapDetail.ts'
@@ -142,6 +143,7 @@ export function registerIpc(): void {
   handle('sessions:get', () => sessionStore.all())
   handle('inventory:get', () => inventoryStore.all())
   handle('duty:get', () => dutyStore.get())
+  handle('merchant:seen', () => merchantSeen.get())
   handle('duty:close', () => closeOverlay('duty'))
   handle('inventory:arrivals', () => inventoryStore.arrivals())
   handle('items:details', (item: number) => itemDetails(item))

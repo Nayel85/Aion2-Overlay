@@ -5,6 +5,7 @@
 // Gatherables page, or all). Any zone can be picked; it opens on yours. Its switches are kept as they
 // were left (settings `mapPage`). The map overlay's settings are below it; markers on the game's own
 // map are Map V2's.
+import { BOSS_NPCS } from '@/lib/petSources.ts'
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import { computed, ref, watch } from 'vue'
@@ -91,7 +92,7 @@ const layers = computed<MapLayer[]>(() => {
   const of = (id: number, color: string, active: boolean): MapLayer[] =>
     (spawns.value?.pets[id] ?? []).flatMap((d) => {
       const w = d.worlds.find((x) => x.world === worldId.value)
-      return w ? [{ key: `${id}-${d.npc}`, points: w.points, color, active, pet: id }] : []
+      return w ? [{ key: `${id}-${d.npc}`, points: w.points, color, active, pet: id, boss: BOSS_NPCS.has(d.npc) }] : []
     })
   return [
     ...needed.value.flatMap((id) => of(id, NEEDED, false)),

@@ -24,7 +24,7 @@ import type { SyncResult } from './lokthar.ts'
 import type { CustomSoundResult, SoundSlot } from './sounds.ts'
 import type { Point, Rect, SettingKey, Settings } from './settings.ts'
 import type { FieldBosses, TimerAlert, TimerId } from './timers.ts'
-import type { Cube, Enemy, Nearby, TargetPlayer, Pet, PvpKill, PvpSummary, ShopStock, SoulToast, TrackerStatus } from './tracker.ts'
+import type { Cube, Enemy, Nearby, TargetPlayer, Pet, PvpKill, PvpSummary, ShopStock, SoulToast, TrackerStatus, MerchantSeen } from './tracker.ts'
 
 /** Renderer → main, request/response. */
 /** The overlays that size themselves to their page, by their route. */
@@ -69,6 +69,8 @@ export interface InvokeChannels {
   'inventory:get': { args: []; result: Inventories }
   /** The duty board: today's, every one seen, the rerolls' costs (shared/duty.ts). */
   'duty:get': { args: []; result: DutyState }
+  /** What the Black Cloud Merchant has offered over time, by item. */
+  'merchant:seen': { args: []; result: MerchantSeen }
   /** The duty board's window closed by its X (it opens again with the board). */
   'duty:close': { args: []; result: void }
   /** What came into your characters' hands, the oldest first (the latest 1000). */
@@ -287,7 +289,7 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'inventory:arrivals',
   'app:info', 'app:quit', 'app:openPath',
   'settings:all', 'settings:set',
-  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'duty:get', 'duty:close', 'items:details', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
+  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'duty:get', 'merchant:seen', 'duty:close', 'items:details', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
   'killfeed:open', 'killfeed:close', 
   
   'panel:open', 'panel:characters',

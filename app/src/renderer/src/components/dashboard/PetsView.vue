@@ -2,6 +2,7 @@
 // Pets: every pet with its souls and level, as a table. Search, filter and sort; click a pet for
 // where its souls drop, a name or a soul count to correct it; the pin puts a pet on the HUD (in
 // pinned mode) and on the maps.
+import PetSourceTag from '@/components/PetSourceTag.vue'
 import { useNow } from '@/lib/now.ts'
 import PetsHudSettings from '@/components/PetsHudSettings.vue'
 import { computed, nextTick, onBeforeUnmount, ref, toRefs } from 'vue'
@@ -315,6 +316,7 @@ const syncedAgo = computed(() => {
                         {{ displayName(pet) }}
                       </button>
                       <GenusPill :id="pet.id" />
+                      <PetSourceTag :id="pet.id" />
                       <span v-if="onlyZone(pet.id)" class="shrink-0 whitespace-nowrap rounded border border-light px-1.5 text-[10px] text-darker">
                         {{ t('only in {zone}', { zone: onlyZone(pet.id)! }) }}
                       </span>

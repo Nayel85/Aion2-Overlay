@@ -14,6 +14,7 @@ import { startCharacters } from './characters.ts'
 import { startSessions } from './sessions.ts'
 import { startInventory } from './inventory.ts'
 import { startDuty } from './duty.ts'
+import { startMerchantSeen } from './merchantSeen.ts'
 import { registerIconScheme, startIcons } from './icons.ts'
 import { applyGameMap, onGameMapStatus, startGameMap } from './gameMap.ts'
 import { startFieldBosses } from './fieldBosses.ts'
@@ -70,6 +71,7 @@ if (!app.requestSingleInstanceLock()) {
     startSessions()
     startInventory()
     startDuty()
+    startMerchantSeen()
     startApplicants()
     startParty()
     startFlight()

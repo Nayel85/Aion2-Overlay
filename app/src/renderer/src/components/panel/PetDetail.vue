@@ -1,6 +1,8 @@
 <script setup lang="ts">
 // Where a pet's souls drop: every monster that drops its soul, with its level, zone and spawns,
 // and a map of them. Monster names link to questlog.gg's page for that monster.
+import { BOSS_NPCS, petSource } from '@/lib/petSources.ts'
+import PetSourceTag from '@/components/PetSourceTag.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import GenusPill from '@/components/GenusPill.vue'
 import LevelBadge from '@/components/LevelBadge.vue'
@@ -8,12 +10,23 @@ import PetIcon from '@/components/PetIcon.vue'
 import WorldMap, { type MapLayer } from '@/components/WorldMap.vue'
 import { displayName, monsterName } from '@/lib/petDb.ts'
 import { currentWorld, levelFit, LEVEL_GAP, loadSpawns, npcUrl, sortDroppers, type Dropper } from '@/lib/spawns.ts'
-import { t } from '@/lib/i18n.ts'
+import { loc, plural, t } from '@/lib/i18n.ts'
+import { bridge } from '@/lib/bridge.ts'
+import petItems from '@/data/petItems.json'
 import { useApp } from '@/stores/app.ts'
 import { MAX_PINNED } from '@shared/settings.ts'
-import { blankPet } from '@shared/tracker.ts'
+import { blankPet, type MerchantSeen } from '@shared/tracker.ts'
 
 const props = defineProps<{ id: number }>()
+
+/** How often the Black Cloud Merchant has offered this pet's soul or unlock (main/merchantSeen.ts): its stocks, and when last. */
+const seen = ref<MerchantSeen>({})
+onMounted(async () => (seen.value = await bridge().invoke('merchant:seen')))
+const merchant = computed(() => {
+  const items = Object.entries({ ...petItems.souls, ...petItems.pets }).filter(([, pet]) => pet === props.id).map(([item]) => seen.value[item]).filter((e) => e !== undefined)
+  if (!items.length) return null
+  return { stocks: new Set(items.flatMap((e) => e.stocks)).size, last: Math.max(...items.map((e) => e.last)) }
+})
 const store = useApp()
 
 type Data = Awaited<ReturnType<typeof loadSpawns>>
@@ -62,7 +75,7 @@ const worldTabs = computed(() => current.value?.worlds.map((w) => ({ id: w.world
 const layers = computed<MapLayer[]>(() =>
   droppers.value.flatMap((d, i) => {
     const w = d.worlds.find((x) => x.world === worldId.value)
-    return w ? [{ key: d.npc, points: w.points, color: d.npc === selected.value ? '#60a5fa' : colorOf(i), active: d.npc === selected.value }] : []
+    return w ? [{ key: d.npc, points: w.points, color: d.npc === selected.value ? '#60a5fa' : colorOf(i), active: d.npc === selected.value, boss: BOSS_NPCS.has(d.npc) }] : []
   }),
 )
 /** You, on this map, when you are in this zone and the tracker knows where. */
@@ -97,8 +110,10 @@ const FIT_CLASS = { good: 'text-green', low: 'text-red', high: 'text-yellow' }
         <div class="flex items-center gap-2">
           <span class="truncate text-base font-semibold">{{ displayName(pet) }}</span>
           <GenusPill :id="id" />
+          <PetSourceTag :id="id" />
         </div>
         <div class="flex items-center gap-2 text-xs text-darker">
+          <span v-if="merchant" class="text-yellow" :title="t('Last seen {when}', { when: new Date(merchant.last).toLocaleDateString(loc()) })">{{ plural(merchant.stocks, 'At the Black Cloud Merchant once', 'At the Black Cloud Merchant {n} times') }}</span>
           <span class="tabular-nums">{{ pet.souls }} souls</span>
           <LevelBadge :pet="pet" />
           <span v-if="pet.session" class="text-green">{{ t('+{n} this session', { n: pet.session }) }}</span>
@@ -130,7 +145,7 @@ const FIT_CLASS = { good: 'text-green', low: 'text-red', high: 'text-yellow' }
     <p v-if="error" class="text-sm text-red">{{ t('Could not load the drop locations: {error}', { error }) }}</p>
     <p v-else-if="!data" class="text-sm text-darker">{{ t('Loading drop locations…') }}</p>
     <p v-else-if="!droppers.length" class="text-sm text-darker">
-      {{ t("No monster drops this pet's soul: it comes from chests, events or the shop.") }}
+      {{ petSource(id)?.other?.length ? t("No monster drops this pet's soul: {from}.", { from: petSource(id)!.other!.join(', ') }) : t("No monster drops this pet's soul: the Black Cloud Merchant sells it.") }}
     </p>
 
     <div v-else class="flex min-h-0 flex-1 gap-3">
@@ -158,6 +173,7 @@ const FIT_CLASS = { good: 'text-green', low: 'text-red', high: 'text-yellow' }
             <svg viewBox="0 0 12 12" class="size-2.5 shrink-0 text-darkest" fill="none" stroke="currentColor" stroke-width="1.4">
               <path d="M5 2H2v8h8V7M7 2h3v3M10 2L5.5 6.5" />
             </svg>
+            <span v-if="BOSS_NPCS.has(d.npc)" class="shrink-0 rounded border border-red/40 bg-red/10 px-1 text-[10px] font-semibold text-red">{{ t('Boss') }}</span>
             <span class="ml-auto shrink-0 text-xs font-semibold tabular-nums">Lv{{ d.level }}</span>
           </div>
           <div class="mt-0.5 flex items-center gap-1.5 pl-[18px] text-[11px] text-darker">

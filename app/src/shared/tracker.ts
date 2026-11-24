@@ -221,6 +221,9 @@ export function capProgress(pet: Pick<Pet, 'souls' | 'level'>): number {
 }
 
 /** One item in the Black Cloud Merchant's stock, as the tab's `91 56` record gives it. */
+/** What the Black Cloud Merchant has offered, by item id: first and last seen, and the stocks it was in (main/merchantSeen.ts). */
+export type MerchantSeen = Record<string, { first: number; last: number; stocks: number[] }>
+
 export interface ShopItem {
   slot: number
   /** The game's item id (questlog.gg's): see renderer/src/data/petItems.json for the pet ones. */
