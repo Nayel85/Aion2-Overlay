@@ -5,6 +5,7 @@
 // this session's kills and deaths (all it shows between kills), moves the window and closes it;
 // each player kill around you slides in under it and falls off after a few seconds, as the HUD's
 // soul lines do. Its skull opens a small map of where you last died.
+import { useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRaw, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
@@ -43,6 +44,8 @@ onBeforeUnmount(offKill)
 const drag = windowDrag({ move: 'killfeed:moveTo', end: 'killfeed:dragEnd' })
 const close = (): void => void bridge().invoke('killfeed:close')
 const cfg = computed(() => store.settings.killFeed)
+// Hidden while idle, if set.
+const idle = useIdle(() => store.settings.killFeed, () => lines.value.reduce((m, k) => Math.max(m, k.at), 0))
 /**
  * Your target under the title bar: the player you last targeted, as the game sends their sheet.
  * The game says nothing when you let go of one, so it stays TARGET_MS, unless another replaces it.
@@ -124,6 +127,7 @@ onBeforeUnmount(() => observer?.disconnect())
   <div class="inline-block">
     <div ref="root" class="inline-block">
       <div
+        v-if="!idle"
         ref="card"
         :class="['text-glow group relative m-1.5 flex flex-col rounded-lg border', size.width === null && 'w-[300px]']"
         :style="{

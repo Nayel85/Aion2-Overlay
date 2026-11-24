@@ -51,6 +51,12 @@ export const PARTY_DEFAULT_COLORS = { hp: '#c0392b', afflicted: '#2ea043' } as c
 export const HUD_WIDGETS = ['party', 'buffs', 'cc', 'flight', 'gather', 'applicants', 'training'] as const
 export type HudWidget = (typeof HUD_WIDGETS)[number]
 
+/** Hidden after `idleSeconds` with no fight (no hit, heal or damage taken, yours or your party's). */
+export interface IdleHide {
+  hideIdle: boolean
+  idleSeconds: number
+}
+
 export interface Settings {
   /** Where the floating icon sits, in screen DIPs; null = bottom right of the primary display. */
   bubble: Point | null
@@ -167,7 +173,7 @@ export interface Settings {
     hpColor: string
     afflictedColor: string
     afflictedBy: PartyAfflictedBy
-  }
+  } & IdleHide
   /**
    * The gathering outcome: a pill as a gathering starts, saying how it will end. Which to show
    * (`fail`, `rare`: rank up or x2, `plain`), its size (`scale`), a sound for some.
@@ -255,7 +261,7 @@ export interface Settings {
    * The kill feed overlay; `opacity` is its background's (0: none, the text glows on the game); `target`: your target under it;
    * `width` and `height` as dragged from its corner (null: sized to what it shows).
    */
-  killFeed: { open: boolean; position: Point | null; opacity: number; collapsed: boolean; target: boolean; width: number | null; height: number | null }
+  killFeed: { open: boolean; position: Point | null; opacity: number; collapsed: boolean; target: boolean; width: number | null; height: number | null } & IdleHide
   /**
    * The Enemies overlay: players of the other faction in view, and a sound when one comes. Its
    * background's opacity (0: none), minimized, and its sound: on, which (shared/sounds.ts), how
@@ -298,16 +304,16 @@ export interface Settings {
     cc: boolean
     ccPosition: Point | null
     ccDebuffs: boolean
-  }
+  } & IdleHide
 
   /**
    * Training dummy runs: their goal (a time limit, or damage), whether a run starts by itself with
    * your first hit on a dummy (and its clock with it), and the Training overlay over the game.
    */
-  dummy: { overlay: boolean; position: Point | null; autoStart: boolean; goal: DummyGoal; limitMs: number | null; damageGoal: number; collapsed: boolean }
+  dummy: { overlay: boolean; position: Point | null; autoStart: boolean; goal: DummyGoal; limitMs: number | null; damageGoal: number; collapsed: boolean } & IdleHide
 
   /** Your own skills on the meter's target, as a window of their own. */
-  skills: { enabled: boolean; position: Point | null; rows: number; opacity: number }
+  skills: { enabled: boolean; position: Point | null; rows: number; opacity: number } & IdleHide
 
   /** The DPS meter: its own window, fed by the engine (A2Tools DPS Meter's parser). */
   meter: {
@@ -437,17 +443,18 @@ export const SETTINGS_DEFAULTS: Settings = {
   party: {
     enabled: true, position: null, opacity: 1, collapsed: false, self: true, header: false, icon: true, hpText: 'none', debuffIcons: false, shields: true, bossTarget: true,
     width: 180, barHeight: 22, gap: 2, fontSize: 12, hpColor: PARTY_DEFAULT_COLORS.hp, afflictedColor: PARTY_DEFAULT_COLORS.afflicted, afflictedBy: 'any',
+    hideIdle: false, idleSeconds: 30,
   },
   flight: { enabled: true, position: null, opacity: 1 },
   gather: {
     enabled: true, style: 'ring', position: null, opacity: 1, scale: 1, icon: true, fail: true, rare: true, plain: false, crafts: true,
     soundFail: false, soundRare: false, soundId: 'bell', volume: 0.6,
   },
-  killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null },
+  killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null, hideIdle: false, idleSeconds: 30 },
   enemies: { enabled: false, position: null, opacity: 0.75, collapsed: false, mapPins: true, gearScore: true, combatPower: true, sound: true, pvpOnly: true, soundId: 'enemy-spotted', volume: 0.7, customName: null },
-  skills: { enabled: false, position: { x: 500, y: 413 }, rows: 6, opacity: 0.92 },
-  dummy: { overlay: false, position: null, autoStart: true, goal: 'time', limitMs: 60000, damageGoal: 10000000, collapsed: false },
-  buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1145, y: 359 }, ccDebuffs: false },
+  skills: { enabled: false, position: { x: 500, y: 413 }, rows: 6, opacity: 0.92, hideIdle: false, idleSeconds: 30 },
+  dummy: { overlay: false, position: null, autoStart: true, goal: 'time', limitMs: 60000, damageGoal: 10000000, collapsed: false, hideIdle: false, idleSeconds: 30 },
+  buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1145, y: 359 }, ccDebuffs: false, hideIdle: false, idleSeconds: 30 },
   meter: { enabled: true, position: { x: 410, y: 206 }, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'beside', gear: 'beside', deaths: true, style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
   layoutVersion: 1,
@@ -653,6 +660,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       const v = (value ?? {}) as Partial<Settings['party']>
       return {
         ...fields(v, d.party, {
+          hideIdle: BOOL, idleSeconds: whole(5, 600),
           enabled: BOOL, position: POINT, opacity: range(0, 1), self: BOOL, header: BOOL, icon: BOOL, debuffIcons: BOOL, shields: BOOL,
           bossTarget: BOOL, width: whole(100, 320), barHeight: whole(14, 40), gap: whole(0, 12), fontSize: whole(9, 18), hpColor: COLOUR,
           afflictedColor: COLOUR,
@@ -677,6 +685,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       const v = (value ?? {}) as Partial<Settings['killFeed']>
       return {
         ...fields(v, d.killFeed, {
+          hideIdle: BOOL, idleSeconds: whole(5, 600),
           open: BOOL, position: POINT, opacity: range(0, 1), collapsed: BOOL, target: BOOL,
         }),
         width: v.width === null || v.width === undefined ? null : Math.round(num(v.width, KILLFEED_WIDTH[0], KILLFEED_WIDTH[1], 300)),
@@ -687,6 +696,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       const v = (value ?? {}) as Partial<Settings['skills']>
       return {
         ...fields(v, d.skills, {
+          hideIdle: BOOL, idleSeconds: whole(5, 600),
           enabled: BOOL, position: POINT, rows: whole(1, 20), opacity: range(0.3, 1),
         }),
       } as Settings[K]
@@ -695,6 +705,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       const v = (value ?? {}) as Partial<Settings['buffs']>
       return {
         ...fields(v, d.buffs, {
+          hideIdle: BOOL, idleSeconds: whole(5, 600),
           enabled: BOOL, position: POINT, opacity: range(0.3, 1), size: whole(22, 56), perRow: whole(4, 20), debuffs: BOOL, passives: BOOL,
           consumables: BOOL, cc: BOOL, ccPosition: POINT, ccDebuffs: BOOL,
         }),
@@ -704,6 +715,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       const v = (value ?? {}) as Partial<Settings['dummy']>
       return {
         ...fields(v, d.dummy, {
+          hideIdle: BOOL, idleSeconds: whole(5, 600),
           overlay: BOOL, position: POINT, autoStart: BOOL,
         }),
         goal: v.goal === 'damage' ? 'damage' : 'time',

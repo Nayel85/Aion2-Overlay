@@ -2,6 +2,7 @@
 // Pets: every pet with its souls and level, as a table. Search, filter and sort; click a pet for
 // where its souls drop, a name or a soul count to correct it; the pin puts a pet on the HUD (in
 // pinned mode) and on the maps.
+import PetsHudSettings from '@/components/PetsHudSettings.vue'
 import { computed, nextTick, onBeforeUnmount, ref, toRefs } from 'vue'
 import GenusPill, { GENUS_PILL } from '@/components/GenusPill.vue'
 import LevelBadge from '@/components/LevelBadge.vue'
@@ -394,5 +395,7 @@ const syncedAgo = computed(() => {
         ({{ t('{n} pets', { n: PET_DB_SIZE }) }}, {{ PET_DB_DATE }})
       </span>
     </p>
+
+    <PetsHudSettings class="mt-8" />
   </div>
 </template>

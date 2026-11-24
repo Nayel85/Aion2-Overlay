@@ -1,19 +1,15 @@
 <script setup lang="ts">
-// Settings: the app's own (who you are, the windows, privacy), the pets HUD, the Lokthar sync and
-// the engine. Each overlay's own settings are on its page (the meter's on Combat Meter, the map's on
-// Map...). Every change applies at once.
+// Settings: the app's own only (language, you and the game, this window, sound, what the per hour
+// figures count, shortcuts, the Lokthar sync, the engine). Each overlay is set on its own page, listed
+// under Overlays. Every change applies at once.
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import StatusDot, { statusText } from '@/components/StatusDot.vue'
-import MeterSizeSettings from '@/components/MeterSizeSettings.vue'
 import SettingRow from '@/components/SettingRow.vue'
-import SoundPicker from '@/components/SoundPicker.vue'
-import Slider from '@/components/Slider.vue'
 import Toggle from '@/components/Toggle.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'
 import Segmented from '@/components/ui/Segmented.vue'
-import SelectBox from '@/components/ui/SelectBox.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { loc, plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
@@ -26,7 +22,6 @@ const store = useApp()
 const info = ref<{ version: string; settingsFile: string; logFile: string } | null>(null)
 onMounted(async () => (info.value = await bridge().invoke('app:info')))
 
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 
 
 // The Lokthar sync: the site and its token, a connection check, and how the last post went.
@@ -91,18 +86,23 @@ function addMark(): void {
   void bridge().invoke('packets:mark', markText.value.trim())
   markText.value = ''
 }
+/** Every overlay over the game, each set on its own page. */
 const OVERLAY_PAGES = [
+  { page: 'unified', name: 'Unified HUD', where: 'Unified HUD' },
   { page: 'meter', name: 'Damage meter and My skills', where: 'Combat Meter' },
-  { page: 'buffs', name: 'Buffs', where: 'Buffs' },
-  { page: 'map', name: 'Map', where: 'Map' },
-  { page: 'events', name: 'Countdown bar', where: 'Event Alerts' },
+  { page: 'buffs', name: 'Buffs and CC', where: 'Buffs' },
+  { page: 'party', name: 'Party frames', where: 'Party frames' },
+  { page: 'flight', name: 'Flight timer', where: 'Flight timer' },
+  { page: 'gather', name: 'Gathering outcome', where: 'Gathering outcome' },
+  { page: 'applicants', name: 'Join requests', where: 'Join requests' },
   { page: 'pvp', name: 'Kill feed and Enemies nearby', where: 'PvP' },
+  { page: 'map', name: 'Map', where: 'Map' },
+  { page: 'mapv2', name: 'Markers on the game\'s map', where: 'Map V2' },
+  { page: 'pets', name: 'Pets HUD', where: 'Pets' },
+  { page: 'events', name: 'Countdown bar', where: 'Event Alerts' },
+  { page: 'training', name: 'Training', where: 'Training Dummy' },
 ]
 
-const HUD_MODES = [
-  { id: 'recent' as const, label: "This session's pets" },
-  { id: 'pinned' as const, label: 'Pinned pets' },
-]
 const lastPacket = computed(() => {
   const ago = store.status?.lastPacketAgo
   return ago === null || ago === undefined ? t('never') : ago < 5 ? t('just now') : t('{n} s ago', { n: Math.round(ago) })
@@ -113,7 +113,7 @@ const lastPacket = computed(() => {
   <div class="mx-auto max-w-3xl">
     <PageHeader title="Settings" />
 
-    <Section title="Language" icon="M2 8h12M8 2a9 9 0 0 1 0 12M8 2a9 9 0 0 0 0 12M8 2a6 6 0 1 1 0 12A6 6 0 0 1 8 2z">
+    <Section title="Language and time" icon="M2 8h12M8 2a9 9 0 0 1 0 12M8 2a9 9 0 0 0 0 12M8 2a6 6 0 1 1 0 12A6 6 0 0 1 8 2z">
       <SettingRow label="Language" hint="Game words (PvP, DPS, skills, buffs, bosses, pets...) stay as the community says them.">
         <Segmented :model-value="store.settings.language" :options="LANGS" @update:model-value="store.set('language', $event)" />
       </SettingRow>
@@ -122,7 +122,7 @@ const lastPacket = computed(() => {
       </SettingRow>
     </Section>
 
-    <Section title="General" icon="M2.5 3.5h11v9h-11zM2.5 6h11">
+    <Section title="You and the game" icon="M2.5 3.5h11v9h-11zM2.5 6h11">
       <SettingRow label="Character" :hint="who.hint">
         <span class="text-sm text-dark">{{ who.value }}</span>
       </SettingRow>
@@ -132,14 +132,32 @@ const lastPacket = computed(() => {
       <SettingRow label="Hide when the game is not in front" hint="Alt-tab to another program and the overlays hide; they come back with the game.">
         <Toggle :model-value="store.settings.hideWhenGameAway" @update:model-value="store.set('hideWhenGameAway', $event)" />
       </SettingRow>
+      <SettingRow label="Hide from screen recordings" hint="Keeps the overlays and this window out of OBS, Discord and screenshots.">
+        <Toggle :model-value="store.settings.hideFromCapture" @update:model-value="store.set('hideFromCapture', $event)" />
+      </SettingRow>
+    </Section>
+
+    <Section title="This window" icon="M2.5 2.5h11v11h-11zM2.5 5.5h11">
       <SettingRow label="Keep this window on top" hint="It stays above the game while open.">
         <Toggle :model-value="store.settings.panelOnTop" @update:model-value="store.set('panelOnTop', $event)" />
       </SettingRow>
       <SettingRow label="Hide when you click the game" hint="Click from this window into the game and it goes down to the taskbar; Alt+E brings it back.">
         <Toggle :model-value="store.settings.panelHideOnGame" @update:model-value="store.set('panelHideOnGame', $event)" />
       </SettingRow>
-      <SettingRow label="Hide from screen recordings" hint="Keeps the overlays and this window out of OBS, Discord and screenshots.">
-        <Toggle :model-value="store.settings.hideFromCapture" @update:model-value="store.set('hideFromCapture', $event)" />
+    </Section>
+
+    <Section title="Sound" icon="M2.5 6v4h2.5l3.5 3V3L5 6zM11 5.5a3.5 3.5 0 0 1 0 5M12.8 3.5a6 6 0 0 1 0 9">
+      <SettingRow label="Mute every sound" hint="Cubes, enemies and the timers' chime: the same switch as the speaker on the Unified HUD.">
+        <Toggle :model-value="store.settings.muted" @update:model-value="store.set('muted', $event)" />
+      </SettingRow>
+    </Section>
+
+    <Section title="Kina and Abyss Points" icon="M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM8 4.5v7">
+      <SettingRow label="Dungeons in Kina per hour" hint="The per hour figures count your farming, never rewards (quests, supply requests, duty missions). With this on, what dungeons give (their monsters, their cube) counts too. The session's totals count everything.">
+        <Toggle :model-value="store.settings.rates.kinaDungeons" @update:model-value="store.set('rates', { ...store.settings.rates, kinaDungeons: $event })" />
+      </SettingRow>
+      <SettingRow label="Dungeons in Abyss Points per hour" hint="The same for the Abyss Points per hour.">
+        <Toggle :model-value="store.settings.rates.abyssDungeons" @update:model-value="store.set('rates', { ...store.settings.rates, abyssDungeons: $event })" />
       </SettingRow>
     </Section>
 
@@ -150,79 +168,6 @@ const lastPacket = computed(() => {
           <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m6 4 4 4-4 4" /></svg>
         </span>
       </button>
-    </Section>
-
-    <Section title="DPS Meter" icon="M2.5 13.5h11M4.5 11V8M8 11V4.5M11.5 11V6.5">
-      <SettingRow label="Show the meter over the game" hint="Its own window while the game is open: drag it by its header, click a player for their skills.">
-        <Toggle :model-value="store.settings.meter.enabled" @update:model-value="store.set('meter', { ...store.settings.meter, enabled: $event })" />
-      </SettingRow>
-      <MeterSizeSettings v-if="store.settings.meter.enabled" />
-    </Section>
-
-    <Section title="Pets HUD" icon="M5 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM8 9c-2 0-3.5 2-3.5 3.3 0 1 1 1.2 2.2 1.2.6 0 .9-.3 1.3-.3s.7.3 1.3.3c1.2 0 2.2-.2 2.2-1.2C11.5 11 10 9 8 9Z">
-      <SettingRow label="Show the HUD" hint="Souls as they drop, the soul monsters around you and Hidden Cubes, over the game (borderless or windowed mode).">
-        <Toggle :model-value="store.settings.hud.enabled" @update:model-value="store.setHud({ enabled: $event })" />
-      </SettingRow>
-      <template v-if="store.settings.hud.enabled">
-        <SettingRow label="Nearby section" hint="At the top: the soul monsters around you, with the pet each drops.">
-          <Toggle :model-value="store.settings.hud.nearby" @update:model-value="store.setHud({ nearby: $event })" />
-        </SettingRow>
-        <SettingRow v-if="store.settings.hud.nearby" label="How many nearby">
-          <Slider :model-value="store.settings.hud.nearbyCount" :min="1" :max="8" :step="1" @update:model-value="store.setHud({ nearbyCount: $event })" />
-        </SettingRow>
-        <SettingRow label="Below it" :hint="({ pinned: 'Pin pets on the Pets page.', recent: 'Pets you gained souls for, latest first.' })[store.settings.hud.mode]">
-          <SelectBox :model-value="store.settings.hud.mode" :options="HUD_MODES" @update:model-value="store.setHud({ mode: $event })" />
-        </SettingRow>
-        <SettingRow v-if="store.settings.hud.mode !== 'pinned'" label="How many this session">
-          <Slider :model-value="store.settings.hud.recentCount" :min="1" :max="8" :step="1" @update:model-value="store.setHud({ recentCount: $event })" />
-        </SettingRow>
-        <SettingRow label="Soul pop-ups" hint="A line for each soul as it drops.">
-          <Toggle :model-value="store.settings.hud.toasts" @update:model-value="store.setHud({ toasts: $event })" />
-        </SettingRow>
-        <SettingRow label="Kina per hour" hint="This session's Kina per hour, at the top right of the HUD.">
-          <Toggle :model-value="store.settings.hud.kina" @update:model-value="store.setHud({ kina: $event })" />
-        </SettingRow>
-        <SettingRow label="Abyss Points per hour" hint="This session's Abyss Points per hour, beside the Kina at the top right of the HUD.">
-          <Toggle :model-value="store.settings.hud.abyss" @update:model-value="store.setHud({ abyss: $event })" />
-        </SettingRow>
-        <SettingRow label="Hidden Cubes" hint="A cube in view (the game tells you within about 100 m) at the top of the HUD, with how far and which way.">
-          <Toggle :model-value="store.settings.hud.cubes" @update:model-value="store.setHud({ cubes: $event })" />
-        </SettingRow>
-        <SettingRow v-if="store.settings.hud.cubes" label="Sound for a cube" hint="When one comes into view.">
-          <Toggle :model-value="store.settings.hud.cubeSound" @update:model-value="store.setHud({ cubeSound: $event })" />
-        </SettingRow>
-        <template v-if="store.settings.hud.cubes && store.settings.hud.cubeSound">
-          <SoundPicker kind="cube" label="Cube sound" />
-        </template>
-        <SettingRow label="Hide without game traffic" hint="When the game has sent nothing for 15 seconds.">
-          <Toggle :model-value="store.settings.hud.hideWithoutGame" @update:model-value="store.setHud({ hideWithoutGame: $event })" />
-        </SettingRow>
-        <SettingRow label="Clear between fights" hint="After this long with no kills or drops the HUD clears and hides until the next fight.">
-          <Slider
-            :model-value="store.settings.hud.idleHideSeconds"
-            :min="0"
-            :max="300"
-            :step="15"
-            :format="(v: number) => (v ? `${v}s` : t('Off'))"
-            @update:model-value="store.setHud({ idleHideSeconds: $event })"
-          />
-        </SettingRow>
-        <SettingRow label="Opacity">
-          <Slider :model-value="store.settings.hud.opacity" :min="0.3" :max="1" :step="0.05" :format="pct" @update:model-value="store.setHud({ opacity: $event })" />
-        </SettingRow>
-        <SettingRow label="Size">
-          <Slider :model-value="store.settings.hud.scale" :min="0.75" :max="1.75" :step="0.05" :format="pct" @update:model-value="store.setHud({ scale: $event })" />
-        </SettingRow>
-        <SettingRow label="Position" hint="While this window is open the HUD can be dragged anywhere; it goes back to click-through when you close it.">
-          <Button size="sm" @click="bridge().invoke('hud:setEditing', !store.hudEditing)">{{ store.hudEditing ? t('Done') : t('Move HUD') }}</Button>
-        </SettingRow>
-      </template>
-      <SettingRow label="Hide maxed (Lv3) pets" hint="They earn no more souls: left out of the Pets page, Nearby and the HUD.">
-        <Toggle :model-value="store.settings.hideMaxed" @update:model-value="store.set('hideMaxed', $event)" />
-      </SettingRow>
-      <SettingRow label="Black Cloud Merchant pets" hint="When you open one of its tabs, a window lists the pets it sells that you have not maxed: prices, and where they spawn.">
-        <Toggle :model-value="store.settings.hud.merchant" @update:model-value="store.setHud({ merchant: $event })" />
-      </SettingRow>
     </Section>
 
     <Section title="Shortcuts" icon="M1.5 4h13v8h-13zM4 6.5h.01M6.5 6.5h.01M9 6.5h.01M11.5 6.5h.01M5 9.5h6">
@@ -254,7 +199,16 @@ const lastPacket = computed(() => {
       </div>
     </Section>
 
-    <Section title="Developer" icon="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5M9 3 7 13">
+    <Section title="Engine and diagnostics" icon="M5.5 1.5v2M10.5 1.5v2M5.5 12.5v2M10.5 12.5v2M1.5 5.5h2M1.5 10.5h2M12.5 5.5h2M12.5 10.5h2M3.5 3.5h9v9h-9zM6 6h4v4H6z">
+      <SettingRow label="State" :hint="store.status?.detail ?? t('Last game packet: {when}', { when: lastPacket })" :warning="store.status?.state === 'error' ? 'The game\'s traffic is not being read.' : undefined">
+        <span class="flex items-center gap-2 text-sm text-dark"><StatusDot :status="store.status" />{{ t(statusText(store.status)) }}</span>
+      </SettingRow>
+      <SettingRow label="Collection file" hint="Your pets' souls and levels, kept on this computer.">
+        <Button v-if="store.status?.dataFile" size="sm" @click="bridge().invoke('app:openPath', store.status.dataFile)">{{ t('Show in folder') }}</Button>
+      </SettingRow>
+      <SettingRow label="Restart the engine" hint="If the overlays stop updating.">
+        <Button size="sm" @click="bridge().invoke('tracker:restart')">{{ t('Restart') }}</Button>
+      </SettingRow>
       <SettingRow
         label="Packet log"
         hint="Writes every game message to a text file (time, message type, bytes) to share for debugging or to find data for new features. Add marks as you do things in game to find their messages by time. Alt+Shift+R starts and stops it from the game. It grows fast in fights: keep it short."
@@ -284,18 +238,6 @@ const lastPacket = computed(() => {
           :model-value="store.settings.tracker.bossDiagnostics"
           @update:model-value="store.set('tracker', { ...store.settings.tracker, bossDiagnostics: $event })"
         />
-      </SettingRow>
-    </Section>
-
-    <Section title="Engine" icon="M5.5 1.5v2M10.5 1.5v2M5.5 12.5v2M10.5 12.5v2M1.5 5.5h2M1.5 10.5h2M12.5 5.5h2M12.5 10.5h2M3.5 3.5h9v9h-9zM6 6h4v4H6z">
-      <SettingRow label="State" :hint="store.status?.detail ?? t('Last game packet: {when}', { when: lastPacket })" :warning="store.status?.state === 'error' ? 'The game\'s traffic is not being read.' : undefined">
-        <span class="flex items-center gap-2 text-sm text-dark"><StatusDot :status="store.status" />{{ t(statusText(store.status)) }}</span>
-      </SettingRow>
-      <SettingRow label="Collection file" hint="Your pets' souls and levels, kept on this computer.">
-        <Button v-if="store.status?.dataFile" size="sm" @click="bridge().invoke('app:openPath', store.status.dataFile)">{{ t('Show in folder') }}</Button>
-      </SettingRow>
-      <SettingRow label="Restart the engine" hint="If the overlays stop updating.">
-        <Button size="sm" @click="bridge().invoke('tracker:restart')">{{ t('Restart') }}</Button>
       </SettingRow>
     </Section>
 

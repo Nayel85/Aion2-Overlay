@@ -2,6 +2,7 @@
 // Party frames: the widget over the game with a bar per member of your party (pages/PartyPage.vue),
 // and its settings: what each bar shows, its size and colours, and when it turns to the afflicted
 // colour.
+import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
 import Slider from '@/components/Slider.vue'
@@ -47,6 +48,7 @@ const AFFLICTED_BY = [
         <SettingRow label="Opacity">
           <Slider :model-value="cfg.opacity" :min="0.2" :max="1" :step="0.05" :format="pct" @update:model-value="set({ opacity: $event })" />
         </SettingRow>
+        <IdleHideRow :value="cfg" @set="set" />
       </template>
     </Section>
 

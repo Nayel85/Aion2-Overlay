@@ -48,6 +48,9 @@ export const useApp = defineStore('app', () => {
   const inventories = ref<Inventories>(NO_INVENTORIES)
   /** Join requests to your party (the Applicants widget). */
   const applicants = ref<Applicants>(NO_APPLICANTS)
+  /** When a fight last moved (the meter's time ran: a hit, a heal, damage taken): the windows' idle hiding. */
+  const combatAt = ref(0)
+  let battleTime = 0
   /** Your party and its members' HP (the party frames). */
   const party = ref<Party>(NO_PARTY)
   /** Your flight power (the flight timer). */
@@ -164,6 +167,11 @@ export const useApp = defineStore('app', () => {
     api.on('sessions:changed', (s) => (sessions.value = s))
     api.on('inventory:changed', (i) => (inventories.value = i))
     api.on('applicants:changed', (a) => (applicants.value = a))
+    api.on('meter:dps', (m) => {
+      if (m.battleTime === battleTime) return
+      battleTime = m.battleTime
+      combatAt.value = Date.now()
+    })
     api.on('party:changed', (p) => (party.value = p))
     api.on('flight:changed', (f) => (flight.value = f))
     api.on('gather:changed', (g) => (gather.value = g))
@@ -241,7 +249,7 @@ export const useApp = defineStore('app', () => {
   }
 
   return {
-    settings, applicants, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, inventories, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
+    settings, applicants, combatAt, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, inventories, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
     init, set, setHud, togglePin, openPet, hiddenPet,
   }
 })

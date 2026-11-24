@@ -6,6 +6,7 @@
 // servers carry their server's tag ([LUM]).
 // Lokthar: the rift farms on top (shared/abyss.ts), each the Abyss Points one character earned in a
 // Spacetime Rift's window, with your kills, deaths and assists in it; picking one lists those.
+import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed, onBeforeUnmount, ref, shallowRef, triggerRef } from 'vue'
 import Button from '@/components/Button.vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -276,6 +277,7 @@ const BACKGROUND_HINT = 'At None the text keeps a dark glow, readable on the gam
           <SettingRow label="Kill feed background" :hint="BACKGROUND_HINT">
             <Slider :model-value="store.settings.killFeed.opacity" :min="0" :max="1" :step="0.05" :format="background" @update:model-value="setKillFeed({ opacity: $event })" />
           </SettingRow>
+          <IdleHideRow :value="store.settings.killFeed" @set="setKillFeed" />
         </template>
         <SettingRow label="Enemies nearby" hint="Players of the other faction your game has loaded around you, with server, combat power and legion. Hidden while there are none; drag it while this window is open.">
           <Toggle :model-value="store.settings.enemies.enabled" @update:model-value="setEnemies({ enabled: $event })" />

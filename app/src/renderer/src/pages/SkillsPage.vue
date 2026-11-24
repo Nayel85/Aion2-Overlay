@@ -2,6 +2,7 @@
 // Your own damage on the meter's target, skill by skill: your DPS large, then each skill's icon,
 // DPS, share and damage, a bar behind each as long as its share. Redrawn every second; moved by its
 // header, sized to its rows (hidden while none of your damage is on the target).
+import { useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SkillIcon from '@/components/SkillIcon.vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -16,6 +17,8 @@ const store = useApp()
 const api = bridge()
 const root = ref<HTMLElement | null>(null)
 const cfg = computed(() => store.settings.skills)
+// Hidden while idle, if set.
+const idle = useIdle(() => store.settings.skills)
 const view = ref<PersonalView>(NO_PERSONAL)
 
 const rows = computed(() => view.value.skills.slice(0, cfg.value.rows))
@@ -71,7 +74,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="inline-block">
     <div ref="root" class="inline-block">
-      <div v-if="rows.length" class="m-1.5 w-[300px] rounded-lg border border-card bg-darker shadow-card" :style="{ opacity: cfg.opacity }">
+      <div v-if="rows.length && !idle" class="m-1.5 w-[300px] rounded-lg border border-card bg-darker shadow-card" :style="{ opacity: cfg.opacity }">
         <header class="cursor-move px-2.5 pb-1.5 pt-2" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
           <div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-darker">
             <span>{{ t('My skills') }}</span>

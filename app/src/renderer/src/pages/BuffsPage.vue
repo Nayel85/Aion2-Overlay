@@ -2,7 +2,7 @@
 // Your buffs and debuffs over the game: each one's icon with its stacks, and the time left under
 // it (a ring runs down around timed ones). Buffs on one row, debuffs (cast by monsters) on another,
 // red-edged. Moved by dragging; sized to what it shows, hidden while nothing is on you.
-import { useNow } from '@/lib/now.ts'
+import { useNow, useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -16,6 +16,8 @@ const store = useApp()
 const api = bridge()
 const root = ref<HTMLElement | null>(null)
 const cfg = computed(() => store.settings.buffs)
+// Hidden while idle, if set.
+const idle = useIdle(() => store.settings.buffs)
 // Ticking while there are effects to count down (or the sample to place).
 const now = useNow(100, () => store.buffs.length > 0 || store.panelVisible)
 
@@ -69,7 +71,7 @@ onBeforeUnmount(() => {
   <div class="inline-block">
     <div ref="root" class="inline-block">
       <div
-        v-if="rows.length"
+        v-if="rows.length && !idle"
         class="m-1.5 cursor-move space-y-1 rounded-lg border border-card bg-darker/80 p-1.5 shadow-card"
         :style="{ opacity: cfg.opacity }"
         :title="t('Drag to move')"

@@ -128,12 +128,6 @@ const BUTTON_ICONS = [
         <SettingRow label="Abyss Points per hour" hint="Your farming's Abyss Points per hour, at your pace of the last 15 seconds, always shown while on: rewards are left out.">
           <Toggle :model-value="cfg.abyssRate" @update:model-value="set({ abyssRate: $event })" />
         </SettingRow>
-        <SettingRow label="Dungeons in Kina per hour" hint="Count what dungeons give (their monsters, their cube) in the Kina per hour, here and on the Session page.">
-          <Toggle :model-value="store.settings.rates.kinaDungeons" @update:model-value="store.set('rates', { ...store.settings.rates, kinaDungeons: $event })" />
-        </SettingRow>
-        <SettingRow label="Dungeons in Abyss Points per hour" hint="The same for the Abyss Points per hour.">
-          <Toggle :model-value="store.settings.rates.abyssDungeons" @update:model-value="store.set('rates', { ...store.settings.rates, abyssDungeons: $event })" />
-        </SettingRow>
         <SettingRow label="Rift farm" hint="During a Spacetime Rift, show that rift's total Abyss Points instead of the hourly rate.">
           <Toggle :model-value="cfg.rift" @update:model-value="set({ rift: $event })" />
         </SettingRow>
@@ -194,12 +188,9 @@ const BUTTON_ICONS = [
         </SettingRow>
       </Section>
 
-      <Section title="Widgets and sound">
+      <Section title="Widgets">
         <SettingRow label="Hide the widgets it replaces" hint="Keeps the Enemies overlay closed while the Unified HUD is on, since the bar shows the same things. The enemy sound still plays.">
           <Toggle :model-value="cfg.replace" @update:model-value="set({ replace: $event })" />
-        </SettingRow>
-        <SettingRow label="Mute every sound" hint="Cubes, enemies and the timers' chime: the same switch as the speaker on the bar.">
-          <Toggle :model-value="store.settings.muted" @update:model-value="store.set('muted', $event)" />
         </SettingRow>
       </Section>
     </template>

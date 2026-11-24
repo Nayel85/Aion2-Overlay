@@ -6,7 +6,7 @@
 // else is a setting (dashboard/PartyView): size, colours, the HP as text, the debuffs' icons, a title
 // bar. Up while you are in a party, moved by dragging it; while the dashboard is up out of a party,
 // it shows a sample to place it by. Nothing to show measures 0, and main keeps it hidden.
-import { useNow } from '@/lib/now.ts'
+import { useNow, useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
@@ -22,6 +22,8 @@ const store = useApp()
 const api = bridge()
 const root = ref<HTMLElement | null>(null)
 const cfg = computed(() => store.settings.party)
+// Hidden while idle, if set.
+const idle = useIdle(() => store.settings.party)
 
 /** A boss is on whom it hit last, for this long after. */
 const BOSS_ON_MS = 6_000
@@ -134,7 +136,7 @@ onBeforeUnmount(() => {
   <div class="inline-block">
     <div ref="root" class="inline-block">
       <section
-        v-if="list.length"
+        v-if="list.length && !idle"
         :class="['m-1 cursor-move', cfg.header && 'overflow-hidden rounded-xl border']"
         :style="[{ width: `${cfg.width}px`, opacity: cfg.header ? undefined : cfg.opacity }, cfg.header ? panelStyle(cfg.opacity, '63 185 80') : {}]"
         :title="!cfg.header && preview ? t('drag to move') : undefined"

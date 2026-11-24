@@ -146,6 +146,10 @@ onBeforeUnmount(() => off?.())
             <Toggle :model-value="cfg.overlay" @update:model-value="set({ overlay: $event })" />
             {{ t('Training overlay over the game') }}
           </label>
+          <label v-if="cfg.overlay" class="flex items-center gap-2" :title="t('Hidden after this long with no fight (no hit, heal or damage taken, yours or your party\'s); back with the next one.')">
+            <Toggle :model-value="cfg.hideIdle" @update:model-value="set({ hideIdle: $event })" />
+            {{ t('Hide while idle') }}
+          </label>
           <span class="text-xs text-darker">
             {{ inGroup ? plural(inGroup, 'Group {g} has {n} run.', 'Group {g} has {n} runs.', { g: state.group }) : t('{name} starts a new group.', { name: placeholder }) }}
           </span>

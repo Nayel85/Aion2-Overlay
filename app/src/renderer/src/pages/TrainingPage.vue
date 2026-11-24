@@ -5,6 +5,7 @@
 // two minutes) and while the dashboard is up, to be placed; moved by its header. Its dash shrinks it
 // to that line (the clock and your DPS while a run goes on); its X turns it off (the Training Dummy
 // page turns it on again). The last run's Details opens its breakdown.
+import { useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CollapseButton from '@/components/CollapseButton.vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -19,6 +20,8 @@ const store = useApp()
 const api = bridge()
 const root = ref<HTMLElement | null>(null)
 const cfg = computed(() => store.settings.dummy)
+// Hidden while idle, if set.
+const idle = useIdle(() => store.settings.dummy)
 const state = ref<DummyState>(structuredClone(NO_DUMMY))
 const now = ref(Date.now())
 
@@ -93,7 +96,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="inline-block">
     <div ref="root" class="inline-block">
-      <div v-if="shown" class="m-1.5 w-[280px] rounded-xl border border-card bg-darker/95 shadow-card">
+      <div v-if="shown && !idle" class="m-1.5 w-[280px] rounded-xl border border-card bg-darker/95 shadow-card">
         <header
           :class="['flex cursor-move items-center gap-2 pl-3.5 pr-2', cfg.collapsed ? 'py-2' : 'pb-1 pt-2.5']"
           :title="t('Drag to move')"

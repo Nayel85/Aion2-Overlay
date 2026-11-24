@@ -2,6 +2,7 @@
 // Buffs: what is on your character now, as the buffs overlay shows it, in a list with names; and
 // the overlay's settings. From A2Tools DPS Meter's buff timeline (the game's buff records). A
 // fight's buffs, each player's and the target's, are in the Details window's Buffs tab.
+import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
 import SettingRow from '@/components/SettingRow.vue'
@@ -126,6 +127,7 @@ const pct = (v: number): string => `${Math.round(v * 100)}%`
         <SettingRow label="Opacity">
           <Slider :model-value="cfg.opacity" :min="0.3" :max="1" :step="0.05" :format="pct" @update:model-value="set({ opacity: $event })" />
         </SettingRow>
+        <IdleHideRow :value="cfg" @set="set" />
       </template>
     </Section>
   </div>

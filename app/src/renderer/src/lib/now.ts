@@ -3,7 +3,8 @@
  * (a countdown, a gauge): idle otherwise, so a window with nothing to show draws nothing. Stopped with
  * the component.
  */
-import { getCurrentInstance, onBeforeUnmount, ref, watch, type Ref } from 'vue'
+import { computed, getCurrentInstance, onBeforeUnmount, ref, watch, type ComputedRef, type Ref } from 'vue'
+import { useApp } from '@/stores/app.ts'
 
 export function useNow(everyMs: number, active: () => boolean = () => true): Ref<number> {
   const now = ref(Date.now())
@@ -24,6 +25,19 @@ export function useNow(everyMs: number, active: () => boolean = () => true): Ref
   )
   if (getCurrentInstance()) onBeforeUnmount(stop)
   return now
+}
+
+/**
+ * An overlay hidden while idle: its setting on, and no fight for its seconds (or `activeAt`, a
+ * later sign of life of its own: a kill in the feed). Never while the dashboard is open, to place it.
+ */
+export function useIdle(cfg: () => { hideIdle: boolean; idleSeconds: number }, activeAt: () => number = () => 0): ComputedRef<boolean> {
+  const store = useApp()
+  const now = useNow(1000, () => cfg().hideIdle)
+  return computed(() => {
+    const c = cfg()
+    return c.hideIdle && !store.panelVisible && now.value - Math.max(store.combatAt, activeAt()) >= c.idleSeconds * 1000
+  })
 }
 
 /**

@@ -3,6 +3,7 @@
 // Which targets and players it counts and what it ranks by (shared with the overlay), each player's
 // numbers (a click opens their details), the meter and My skills overlays' settings, and recordings
 // of the game's traffic.
+import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import MeterSizeSettings from '@/components/MeterSizeSettings.vue'
@@ -236,6 +237,7 @@ onBeforeUnmount(() => offs.forEach((off) => off()))
       <SettingRow v-if="skills.enabled" label="Opacity">
         <Slider :model-value="skills.opacity" :min="0.3" :max="1" :step="0.05" :format="pct" @update:model-value="setSkills({ opacity: $event })" />
       </SettingRow>
+      <IdleHideRow v-if="skills.enabled" :value="skills" @set="setSkills" />
     </Section>
   </div>
 </template>
