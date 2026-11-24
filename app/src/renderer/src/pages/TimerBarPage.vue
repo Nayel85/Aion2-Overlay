@@ -5,6 +5,7 @@
 // short name. Moved by dragging; sized to what it shows, and hidden with nothing to show. Hovering
 // one names it right away, in a label under the bar (the window grows to it: a title's tooltip
 // waits a second or so). As a list instead, a timer a line: its icon, its name and its countdown.
+import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
 import { EVENT_ICONS } from '@/lib/timerView.ts'
@@ -17,7 +18,8 @@ import { bossPortrait, bossState, nextStart, TIMERS, type TimerDef, type TimerId
 const HORIZON_MS = 13 * 3600_000
 
 const store = useApp()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('timerbar', () => items.value.length > 0)
 const cfg = computed(() => store.settings.timers)
 
 const now = ref(Date.now())
@@ -97,29 +99,16 @@ function hover(id: TimerId, e: PointerEvent): void {
 }
 const startsAt = (at: number): string => new Date(at).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
 
-const drag = windowDrag({ move: 'timerbar:moveTo', end: 'timerbar:dragEnd' })
+const drag = windowDrag({ overlay: 'timerbar' })
 
 /** Tell main how big the window is; nothing to show measures 0, and main keeps it hidden. */
-let sent = ''
-function report(): void {
-  const el = root.value
-  const r = el && items.value.length ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void bridge().invoke('timerbar:resize', { width: r.width, height: r.height })
-}
 watch([() => items.value.length, () => store.ready, list], () => void nextTick(report))
 
-let observer: ResizeObserver | null = null
 onMounted(() => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
 })
 onBeforeUnmount(() => {
   clearInterval(ticker)
-  observer?.disconnect()
 })
 </script>
 

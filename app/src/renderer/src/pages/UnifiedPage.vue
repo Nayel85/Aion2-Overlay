@@ -8,6 +8,7 @@
 // total during a Spacetime Rift), a Hidden Cube in view, enemies who can attack you, a field boss
 // alive, and where you last died. Moved by dragging the bar; it grows around its top centre, sized to
 // what it shows (main sizes the window to it).
+import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import CubeIcon from '@/components/CubeIcon.vue'
@@ -40,7 +41,8 @@ type Peek = 'meter' | 'map' | 'pvp' | 'pets'
 
 const store = useApp()
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('unified')
 const cfg = computed(() => store.settings.unified)
 
 const now = ref(Date.now())
@@ -333,28 +335,15 @@ const odyle = computed(() => {
   const c = counterNow(ENERGY, store.characters[characterId(s.server, s.character)]?.counters ?? null, now.value)
   return c ? c.now + c.extra : null
 })
-const drag = windowDrag({ move: 'unified:moveTo', end: 'unified:dragEnd' })
+const drag = windowDrag({ overlay: 'unified' })
 
 /** Tell main how big the window is: it grows and shrinks around its top centre. */
-let sent = ''
-function report(): void {
-  const el = root.value
-  if (!el) return
-  const r = el.getBoundingClientRect()
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('unified:resize', { width: r.width, height: r.height })
-}
 // Measured after each change too, not only by the observer: a hidden window (Alt+Shift+E, an
 // alt-tab) does not run it, and would come back at its old size.
 watch([shown, targetOn, () => cfg.value.targetStyle, kinaText, sessionKina, abyssText, season, rift, cube, death, () => applicants.value.length, bestShown, corridorsToDo, () => threats.value.length, () => aliveBosses.value.length, () => upcoming.value.length, () => cfg.value.scale], () => void nextTick(report))
 
-let observer: ResizeObserver | null = null
 const offs: (() => void)[] = []
 onMounted(async () => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
   offs.push(api.on('meter:dps', (m) => (meter.value = m)))
   offs.push(api.on('meter:personalBest', (b) => (best.value = { ...b, at: Date.now() })))
@@ -363,7 +352,6 @@ onMounted(async () => {
 })
 onBeforeUnmount(() => {
   clearInterval(ticker)
-  observer?.disconnect()
   for (const off of offs) off()
 })
 </script>

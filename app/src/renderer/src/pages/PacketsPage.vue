@@ -2,13 +2,15 @@
 // The packet log's pill over the game (Alt+Shift+R): while it records, how long and how many marks;
 // once it stops, the file it went to, for the few seconds main keeps the window (packets.ts).
 // Clicks go through to the game.
+import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { NO_PACKET_LOG, type PacketLog } from '@shared/meter.ts'
 
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('packets', () => shown.value)
 const log = ref<PacketLog>({ ...NO_PACKET_LOG })
 const now = ref(Date.now())
 
@@ -20,32 +22,19 @@ const fileName = (path: string): string => path.split(/[\\/]/).pop() ?? path
 const shown = computed(() => log.value.on || !!log.value.path)
 
 /** Tell main how big the window is; nothing to show measures 0, and main keeps it hidden. */
-let sent = ''
-function report(): void {
-  const el = root.value
-  const r = el && shown.value ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('overlay:resize', 'packets', { width: r.width, height: r.height })
-}
 watch([shown, () => log.value.on], () => void nextTick(report))
 
 let off: (() => void) | null = null
 let timer: ReturnType<typeof setInterval> | null = null
-let observer: ResizeObserver | null = null
 onMounted(async () => {
   off = api.on('packets:state', (s) => (log.value = s))
   log.value = await api.invoke('packets:get')
   timer = setInterval(() => (now.value = Date.now()), 500)
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
 })
 onBeforeUnmount(() => {
   off?.()
   if (timer) clearInterval(timer)
-  observer?.disconnect()
 })
 </script>
 

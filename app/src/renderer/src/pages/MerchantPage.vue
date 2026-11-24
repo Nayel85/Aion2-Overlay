@@ -3,6 +3,7 @@
 // of the shop is opened, it moves by its header, and the X closes it until the next time. Each pet
 // says what buying does and where its soul monsters spawn: one away from your side's continent, or
 // with no known spawn at all (bosses, events), is the hard one to farm, so it is marked.
+import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import GenusPill from '@/components/GenusPill.vue'
 import PetIcon from '@/components/PetIcon.vue'
@@ -17,7 +18,8 @@ import { useApp } from '@/stores/app.ts'
 import { blankPet, nextLevelSouls, type Pet } from '@shared/tracker.ts'
 
 const store = useApp()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('merchant', () => shownOffers.value.length > 0)
 const spawns = useSpawns()
 
 // Ticks so the restock countdown, and offers past it, keep up while the window stays open.
@@ -70,7 +72,7 @@ const restockIn = computed(() => {
   return min < 60 ? t('restocks in {n} min', { n: min }) : t('restocks in {h} h {m} min', { h: Math.floor(min / 60), m: min % 60 })
 })
 
-const drag = windowDrag({ move: 'merchant:moveTo', end: 'merchant:dragEnd' })
+const drag = windowDrag({ overlay: 'merchant' })
 const close = (): void => void bridge().invoke('merchant:close')
 /** Bought (when the game did not say so): off the list until the restock. */
 const bought = (o: MerchantOffer): void => void bridge().invoke('merchant:bought', o.item)
@@ -78,26 +80,13 @@ const bought = (o: MerchantOffer): void => void bridge().invoke('merchant:bought
 const showPet = (id: number): void => void bridge().invoke('panel:showPet', id)
 
 /** Tell main how big the window is; nothing worth buying measures 0, and main keeps it hidden. */
-let sent = ''
-function report(): void {
-  const el = root.value
-  const r = el && shownOffers.value.length ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void bridge().invoke('merchant:resize', { width: r.width, height: r.height })
-}
 watch([shownOffers, continents, () => store.ready], () => void nextTick(report), { deep: true })
 
-let observer: ResizeObserver | null = null
 onMounted(() => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
 })
 onBeforeUnmount(() => {
   clearInterval(ticker)
-  observer?.disconnect()
 })
 </script>
 

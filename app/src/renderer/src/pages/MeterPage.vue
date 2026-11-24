@@ -7,6 +7,7 @@
 // corner resizes it (a double-click there goes back to the default size); with "hide while idle" on
 // it hides after that long with nothing new on it, and comes back with the next hit.
 // The numbers are the engine's (A2Tools DPS Meter's parser); the class icons and colours are its too.
+import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
@@ -35,7 +36,8 @@ import { METER_HEIGHT, METER_WIDTH } from '@shared/settings.ts'
 import type { TrackerState } from '@shared/tracker.ts'
 
 const store = useApp()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('meter')
 const cfg = computed(() => store.settings.meter)
 const api = bridge()
 
@@ -112,7 +114,7 @@ const lean = computed(() => cfg.value.barsOnly && !store.panelVisible && !over.v
 /** The bars' own background while it is lean: none unless the setting gives it one. */
 const leanBg = computed(() => `rgba(9, 9, 11, ${cfg.value.barsBackground})`)
 
-const drag = windowDrag({ move: 'meter:moveTo', end: 'meter:dragEnd' })
+const drag = windowDrag({ overlay: 'meter' })
 const reset = (): void => void api.invoke('meter:reset')
 /** A row's skills, in the Details window: the live target's, following the fight. */
 function showDetails(actor: number): void {
@@ -161,17 +163,8 @@ const idle = computed(() => cfg.value.hideIdle && !store.panelVisible && !live.v
 const moreModes = computed(() => !MAIN_TARGET_MODES.some((m) => m.id === cfg.value.targetMode))
 
 /** Tell main how big the window is. */
-let sent = ''
-function report(): void {
-  const r = root.value?.getBoundingClientRect() ?? { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('meter:resize', { width: r.width, height: r.height })
-}
 watch([rows, () => meter.value.target, status, () => store.ready, () => cfg.value.collapsed, idle, width, height], () => void nextTick(report), { deep: true })
 
-let observer: ResizeObserver | null = null
 const offs: (() => void)[] = []
 /** A personal best just beaten, shown a while over the meter. */
 const BEST_SHOWN_MS = 12_000
@@ -190,13 +183,10 @@ onMounted(async () => {
     }),
   )
   meter.value = await api.invoke('meter:get')
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
 })
 onBeforeUnmount(() => {
   clearInterval(ticker)
-  observer?.disconnect()
   for (const off of offs) off()
 })
 </script>

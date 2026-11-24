@@ -3,6 +3,7 @@
 // now, with a gauge of your flight power; on the ground, how long until it is full again. Up while
 // flying or refilling, gone at full. Clicks go through to the game; while the dashboard is up it
 // shows a preview, and can be dragged into place.
+import { useOverlay } from '@/lib/overlay.ts'
 import { useNow } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -13,7 +14,8 @@ import { flightLeft, flightNow, flightRefill, type FlightPower } from '@shared/f
 
 const store = useApp()
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('flight', () => shown.value)
 const cfg = computed(() => store.settings.flight)
 
 // Ticking while flying or refilling (or with the sample shown): still at full on the ground.
@@ -41,25 +43,10 @@ const colour = computed(() => (left.value === null ? '#6e8fb8' : left.value < 5 
 const RING = 2 * Math.PI * 21
 const drag = windowDrag({ overlay: 'flight' })
 
-let sent = ''
-function report(): void {
-  const el = root.value
-  const r = el && shown.value ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('overlay:resize', 'flight', { width: r.width, height: r.height })
-}
 watch(shown, () => void nextTick(report))
 
-let observer: ResizeObserver | null = null
 onMounted(() => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
-})
-onBeforeUnmount(() => {
-  observer?.disconnect()
 })
 </script>
 

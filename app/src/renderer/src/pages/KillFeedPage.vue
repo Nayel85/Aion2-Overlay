@@ -5,6 +5,7 @@
 // this session's kills and deaths (all it shows between kills), moves the window and closes it;
 // each player kill around you slides in under it and falls off after a few seconds, as the HUD's
 // soul lines do. Its skull opens a small map of where you last died.
+import { useOverlay } from '@/lib/overlay.ts'
 import { useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRaw, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -27,7 +28,8 @@ const SHOW_MS = 8000
 const MAX_LINES = 5
 
 const store = useApp()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report, placing } = useOverlay('killfeed')
 const counts = computed(() => store.pvpStats)
 const tag = (server: number | null): string | null =>
   server === null || server === (store.status?.server ?? null) ? null : serverTag(server)
@@ -41,11 +43,19 @@ const offKill = bridge().on('tracker:pvpKill', (k) => {
 })
 onBeforeUnmount(offKill)
 
-const drag = windowDrag({ move: 'killfeed:moveTo', end: 'killfeed:dragEnd' })
+const drag = windowDrag({ overlay: 'killfeed' })
 const close = (): void => void bridge().invoke('killfeed:close')
 const cfg = computed(() => store.settings.killFeed)
 // Hidden while idle, if set.
 const idle = useIdle(() => store.settings.killFeed, () => lines.value.reduce((m, k) => Math.max(m, k.at), 0))
+/** No kill to show while it is being placed: a sample to place it by, as every overlay has. */
+// Players by name, server and class (game names: not translated).
+const player = (name: string, server: number, className: string): PvpKill['killer'] => ({ name, server, guild: null, className })
+const SAMPLE: PvpKill[] = [
+  { at: 0, killer: player('Nayel', 1305, 'Cleric'), victim: player('Asmodian', 2307, 'Ranger'), mine: true, died: false, legion: true },
+  { at: 0, killer: player('Asmodian', 2307, 'Gladiator'), victim: player('Elyos', 1305, 'Sorcerer'), mine: false, died: false, legion: false },
+] as PvpKill[]
+const shownLines = computed(() => (!lines.value.length && placing.value ? SAMPLE.map((k) => ({ ...k, at: Date.now() })) : lines.value))
 /**
  * Your target under the title bar: the player you last targeted, as the game sends their sheet.
  * The game says nothing when you let go of one, so it stays TARGET_MS, unless another replaces it.
@@ -104,23 +114,10 @@ const tall = computed(() => size.value.height !== null && !cfg.value.collapsed)
 const toggleCollapsed = (): void => void store.set('killFeed', { ...cfg.value, collapsed: !cfg.value.collapsed })
 
 /** Tell main how big the window is: it is sized to its content. */
-let sent = ''
-function report(): void {
-  const r = root.value?.getBoundingClientRect()
-  if (!r) return
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void bridge().invoke('killfeed:resize', { width: r.width, height: r.height })
-}
 watch([lines, counts, target, () => cfg.value.collapsed, showDeath, deathWorld, size], () => void nextTick(report), { deep: true })
-let observer: ResizeObserver | null = null
 onMounted(() => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
 })
-onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <template>
@@ -213,13 +210,13 @@ onBeforeUnmount(() => observer?.disconnect())
             <span v-if="target.combatPower" class="ml-auto shrink-0 text-xs font-semibold tabular-nums text-yellow">{{ cp(target.combatPower) }}</span>
           </div>
           <TransitionGroup
-            v-if="lines.length && !cfg.collapsed"
+            v-if="shownLines.length && !cfg.collapsed"
             tag="div"
             name="toast"
             :class="['space-y-1 px-2.5 py-1.5', cfg.opacity > 0 && 'border-t border-card']"
           >
             <div
-              v-for="k in lines"
+              v-for="k in shownLines"
               :key="`${k.at}-${k.killer.name}`"
               :class="['flex min-w-0 items-center gap-1 text-xs', k.fight && 'cursor-pointer hover:underline']"
               :title="k.fight ? t('Show the fight') : undefined"

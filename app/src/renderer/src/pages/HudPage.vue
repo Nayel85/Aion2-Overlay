@@ -2,6 +2,7 @@
 // The in-game overlay. Click-through, and exactly as big as what it shows: it measures itself and
 // main sizes the window to fit (an empty HUD is a hidden window). In edit mode it takes the mouse
 // so it can be dragged; Escape or Done ends that.
+import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { HUD_PINNED_ROWS } from '@shared/settings.ts'
 import CubeIcon from '@/components/CubeIcon.vue'
@@ -23,7 +24,8 @@ import { formatAmount } from '@shared/earnings.ts'
 import { blankPet, nextLevelSouls, type Pet } from '@shared/tracker.ts'
 
 const store = useApp()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('hud')
 const hud = computed(() => store.settings.hud)
 
 const spawns = useSpawns()
@@ -118,46 +120,35 @@ function since(at: number): string {
 
 /** Between fights (idle timeout): nothing to show, so the HUD hides; pinned pets included. A cube in view shows all the same. */
 const resting = computed(() => !!hud.value.idleHideSeconds && !store.fighting)
+/** No game traffic for a while, with "Hide without game traffic" on: nothing shown (main hides it at 0 × 0). */
+const noGame = computed(() => hud.value.hideWithoutGame && !(store.status?.gameActive || store.status?.replay))
 const empty = computed(
   () =>
-    cubeRows.value.length === 0 &&
-    (resting.value || (nearRows.value.length === 0 && rows.value.length === 0 && toasts.value.length === 0)),
+    noGame.value ||
+    (cubeRows.value.length === 0 &&
+      (resting.value || (nearRows.value.length === 0 && rows.value.length === 0 && toasts.value.length === 0))),
 )
 
-const drag = windowDrag({ move: 'hud:moveTo', end: 'hud:dragEnd' })
+const drag = windowDrag({ overlay: 'hud' })
 const done = (): void => void bridge().invoke('hud:setEditing', false)
 const onKey = (e: KeyboardEvent): void => {
   if (e.key === 'Escape' && store.hudEditing) done()
 }
 
 /** Tell main how big the HUD is: main sizes the window to it, and shows or hides it. */
-let sent = ''
-function report(): void {
-  const el = root.value
-  if (!el) return
-  const r = el.getBoundingClientRect()
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void bridge().invoke('hud:resize', { width: r.width, height: r.height })
-}
 
 // A hidden window does not run ResizeObserver (Chromium pauses rendering there), and the HUD is
 // hidden exactly while it is empty: the first soul would never show it. So it also measures
 // itself after every change to what it shows, which works hidden or not.
-watch([cubeRows, nearRows, rows, toasts, kinaText, abyssText, resting, () => store.hudEditing, () => hud.value.scale, () => store.nearby], () => void nextTick(report), { deep: true })
+watch([cubeRows, nearRows, rows, toasts, kinaText, abyssText, resting, noGame, () => store.hudEditing, () => hud.value.scale, () => store.nearby], () => void nextTick(report), { deep: true })
 
-let observer: ResizeObserver | null = null
 onMounted(() => {
   window.addEventListener('keydown', onKey)
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
 })
 onBeforeUnmount(() => {
   clearInterval(clockTimer)
   window.removeEventListener('keydown', onKey)
-  observer?.disconnect()
 })
 </script>
 

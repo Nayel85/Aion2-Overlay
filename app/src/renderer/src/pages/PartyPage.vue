@@ -6,6 +6,7 @@
 // else is a setting (dashboard/PartyView): size, colours, the HP as text, the debuffs' icons, a title
 // bar. Up while you are in a party, moved by dragging it; while the dashboard is up out of a party,
 // it shows a sample to place it by. Nothing to show measures 0, and main keeps it hidden.
+import { useOverlay } from '@/lib/overlay.ts'
 import { useNow, useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
@@ -20,7 +21,8 @@ import type { PartyDebuff, PartyMember, Vitals } from '@shared/party.ts'
 
 const store = useApp()
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('party', () => list.value.length > 0)
 const cfg = computed(() => store.settings.party)
 // Hidden while idle, if set.
 const idle = useIdle(() => store.settings.party)
@@ -110,25 +112,10 @@ const secondsLeft = (d: PartyDebuff): string => (d.endsAt === null ? '' : String
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('party', { ...cfg.value, ...patch })
 const drag = windowDrag({ overlay: 'party' })
 
-let sent = ''
-function report(): void {
-  const el = root.value
-  const r = el && list.value.length ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('overlay:resize', 'party', { width: r.width, height: r.height })
-}
 watch([() => list.value.length, () => cfg.value.collapsed, () => cfg.value.header], () => void nextTick(report))
 
-let observer: ResizeObserver | null = null
 onMounted(() => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
-})
-onBeforeUnmount(() => {
-  observer?.disconnect()
 })
 </script>
 

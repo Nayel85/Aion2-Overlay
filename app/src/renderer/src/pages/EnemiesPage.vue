@@ -3,6 +3,7 @@
 // tracker/mod.rs), with their legion and server, and a sound when one comes into view. Clicks go
 // through to the game; while the dashboard is up it shows a sample, and can be dragged into place.
 // Nothing around you measures 0, and main keeps the window hidden.
+import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
@@ -17,7 +18,8 @@ import { canAttack, type Enemy } from '@shared/tracker.ts'
 
 const store = useApp()
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('enemies', () => list.value.length > 0)
 const cfg = computed(() => store.settings.enemies)
 
 const ROWS = 8
@@ -38,24 +40,11 @@ const drag = windowDrag({ overlay: 'enemies' })
 /** Minimized: the header only (how many). Clickable while the dashboard is up, as dragging is. */
 const toggleCollapsed = (): void => void store.set('enemies', { ...cfg.value, collapsed: !cfg.value.collapsed })
 
-let sent = ''
-function report(): void {
-  const el = root.value
-  const r = el && list.value.length ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('overlay:resize', 'enemies', { width: r.width, height: r.height })
-}
 watch([() => list.value.length, () => cfg.value.collapsed], () => void nextTick(report))
 
-let observer: ResizeObserver | null = null
 onMounted(() => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
 })
-onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <template>

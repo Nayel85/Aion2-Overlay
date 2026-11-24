@@ -51,21 +51,9 @@ const EDGE = 24
 
 let bubble: BrowserWindow | null = null
 let panel: BrowserWindow | null = null
-let hud: BrowserWindow | null = null
-let merchant: BrowserWindow | null = null
-let merchantSize = { width: 0, height: 0 }
-let meter: BrowserWindow | null = null
-let killFeed: BrowserWindow | null = null
-let killFeedSize = { width: 0, height: 0 }
-let timerBar: BrowserWindow | null = null
-let unified: BrowserWindow | null = null
-let unifiedSize = { width: 0, height: 0 }
 let details: BrowserWindow | null = null
 let detailsShowing: DetailsSource | null = null
-let timerBarSize = { width: 0, height: 0 }
-let meterSize = { width: 0, height: 0 }
 let hudEditing = false
-let hudSize = { width: 0, height: 0 }
 let quitting = false
 const panelListeners = new Set<(visible: boolean) => void>()
 
@@ -365,7 +353,7 @@ function arrangingNow(): boolean {
   // The dashboard, or an overlay being dragged into place; not the meter or the Unified HUD, which
   // take clicks as you play.
   const focused = BrowserWindow.getFocusedWindow()
-  return focused !== null && (focused === panel || focused === hud || measuredWins().includes(focused))
+  return focused !== null && (focused === panel || MEASURED.some((m) => !m.takesClicks && m.win() === focused))
 }
 function syncArranging(): void {
   const on = arrangingNow()
@@ -377,8 +365,8 @@ function syncArranging(): void {
   // never catches a click meant for the game.
   setHudEditing(on, false)
   for (const m of MEASURED) m.panelUp(on)
-  // The merchant's window opens with the shop only: to be placed, it opens now too (its sample).
-  if (on) showMerchant()
+  // The ones opened by their module (the merchant with the shop) open now too, to be placed.
+  if (on) for (const m of MEASURED) if (m.manual && m.placeable) m.create()
 }
 // Focus moving between the app's windows (a drag starts on an overlay) and the game: a moment
 // later, once the window taking it has it.
@@ -397,214 +385,28 @@ export function togglePanel(): void {
 
 // ---- hud ------------------------------------------------------------------------------------
 
-function hudPosition(): Point {
-  const saved = settings.get('hud').position
-  if (saved) return saved
-  const area = screen.getPrimaryDisplay().workArea
-  return { x: area.x + area.width - Math.max(hudSize.width, 260) - EDGE, y: area.y + 120 }
-}
-
-export function createHud(): BrowserWindow {
-  if (alive(hud)) return hud
-  const p = hudPosition()
-  const win = overlayWindow({ x: p.x, y: p.y, width: 280, height: 120, focusable: false })
-  win.setIgnoreMouseEvents(true)
-  hud = win
-  win.on('closed', () => (hud = null))
-  // A new window starts out of move mode (the last one may have closed in it): told anew below.
-  hudEditing = false
-  win.webContents.once('did-finish-load', () => {
-    // Made while the panel is open (the game started meanwhile, or turned on from it): in move mode, like the panel's.
-    // Move mode may have begun while the page was still loading, its message lost: told again now.
-    if (arranging && !hudEditing) setHudEditing(true, false)
-    else send(win, 'hud:editing', hudEditing)
-    refreshHud()
-  })
-  load(win, 'hud')
-  return win
-}
-
-/** Show or hide the HUD, apply mouse mode and size. Cheap when nothing changed. */
-export function refreshHud(): void {
-  if (!alive(hud)) return
-  const cfg = settings.get('hud')
-  const status = tracker.status()
-  // Turned off, it is hidden, move mode or not; on, move mode shows it to place it.
-  const wanted = cfg.enabled && (hudEditing || (hudSize.height > 0 && (!cfg.hideWithoutGame || status.gameActive || status.replay)))
-  if (hudSize.width > 0 && hudSize.height > 0) {
-    const p = hudPosition()
-    const next = clampToDisplay({ x: p.x, y: p.y, width: hudSize.width, height: hudSize.height })
-    const now = hud.getBounds()
-    if (next.x !== now.x || next.y !== now.y || next.width !== now.width || next.height !== now.height) hud.setBounds(next)
-  }
-  if (wanted && !hud.isVisible()) {
-    reveal(hud)
-    log(`pets HUD: ${hud.isVisible() ? 'shown' : 'held hidden'}`)
-  }
-  if (!wanted && hud.isVisible()) hud.hide()
-}
-
-export function resizeHud(size: { width: number; height: number }): void {
-  hudSize = { width: Math.ceil(size.width), height: Math.ceil(size.height) }
-  refreshHud()
-}
-
 /**
  * `focus`: take the keyboard too (so Escape ends move mode). Not when the panel turned move mode
  * on: the panel keeps the focus it was just given.
  */
 export function setHudEditing(editing: boolean, focus = true): void {
-  if (!alive(hud) || hudEditing === editing) return
+  const hud = OVERLAYS.hud.win()
+  if (!hud || hudEditing === editing) return
   hudEditing = editing
   // Edit mode is the only time the HUD takes the mouse: click-through the rest of the time.
   hud.setIgnoreMouseEvents(!editing)
   hud.setFocusable(editing)
-  if (editing) {
-    refreshHud()
-    if (focus) hud.focus()
-  }
+  if (editing && focus) hud.focus()
   broadcast('hud:editing', editing)
-  refreshHud()
 }
 
 export function hudIsEditing(): boolean {
   return hudEditing
 }
 
-export function moveHud(to: Point): void {
-  if (!alive(hud)) return
-  const next = clampToDisplay({ x: to.x, y: to.y, width: hudSize.width || 280, height: hudSize.height || 120 })
-  hud.setBounds(next)
-}
-
-export function hudDragEnded(): void {
-  if (!alive(hud)) return
-  const { x, y } = hud.getBounds()
-  settings.set('hud', { ...settings.get('hud'), position: { x, y } })
-}
-
-// ---- merchant -------------------------------------------------------------------------------
 
 const MERCHANT_WIDTH = 400
-
-function merchantPosition(): Point {
-  const saved = settings.get('merchantWindow')
-  if (saved) return saved
-  const area = screen.getPrimaryDisplay().workArea
-  return { x: Math.round(area.x + area.width / 2 - MERCHANT_WIDTH / 2), y: area.y + 120 }
-}
-
-/**
- * Open the merchant window (a tab of the shop was just opened), unless the setting is off. It
- * shows once its page has measured itself, and stays hidden while there is nothing worth buying.
- */
-export function showMerchant(): void {
-  if (!settings.get('hud').merchant) return
-  if (alive(merchant)) return refreshMerchant()
-  const p = merchantPosition()
-  const win = overlayWindow({ x: p.x, y: p.y, width: MERCHANT_WIDTH, height: 200 })
-  merchant = win
-  merchantSize = { width: 0, height: 0 }
-  win.on('closed', () => (merchant = null))
-  load(win, 'merchant')
-}
-
-/** The X: closed until a tab of the shop is opened again (a closed window frees its renderer). */
-export function closeMerchant(): void {
-  if (alive(merchant)) merchant.destroy()
-  merchant = null
-}
-
-function refreshMerchant(): void {
-  if (!alive(merchant)) return
-  const { width, height } = merchantSize
-  if (width > 0 && height > 0) {
-    const p = merchantPosition()
-    merchant.setBounds(clampToDisplay({ x: p.x, y: p.y, width, height }))
-    if (!merchant.isVisible()) reveal(merchant)
-  } else if (merchant.isVisible()) {
-    merchant.hide()
-  }
-}
-
-/** The merchant window is open (shown, or hidden while there is nothing worth buying). */
-export function merchantOpen(): boolean {
-  return alive(merchant)
-}
-
-/** Where the merchant window is while it shows, else null. */
-export function merchantBounds(): Rectangle | null {
-  return alive(merchant) && merchant.isVisible() ? merchant.getBounds() : null
-}
-
-export function resizeMerchant(size: { width: number; height: number }): void {
-  merchantSize = { width: Math.ceil(size.width), height: Math.ceil(size.height) }
-  refreshMerchant()
-}
-
-export function moveMerchant(to: Point): void {
-  if (!alive(merchant)) return
-  merchant.setBounds(clampToDisplay({ x: to.x, y: to.y, ...measured(merchant, merchantSize) }))
-}
-
-export function merchantDragEnded(): void {
-  if (!alive(merchant)) return
-  const { x, y } = merchant.getBounds()
-  settings.set('merchantWindow', { x, y })
-}
-
-// ---- meter ----------------------------------------------------------------------------------
-
-function meterPosition(): Point {
-  const saved = settings.get('meter').position
-  if (saved) return saved
-  const area = screen.getPrimaryDisplay().workArea
-  return { x: area.x + EDGE, y: area.y + 160 }
-}
-
-/** Open the meter window, unless it is turned off. It shows once its page has measured itself. */
-export function createMeter(): void {
-  if (!settings.get('meter').enabled || alive(meter)) return
-  const p = meterPosition()
-  const win = overlayWindow({ x: p.x, y: p.y, width: 320, height: 120 })
-  meter = win
-  meterSize = { width: 0, height: 0 }
-  win.on('closed', () => (meter = null))
-  load(win, 'meter')
-}
-
-export function closeMeter(): void {
-  if (alive(meter)) meter.destroy()
-  meter = null
-}
-
-function refreshMeter(): void {
-  if (!alive(meter)) return
-  const { width, height } = meterSize
-  if (width > 0 && height > 0) {
-    const p = meterPosition()
-    meter.setBounds(clampToDisplay({ x: p.x, y: p.y, width, height }))
-    if (!meter.isVisible()) reveal(meter)
-  } else if (meter.isVisible()) {
-    meter.hide()
-  }
-}
-
-export function resizeMeter(size: { width: number; height: number }): void {
-  meterSize = { width: Math.ceil(size.width), height: Math.ceil(size.height) }
-  refreshMeter()
-}
-
-export function moveMeter(to: Point): void {
-  if (!alive(meter)) return
-  meter.setBounds(clampToDisplay({ x: to.x, y: to.y, ...measured(meter, meterSize) }))
-}
-
-export function meterDragEnded(): void {
-  if (!alive(meter)) return
-  const { x, y } = meter.getBounds()
-  settings.set('meter', { ...settings.get('meter'), position: { x, y } })
-}
+const KILL_FEED_WIDTH = 312
 
 // ---- measured overlays: your skills, the map, your buffs --------------------------------------
 
@@ -616,27 +418,41 @@ function measuredOverlay(o: {
   route: string
   enabled: () => boolean
   saved: () => Point | null
-  fallback: () => Point
+  /** Where it goes before it is placed, given the size its page measured (0 × 0 before). */
+  fallback: (size: { width: number; height: number }) => Point
   save: (p: Point) => void
+  /** Its place is its top centre, not its top left: it grows both ways around it (the Unified HUD). */
+  centred?: boolean
+  /** Taken clicks as you play (the meter, the Unified HUD): its focus does not mean it is being placed. */
+  takesClicks?: boolean
+  /** A `manual` one is opened all the same while the overlays are being placed, to place it (not the packet log's pill). */
+  placeable?: boolean
+  /** Told once its page has loaded (the pets HUD: its move mode). */
+  loaded?: (w: BrowserWindow) => void
   /** Clicks go through to the game, except while the dashboard is up (to move it). */
   clickThrough?: boolean
   /** Kept with its bottom right corner here, whatever its size (not moved by hand). */
   corner?: () => Point
-  /** Opened by its own module only (the packet log's pill), not with the others. */
+  /** Opened by its own module only (the merchant with the shop, the packet log's pill), not with the others. */
   manual?: boolean
 }) {
   let win: BrowserWindow | null = null
   let size = { width: 0, height: 0 }
   const position = (): Point => {
-    if (!o.corner) return o.saved() ?? o.fallback()
-    const c = o.corner()
-    return { x: c.x - size.width, y: c.y - size.height }
+    if (o.corner) {
+      const c = o.corner()
+      return { x: c.x - size.width, y: c.y - size.height }
+    }
+    const p = o.saved() ?? o.fallback(size)
+    return o.centred ? { x: Math.round(p.x - size.width / 2), y: p.y } : p
   }
   const refresh = (): void => {
     if (!alive(win)) return
     if (size.width > 0 && size.height > 0) {
       const p = position()
-      win.setBounds(clampToDisplay({ x: p.x, y: p.y, ...size }))
+      const next = clampToDisplay({ x: p.x, y: p.y, ...size })
+      const now = win.getBounds()
+      if (next.x !== now.x || next.y !== now.y || next.width !== now.width || next.height !== now.height) win.setBounds(next)
       if (!win.isVisible()) {
         reveal(win)
         log(`overlay ${o.route}: ${win.isVisible() ? 'shown' : `held hidden (${gameAway ? 'game not in front' : 'overlays hidden by hand'})`} at ${p.x},${p.y} ${size.width}x${size.height}`)
@@ -650,6 +466,10 @@ function measuredOverlay(o: {
     win: (): BrowserWindow | null => (alive(win) ? win : null),
     enabled: o.enabled,
     manual: o.manual === true,
+    placeable: o.placeable !== false,
+    takesClicks: o.takesClicks === true,
+    /** Where it is while it shows, else null. */
+    bounds: (): Rectangle | null => (alive(win) && win.isVisible() ? win.getBounds() : null),
     /** Open it, unless it is turned off. It shows once its page has measured itself. */
     create(): void {
       if (!o.enabled() || alive(win)) return
@@ -663,6 +483,7 @@ function measuredOverlay(o: {
       w.on('closed', () => {
         if (win === w) win = null
       })
+      if (o.loaded) w.webContents.once('did-finish-load', () => alive(w) && o.loaded!(w))
       load(w, o.route)
     },
     close(): void {
@@ -688,7 +509,7 @@ function measuredOverlay(o: {
     dragEnded(): void {
       if (!alive(win)) return
       const { x, y } = win.getBounds()
-      o.save({ x, y })
+      o.save(o.centred ? { x: Math.round(x + measured(win, size).width / 2), y } : { x, y })
     },
   }
 }
@@ -775,6 +596,7 @@ const packetsOverlay = measuredOverlay({
   save: () => {},
   clickThrough: true,
   manual: true,
+  placeable: false,
 })
 export const createPacketsHud = packetsOverlay.create
 export const closePacketsHud = packetsOverlay.close
@@ -831,7 +653,90 @@ const gatherOverlay = measuredOverlay({
   clickThrough: true,
 })
 
-/** Every overlay that sizes itself to its page, by its route (shared/ipc.ts `OverlayId`). */
+/** The pets HUD: top right; click-through but while placed, or moved by hand (setHudEditing). */
+const hudOverlay = measuredOverlay({
+  route: 'hud',
+  enabled: () => settings.get('hud').enabled,
+  saved: () => settings.get('hud').position,
+  fallback: (size) => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: area.x + area.width - Math.max(size.width, 260) - EDGE, y: area.y + 120 }
+  },
+  save: (position) => settings.set('hud', { ...settings.get('hud'), position }),
+  clickThrough: true,
+  // A new window starts out of the hand move mode; being placed is told once its page listens.
+  loaded: (w) => {
+    hudEditing = false
+    if (arranging) setHudEditing(true, false)
+    else send(w, 'hud:editing', false)
+  },
+})
+
+/** The Black Cloud Merchant's pets: opened by a tab of the shop (main/index.ts), and to be placed. */
+const merchantOverlay = measuredOverlay({
+  route: 'merchant',
+  enabled: () => settings.get('hud').merchant,
+  saved: () => settings.get('merchantWindow'),
+  fallback: () => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: Math.round(area.x + area.width / 2 - MERCHANT_WIDTH / 2), y: area.y + 120 }
+  },
+  save: (p) => settings.set('merchantWindow', p),
+  manual: true,
+})
+
+/** The DPS meter: top left. */
+const meterOverlay = measuredOverlay({
+  route: 'meter',
+  enabled: () => settings.get('meter').enabled,
+  saved: () => settings.get('meter').position,
+  fallback: () => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: area.x + EDGE, y: area.y + 160 }
+  },
+  save: (position) => settings.set('meter', { ...settings.get('meter'), position }),
+  takesClicks: true,
+})
+
+/** The timer bar: top centre. */
+const timerBarOverlay = measuredOverlay({
+  route: 'timerbar',
+  enabled: () => timerBarOn(),
+  saved: () => settings.get('timerBar').position,
+  fallback: () => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: Math.round(area.x + area.width / 2 - 150), y: area.y + EDGE }
+  },
+  save: (position) => settings.set('timerBar', { ...settings.get('timerBar'), position }),
+})
+
+/** The Unified HUD: its place is its top centre, so the bar stays where it was put as it grows. */
+const unifiedOverlay = measuredOverlay({
+  route: 'unified',
+  enabled: () => settings.get('unified').enabled,
+  saved: () => settings.get('unified').position,
+  fallback: () => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: Math.round(area.x + area.width / 2), y: area.y }
+  },
+  save: (position) => settings.set('unified', { ...settings.get('unified'), position }),
+  centred: true,
+  takesClicks: true,
+})
+
+/** The kill feed: top right, open while the PvP page has it so. */
+const killFeedOverlay = measuredOverlay({
+  route: 'killfeed',
+  enabled: () => settings.get('killFeed').open,
+  saved: () => settings.get('killFeed').position,
+  fallback: () => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: area.x + area.width - KILL_FEED_WIDTH - EDGE, y: area.y + 120 }
+  },
+  save: (position) => settings.set('killFeed', { ...settings.get('killFeed'), position }),
+})
+
+/** Every overlay, by its route (shared/ipc.ts `OverlayId`): each opened, shown, placed and closed the same way. */
 const OVERLAYS: Record<OverlayId, ReturnType<typeof measuredOverlay>> = {
   applicants: applicantsOverlay,
   party: partyOverlay,
@@ -844,12 +749,23 @@ const OVERLAYS: Record<OverlayId, ReturnType<typeof measuredOverlay>> = {
   enemies: enemiesOverlay,
   training: trainingOverlay,
   packets: packetsOverlay,
+  hud: hudOverlay,
+  merchant: merchantOverlay,
+  meter: meterOverlay,
+  timerbar: timerBarOverlay,
+  unified: unifiedOverlay,
+  killfeed: killFeedOverlay,
 }
 const MEASURED = Object.values(OVERLAYS)
 /** Open every overlay that is on (as the game starts): each shows once its page has measured itself. */
 export function openOverlays(): void {
   for (const m of MEASURED) if (!m.manual) m.create()
 }
+/** One overlay opened (if on) or closed, by its module (the merchant with the shop). */
+export const openOverlay = (id: OverlayId): void => OVERLAYS[id].create()
+export const closeOverlay = (id: OverlayId): void => OVERLAYS[id].close()
+export const overlayOpen = (id: OverlayId): boolean => OVERLAYS[id].win() !== null
+export const overlayBounds = (id: OverlayId): Rectangle | null => OVERLAYS[id].bounds()
 export const overlayMove = (id: OverlayId, to: Point): void => OVERLAYS[id].move(to)
 export const overlayDragEnded = (id: OverlayId): void => OVERLAYS[id].dragEnded()
 export const overlayResize = (id: OverlayId, size: { width: number; height: number }): void => OVERLAYS[id].resize(size)
@@ -908,59 +824,6 @@ export function detailsDragEnded(): void {
   settings.set('detailsWindow', { x, y })
 }
 
-// ---- timer bar ------------------------------------------------------------------------------
-
-function timerBarPosition(): Point {
-  const saved = settings.get('timerBar').position
-  if (saved) return saved
-  const area = screen.getPrimaryDisplay().workArea
-  return { x: Math.round(area.x + area.width / 2 - 150), y: area.y + EDGE }
-}
-
-/** Open the timer bar, unless it is turned off. It shows once its page has measured itself. */
-export function createTimerBar(): void {
-  if (!timerBarOn() || alive(timerBar)) return
-  const p = timerBarPosition()
-  const win = overlayWindow({ x: p.x, y: p.y, width: 300, height: 40 })
-  timerBar = win
-  timerBarSize = { width: 0, height: 0 }
-  win.on('closed', () => (timerBar = null))
-  load(win, 'timerbar')
-}
-
-function closeTimerBar(): void {
-  if (alive(timerBar)) timerBar.destroy()
-  timerBar = null
-}
-
-function refreshTimerBar(): void {
-  if (!alive(timerBar)) return
-  const { width, height } = timerBarSize
-  if (width > 0 && height > 0) {
-    const p = timerBarPosition()
-    timerBar.setBounds(clampToDisplay({ x: p.x, y: p.y, width, height }))
-    if (!timerBar.isVisible()) reveal(timerBar)
-  } else if (timerBar.isVisible()) {
-    timerBar.hide()
-  }
-}
-
-export function resizeTimerBar(size: { width: number; height: number }): void {
-  timerBarSize = { width: Math.ceil(size.width), height: Math.ceil(size.height) }
-  refreshTimerBar()
-}
-
-export function moveTimerBar(to: Point): void {
-  if (!alive(timerBar)) return
-  timerBar.setBounds(clampToDisplay({ x: to.x, y: to.y, ...measured(timerBar, timerBarSize) }))
-}
-
-export function timerBarDragEnded(): void {
-  if (!alive(timerBar)) return
-  const { x, y } = timerBar.getBounds()
-  settings.set('timerBar', { ...settings.get('timerBar'), position: { x, y } })
-}
-
 // ---- unified HUD ----------------------------------------------------------------------------
 
 /** The Unified HUD is on and stands in for Enemies nearby. */
@@ -969,115 +832,11 @@ const replaced = (): boolean => settings.get('unified').enabled && settings.get(
 const timerBarOn = (): boolean => settings.get('timerBar').enabled
 const enemiesOn = (): boolean => settings.get('enemies').enabled && !replaced()
 
-/** Its top centre: it grows and shrinks around this point, so the bar stays where it was put. */
-function unifiedAnchor(): Point {
-  const saved = settings.get('unified').position
-  if (saved) return saved
-  const area = screen.getPrimaryDisplay().workArea
-  return { x: Math.round(area.x + area.width / 2), y: area.y }
-}
-
-/** Open the Unified HUD, unless it is turned off. It shows once its page has measured itself. */
-export function createUnified(): void {
-  if (!settings.get('unified').enabled || alive(unified)) return
-  const a = unifiedAnchor()
-  // Focusable, as the bubble is: a window that can never be activated loses its presses over the game.
-  const win = overlayWindow({ x: a.x - 150, y: a.y, width: 300, height: 48 })
-  unified = win
-  unifiedSize = { width: 0, height: 0 }
-  win.on('closed', () => {
-    if (unified === win) unified = null
-  })
-  load(win, 'unified')
-}
-
-function closeUnified(): void {
-  if (alive(unified)) unified.destroy()
-  unified = null
-}
-
-function refreshUnified(): void {
-  if (!alive(unified)) return
-  const { width, height } = unifiedSize
-  if (width > 0 && height > 0) {
-    const a = unifiedAnchor()
-    const next = clampToDisplay({ x: Math.round(a.x - width / 2), y: a.y, width, height })
-    const now = unified.getBounds()
-    if (next.x !== now.x || next.y !== now.y || next.width !== now.width || next.height !== now.height) unified.setBounds(next)
-    if (!unified.isVisible()) reveal(unified)
-  } else if (unified.isVisible()) {
-    unified.hide()
-  }
-}
-
-export function resizeUnified(size: { width: number; height: number }): void {
-  unifiedSize = { width: Math.ceil(size.width), height: Math.ceil(size.height) }
-  refreshUnified()
-}
-
-/** Dragged: `to` is its top left. */
-export function moveUnified(to: Point): void {
-  if (!alive(unified)) return
-  unified.setBounds(clampToDisplay({ x: to.x, y: to.y, ...measured(unified, unifiedSize) }))
-}
-
-export function unifiedDragEnded(): void {
-  if (!alive(unified)) return
-  const { x, y } = unified.getBounds()
-  const { width } = measured(unified, unifiedSize)
-  settings.set('unified', { ...settings.get('unified'), position: { x: Math.round(x + width / 2), y } })
-}
-
-// ---- kill feed (from Nyerk 0.2.17) ----------------------------------------------------------
-
-const KILL_FEED_WIDTH = 312
-
-function killFeedPosition(): Point {
-  const saved = settings.get('killFeed').position
-  if (saved) return saved
-  const area = screen.getPrimaryDisplay().workArea
-  return { x: area.x + area.width - KILL_FEED_WIDTH - EDGE, y: area.y + 120 }
-}
-
-/** The kill feed window, if the PvP Log has it open: made with the other overlays. */
-export function createKillFeed(): void {
-  if (!settings.get('killFeed').open || alive(killFeed)) return
-  const p = killFeedPosition()
-  const win = overlayWindow({ x: p.x, y: p.y, width: KILL_FEED_WIDTH, height: 40 })
-  killFeed = win
-  killFeedSize = { width: 0, height: 0 }
-  win.on('closed', () => (killFeed = null))
-  load(win, 'killfeed')
-  win.webContents.once('did-finish-load', () => alive(win) && reveal(win))
-}
-
-/** PvP Log → Open HUD / the window's X. Remembered, so it comes back with the game. */
+/** PvP Log → Open HUD / the window's X. Remembered, so it comes back with the game (its switch, as every overlay's). */
 export function setKillFeedOpen(open: boolean): void {
   settings.set('killFeed', { ...settings.get('killFeed'), open })
-  if (open) createKillFeed()
-  else if (alive(killFeed)) {
-    killFeed.destroy()
-    killFeed = null
-  }
 }
 
-export function resizeKillFeed(size: { width: number; height: number }): void {
-  if (!alive(killFeed) || size.width <= 0 || size.height <= 0) return
-  killFeedSize = { width: Math.ceil(size.width), height: Math.ceil(size.height) }
-  const { x, y } = killFeed.getBounds()
-  killFeed.setBounds(clampToDisplay({ x, y, ...killFeedSize }))
-}
-
-export function moveKillFeed(to: Point): void {
-  if (!alive(killFeed)) return
-  killFeed.setBounds(clampToDisplay({ x: to.x, y: to.y, ...measured(killFeed, killFeedSize) }))
-}
-
-export function killFeedDragEnded(): void {
-  if (!alive(killFeed)) return
-  const { x, y } = killFeed.getBounds()
-  settings.set('killFeed', { ...settings.get('killFeed'), position: { x, y } })
-}
 
 // ---- the game in front ----------------------------------------------------------------------
 
@@ -1110,14 +869,9 @@ function restoreHidden(): void {
   for (const win of [...awayHidden]) {
     if (alive(win) && held(win)) continue
     awayHidden.delete(win)
-    // These decide below whether they have anything to show.
-    if (alive(win) && win !== hud && win !== merchant && win !== meter && win !== timerBar && win !== unified && !measuredWins().includes(win)) win.showInactive()
+    // The overlays decide below whether they have anything to show.
+    if (alive(win) && !measuredWins().includes(win)) win.showInactive()
   }
-  refreshHud()
-  refreshMerchant()
-  refreshMeter()
-  refreshTimerBar()
-  refreshUnified()
   for (const m of MEASURED) m.refresh()
 }
 
@@ -1126,7 +880,7 @@ export function toggleOverlays(): boolean {
   overlaysOff = !overlaysOff
   applyGameMap()
   if (overlaysOff) {
-    for (const win of [bubble, hud, merchant, meter, killFeed, timerBar, unified, details, ...measuredWins()]) {
+    for (const win of [bubble, details, ...measuredWins()]) {
       if (!alive(win) || !win.isVisible()) continue
       awayHidden.add(win)
       win.hide()
@@ -1153,7 +907,7 @@ export function setForeground(game: boolean, app: boolean): void {
       gameAway = true
       log('overlays: hidden, another program in front')
       applyGameMap()
-      for (const win of [bubble, hud, merchant, meter, killFeed, timerBar, unified, details, ...measuredWins()]) {
+      for (const win of [bubble, details, ...measuredWins()]) {
         if (!alive(win) || !win.isVisible()) continue
         awayHidden.add(win)
         win.hide()
@@ -1183,7 +937,7 @@ const ON_TOP_EVERY_MS = 5_000
  */
 export function startOnTopWatch(): void {
   setInterval(() => {
-    for (const win of [bubble, hud, merchant, meter, killFeed, timerBar, unified, details, ...measuredWins()]) {
+    for (const win of [bubble, details, ...measuredWins()]) {
       if (!alive(win) || !win.isVisible()) continue
       win.setAlwaysOnTop(true, 'screen-saver')
       win.moveTop()
@@ -1194,27 +948,19 @@ export function startOnTopWatch(): void {
 /** Settings that change how the windows behave, applied live. */
 export function applyWindowSettings(): void {
   const hidden = settings.get('hideFromCapture')
-  for (const w of [bubble, panel, hud, merchant, meter, killFeed, timerBar, unified, details, ...measuredWins()]) if (alive(w)) w.setContentProtection(hidden)
+  for (const w of [bubble, panel, details, ...measuredWins()]) if (alive(w)) w.setContentProtection(hidden)
   // Each overlay sized to its page: closed when turned off, opened when turned on while the others are up.
+  // Each overlay: closed when turned off; turned on, opened with the others while they are up (the
+  // bubble is, awake), and the ones opened by their module while being placed.
   for (const m of MEASURED) {
-    if (m.manual) continue
     if (!m.enabled()) m.close()
-    else if (alive(bubble)) m.create()
+    else if (m.manual ? arranging && m.placeable : alive(bubble)) m.create()
   }
-  // Turned on: with the other overlays, while they are up (the bubble is, awake).
-  if (!timerBarOn()) closeTimerBar()
-  else if (alive(bubble)) createTimerBar()
-  if (!settings.get('unified').enabled) closeUnified()
-  else if (alive(bubble)) createUnified()
-  refreshUnified()
-  if (!settings.get('hud').merchant) closeMerchant()
-  if (!settings.get('meter').enabled) closeMeter()
   if (gameAway && !settings.get('hideWhenGameAway')) setForeground(true, false)
   if (alive(panel) && !gameAway) {
     const onTop = settings.get('panelOnTop')
     panel.setAlwaysOnTop(onTop, 'screen-saver')
   }
-  refreshHud()
 }
 
 /**
@@ -1222,18 +968,11 @@ export function applyWindowSettings(): void {
  * in the taskbar.
  */
 export function closeOverlays(): void {
-  for (const win of [bubble, hud, merchant, meter, killFeed, timerBar, unified]) if (alive(win)) win.destroy()
+  if (alive(bubble)) bubble.destroy()
   for (const m of MEASURED) m.close()
   bubble = null
-  hud = null
-  merchant = null
-  meter = null
-  killFeed = null
-  timerBar = null
-  unified = null
   awayHidden.clear()
   hudEditing = false
-  hudSize = { width: 0, height: 0 }
 
 }
 
@@ -1249,21 +988,6 @@ export function rebuildWindow(win: BrowserWindow): string | null {
     createBubble()
     return 'bubble'
   }
-  if (win === hud) {
-    const editing = hudEditing
-    win.destroy()
-    hud = null
-    hudEditing = false
-    createHud()
-    if (editing) hud!.webContents.once('did-finish-load', () => setHudEditing(true, false))
-    return 'hud'
-  }
-  if (win === merchant) {
-    win.destroy()
-    merchant = null
-    showMerchant()
-    return 'merchant'
-  }
   for (const [route, m] of Object.entries(OVERLAYS)) {
     if (win !== m.win()) continue
     m.close()
@@ -1276,30 +1000,6 @@ export function rebuildWindow(win: BrowserWindow): string | null {
     details = null
     if (source) openDetails(source)
     return 'details'
-  }
-  if (win === timerBar) {
-    win.destroy()
-    timerBar = null
-    createTimerBar()
-    return 'timerbar'
-  }
-  if (win === killFeed) {
-    win.destroy()
-    killFeed = null
-    createKillFeed()
-    return 'killfeed'
-  }
-  if (win === unified) {
-    win.destroy()
-    unified = null
-    createUnified()
-    return 'unified'
-  }
-  if (win === meter) {
-    win.destroy()
-    meter = null
-    createMeter()
-    return 'meter'
   }
   if (win === panel) {
     const up = panelVisible()

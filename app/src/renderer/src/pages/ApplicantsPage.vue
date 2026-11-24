@@ -5,6 +5,7 @@
 // hides it until the next one. Moved by its header; minimized it is the header with the count.
 // While the dashboard is up with nobody applying, it shows a sample to place it by. Nothing to
 // show measures 0, and main keeps the window hidden.
+import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
@@ -19,7 +20,8 @@ import { serverTag } from '@shared/servers.ts'
 
 const store = useApp()
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('applicants', () => list.value.length > 0)
 const cfg = computed(() => store.settings.applicants)
 
 const now = ref(Date.now())
@@ -79,26 +81,13 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('applican
 const dismiss = (a: Applicant): void => void api.invoke('applicants:dismiss', a.character)
 const drag = windowDrag({ overlay: 'applicants' })
 
-let sent = ''
-function report(): void {
-  const el = root.value
-  const r = el && list.value.length ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('overlay:resize', 'applicants', { width: r.width, height: r.height })
-}
 watch([() => list.value.length, () => cfg.value.collapsed], () => void nextTick(report))
 
-let observer: ResizeObserver | null = null
 onMounted(() => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
 })
 onBeforeUnmount(() => {
   clearInterval(ticker)
-  observer?.disconnect()
 })
 </script>
 

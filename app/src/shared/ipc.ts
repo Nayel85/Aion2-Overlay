@@ -27,7 +27,7 @@ import type { Cube, Enemy, Nearby, TargetPlayer, Pet, PvpKill, PvpSummary, ShopS
 
 /** Renderer → main, request/response. */
 /** The overlays that size themselves to their page, by their route. */
-export const OVERLAY_IDS = ['applicants', 'party', 'flight', 'gather', 'skills', 'minimap', 'buffs', 'cc', 'enemies', 'training', 'packets'] as const
+export const OVERLAY_IDS = ['applicants', 'party', 'flight', 'gather', 'skills', 'minimap', 'buffs', 'cc', 'enemies', 'training', 'packets', 'hud', 'merchant', 'meter', 'timerbar', 'unified', 'killfeed'] as const
 export type OverlayId = (typeof OVERLAY_IDS)[number]
 
 export interface InvokeChannels {
@@ -105,23 +105,9 @@ export interface InvokeChannels {
   'panel:maximize': { args: []; result: void }
 
   'hud:setEditing': { args: [editing: boolean]; result: void }
-  'hud:moveTo': { args: [to: Point]; result: void }
-  'hud:dragEnd': { args: []; result: void }
-  'hud:resize': { args: [size: { width: number; height: number }]; result: void }
-  'merchant:moveTo': { args: [to: Point]; result: void }
-  'merchant:dragEnd': { args: []; result: void }
-  'merchant:resize': { args: [size: { width: number; height: number }]; result: void }
   'merchant:close': { args: []; result: void }
   /** An item of the merchant's stock bought: off its list until the restock. */
   'merchant:bought': { args: [item: number]; result: void }
-  /** The timers' countdown bar over the game. */
-  'timerbar:moveTo': { args: [to: Point]; result: void }
-  'timerbar:dragEnd': { args: []; result: void }
-  'timerbar:resize': { args: [size: { width: number; height: number }]; result: void }
-  /** The Unified HUD: moved (its top left while dragged), dropped, measured. */
-  'unified:moveTo': { args: [to: Point]; result: void }
-  'unified:dragEnd': { args: []; result: void }
-  'unified:resize': { args: [size: { width: number; height: number }]; result: void }
   /** Bring the dashboard up (the Unified HUD's cog). */
   'panel:open': { args: []; result: void }
   /** The dashboard on the Characters page (the Unified HUD's Odyle energy). */
@@ -129,9 +115,6 @@ export interface InvokeChannels {
   /** The kill feed over the game: opened from the PvP page, closed there or with its X. */
   'killfeed:open': { args: []; result: void }
   'killfeed:close': { args: []; result: void }
-  'killfeed:moveTo': { args: [to: Point]; result: void }
-  'killfeed:dragEnd': { args: []; result: void }
-  'killfeed:resize': { args: [size: { width: number; height: number }]; result: void }
   /** The timers alerting now; and dismissing them (a click on the bubble). */
   'timers:get': { args: []; result: TimerAlert[] }
   'timers:dismiss': { args: []; result: void }
@@ -193,9 +176,6 @@ export interface InvokeChannels {
   /** Each character's personal bests, each dungeon boss (the engine's). */
   'history:bests': { args: []; result: Encounter[] }
   'history:delete': { args: [id: string]; result: void }
-  'meter:moveTo': { args: [to: Point]; result: void }
-  'meter:dragEnd': { args: []; result: void }
-  'meter:resize': { args: [size: { width: number; height: number }]; result: void }
   /** The Lokthar sync: check the address and token; the last attempt's outcome. */
   'lokthar:test': { args: []; result: SyncResult }
   'lokthar:sync': { args: []; result: SyncResult }
@@ -294,14 +274,14 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'app:info', 'app:quit', 'app:openPath',
   'settings:all', 'settings:set',
   'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'items:details', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
-  'killfeed:open', 'killfeed:close', 'killfeed:moveTo', 'killfeed:dragEnd', 'killfeed:resize',
-  'timerbar:moveTo', 'timerbar:dragEnd', 'timerbar:resize',
-  'unified:moveTo', 'unified:dragEnd', 'unified:resize', 'panel:open', 'panel:characters',
+  'killfeed:open', 'killfeed:close', 
+  
+  'panel:open', 'panel:characters',
   'bubble:moveTo', 'bubble:dragEnd', 'panel:toggle', 'panel:hide', 'panel:arranging', 'panel:minimize', 'panel:maximize',
-  'hud:setEditing', 'hud:moveTo', 'hud:dragEnd', 'hud:resize',
-  'merchant:moveTo', 'merchant:dragEnd', 'merchant:resize', 'merchant:close', 'merchant:bought', 'panel:showPet', 'timers:get', 'timers:dismiss', 'timers:open',
+  'hud:setEditing', 
+  'merchant:close', 'merchant:bought', 'panel:showPet', 'timers:get', 'timers:dismiss', 'timers:open',
   'lokthar:test', 'lokthar:sync', 'lokthar:last',
-  'meter:get', 'meter:reset', 'meter:moveTo', 'meter:dragEnd', 'meter:resize',
+  'meter:get', 'meter:reset', 
   
   'skills:get', 
   'buffs:get', 'applicants:get', 'gather:get', 'flight:get', 'party:get', 'overlay:moveTo', 'overlay:dragEnd', 'overlay:resize', 'applicants:dismiss', 'applicants:clear', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',

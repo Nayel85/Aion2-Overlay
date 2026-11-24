@@ -4,6 +4,7 @@
 // running down under it. Optionally the monsters' other debuffs on you in a row below. CC is told
 // by the game's own type for each effect (lib/buffs.ts, ccKind). Clicks go through to the game; while
 // the dashboard is up it shows a preview, and can be dragged into place.
+import { useOverlay } from '@/lib/overlay.ts'
 import { useNow } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
@@ -16,7 +17,8 @@ import type { Buff } from '@shared/buffs.ts'
 
 const store = useApp()
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('cc', () => shown.value)
 const cfg = computed(() => store.settings.buffs)
 // Ticking while there are effects on you (or the preview).
 const now = useNow(100, () => store.buffs.length > 0 || store.panelVisible)
@@ -47,25 +49,10 @@ const shown = computed(() => !!main.value || preview.value || debuffs.value.leng
 const drag = windowDrag({ overlay: 'cc' })
 
 /** Tell main how big the window is; nothing to show measures 0, and main keeps it hidden. */
-let sent = ''
-function report(): void {
-  const el = root.value
-  const r = el && shown.value ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('overlay:resize', 'cc', { width: r.width, height: r.height })
-}
 watch([shown, () => debuffs.value.length, () => controls.value.length], () => void nextTick(report))
 
-let observer: ResizeObserver | null = null
 onMounted(() => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
-})
-onBeforeUnmount(() => {
-  observer?.disconnect()
 })
 </script>
 

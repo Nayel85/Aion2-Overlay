@@ -5,6 +5,7 @@
 // two minutes) and while the dashboard is up, to be placed; moved by its header. Its dash shrinks it
 // to that line (the clock and your DPS while a run goes on); its X turns it off (the Training Dummy
 // page turns it on again). The last run's Details opens its breakdown.
+import { useOverlay } from '@/lib/overlay.ts'
 import { useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CollapseButton from '@/components/CollapseButton.vue'
@@ -18,7 +19,8 @@ const SHOW_AFTER_HIT_MS = 120_000
 
 const store = useApp()
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('training', () => shown.value)
 const cfg = computed(() => store.settings.dummy)
 // Hidden while idle, if set.
 const idle = useIdle(() => store.settings.dummy)
@@ -64,31 +66,18 @@ const drag = windowDrag({ overlay: 'training' })
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('dummy', { ...cfg.value, ...patch })
 
 /** Tell main how big the window is; nothing to show measures 0, and main keeps it hidden. */
-let sent = ''
-function report(): void {
-  const el = root.value
-  const r = el && shown.value ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('overlay:resize', 'training', { width: r.width, height: r.height })
-}
 watch([shown, active, last, () => cfg.value.collapsed], () => void nextTick(report))
 
 let timer: ReturnType<typeof setInterval> | null = null
-let observer: ResizeObserver | null = null
 let off: (() => void) | null = null
 onMounted(async () => {
   off = api.on('dummy:state', (s) => (state.value = s))
   state.value = await api.invoke('dummy:get')
   timer = setInterval(() => (now.value = Date.now()), 250)
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
 })
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
-  observer?.disconnect()
   off?.()
 })
 </script>

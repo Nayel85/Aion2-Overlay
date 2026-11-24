@@ -15,8 +15,8 @@ const CLICK_SLOP = 4
 export interface WindowDragOptions {
   /** One of the overlays sized to their page (shared/ipc.ts `OverlayId`), or a window with channels of its own. */
   overlay?: OverlayId
-  move?: 'bubble:moveTo' | 'unified:moveTo' | 'hud:moveTo' | 'merchant:moveTo' | 'meter:moveTo' | 'killfeed:moveTo' | 'timerbar:moveTo' | 'details:moveTo'
-  end?: 'bubble:dragEnd' | 'unified:dragEnd' | 'hud:dragEnd' | 'merchant:dragEnd' | 'meter:dragEnd' | 'killfeed:dragEnd' | 'timerbar:dragEnd' | 'details:dragEnd'
+  move?: 'bubble:moveTo' | 'details:moveTo'
+  end?: 'bubble:dragEnd' | 'details:dragEnd'
   onClick?: () => void
 }
 

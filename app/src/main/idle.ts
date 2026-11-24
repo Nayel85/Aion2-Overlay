@@ -17,7 +17,7 @@ import { game } from './game.ts'
 import { setGameMapAwake } from './gameMap.ts'
 import { settings } from './settings.ts'
 import { log, startTracker, stopTracker, tracker } from './tracker.ts'
-import { closeMeter, closeOverlays, createBubble, createHud, createKillFeed, createMeter, createTimerBar, createUnified, onPanelVisible, openOverlays, panelVisible } from './windows.ts'
+import { closeOverlays, createBubble, onPanelVisible, openOverlays, panelVisible } from './windows.ts'
 
 const EXIT_GRACE_MS = 20_000
 const LINGER_MS = 120_000
@@ -44,20 +44,9 @@ function wake(why: string): void {
   asleep = false
   log(`awake: ${why}`)
   createBubble()
-  createHud()
-  createKillFeed()
-  createTimerBar()
-  createUnified()
   openOverlays()
   setGameMapAwake(true)
   tracker.setCapture(true)
-  applyMeter()
-}
-
-/** The meter's window, while awake and the meter is on. */
-function applyMeter(): void {
-  if (asleep === false && settings.get('meter').enabled) createMeter()
-  else closeMeter()
 }
 
 function sleep(why: string): void {
@@ -91,7 +80,6 @@ export async function startIdleWatch(): Promise<void> {
 
   settings.onChanged(() => {
     if (sleepWanted() !== (asleep === true)) update('the setting changed')
-    else applyMeter()
   })
 
   onPanelVisible((visible) => {

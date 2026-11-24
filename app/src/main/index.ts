@@ -35,7 +35,7 @@ import { finishLog, killTrackerNow, log, startNpcapWatch, stopTracker, tracker }
 import { tr } from './i18n.ts'
 import { setPlayerRegion } from '../shared/timers.ts'
 import { createTray, setTrayTooltip } from './tray.ts'
-import { applyWindowSettings, closeMerchant, markQuitting, merchantBounds, merchantOpen, refreshHud, setForeground, showMerchant, showPanel, startOnTopWatch } from './windows.ts'
+import { applyWindowSettings, closeOverlay, markQuitting, openOverlay, overlayBounds, overlayOpen, setForeground, showPanel, startOnTopWatch } from './windows.ts'
 
 // The name is also the data folder's (%APPDATA%\<name>): Lokthar's is copied in on the first start,
 // older names' are moved across once.
@@ -107,9 +107,9 @@ if (!app.requestSingleInstanceLock()) {
     // shop is gone from the screen (shopScreen.ts). A tab opened again brings it back.
     let shopAt: { at: number; position: string } | null = null
     tracker.onShop(() => {
-      showMerchant()
+      openOverlay('merchant')
       shopAt = { at: Date.now(), position: String(tracker.nearby().position) }
-      if (merchantOpen()) watchShopScreen({ open: merchantOpen, window: merchantBounds, gameInFront: () => gameInFront, gone: (share) => leftShop(`the shop is gone from the screen (${Math.round(share * 100)}% changed)`, true) })
+      if (overlayOpen('merchant')) watchShopScreen({ open: () => overlayOpen('merchant'), window: () => overlayBounds('merchant'), gameInFront: () => gameInFront, gone: (share) => leftShop(`the shop is gone from the screen (${Math.round(share * 100)}% changed)`, true) })
     })
     // `seen`: told by the screen itself, so taken at once (the settling is for the packets' signs).
     const leftShop = (why: string, seen = false): void => {
@@ -117,13 +117,12 @@ if (!app.requestSingleInstanceLock()) {
       shopAt = null
       stopShopScreen()
       log(`merchant window closed: ${why}`)
-      closeMerchant()
+      closeOverlay('merchant')
     }
     tracker.onEvent('nearby', () => shopAt && String(tracker.nearby().position) !== shopAt.position && leftShop('you moved'))
     tracker.onEvent('combat', () => leftShop('you are fighting'))
     onGameMapStatus((status, was) => status === 'found' && was !== 'found' && leftShop("the game's map is back"))
     tracker.onStatus((status) => {
-      refreshHud()
       const what = {
         starting: 'starting…',
         listening: 'waiting for the game',

@@ -27,47 +27,29 @@ import { logPath, tracker } from './tracker.ts'
 import {
   bubbleDragEnded,
   closeDetails,
-  closeMerchant,
+  closeOverlay,
   detailsDragEnded,
   detailsSource,
   hidePanel,
-  hudDragEnded,
   isArranging,
-  killFeedDragEnded,
   markQuitting,
-  merchantDragEnded,
-  meterDragEnded,
   minimizePanel,
   moveBubble,
   moveDetails,
-  moveHud,
-  moveKillFeed,
-  moveMerchant,
-  moveMeter,
-  moveTimerBar,
-  moveUnified,
   openDetails,
   overlayDragEnded,
   overlayMove,
   overlayResize,
   overlaysHidden,
-  resizeHud,
-  resizeKillFeed,
-  resizeMerchant,
-  resizeMeter,
-  resizeTimerBar,
-  resizeUnified,
   setHudEditing,
   setKillFeedOpen,
   showCharactersInPanel,
   showPanel,
   showPetInPanel,
   showTimersInPanel,
-  timerBarDragEnded,
   toggleMaximizePanel,
   toggleOverlays,
   togglePanel,
-  unifiedDragEnded,
 } from './windows.ts'
 import type { InvokeArgs, InvokeChannel, InvokeResult } from '../shared/ipc.ts'
 import type { SettingKey } from '../shared/settings.ts'
@@ -107,31 +89,10 @@ export function registerIpc(): void {
 
   handle('tracker:get', (fullPvp = true) => ({ status: tracker.status(), pets: tracker.pets(), nearby: tracker.nearby(), shop: tracker.shop(), kina: tracker.kina(), abyss: tracker.abyss(), rifts: tracker.rifts(), fieldBosses: tracker.fieldBosses(), pvp: fullPvp ? tracker.pvp() : [], pvpSummary: pvpLog.summary(), cubes: tracker.cubes(), enemies: tracker.enemies(), target: tracker.target() }))
   handle('tracker:clearPvp', () => tracker.clearPvp())
-  handle('timerbar:moveTo', (to) => {
-    if (isPoint(to)) moveTimerBar(to)
-  })
-  handle('timerbar:dragEnd', () => timerBarDragEnded())
-  handle('timerbar:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeTimerBar(size)
-  })
-  handle('unified:moveTo', (to) => {
-    if (isPoint(to)) moveUnified(to)
-  })
-  handle('unified:dragEnd', () => unifiedDragEnded())
-  handle('unified:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeUnified(size)
-  })
   handle('panel:open', () => showPanel())
   handle('panel:characters', () => showCharactersInPanel())
   handle('killfeed:open', () => setKillFeedOpen(true))
   handle('killfeed:close', () => setKillFeedOpen(false))
-  handle('killfeed:moveTo', (to) => {
-    if (isPoint(to)) moveKillFeed(to)
-  })
-  handle('killfeed:dragEnd', () => killFeedDragEnded())
-  handle('killfeed:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeKillFeed(size)
-  })
   handle('tracker:setSouls', (pet, souls) => {
     if (Number.isInteger(pet) && Number.isInteger(souls) && souls >= 0 && souls < 100000) tracker.setSouls(pet, souls)
   })
@@ -194,22 +155,8 @@ export function registerIpc(): void {
   handle('panel:maximize', () => toggleMaximizePanel())
 
   handle('hud:setEditing', (editing) => setHudEditing(Boolean(editing)))
-  handle('hud:moveTo', (to) => {
-    if (isPoint(to)) moveHud(to)
-  })
-  handle('hud:dragEnd', () => hudDragEnded())
-  handle('hud:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeHud(size)
-  })
 
-  handle('merchant:moveTo', (to) => {
-    if (isPoint(to)) moveMerchant(to)
-  })
-  handle('merchant:dragEnd', () => merchantDragEnded())
-  handle('merchant:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeMerchant(size)
-  })
-  handle('merchant:close', () => closeMerchant())
+  handle('merchant:close', () => closeOverlay('merchant'))
   handle('merchant:bought', (item) => {
     if (Number.isInteger(item)) tracker.markBought(item)
   })
@@ -284,12 +231,5 @@ export function registerIpc(): void {
   handle('history:bests', () => meterState.bests())
   handle('history:delete', (id) => {
     if (isPlainId(id)) meterState.deleteFight(id)
-  })
-  handle('meter:moveTo', (to) => {
-    if (isPoint(to)) moveMeter(to)
-  })
-  handle('meter:dragEnd', () => meterDragEnded())
-  handle('meter:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeMeter(size)
   })
 }

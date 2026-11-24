@@ -2,6 +2,7 @@
 // Your own damage on the meter's target, skill by skill: your DPS large, then each skill's icon,
 // DPS, share and damage, a bar behind each as long as its share. Redrawn every second; moved by its
 // header, sized to its rows (hidden while none of your damage is on the target).
+import { useOverlay } from '@/lib/overlay.ts'
 import { useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import SkillIcon from '@/components/SkillIcon.vue'
@@ -15,7 +16,8 @@ const EVERY_MS = 1000
 
 const store = useApp()
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('skills')
 const cfg = computed(() => store.settings.skills)
 // Hidden while idle, if set.
 const idle = useIdle(() => store.settings.skills)
@@ -59,30 +61,16 @@ const drag = windowDrag({ overlay: 'skills' })
 const close = (): void => void store.set('skills', { ...store.settings.skills, enabled: false })
 
 /** Tell main how big the window is; nothing of yours measures 0, and main keeps it hidden. */
-let sent = ''
-function report(): void {
-  const el = root.value
-  // What it shows: its rows, the empty frame to place it, or nothing (0 × 0: hidden).
-  const r = el ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('overlay:resize', 'skills', { width: r.width, height: r.height })
-}
 watch([() => rows.value.length, () => store.panelVisible, idle], () => void nextTick(report))
 
 let timer: ReturnType<typeof setInterval> | null = null
-let observer: ResizeObserver | null = null
 onMounted(() => {
   void load()
   timer = setInterval(() => void load(), EVERY_MS)
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
 })
 onBeforeUnmount(() => {
   if (timer) clearInterval(timer)
-  observer?.disconnect()
 })
 </script>
 

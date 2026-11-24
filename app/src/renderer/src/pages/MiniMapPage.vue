@@ -8,6 +8,7 @@
 // The minimize button shrinks it to its header (the zone and the cubes in view). Its bottom-right
 // corner resizes it (a double-click there makes it the default square again); hovering the map shows
 // a slider for its opacity.
+import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
@@ -31,15 +32,28 @@ const PALETTE = ['#f76b15', '#30a46c', '#0090ff', '#e54666', '#12a594', '#ab4aba
 
 const store = useApp()
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report, placing } = useOverlay('minimap')
 const map = ref<InstanceType<typeof WorldMap> | null>(null)
 const cfg = computed(() => store.settings.minimap)
 const spawns = useSpawns()
 
 /** The zone you are in, else the last one known: a guess from the monsters around you comes and goes. */
 const lastWorld = ref<number | null>(null)
-const worldId = computed(() => (spawns.value ? (currentWorld(store.nearby, spawns.value) ?? lastWorld.value) : null))
-watch(worldId, (id) => id !== null && (lastWorld.value = id))
+/** Being placed with no zone known: Verteron, as a sample to place it by, as every overlay has. */
+const sampleWorld = computed(() => {
+  const worlds = spawns.value?.worlds ?? {}
+  const id = Object.keys(worlds).find((k) => worlds[k]!.name === 'Verteron') ?? Object.keys(worlds)[0]
+  return id === undefined ? null : Number(id)
+})
+const worldId = computed(() =>
+  spawns.value ? (currentWorld(store.nearby, spawns.value) ?? lastWorld.value ?? (placing.value ? sampleWorld.value : null)) : null,
+)
+// The zone you were in is kept (never the sample).
+watch(
+  () => (spawns.value ? currentWorld(store.nearby, spawns.value) : null),
+  (id) => id !== null && (lastWorld.value = id),
+)
 const world = computed(() => (spawns.value && worldId.value !== null ? (spawns.value.worlds[worldId.value] ?? null) : null))
 
 /**
@@ -118,24 +132,11 @@ function saveOpacity(): void {
 const ZOOM_STEP = 1.5
 
 /** Tell main how big the window is. */
-let sent = ''
-function report(): void {
-  const el = root.value
-  const r = el?.getBoundingClientRect() ?? { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('overlay:resize', 'minimap', { width: r.width, height: r.height })
-}
 watch([world, width, mapHeight, () => cfg.value.collapsed, () => legend.value.length], () => void nextTick(report))
 
-let observer: ResizeObserver | null = null
 onMounted(() => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
 })
-onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <template>

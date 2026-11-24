@@ -2,6 +2,7 @@
 // Your buffs and debuffs over the game: each one's icon with its stacks, and the time left under
 // it (a ring runs down around timed ones). Buffs on one row, debuffs (cast by monsters) on another,
 // red-edged. Moved by dragging; sized to what it shows, hidden while nothing is on you.
+import { useOverlay } from '@/lib/overlay.ts'
 import { useNow, useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
@@ -14,7 +15,8 @@ import type { Buff } from '@shared/buffs.ts'
 
 const store = useApp()
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('buffs')
 const cfg = computed(() => store.settings.buffs)
 // Hidden while idle, if set.
 const idle = useIdle(() => store.settings.buffs)
@@ -61,26 +63,10 @@ const tip = (b: Buff): string => [buffName(b.id), b.stacks > 1 ? t('{n} stacks',
 const drag = windowDrag({ overlay: 'buffs' })
 
 /** Tell main how big the window is; nothing on you measures 0, and main keeps it hidden. */
-let sent = ''
-function report(): void {
-  const el = root.value
-  // What it shows: its rows, the empty frame to place it, or nothing (0 × 0: hidden).
-  const r = el ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('overlay:resize', 'buffs', { width: r.width, height: r.height })
-}
 watch([() => rows.value.map((r) => r.length).join(), () => store.panelVisible, idle], () => void nextTick(report))
 
-let observer: ResizeObserver | null = null
 onMounted(() => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
-})
-onBeforeUnmount(() => {
-  observer?.disconnect()
 })
 </script>
 

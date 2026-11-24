@@ -6,6 +6,7 @@
 // running down to the result (how long it takes, from the game's steps). Size, colours, which to show and a sound are settings
 // (dashboard/GatherView). Clicks go through to the game; while the dashboard is up it shows a sample,
 // and can be dragged into place. Nothing to show measures 0, and main keeps the window hidden.
+import { useOverlay } from '@/lib/overlay.ts'
 import { useNow } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -18,7 +19,8 @@ import { itemIcon } from '@shared/itemRef.ts'
 
 const store = useApp()
 const api = bridge()
-const root = ref<HTMLElement | null>(null)
+// Measured, shown and placed as every overlay (lib/overlay.ts).
+const { root, report } = useOverlay('gather', () => shown.value)
 const cfg = computed(() => store.settings.gather)
 
 /** While the dashboard is up and nothing is being gathered: a sample to place it by. */
@@ -146,25 +148,10 @@ watch(
 
 const drag = windowDrag({ overlay: 'gather' })
 
-let sent = ''
-function report(): void {
-  const el = root.value
-  const r = el && shown.value ? el.getBoundingClientRect() : { width: 0, height: 0 }
-  const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
-  if (key === sent) return
-  sent = key
-  void api.invoke('overlay:resize', 'gather', { width: r.width, height: r.height })
-}
 watch([shown, () => cfg.value.scale, () => cfg.value.style, () => shownGather.value && textOf(shownGather.value)], () => void nextTick(report))
 
-let observer: ResizeObserver | null = null
 onMounted(() => {
-  observer = new ResizeObserver(report)
-  if (root.value) observer.observe(root.value)
   report()
-})
-onBeforeUnmount(() => {
-  observer?.disconnect()
 })
 </script>
 
