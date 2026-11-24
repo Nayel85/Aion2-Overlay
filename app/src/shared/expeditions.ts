@@ -1,7 +1,8 @@
 /**
  * Expeditions and their guaranteed chest: each cube opened at the end of a run counts, and after as
  * many as its ceiling (EXPEDITION_CEILINGS, questlog's) the next chest is a pick from the dungeon's
- * set. Counted per character and per mode: Exploration (`easy`), Conquest (`normal`), Advanced.
+ * set. Counted per character and per mode: Exploration (`easy`), Conquest Normal (`normal`) and
+ * Conquest Hard (`advanced`).
  */
 import { EXPEDITION_CEILINGS } from './expeditionCeilings.ts'
 import { ZONES } from './zones.ts'
@@ -12,8 +13,8 @@ export type Expeditions = Record<string, { name: string; at: number; cubes: Reco
 export type ExpeditionMode = 'exploration' | 'conquest' | 'advanced'
 export const EXPEDITION_MODES: { id: ExpeditionMode; label: string; short: string }[] = [
   { id: 'exploration', label: 'Exploration', short: 'Exp' },
-  { id: 'conquest', label: 'Conquest', short: 'Conq' },
-  { id: 'advanced', label: 'Advanced', short: 'Adv' },
+  { id: 'conquest', label: 'Conquest Normal', short: 'Normal' },
+  { id: 'advanced', label: 'Conquest Hard', short: 'Hard' },
 ]
 const MODE_OF: Record<string, ExpeditionMode> = { easy: 'exploration', normal: 'conquest', advanced: 'advanced' }
 

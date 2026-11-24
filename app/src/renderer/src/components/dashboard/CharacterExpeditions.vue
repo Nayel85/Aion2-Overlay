@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // A server's characters' expeditions (shared/expeditions.ts), side by side: a row per expedition, a
-// column per character, and in each cell its three modes (Exploration, Conquest, Advanced) as the
+// column per character, and in each cell its three modes (Exploration, Conquest Normal and Hard) as the
 // cubes opened of the guaranteed chest's ceiling, a bar each; a chest due stands out in green. As the
 // game said at each one's last login, counted on with each cube since.
 import { computed } from 'vue'
@@ -36,7 +36,7 @@ function title(name: string, mode: string, cell: { cubes: number | null; ceiling
             <div class="space-y-0.5">
               <template v-for="m in EXPEDITION_MODES" :key="m.id">
                 <div v-if="expeditionCell(state[c.id]?.cubes, name, m.id)" class="flex items-center gap-1.5 tabular-nums" :title="title(name, m.label, expeditionCell(state[c.id]?.cubes, name, m.id)!)">
-                  <span class="w-8 shrink-0 text-[10px] text-darkest">{{ t(m.short) }}</span>
+                  <span class="w-10 shrink-0 text-[10px] text-darkest">{{ t(m.short) }}</span>
                   <template v-for="cell in [expeditionCell(state[c.id]?.cubes, name, m.id)!]" :key="0">
                     <div class="h-1 w-16 shrink-0 overflow-hidden rounded-full bg-dark">
                       <div v-if="cell.cubes !== null" :class="['h-full rounded-full', cell.left ? 'bg-accent' : 'bg-green']" :style="{ width: `${Math.min(100, (cell.cubes / cell.ceiling) * 100)}%` }" />
