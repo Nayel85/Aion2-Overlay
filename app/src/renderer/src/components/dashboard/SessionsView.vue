@@ -3,6 +3,7 @@
 // title), each session one line with what it did in a few words; on the right the one picked, all of
 // it (SessionDetail). Filtered by character and since when, as the Loot page; the filters are
 // remembered (this window's storage).
+import { fromOf, namePicker, type Period, PERIODS } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -12,20 +13,13 @@ import Segmented from '@/components/ui/Segmented.vue'
 import { ICON, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
 import { loc, plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { ASCENSION, characterId } from '@shared/characters.ts'
+import { characterId } from '@shared/characters.ts'
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
 import { countedRuns, LOOT_KINDS, lootCounts, sessionDigest, type PlaySession } from '@shared/sessions.ts'
 
 const store = useApp()
 
-type Period = 'today' | 'week' | 'month' | 'all'
-const PERIODS: { id: Period; label: string }[] = [
-  { id: 'today', label: 'Today' },
-  { id: 'week', label: 'This week' },
-  { id: 'month', label: '30 days' },
-  { id: 'all', label: 'All' },
-]
 interface Saved {
   names: string[]
   period: Period
@@ -33,14 +27,6 @@ interface Saved {
 /** The filters picked, remembered in this window's storage. */
 const NO_FILTERS: Saved = { names: [], period: 'all' }
 const f = useStored<Saved>('sessions.filters', NO_FILTERS, (raw) => ({ ...NO_FILTERS, ...(raw as Partial<Saved>) }))
-/** Since when a period's sessions count: today's midnight, the weekly reset (Wednesday 07:00 UTC), 30 days back. */
-function fromOf(p: Period): number {
-  const now = Date.now()
-  if (p === 'today') return new Date(new Date().setHours(0, 0, 0, 0)).getTime()
-  if (p === 'week') return Math.floor((now - ASCENSION.offset) / ASCENSION.every) * ASCENSION.every + ASCENSION.offset
-  if (p === 'month') return now - 30 * 86_400_000
-  return 0
-}
 
 // ---- the sessions ---------------------------------------------------------------------------
 
@@ -80,11 +66,7 @@ const picked = ref<string | null>(null)
 /** The session shown: the one picked while the filters keep it, else the first listed. */
 const selected = computed(() => shown.value.find((s) => keyOf(s) === picked.value) ?? shown.value[0] ?? null)
 
-function toggleName(name: string): void {
-  const names = f.value.names.includes(name) ? f.value.names.filter((n) => n !== name) : [...f.value.names, name]
-  f.value = { ...f.value, names: names.length === characters.value.length ? [] : names }
-}
-const isPicked = (name: string): boolean => !f.value.names.length || f.value.names.includes(name)
+const { toggleName, picked: isPicked } = namePicker(f, characters)
 function className(s: Pick<PlaySession, 'name' | 'server'>): string | null {
   return s.server !== null ? (store.characters[characterId(s.server, s.name)]?.className ?? null) : null
 }

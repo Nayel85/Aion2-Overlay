@@ -3,14 +3,13 @@
 // resource, then by character and resource: how many, failed, ranked up, a plant's x3, doubled
 // against what Plentiful Harvest's level makes expected (your luck), Lady Luck's triggers, and the
 // skills' levels the rolls showed. The filters picked are remembered (this window's storage).
+import { classOf, fromOf, namePicker, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { t } from '@/lib/i18n.ts'
-import { useApp } from '@/stores/app.ts'
-import { ASCENSION, characterId } from '@shared/characters.ts'
 import { allGatherings, filterGatherings, gatherResources, gatherRows, gatherTotal } from '@shared/gatherStats.ts'
 import { luck } from '@shared/lootStats.ts'
 import { itemIcon } from '@shared/sessions.ts'
@@ -18,15 +17,6 @@ import { itemIcon } from '@shared/sessions.ts'
 /** `details`: the x2 Plentiful Harvest makes expected, your luck, Lady Luck's triggers, the skills seen. */
 defineProps<{ details?: boolean }>()
 
-const store = useApp()
-
-type Period = 'today' | 'week' | 'month' | 'all'
-const PERIODS: { id: Period; label: string }[] = [
-  { id: 'today', label: 'Today' },
-  { id: 'week', label: 'This week' },
-  { id: 'month', label: '30 days' },
-  { id: 'all', label: 'All' },
-]
 interface Saved {
   names: string[]
   period: Period
@@ -35,15 +25,8 @@ interface Saved {
 /** The filters picked, remembered in this window's storage. */
 const NO_FILTERS: Saved = { names: [], period: 'all', resource: null }
 const f = useStored<Saved>('gatherStats.filters', NO_FILTERS, (raw) => ({ ...NO_FILTERS, ...(raw as Partial<Saved>) }))
-function fromOf(p: Period): number {
-  const now = Date.now()
-  if (p === 'today') return new Date(new Date().setHours(0, 0, 0, 0)).getTime()
-  if (p === 'week') return Math.floor((now - ASCENSION.offset) / ASCENSION.every) * ASCENSION.every + ASCENSION.offset
-  if (p === 'month') return now - 30 * 86_400_000
-  return 0
-}
 
-const sessions = computed(() => (store.sessions.current ? [store.sessions.current, ...store.sessions.history] : store.sessions.history))
+const sessions = useSessions()
 const all = computed(() => allGatherings(sessions.value))
 const characters = computed(() => [...new Set(all.value.map((g) => g.name))])
 const resources = computed(() => gatherResources(filterGatherings(all.value, { names: f.value.names, from: fromOf(f.value.period), resource: null })))
@@ -52,15 +35,8 @@ const picked = computed(() => filterGatherings(all.value, { names: f.value.names
 const rows = computed(() => gatherRows(picked.value))
 const total = computed(() => gatherTotal(picked.value))
 
-function toggleName(name: string): void {
-  const names = f.value.names.includes(name) ? f.value.names.filter((n) => n !== name) : [...f.value.names, name]
-  f.value = { ...f.value, names: names.length === characters.value.length ? [] : names }
-}
-const isPicked = (name: string): boolean => !f.value.names.length || f.value.names.includes(name)
-function className(name: string): string | null {
-  const s = sessions.value.find((x) => x.name === name)
-  return s?.server != null ? (store.characters[characterId(s.server, name)]?.className ?? null) : null
-}
+const { toggleName, picked: isPicked } = namePicker(f, characters)
+const className = (name: string): string | null => classOf(sessions.value, name)
 
 const pct = (n: number, of: number): string => (of ? `${Math.round((n / of) * 100)}%` : '–')
 function luckOf(got: number, expected: number | null): { text: string; class: string } | null {

@@ -3,6 +3,7 @@
 // craft, then by character (how many, how many procced, your proc rate against the game's chances:
 // your luck) and by recipe (the same, with what the proc gives: a better item or the same twice).
 // The filters picked are remembered (this window's storage).
+import { classOf, fromOf, namePicker, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -10,9 +11,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { t } from '@/lib/i18n.ts'
-import { useApp } from '@/stores/app.ts'
 import { gradeClass } from '@/components/panel/sessionIcons.ts'
-import { ASCENSION, characterId } from '@shared/characters.ts'
 import { allCrafts, craftKinds, craftSummaries, filterCrafts, recipeStats, type CraftSummary } from '@shared/craftStats.ts'
 import { luck } from '@shared/lootStats.ts'
 import { itemIcon } from '@shared/sessions.ts'
@@ -21,17 +20,8 @@ import { itemIcon } from '@shared/sessions.ts'
 /** `details`: what the game's chances make expected, your luck, the crafts that can proc. */
 defineProps<{ embedded?: boolean; details?: boolean }>()
 
-const store = useApp()
-
 // ---- the filters, remembered ------------------------------------------------------------------
 
-type Period = 'today' | 'week' | 'month' | 'all'
-const PERIODS: { id: Period; label: string }[] = [
-  { id: 'today', label: 'Today' },
-  { id: 'week', label: 'This week' },
-  { id: 'month', label: '30 days' },
-  { id: 'all', label: 'All' },
-]
 type Show = 'all' | 'proc' | 'procced'
 const SHOWS: { id: Show; label: string }[] = [
   { id: 'all', label: 'All recipes' },
@@ -49,14 +39,6 @@ const NO_FILTERS: Saved = { names: [], period: 'all', kind: null, show: 'all' }
 const f = useStored<Saved>('crafts.filters', NO_FILTERS, (raw) => ({ ...NO_FILTERS, ...(raw as Partial<Saved>) }))
 const query = ref('')
 
-/** Since when a period's crafts count: today's midnight, the weekly reset (Wednesday 07:00 UTC), 30 days back. */
-function fromOf(p: Period): number {
-  const now = Date.now()
-  if (p === 'today') return new Date(new Date().setHours(0, 0, 0, 0)).getTime()
-  if (p === 'week') return Math.floor((now - ASCENSION.offset) / ASCENSION.every) * ASCENSION.every + ASCENSION.offset
-  if (p === 'month') return now - 30 * 86_400_000
-  return 0
-}
 
 /** The game's crafts, by the names questlog's data gives them. */
 const CRAFT_LABELS: Record<string, string> = {
@@ -70,7 +52,7 @@ const kindLabel = (id: string): string => t(CRAFT_LABELS[id] ?? 'Other')
 
 // ---- the crafts -------------------------------------------------------------------------------
 
-const sessions = computed(() => (store.sessions.current ? [store.sessions.current, ...store.sessions.history] : store.sessions.history))
+const sessions = useSessions()
 const all = computed(() => allCrafts(sessions.value))
 const characters = computed(() => [...new Set(all.value.map((c) => c.name))])
 const kinds = computed(() => craftKinds(filterCrafts(all.value, { names: f.value.names, from: fromOf(f.value.period), kind: null })))
@@ -85,15 +67,8 @@ const recipes = computed(() => {
   )
 })
 
-function toggleName(name: string): void {
-  const names = f.value.names.includes(name) ? f.value.names.filter((n) => n !== name) : [...f.value.names, name]
-  f.value = { ...f.value, names: names.length === characters.value.length ? [] : names }
-}
-const picked = (name: string): boolean => !f.value.names.length || f.value.names.includes(name)
-function className(name: string): string | null {
-  const s = sessions.value.find((x) => x.name === name)
-  return s?.server != null ? (store.characters[characterId(s.server, name)]?.className ?? null) : null
-}
+const { toggleName, picked } = namePicker(f, characters)
+const className = (name: string): string | null => classOf(sessions.value, name)
 
 // ---- the numbers ------------------------------------------------------------------------------
 

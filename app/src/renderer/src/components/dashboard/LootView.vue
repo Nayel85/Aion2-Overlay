@@ -5,6 +5,7 @@
 // a run's chance of it), per run, per cube or per hour in them; beside it, what the game's rates make
 // of the same cubes, and your luck: what you got against that. The filters picked are remembered
 // (this window's storage).
+import { classOf, fromOf, namePicker, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -12,8 +13,6 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { plural, t } from '@/lib/i18n.ts'
-import { useApp } from '@/stores/app.ts'
-import { ASCENSION, characterId } from '@shared/characters.ts'
 import { formatKina } from '@shared/kina.ts'
 import { filterRuns, itemStats, lootChoices, lootRuns, luck, summaries, unitsOf, type ItemFamily, type LootSummary, type LootUnit } from '@shared/lootStats.ts'
 import { itemIcon, LOOT_KINDS } from '@shared/sessions.ts'
@@ -23,17 +22,8 @@ import { gradeClass, ICON, LOOT_KIND_STYLE } from '@/components/panel/sessionIco
 /** `details`: what the drop rates make expected, your luck, the runs with an item. */
 defineProps<{ embedded?: boolean; details?: boolean }>()
 
-const store = useApp()
-
 // ---- the filters, remembered ------------------------------------------------------------------
 
-type Period = 'today' | 'week' | 'month' | 'all'
-const PERIODS: { id: Period; label: string }[] = [
-  { id: 'today', label: 'Today' },
-  { id: 'week', label: 'This week' },
-  { id: 'month', label: '30 days' },
-  { id: 'all', label: 'All' },
-]
 const UNITS: { id: LootUnit; label: string }[] = [
   { id: 'run', label: 'Per run' },
   { id: 'cube', label: 'Per cube' },
@@ -61,18 +51,10 @@ const NO_FILTERS: Saved = { names: [], period: 'all', kind: null, world: null, u
 const f = useStored<Saved>('loot.filters', NO_FILTERS, (raw) => ({ ...NO_FILTERS, ...(raw as Partial<Saved>) }))
 const query = ref('')
 
-/** Since when a period's runs count: today's midnight, the weekly reset (Wednesday 07:00 UTC), 30 days back. */
-function fromOf(p: Period): number {
-  const now = Date.now()
-  if (p === 'today') return new Date(new Date().setHours(0, 0, 0, 0)).getTime()
-  if (p === 'week') return Math.floor((now - ASCENSION.offset) / ASCENSION.every) * ASCENSION.every + ASCENSION.offset
-  if (p === 'month') return now - 30 * 86_400_000
-  return 0
-}
 
 // ---- the runs and what they gave -----------------------------------------------------------
 
-const sessions = computed(() => (store.sessions.current ? [store.sessions.current, ...store.sessions.history] : store.sessions.history))
+const sessions = useSessions()
 const all = computed(() => lootRuns(sessions.value))
 const characters = computed(() => [...new Set(all.value.map((r) => r.name))])
 /** The types and dungeons to pick from: those of the runs the characters and period keep. */
@@ -90,15 +72,8 @@ const items = computed(() => {
   return itemStats(runs.value.map((r) => r.run)).filter((i) => (f.value.family === 'all' || (f.value.family === 'gold' ? i.family !== 'other' : i.family === f.value.family)) && (!q || i.name.toLowerCase().includes(q)))
 })
 
-function toggleName(name: string): void {
-  const names = f.value.names.includes(name) ? f.value.names.filter((n) => n !== name) : [...f.value.names, name]
-  f.value = { ...f.value, names: names.length === characters.value.length ? [] : names }
-}
-const picked = (name: string): boolean => !f.value.names.length || f.value.names.includes(name)
-function className(name: string): string | null {
-  const s = sessions.value.find((x) => x.name === name)
-  return s?.server != null ? (store.characters[characterId(s.server, name)]?.className ?? null) : null
-}
+const { toggleName, picked } = namePicker(f, characters)
+const className = (name: string): string | null => classOf(sessions.value, name)
 
 // ---- the numbers ----------------------------------------------------------------------------
 
