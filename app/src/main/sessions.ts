@@ -41,7 +41,8 @@ let saveTimer: NodeJS.Timeout | null = null
 /** Your last PvP kill or assist: the Abyss Points right after it are its. */
 let pvpAt: number | null = null
 /** The Kina balance last seen for the session's character: its rises are earned. */
-let kinaSeen: number | null = null
+/** The last balances seen of the session's character: Kina and bound Kina (quests' and requests' rewards), each rise earned. */
+const kinaSeen: { kina: number | null; boundKina: number | null } = { kina: null, boundKina: null }
 /** The gains of the last few seconds: a quest's rewards, told just after, are taken from them. */
 let recent: RecentGain[] = []
 /** What each run's reward board (a Shugo Festival's chests) added to its loot, so a board sent again replaces it. */
@@ -105,7 +106,7 @@ function begin(name: string, server: number | null, at: number): PlaySession {
   if (old) closeRun(old, at)
   const current: PlaySession = { name, server, start: carried?.start ?? at, last: at, ap: 0, sources: {}, kina: 0, kinaSources: {}, currencies: {}, runs: carried ? [carried] : [] }
   sessions = { current, history }
-  kinaSeen = null
+  kinaSeen.kina = kinaSeen.boundKina = null
   currencySeen = new Map()
   return current
 }
@@ -419,19 +420,23 @@ export function startSessions(): void {
   // handler above takes: its gains come just after it, so they are moved a moment later.
   // The login's balance is a start; each rise after it is earned.
   tracker.onEvent('wallet', (ev) => {
-    if (sessions.current?.name === ev['name'] && typeof ev['kina'] === 'number') kinaSeen = ev['kina']
+    if (sessions.current?.name !== ev['name']) return
+    if (typeof ev['kina'] === 'number') kinaSeen.kina = ev['kina']
+    if (typeof ev['boundKina'] === 'number') kinaSeen.boundKina = ev['boundKina']
   })
-  tracker.onEvent('kina', (ev) => {
+  // Kina and bound Kina alike: the session's Kina is both (most rewards are bound).
+  const onKina = (which: 'kina' | 'boundKina') => (ev: Record<string, unknown>): void => {
     const name = ev['name'] as string | null
     const balance = ev['balance'] as number
     const s = sessions.current
     // Only the session going on's character: a balance alone (spending) never starts one.
     if (!name || !s || s.name !== name) {
-      kinaSeen = null
+      kinaSeen[which] = null
       return
     }
-    if (kinaSeen !== null && balance > kinaSeen) {
-      const gained = balance - kinaSeen
+    const seen = kinaSeen[which]
+    if (seen !== null && balance > seen) {
+      const gained = balance - seen
       const source = kinaSource(Date.now(), tracker.nearby().world)
       s.kina += gained
       s.kinaSources = { ...s.kinaSources, [source]: (s.kinaSources?.[source] ?? 0) + gained }
@@ -440,6 +445,8 @@ export function startSessions(): void {
       noteGain({ at: s.last, kind: 'kina', gained, source })
       changed()
     }
-    kinaSeen = balance
-  })
+    kinaSeen[which] = balance
+  }
+  tracker.onEvent('kina', onKina('kina'))
+  tracker.onEvent('boundKina', onKina('boundKina'))
 }

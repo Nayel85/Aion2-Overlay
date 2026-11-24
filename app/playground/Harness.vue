@@ -127,7 +127,6 @@ const pct = (v: number): string => `${Math.round(v * 100)}%`
         <label class="pg-field"><input type="checkbox" :checked="cfg.kina" @change="patchUnified({ kina: ($event.target as HTMLInputElement).checked })" /> Kina/h</label>
         <label class="pg-field"><input type="checkbox" :checked="cfg.abyssRate" @change="patchUnified({ abyssRate: ($event.target as HTMLInputElement).checked })" /> AP/h</label>
         <label class="pg-field"><input type="checkbox" :checked="cfg.season" @change="patchUnified({ season: ($event.target as HTMLInputElement).checked })" /> AP this season</label>
-        <label class="pg-field"><input type="checkbox" :checked="cfg.buttons === 'always'" @change="patchUnified({ buttons: ($event.target as HTMLInputElement).checked ? 'always' : 'hover' })" /> Buttons always</label>
       </div>
 
       <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; color: #d4d4d8">

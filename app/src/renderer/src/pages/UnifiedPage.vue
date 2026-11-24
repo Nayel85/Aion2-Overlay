@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // The Unified HUD: one small bar at the top of the game, in place of a screen full of widgets. At
-// rest it is the logo, the next two events and your ping. Hovering it unfolds the overlays' buttons
-// (one click peeks at an overlay under the bar, a second opens the overlay itself), the speaker
-// that mutes every sound, and the cog that opens the app. The rest shows up when it matters and
+// rest it is the logo, the next two events, your ping, the overlays' buttons, the speaker that mutes
+// every sound and the cog that opens the app. Everything works by click, nothing by hover (the game
+// gives the mouse only while Alt is held): a button or a chip opens its peek under the bar, a second
+// click closes it, and the peek has the button that opens or closes the overlay itself. The rest shows up when it matters and
 // goes by itself: what you are hitting, Kina and Abyss Points per hour while they come in (a rift's
 // total during a Spacetime Rift), a Hidden Cube in view, enemies who can attack you, a field boss
 // alive, and where you last died. Moved by dragging the bar; it grows around its top centre, sized to
@@ -44,46 +45,11 @@ const cfg = computed(() => store.settings.unified)
 const now = ref(Date.now())
 const ticker = setInterval(() => (now.value = Date.now()), 1000)
 
-// ---- the mouse: over it, the bar unfolds; off it, back to compact ------------------------------
+// ---- what is open under the bar: by click, closed by a second one ---------------------------------
 
-const hover = ref(false)
-/** Opened by a hover or a click; gone when the mouse leaves. */
 const panel = ref<PanelId | null>(null)
-/** A slip of the mouse past the edge does not fold it: only this long off it does. */
-const LEAVE_MS = 350
-let leaveTimer: ReturnType<typeof setTimeout> | null = null
-function enter(): void {
-  if (leaveTimer) clearTimeout(leaveTimer)
-  leaveTimer = null
-  hover.value = true
-}
-function leave(): void {
-  forget()
-  if (leaveTimer) clearTimeout(leaveTimer)
-  leaveTimer = setTimeout(() => {
-    hover.value = false
-    panel.value = null
-  }, LEAVE_MS)
-}
 const shown = computed<PanelId | null>(() => panel.value)
-const show = (id: PanelId): void => void (panel.value = id)
-/**
- * The first peek after the mouse enters waits this long: the buttons appear and the bar widens
- * under a mouse that has not moved, so the button it lands on is chance. Once a peek is open, the
- * next button's is instant (the bar no longer changes width, so nothing slides under the mouse).
- */
-const PEEK_DELAY_MS = 120
-let peekTimer: ReturnType<typeof setTimeout> | null = null
-function intend(id: PanelId): void {
-  if (peekTimer) clearTimeout(peekTimer)
-  if (panel.value) return show(id)
-  peekTimer = setTimeout(() => show(id), PEEK_DELAY_MS)
-}
-function forget(): void {
-  if (peekTimer) clearTimeout(peekTimer)
-  peekTimer = null
-}
-const tools = computed(() => hover.value || cfg.value.buttons === 'always')
+const show = (id: PanelId): void => void (panel.value = panel.value === id ? null : id)
 
 // ---- the overlays' buttons ---------------------------------------------------------------------
 
@@ -109,12 +75,11 @@ function toggleOverlay(id: Peek): void {
   else if (id === 'pvp') void api.invoke(s.killFeed.open ? 'killfeed:close' : 'killfeed:open')
   else void store.set('hud', { ...s.hud, enabled: !s.hud.enabled })
 }
-const peekTitle = (p: { id: Peek; label: string }): string =>
-  overlayOn(p.id) ? t('{name}: click to close its overlay', { name: t(p.label) }) : t('{name}: click to open it as its own overlay', { name: t(p.label) })
+const peekTitle = (p: { id: Peek; label: string }): string => t('{name}: click to see it here', { name: t(p.label) })
 const peekHint = computed(() => {
   const id = shown.value
   if (id !== 'meter' && id !== 'map' && id !== 'pvp' && id !== 'pets') return null
-  return overlayOn(id) ? t('Click its button to close the overlay.') : t('Click its button to open it as its own overlay.')
+  return overlayOn(id) ? t('Close its overlay') : t('Open it as its own overlay')
 })
 
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('unified', { ...cfg.value, ...patch })
@@ -327,7 +292,7 @@ function report(): void {
 }
 // Measured after each change too, not only by the observer: a hidden window (Alt+Shift+E, an
 // alt-tab) does not run it, and would come back at its old size.
-watch([tools, shown, targetOn, () => cfg.value.targetStyle, kinaText, sessionKina, abyssText, season, rift, cube, death, () => threats.value.length, () => aliveBosses.value.length, () => upcoming.value.length, () => cfg.value.scale], () => void nextTick(report))
+watch([shown, targetOn, () => cfg.value.targetStyle, kinaText, sessionKina, abyssText, season, rift, cube, death, () => threats.value.length, () => aliveBosses.value.length, () => upcoming.value.length, () => cfg.value.scale], () => void nextTick(report))
 
 let observer: ResizeObserver | null = null
 const offs: (() => void)[] = []
@@ -341,7 +306,6 @@ onMounted(async () => {
 })
 onBeforeUnmount(() => {
   clearInterval(ticker)
-  if (leaveTimer) clearTimeout(leaveTimer)
   observer?.disconnect()
   for (const off of offs) off()
 })
@@ -353,10 +317,8 @@ onBeforeUnmount(() => {
   <div class="inline-block w-max">
     <div ref="root" class="inline-block w-max">
       <div
-        :class="['mx-1.5 mb-1.5 mt-0 flex w-max flex-col overflow-hidden rounded-[14px] border text-default', (tools || shown) && 'min-w-[440px]']"
+        :class="['mx-1.5 mb-1.5 mt-0 flex w-max flex-col overflow-hidden rounded-[14px] border text-default', 'min-w-[440px]']"
         :style="{ ...panelStyle(cfg.opacity), boxShadow: 'none', textShadow: cfg.opacity < 0.6 ? '0 1px 3px rgb(0 0 0 / 0.9), 0 0 2px rgb(0 0 0 / 0.8)' : 'none', zoom: cfg.scale }"
-        @pointerenter="enter"
-        @pointerleave="leave"
       >
         <!-- The bar. -->
         <div class="flex h-9 cursor-move items-center gap-2.5 whitespace-nowrap px-2.5" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
@@ -404,7 +366,6 @@ onBeforeUnmount(() => {
             class="flex items-center gap-2.5"
             :aria-label="t('Next events')"
             @pointerdown.stop
-            @pointerenter="show('timers')"
             @click="show('timers')"
           >
             <span v-for="{ def, at } in upcoming" :key="def.id" :class="['flex items-center gap-1 transition-colors', STAGE_TEXT[stage(at)]]">
@@ -435,7 +396,6 @@ onBeforeUnmount(() => {
             class="flex h-6 items-center gap-1 rounded-lg border border-red/50 bg-red/15 px-1.5 text-xs font-bold tabular-nums text-red"
             :aria-label="plural(threats.length, '{n} enemy who can attack you in view', '{n} enemies who can attack you in view')"
             @pointerdown.stop
-            @pointerenter="show('enemies')"
             @click="show('enemies')"
           >
             <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -450,7 +410,6 @@ onBeforeUnmount(() => {
             type="button"
             class="flex h-6 items-center gap-1.5 rounded-lg border border-yellow/40 bg-yellow/10 px-2 text-xs font-semibold text-yellow"
             @pointerdown.stop
-            @pointerenter="show('cube')"
             @click="show('cube')"
           >
             <CubeIcon :size="14" />
@@ -465,14 +424,13 @@ onBeforeUnmount(() => {
             class="flex h-6 w-[26px] items-center justify-center rounded-lg border border-red/50 bg-red/15"
             :aria-label="t('Your last death: show where')"
             @pointerdown.stop
-            @pointerenter="show('death')"
             @click="show('death')"
           >
             <SkullMark :size="16" />
           </button>
 
-          <!-- The overlays' buttons, the speaker and the cog: while hovered (or always). -->
-          <template v-if="tools">
+          <!-- The overlays' buttons, the speaker and the cog. -->
+          <template>
             <span class="unfold h-4 w-px bg-light" />
             <div class="unfold flex items-center gap-0.5">
               <button
@@ -483,9 +441,7 @@ onBeforeUnmount(() => {
                 :aria-label="t(p.label)"
                 :title="peekTitle(p)"
                 @pointerdown.stop
-                @pointerenter="intend(p.id)"
-                @pointerleave="forget"
-                @click="toggleOverlay(p.id)"
+                @click="show(p.id)"
               >
                 <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS[p.id]" /></svg>
                 <span v-if="overlayOn(p.id)" class="absolute bottom-0.5 left-[11px] h-0.5 w-2 rounded-full bg-accent" />
@@ -672,7 +628,7 @@ onBeforeUnmount(() => {
                 <span v-if="store.cubes.length" class="text-xs text-yellow">{{ plural(store.cubes.length, '{n} cube', '{n} cubes') }}</span>
                 <span v-if="threats.length" class="text-xs text-red">{{ plural(threats.length, '{n} can attack you', '{n} can attack you') }}</span>
               </template>
-              <span v-if="peekHint && shown === 'map'" class="mt-auto text-[11px] text-darker">{{ peekHint }}</span>
+              <button v-if="peekHint && shown === 'map'" type="button" class="mt-auto self-start text-[11px] font-medium text-accent hover:underline" @pointerdown.stop @click="toggleOverlay('map')">{{ peekHint }}</button>
             </div>
           </div>
 
@@ -694,7 +650,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <p v-else class="mt-1.5 text-xs text-darker">{{ t('Waiting for a fight') }}</p>
-            <div class="mt-2 border-t border-card pt-1.5 text-[11px] text-darker">{{ peekHint }}</div>
+            <div class="mt-2 border-t border-card pt-1.5"><button type="button" class="text-[11px] font-medium text-accent hover:underline" @pointerdown.stop @click="toggleOverlay(shown as Peek)">{{ peekHint }}</button></div>
           </div>
 
           <!-- PvP: your kills, deaths and assists, the last kills, the last rift farm. -->
@@ -718,7 +674,7 @@ onBeforeUnmount(() => {
               <span class="font-semibold">{{ t('PvP Rift {time} {day}', { time: startsAt(lastRift.start), day: day(lastRift.start) }) }}</span>
               <span class="ml-auto font-semibold tabular-nums text-blue">+{{ formatAmount(lastRift.points) }} AP</span>
             </div>
-            <div class="mt-2 border-t border-card pt-1.5 text-[11px] text-darker">{{ peekHint }}</div>
+            <div class="mt-2 border-t border-card pt-1.5"><button type="button" class="text-[11px] font-medium text-accent hover:underline" @pointerdown.stop @click="toggleOverlay(shown as Peek)">{{ peekHint }}</button></div>
           </div>
 
           <!-- Pets: the ones whose soul monsters are around you. -->
@@ -737,7 +693,7 @@ onBeforeUnmount(() => {
               </div>
             </div>
             <p v-else class="mt-1.5 text-xs text-darker">{{ t('No soul monsters around you.') }}</p>
-            <div class="mt-2 border-t border-card pt-1.5 text-[11px] text-darker">{{ peekHint }}</div>
+            <div class="mt-2 border-t border-card pt-1.5"><button type="button" class="text-[11px] font-medium text-accent hover:underline" @pointerdown.stop @click="toggleOverlay(shown as Peek)">{{ peekHint }}</button></div>
           </div>
         </div>
       </div>

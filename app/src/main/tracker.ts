@@ -20,7 +20,7 @@ import { dirname, join, resolve } from 'node:path'
 import { DISPLAY_NAME } from '../shared/app.ts'
 import { broadcast } from './broadcast.ts'
 import { settings } from './settings.ts'
-import { kinaBalance, kinaRebase, NO_KINA, type KinaSession } from '../shared/kina.ts'
+import { boundKinaBalance, kinaBalance, kinaRebase, NO_KINA, type KinaSession } from '../shared/kina.ts'
 import { bossKilled, fieldBosses } from './fieldBosses.ts'
 import type { FieldBosses } from '../shared/timers.ts'
 import { pvpLog } from './pvpLog.ts'
@@ -439,6 +439,9 @@ function handleLine(line: string): void {
     case 'kina':
       setKina(kinaBalance(kina, ev['balance'] as number, Date.now()))
       break
+    case 'boundKina':
+      setKina(boundKinaBalance(kina, ev['balance'] as number, Date.now()))
+      break
     case 'abyss':
       abyss.read({
         points: ev['points'] as number,
@@ -547,7 +550,7 @@ export const tracker = {
   resetSession(): void {
     log('session reset')
     command({ cmd: 'resetSession' })
-    setKina({ ...NO_KINA, balance: kina.balance, gains: [] })
+    setKina({ ...NO_KINA, balance: kina.balance, bound: kina.bound ?? null, gains: [] })
     abyss.reset()
   },
   setSouls: (pet: number, souls: number): void => command({ cmd: 'set', pet, souls }),

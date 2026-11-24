@@ -31,10 +31,6 @@ const TARGET_MODES = [
   { id: 'players' as const, label: 'While a player is selected' },
   { id: 'meter' as const, label: "As the meter is set" },
 ]
-const BUTTONS = [
-  { id: 'hover' as const, label: 'On hover' },
-  { id: 'always' as const, label: 'Always' },
-]
 const BUTTON_ICONS = [
   'M2.5 13.5h11M4.5 11V8M8 11V4.5M11.5 11V6.5',
   'M1.5 4l4.5-2 4 2 4.5-2v10l-4.5 2-4-2-4.5 2zM6 2v10M10 4v10',
@@ -47,7 +43,7 @@ const BUTTON_ICONS = [
   <div>
     <PageHeader
       title="Unified HUD"
-      about="One small bar at the top of the game, in place of a screen full of widgets. It stays compact, unfolds when you hover it, and shows things only when they matter. Every overlay can still open on its own from its buttons."
+      about="One small bar at the top of the game, in place of a screen full of widgets. It stays compact, works by click, and shows things only when they matter. Every overlay can still open on its own from its buttons."
     >
       <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />
     </PageHeader>
@@ -70,7 +66,7 @@ const BUTTON_ICONS = [
           </span>
           <svg viewBox="0 0 16 16" class="size-[15px] text-darker" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="EVENT_ICONS.rift" /></svg>
         </template>
-        <template v-if="cfg.buttons === 'always'">
+        <template>
           <span class="h-4 w-px bg-light" />
           <svg v-for="d in BUTTON_ICONS" :key="d" viewBox="0 0 16 16" class="mx-1 size-4 text-darker" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="d" /></svg>
         </template>
@@ -97,9 +93,6 @@ const BUTTON_ICONS = [
         </SettingRow>
         <SettingRow label="Local time" hint="A clock, for when you play full screen.">
           <Toggle :model-value="cfg.clock" @update:model-value="set({ clock: $event })" />
-        </SettingRow>
-        <SettingRow label="Overlay buttons" hint="When the buttons for the DPS meter, Map, Kill feed and Pets are visible. Hover one to peek at it inside the bar; click it to turn that overlay on or off.">
-          <Segmented size="sm" :model-value="cfg.buttons" :options="BUTTONS" @update:model-value="set({ buttons: $event })" />
         </SettingRow>
       </Section>
 
