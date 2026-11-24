@@ -112,6 +112,15 @@ onBeforeUnmount(() => {
           </li>
         </ul>
       </div>
+      <!-- No fight, the dashboard up: an empty card, to place it. -->
+      <div
+        v-else-if="store.panelVisible"
+        class="m-1.5 flex h-[120px] w-[300px] cursor-move items-center justify-center rounded-lg border border-dashed border-accent bg-darker text-xs text-dark"
+        :title="t('Drag to move')"
+        @pointerdown="drag.onPointerDown"
+      >
+        {{ t('My skills') }} · {{ t('Drag to move') }}
+      </div>
     </div>
   </div>
 </template>

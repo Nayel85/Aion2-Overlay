@@ -403,8 +403,10 @@ export function createHud(): BrowserWindow {
   win.setIgnoreMouseEvents(true)
   hud = win
   win.on('closed', () => (hud = null))
+  // A new window starts out of move mode (the last one may have closed in it): told anew below.
+  hudEditing = false
   win.webContents.once('did-finish-load', () => {
-    // Made while the panel is open (the game started meanwhile): in move mode, like the panel's.
+    // Made while the panel is open (the game started meanwhile, or turned on from it): in move mode, like the panel's.
     if (arranging) setHudEditing(true, false)
     refreshHud()
   })

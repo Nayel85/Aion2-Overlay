@@ -101,6 +101,16 @@ onBeforeUnmount(() => {
           </div>
         </div>
       </div>
+      <!-- Nothing on you, the dashboard up: an empty frame of one row, to place it. -->
+      <div
+        v-else-if="store.panelVisible"
+        class="m-1.5 flex cursor-move items-center justify-center rounded-lg border border-dashed border-accent bg-darker/80 p-1.5 text-xs text-dark"
+        :style="{ width: `${cfg.perRow * (cfg.size + 4) + 12}px`, height: `${cfg.size + 30}px` }"
+        :title="t('Drag to move')"
+        @pointerdown="drag.onPointerDown"
+      >
+        {{ t('Buffs') }} · {{ t('Drag to move') }}
+      </div>
     </div>
   </div>
 </template>
