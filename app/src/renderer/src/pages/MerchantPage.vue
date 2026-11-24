@@ -4,6 +4,7 @@
 // says what buying does and where its soul monsters spawn: one away from your side's continent, or
 // with no known spawn at all (bosses, events), is the hard one to farm, so it is marked.
 import PetSourceTag from '@/components/PetSourceTag.vue'
+import { petSourceTag } from '@/lib/petSources.ts'
 import { useNow } from '@/lib/now.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -130,7 +131,6 @@ onMounted(() => {
               <div class="flex items-center gap-1.5 text-[13px]">
                 <span class="truncate font-medium text-dark">{{ displayName(pet(o.pet)) }}</span>
                 <GenusPill :id="o.pet" />
-                <PetSourceTag :id="o.pet" />
                 <span class="ml-auto shrink-0 tabular-nums">
                   {{ kina(o.price) }}<span v-if="o.discount" class="text-yellow"> −{{ o.discount }}%</span>
                 </span>
@@ -151,7 +151,9 @@ onMounted(() => {
                   <span v-for="c in where(o.pet)" :key="c" class="rounded border border-light px-1 text-[10px] text-darker">
                     {{ SHORT[c] }}
                   </span>
-                  <span v-if="hard(o.pet)" class="text-[10px] font-semibold text-yellow">{{ hard(o.pet) }}</span>
+                  <!-- A boss, an instance or the merchant alone says why; else the side it spawns on. -->
+                  <PetSourceTag v-if="petSourceTag(o.pet)" :id="o.pet" />
+                  <span v-else-if="hard(o.pet)" class="text-[10px] font-semibold text-yellow">{{ hard(o.pet) }}</span>
                 </span>
               </div>
             </div>
