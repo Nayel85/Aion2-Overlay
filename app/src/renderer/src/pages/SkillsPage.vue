@@ -48,13 +48,14 @@ const close = (): void => void store.set('skills', { ...store.settings.skills, e
 let sent = ''
 function report(): void {
   const el = root.value
-  const r = el && rows.value.length ? el.getBoundingClientRect() : { width: 0, height: 0 }
+  // What it shows: its rows, the empty frame to place it, or nothing (0 × 0: hidden).
+  const r = el ? el.getBoundingClientRect() : { width: 0, height: 0 }
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
   void api.invoke('overlay:resize', 'skills', { width: r.width, height: r.height })
 }
-watch(() => rows.value.length, () => void nextTick(report))
+watch([() => rows.value.length, () => store.panelVisible, idle], () => void nextTick(report))
 
 let timer: ReturnType<typeof setInterval> | null = null
 let observer: ResizeObserver | null = null

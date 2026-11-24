@@ -1147,6 +1147,7 @@ export function setForeground(game: boolean, app: boolean): void {
   if (away) {
     awayTimer = setTimeout(() => {
       gameAway = true
+      log('overlays: hidden, another program in front')
       applyGameMap()
       for (const win of [bubble, hud, merchant, meter, killFeed, timerBar, unified, details, ...measuredWins()]) {
         if (!alive(win) || !win.isVisible()) continue
@@ -1159,6 +1160,7 @@ export function setForeground(game: boolean, app: boolean): void {
     return
   }
   gameAway = false
+  log(`overlays: back, ${game ? 'the game' : 'the app'} in front`)
   applyGameMap()
   if (alive(panel)) panel.setAlwaysOnTop(settings.get('panelOnTop'), 'screen-saver')
   restoreHidden()

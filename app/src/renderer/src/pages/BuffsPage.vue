@@ -48,13 +48,14 @@ const drag = windowDrag({ overlay: 'buffs' })
 let sent = ''
 function report(): void {
   const el = root.value
-  const r = el && rows.value.length ? el.getBoundingClientRect() : { width: 0, height: 0 }
+  // What it shows: its rows, the empty frame to place it, or nothing (0 × 0: hidden).
+  const r = el ? el.getBoundingClientRect() : { width: 0, height: 0 }
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
   void api.invoke('overlay:resize', 'buffs', { width: r.width, height: r.height })
 }
-watch(() => rows.value.map((r) => r.length).join(), () => void nextTick(report))
+watch([() => rows.value.map((r) => r.length).join(), () => store.panelVisible, idle], () => void nextTick(report))
 
 let observer: ResizeObserver | null = null
 onMounted(() => {
