@@ -1637,4 +1637,9 @@ export const FR: Record<string, string> = {
   'Came in lately': 'Arrivé récemment',
   'Nothing yet: what comes in from now on shows here, with when and where from.': 'Rien pour l\'instant : ce qui arrive à partir de maintenant s\'affiche ici, avec quand et d\'où.',
   'Nothing worth keeping': 'Rien de notable',
+  'Place the overlays with this window': 'Placer les overlays avec cette fenêtre',
+  'Whenever this window is in front, the overlays show their samples to be dragged into place. Off: only with the button in its title bar.': 'Dès que cette fenêtre est au premier plan, les overlays montrent leur exemple pour être déplacés. Désactivé : seulement avec le bouton de sa barre de titre.',
+  'Done placing the overlays': 'Fin du placement des overlays',
+  'Place the overlays: they show their samples, to be dragged': 'Placer les overlays : ils montrent leur exemple, à déplacer',
+  'Place overlays': 'Placer les overlays',
 }

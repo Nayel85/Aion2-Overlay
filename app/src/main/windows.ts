@@ -347,8 +347,18 @@ function panelShown(up: boolean): void {
 let arranging = false
 /** Asked by a window as it opens: the change alone reaches only those already open. */
 export const isArranging = (): boolean => arranging
+/** Placing asked for with the title bar's button (with "Place the overlays with this window" off): until asked off, or the dashboard goes down. */
+let arrangeAsked = false
+export function setArranging(on: boolean): void {
+  arrangeAsked = on
+  syncArranging()
+}
+/** Focus coming back to the dashboard this long at least: an alt-tab passing through it does not put the overlays into placing. */
+const ARRANGE_AFTER_MS = 400
+let arrangeTimer: NodeJS.Timeout | null = null
 function arrangingNow(): boolean {
-  if (!panelVisible()) return false
+  if (!panelVisible()) return (arrangeAsked = false)
+  if (!settings.get('arrangeWithPanel')) return arrangeAsked
   if (settings.get('panelHideOnGame')) return true
   // The dashboard, or an overlay being dragged into place; not the meter or the Unified HUD, which
   // take clicks as you play.
@@ -357,6 +367,20 @@ function arrangingNow(): boolean {
 }
 function syncArranging(): void {
   const on = arrangingNow()
+  if (arrangeTimer) clearTimeout(arrangeTimer)
+  arrangeTimer = null
+  if (on === arranging) return
+  // Going into placing by the focus: only if it stays.
+  if (on && !arrangeAsked) {
+    arrangeTimer = setTimeout(() => {
+      arrangeTimer = null
+      if (arrangingNow()) applyArranging(true)
+    }, ARRANGE_AFTER_MS)
+    return
+  }
+  applyArranging(on)
+}
+function applyArranging(on: boolean): void {
   if (on === arranging) return
   arranging = on
   log(`overlays: ${on ? 'being placed (the dashboard in front)' : 'placed'}`)

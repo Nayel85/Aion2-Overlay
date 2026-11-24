@@ -131,6 +131,7 @@ const update = ref<UpdateState | null>(null)
 const newer = computed(() => !!update.value && ['available', 'downloading', 'ready'].includes(update.value.status))
 const version = ref<string | null>(null)
 const minimize = (): void => void api.invoke('panel:minimize')
+const arrange = (on: boolean): void => void api.invoke('panel:arrange', on)
 const maximize = (): void => void api.invoke('panel:maximize')
 const hide = (): void => void api.invoke('panel:hide')
 
@@ -244,6 +245,17 @@ onBeforeUnmount(() => {
         <span v-if="store.sessionSouls" class="rounded-full border border-card bg-dark px-2.5 py-0.5 text-xs text-green">{{ t('+{n} souls this session', { n: store.sessionSouls }) }}</span>
       </div>
       <div class="no-drag flex h-full">
+        <!-- Placing the overlays, when it does not come with this window. -->
+        <button
+          v-if="!store.settings.arrangeWithPanel"
+          type="button"
+          :class="['flex items-center gap-1.5 px-3 text-xs', store.panelVisible ? 'bg-accent/15 text-accent' : 'text-darker hover:bg-dark hover:text-default']"
+          :title="store.panelVisible ? t('Done placing the overlays') : t('Place the overlays: they show their samples, to be dragged')"
+          @click="arrange(!store.panelVisible)"
+        >
+          <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5v13M1.5 8h13M8 1.5 6.3 3.2M8 1.5l1.7 1.7M8 14.5l-1.7-1.7M8 14.5l1.7-1.7M1.5 8l1.7-1.7M1.5 8l1.7 1.7M14.5 8l-1.7-1.7M14.5 8l-1.7 1.7" /></svg>
+          {{ store.panelVisible ? t('Done') : t('Place overlays') }}
+        </button>
         <button type="button" class="flex w-12 items-center justify-center text-darker hover:bg-dark hover:text-default" :title="t('Minimize')" @click="minimize">
           <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.3"><path d="M3.5 8h9" /></svg>
         </button>

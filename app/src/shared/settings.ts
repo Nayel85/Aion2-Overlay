@@ -71,6 +71,8 @@ export interface Settings {
   panelOnTop: boolean
   /** Minimise the panel when you click from it into the game, as a click outside closes a modal. */
   panelHideOnGame: boolean
+  /** The overlays go into placing (their samples, dragged) whenever this window is in front; off, only with its title bar's button. */
+  arrangeWithPanel: boolean
   /** Times on a 24-hour clock (15:30) rather than the language's own (3:30 PM in English). */
   clock24: boolean
 
@@ -437,6 +439,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   panelPosition: { x: -1585, y: 155 },
   panelOnTop: true,
   panelHideOnGame: false,
+  arrangeWithPanel: true,
   clock24: true,
   hud: { enabled: true, position: { x: 1758, y: 39 }, mode: 'pinned', nearby: true, nearbyCount: 3, pinned: [], recentCount: 3, toasts: true, opacity: 0.92, scale: 1, hideWithoutGame: true, idleHideSeconds: 45, merchant: true, kina: true, abyss: true, cubes: false, cubeSound: true, cubeSoundId: 'chime', cubeVolume: 0.6, cubeCustomName: null },
   minimap: { enabled: false, position: { x: 2098, y: 722 }, size: 260, height: null, opacity: 0.92, zoom: 13.5, collapsed: false, gatherables: false },
@@ -541,6 +544,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
     }
     case 'panelOnTop':
     case 'panelHideOnGame':
+    case 'arrangeWithPanel':
     case 'clock24':
     case 'hideFromCapture':
     case 'hideMaxed':

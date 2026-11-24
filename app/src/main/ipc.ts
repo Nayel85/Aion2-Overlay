@@ -31,7 +31,7 @@ import {
   detailsDragEnded,
   detailsSource,
   hidePanel,
-  isArranging,
+  isArranging, setArranging,
   markQuitting,
   minimizePanel,
   moveBubble,
@@ -156,6 +156,7 @@ export function registerIpc(): void {
   handle('panel:toggle', () => togglePanel())
   handle('panel:hide', () => hidePanel())
   handle('panel:arranging', () => isArranging())
+  handle('panel:arrange', (on) => setArranging(on))
   handle('panel:minimize', () => minimizePanel())
   handle('panel:maximize', () => toggleMaximizePanel())
 
