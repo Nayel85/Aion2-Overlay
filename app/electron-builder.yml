@@ -13,7 +13,8 @@
 # Nayel85's build has its own appId, name and exe: it installs beside Lokthar, not over it.
 appId: com.nayel85.aion2-overlay
 productName: Nayel Overlay
-executableName: nayel-overlay
+# Capitalised as the app's name (nayel-overlay.exe before 2026-11-24: Windows does not mind the case).
+executableName: Nayel-Overlay
 directories:
   output: dist
   buildResources: build

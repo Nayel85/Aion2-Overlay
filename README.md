@@ -47,7 +47,7 @@ field bosses, carte, cubes cachés, PvP, buffs, page Guild, demandes de groupe�
      seulement, et à côté de Lokthar si tu l'as. Il n'est pas signé : si Windows affiche « Windows a
      protégé votre ordinateur », clique sur **Informations complémentaires → Exécuter quand même**.
    - `Nayel-Overlay-<version>-portable.zip` : la même app sans installation. Dézippe-la où tu veux et
-     lance `nayel-overlay.exe`.
+     lance `Nayel-Overlay.exe`.
    - `Nayel-Overlay-<version>-installer.zip` : l'installeur zippé, si ton navigateur bloque les `.exe`.
 3. Lance l'overlay **avant de te connecter** à ton personnage, pour qu'il lise ta collection et
    ouvre ta session.

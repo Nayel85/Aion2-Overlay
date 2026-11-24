@@ -81,7 +81,7 @@ let andInstall = false
 /** The portable copy's update, unpacked and ready: the folder holding the new exe, and its name. */
 let portableReady: { dir: string; exe: string } | null = null
 /** The exe's names, newest first (electron-builder.yml's executableName). */
-const EXE_NAMES = ['nayel-overlay.exe', 'lokthar-overlay.exe', 'Aion2DropTracker.exe']
+const EXE_NAMES = ['Nayel-Overlay.exe', 'nayel-overlay.exe', 'lokthar-overlay.exe', 'Aion2DropTracker.exe']
 
 const run = promisify(execFile)
 
