@@ -16,6 +16,8 @@ import { ITEMS } from './items.ts'
 import { QUESTS } from './quests.ts'
 import { SUPPLIES } from './supplies.ts'
 import { GATHERABLES } from './gatherables.ts'
+import type { ItemTuple } from './itemRef.ts'
+import { RECIPES } from './recipes.ts'
 import { ZONES } from './zones.ts'
 
 export { ABYSS_WORLDS }
@@ -189,7 +191,17 @@ export function itemInfo(id: string | number): ItemInfo | undefined {
   if (l) return { name: l[0], grade: l[1], icon: l[3], kind: l[2] }
   const i = ITEMS[id]
   if (i) return { name: i[0], grade: i[1], icon: i[2], kind: i[3] === 'currency' ? 'currency' : i[3] === 'arcana' ? 'arcana' : 'item' }
-  return undefined
+  return MADE().get(Number(id))
+}
+/** The items crafts make and gatherings give, by id: those the loot and item tables lack. Built once, when first needed. */
+let made: Map<number, ItemInfo> | null = null
+function MADE(): Map<number, ItemInfo> {
+  if (made) return made
+  made = new Map()
+  const add = (d: ItemTuple | null): void => void (d && !made!.has(d[0]) && made!.set(d[0], { name: d[2], grade: d[3], icon: d[4], kind: 'item' }))
+  for (const [plain, proc] of Object.values(RECIPES)) add(plain), add(proc)
+  for (const [, , groups] of Object.values(GATHERABLES)) for (const d of Object.values(groups)) add(d)
+  return made
 }
 /** Equipment under Unique (grey, green, blue): listed for the Inventory page, never kept as loot. */
 export const lesserEquipment = (id: string | number): boolean => {
@@ -403,7 +415,7 @@ export function pveInstance(world: number | null): boolean {
 /** A session's resources gathered: [name, grade, how many], the best first. */
 export const gatheredRows = (s: PlaySession): [string, number, number, string | null][] =>
   Object.entries(s.gathered ?? {})
-    .map(([id, n]): [string, number, number, string | null] => [ITEMS[id]?.[0] ?? `#${id}`, ITEMS[id]?.[1] ?? 11, n, itemIcon(ITEMS[id]?.[2])])
+    .map(([id, n]): [string, number, number, string | null] => [itemInfo(id)?.name ?? `#${id}`, itemInfo(id)?.grade ?? 11, n, itemIcon(itemInfo(id)?.icon)])
     .sort((a, b) => b[1] - a[1] || b[2] - a[2] || a[0].localeCompare(b[0]))
 /** Each grade's item -> its resource's plain one (questlog's gathering tables: Fine Odyle -> Odyle). */
 const PLAIN_OF = new Map<number, number>()

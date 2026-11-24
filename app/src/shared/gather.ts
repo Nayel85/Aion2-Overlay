@@ -1,15 +1,9 @@
 import { GATHERABLES, type GatherDrop } from './gatherables.ts'
+import { asItem, type ForecastItem } from './itemRef.ts'
 import { RECIPES } from './recipes.ts'
 
 /** What a gathering or a craft will give: the item, how many, and how it shows. */
-export interface ForecastItem {
-  id: number
-  count: number
-  name: string
-  grade: number
-  /** A path under questlog's Texture/ (main/icons.ts) or a bundled icon's name; null for none. */
-  icon: string | null
-}
+export type { ForecastItem } from './itemRef.ts'
 
 /** A gathering's or a craft's outcome, known as it starts (main/gather.ts). */
 export interface GatherForecast {
@@ -58,7 +52,6 @@ export const GATHER_TEMPLATES_SEED: GatherTemplates = {
   '1500041': 610_680_043,
 }
 
-const asItem = (d: GatherDrop): ForecastItem => ({ id: d[0], count: d[1], name: d[2], grade: d[3], icon: d[4] })
 
 /** Each plain item's grades (1 plain, 2 ranked up...): every spot that gives one gives the same. */
 const BY_PLAIN = new Map<number, Record<string, GatherDrop>>()
