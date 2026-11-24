@@ -10,7 +10,7 @@ import { settings } from './settings.ts'
 import { command, tracker } from './tracker.ts'
 import type { Buff, BuffTrack, FightBuffs } from '../shared/buffs.ts'
 import { pveInstance } from '../shared/sessions.ts'
-import { CLASS_NAMES, detailsView, meterData, NO_METER, unmaskName, type DetailsActor, type DetailsDefense, type DetailsSkill, type DetailsSource, type DetailsView, type DpsEvent, type FightRecord, type FightSummary, type MeterData, type PersonalView, type TargetDetails, NO_PERSONAL, NO_RECORDINGS, type Recordings, type TargetMode, type Encounter, type NewBest } from '../shared/meter.ts'
+import { CLASS_NAMES, detailsView, meterData, NO_METER, unmaskName, type DetailsActor, type DetailsDefense, type DetailsSkill, type DetailsSource, type DetailsView, type DpsEvent, type FightRecord, type FightSummary, type MeterData, type PersonalView, type TargetDetails, NO_PERSONAL, NO_RECORDINGS, type Recordings, type TargetMode, type Encounter, type NewBest, listedFight } from '../shared/meter.ts'
 
 const ASK_TIMEOUT_MS = 5000
 
@@ -267,7 +267,7 @@ export const meterState = {
   /** The saved fights, newest first. */
   async history(): Promise<FightSummary[]> {
     const ev = await ask({ cmd: 'history' }, 'history')
-    return (ev?.['fights'] as FightSummary[] | undefined) ?? []
+    return ((ev?.['fights'] as FightSummary[] | undefined) ?? []).filter(listedFight)
   },
   /** Each character's personal bests, each dungeon boss. */
   async bests(): Promise<Encounter[]> {

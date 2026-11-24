@@ -399,7 +399,15 @@ export interface FightSummary {
   isTrain: boolean
   dungeonId: number
   memberJobs: string[]
+  /** Your own damage in it (0: you did not hit; a training dummy others hit near you). */
+  myDamage?: number
 }
+
+/**
+ * The fights the Combat history lists: the dungeon bosses' and your training dummy runs. Not the
+ * world's (field and Abyss bosses: no dungeon), nor a dummy others hit while you did nothing.
+ */
+export const listedFight = (f: FightSummary): boolean => (f.isTrain ? (f.myDamage ?? 0) > 0 : f.dungeonId !== 0)
 
 /**
  * The parser masked every other player's name in the fights it saved ("Ch****a": the first two

@@ -16,6 +16,7 @@ import BuffsView from '@/components/dashboard/BuffsView.vue'
 import EventsView from '@/components/dashboard/EventsView.vue'
 import GatherablesView from '@/components/dashboard/GatherablesView.vue'
 import HistoryView from '@/components/dashboard/HistoryView.vue'
+import BestsView from '@/components/dashboard/BestsView.vue'
 import StatsView from '@/components/dashboard/StatsView.vue'
 import SessionsView from '@/components/dashboard/SessionsView.vue'
 import InventoryView from '@/components/dashboard/InventoryView.vue'
@@ -43,7 +44,7 @@ import { serverName } from '@shared/servers.ts'
 import { TIMERS, type TimerId } from '@shared/timers.ts'
 import type { UpdateState } from '@shared/update.ts'
 
-type PageId = 'home' | 'characters' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'applicants' | 'party' | 'flight' | 'gather' | 'history' | 'session' | 'sessions' | 'stats' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
+type PageId = 'home' | 'characters' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'applicants' | 'party' | 'flight' | 'gather' | 'history' | 'bests' | 'session' | 'sessions' | 'stats' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
 interface Page {
   id: PageId
   label: string
@@ -72,6 +73,7 @@ const PAGES: Record<PageId, Page> = {
   party: { id: 'party', label: 'Party frames', icon: 'M2.5 3.5h11v3h-11zM2.5 9.5h11v3h-11zM4 5h5M4 11h3' },
   applicants: { id: 'applicants', label: 'Join requests', icon: 'M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M12 4.5v4M10 6.5h4' },
   history: { id: 'history', label: 'Combat history', icon: 'M2 8a6 6 0 1 0 1.8-4.3M2 2.5v3h3M8 5v3l2 1.5', emoji: '💪' },
+  bests: { id: 'bests', label: 'Personal bests', icon: 'M5 2.5h6v3a3 3 0 0 1-6 0zM5 3.5H3v1a2 2 0 0 0 2 2M11 3.5h2v1a2 2 0 0 1-2 2M8 8.5v3M5.5 13.5h5' },
   cache: { id: 'cache', label: 'Cache', icon: 'M2.5 4.5C2.5 3.4 5 2.5 8 2.5s5.5.9 5.5 2S11 6.5 8 6.5 2.5 5.6 2.5 4.5ZM2.5 4.5v7c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-7M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2' },
   sessions: { id: 'sessions', label: 'Past sessions', icon: 'M2.5 3.5h11M2.5 8h11M2.5 12.5h7M12 11l1.5 1.5L16 10' },
   inventory: { id: 'inventory', label: 'Inventory', icon: 'M3 5.5h10v8H3zM5.5 5.5V4a2.5 2.5 0 0 1 5 0v1.5M3 9h10' },
@@ -84,7 +86,7 @@ const PAGES: Record<PageId, Page> = {
 const SECTIONS: { title: string | null; pages: PageId[] }[] = [
   { title: null, pages: ['home', 'characters'] },
   { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'party', 'flight', 'gather', 'applicants'] },
-  { title: 'Records', pages: ['history', 'session', 'sessions', 'stats', 'inventory', 'cache'] },
+  { title: 'Records', pages: ['history', 'bests', 'session', 'sessions', 'stats', 'inventory', 'cache'] },
   { title: 'App', pages: ['updates', 'changes'] },
 ]
 /** The pages kept as they were (their old tabs), with the title and text above them. */
@@ -317,7 +319,7 @@ onBeforeUnmount(() => {
       </nav>
 
       <main ref="main" class="min-w-0 flex-1 overflow-y-auto">
-        <div :class="['mx-auto px-8 py-7', ['settings', 'updates', 'changes'].includes(page) ? 'max-w-4xl' : page === 'history' || (page === 'pvp' && pvpFight) ? 'max-w-[1700px]' : 'max-w-6xl']">
+        <div :class="['mx-auto px-8 py-7', ['settings', 'updates', 'changes'].includes(page) ? 'max-w-4xl' : page === 'history' || page === 'bests' || (page === 'pvp' && pvpFight) ? 'max-w-[1700px]' : 'max-w-6xl']">
           <div v-if="!store.ready" class="py-6 text-center text-sm text-darker">{{ t('Loading…') }}</div>
           <HomeView v-else-if="page === 'home'" @go="go" />
           <CharactersView v-else-if="page === 'characters'" />
@@ -339,6 +341,7 @@ onBeforeUnmount(() => {
           <FlightView v-else-if="page === 'flight'" />
           <GatherView v-else-if="page === 'gather'" />
           <HistoryView v-else-if="page === 'history'" />
+          <BestsView v-else-if="page === 'bests'" />
           <StatsView v-else-if="page === 'stats'" />
           <SessionsView v-else-if="page === 'sessions'" />
           <InventoryView v-else-if="page === 'inventory'" />

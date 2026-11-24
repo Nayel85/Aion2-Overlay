@@ -10,9 +10,7 @@ import Segmented from '@/components/ui/Segmented.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { loc, plural, t } from '@/lib/i18n.ts'
 import { difficultyOf, DIFFICULTY_LABEL, dungeonFor, DUNGEON_KINDS, type Dungeon } from '@shared/dungeons.ts'
-import { CLASS_NAMES, type Encounter, type FightSummary } from '@shared/meter.ts'
-import { zoneMode } from '@shared/sessions.ts'
-import { ZONES } from '@shared/zones.ts'
+import { CLASS_NAMES, type FightSummary } from '@shared/meter.ts'
 
 const api = bridge()
 const fights = ref<FightSummary[] | null>(null)
@@ -80,33 +78,8 @@ const KINDS = computed(() => [
 
 async function load(): Promise<void> {
   fights.value = await api.invoke('history:list')
-  bests.value = await api.invoke('history:bests')
 }
 
-// ---- personal bests ----------------------------------------------------------------------------
-
-/** Each character's bests on each dungeon boss (the engine keeps them apart from the fights). */
-const bests = ref<Encounter[]>([])
-const showBests = ref(true)
-/** By character, each one's bosses by dungeon, then boss. */
-const bestsByCharacter = computed(() => {
-  const by = new Map<string, Encounter[]>()
-  for (const e of bests.value) if (e.myDps || e.fastest) by.set(e.character, [...(by.get(e.character) ?? []), e])
-  return [...by]
-    .map(([name, list]) => ({ name, list: list.sort((a, b) => a.dungeonId - b.dungeonId || a.bossName.localeCompare(b.bossName)) }))
-    .sort((a, b) => a.name.localeCompare(b.name))
-})
-/** A dungeon as the game names it, with its mode ("Vakron Sky Island · Normal"). */
-function dungeonName(id: number): string {
-  const name = ZONES[id]?.[0] ?? `#${id}`
-  const mode = zoneMode(id, t)
-  return mode ? `${name} · ${mode}` : name
-}
-const mmss = (ms: number): string => {
-  const s = Math.round(ms / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
-const day = (ms: number): string => new Date(ms).toLocaleDateString(loc(), { day: 'numeric', month: 'short' })
 /** The fight open in place of the list (its Details, in this page, with the full width of the panel). */
 const opened = ref<string | null>(null)
 const open = (id: string): void => void (opened.value = id)
@@ -126,43 +99,7 @@ onBeforeUnmount(() => off?.())
 <template>
   <DetailsPage v-if="opened" :key="opened" :source="{ kind: 'saved', id: opened }" @back="opened = null" />
   <div v-show="!opened">
-    <PageHeader title="Combat history" about="Boss fights saved as you play, newest first. Open one for each player's damage, skills and buffs." />
-
-    <!-- Personal bests: each character's best on each dungeon boss. -->
-    <div v-if="bestsByCharacter.length" class="mb-5 rounded-xl border border-card">
-      <button type="button" class="flex w-full items-center gap-2 px-4 py-2.5 text-left" @click="showBests = !showBests">
-        <svg viewBox="0 0 16 16" class="size-4 text-yellow" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.5h6v3a3 3 0 0 1-6 0zM5 3.5H3v1a2 2 0 0 0 2 2M11 3.5h2v1a2 2 0 0 1-2 2M8 8.5v3M5.5 13.5h5" /></svg>
-        <span class="text-sm font-medium">{{ t('Personal bests') }}</span>
-        <span class="text-xs text-darker">{{ t('your best damage per second on each dungeon boss, each character; a beaten one shows on the meter') }}</span>
-        <svg viewBox="0 0 16 16" :class="['ml-auto size-3 text-darker transition-transform', showBests && 'rotate-90']" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4l4 4-4 4" /></svg>
-      </button>
-      <div v-if="showBests" class="overflow-x-auto border-t border-card">
-        <table class="w-full text-sm tabular-nums">
-          <thead>
-            <tr class="text-xs text-darker">
-              <th class="px-4 py-1.5 text-left font-normal">{{ t('Boss') }}</th>
-              <th class="px-3 py-1.5 text-left font-normal">{{ t('Dungeon') }}</th>
-              <th class="px-3 py-1.5 text-right font-normal">{{ t('Your DPS') }}</th>
-              <th class="px-3 py-1.5 text-right font-normal">{{ t('Party DPS') }}</th>
-              <th class="px-3 py-1.5 text-right font-normal">{{ t('Fastest kill') }}</th>
-            </tr>
-          </thead>
-          <tbody v-for="c in bestsByCharacter" :key="c.name">
-            <tr><td colspan="5" class="bg-card/50 px-4 py-1 text-xs font-semibold">{{ c.name }}</td></tr>
-            <tr v-for="e in c.list" :key="`${e.dungeonId}:${e.mobCode}`" class="border-t border-card">
-              <td class="px-4 py-1.5"><span :class="e.finalBoss && 'font-medium'">{{ e.bossName }}</span></td>
-              <td class="px-3 py-1.5 text-dark">{{ dungeonName(e.dungeonId) }}</td>
-              <td class="px-3 py-1.5 text-right">
-                <button v-if="e.myDps" type="button" class="font-semibold text-yellow hover:underline" :title="t('Open the fight')" @click="open(e.myDps.fightId)">{{ short(e.myDps.value) }}</button>
-                <span v-if="e.myDps" class="ml-1.5 text-[11px] text-darker">{{ day(e.myDps.atMs) }}</span>
-              </td>
-              <td class="px-3 py-1.5 text-right text-dark">{{ e.partyDps ? short(e.partyDps.value) : '–' }}</td>
-              <td class="px-3 py-1.5 text-right text-dark">{{ e.fastest ? mmss(e.fastest.value) : '–' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <PageHeader title="Combat history" about="Dungeon boss fights and your training dummy runs, saved as you play, newest first. Open one for each player's damage, skills and buffs." />
 
     <div class="mb-4 flex flex-wrap items-center gap-3">
       <Segmented v-model="kind" :options="KINDS" size="sm" />
