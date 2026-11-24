@@ -106,16 +106,16 @@ export interface Settings {
     kina: boolean
     /** This session's Abyss Points per hour, beside the Kina. */
     abyss: boolean
-    /** Hidden Cubes in view at the top, with how far and which way. */
+    /** Hidden Cubes in view at the top, with how far and which way (set on the Map page, with the other cube settings). */
     cubes: boolean
-    /** A sound when a Hidden Cube comes into view. */
-    cubeSound: boolean
-    /** Which one (shared/sounds.ts), and how loud (0-1). */
-    cubeSoundId: SoundId
-    cubeVolume: number
-    /** The name of your own mp3, once one is chosen (the file is in the data folder). */
-    cubeCustomName: string | null
   }
+
+  /**
+   * Hidden Cubes (the Map page's settings): a sound when one comes into view, whatever overlay is
+   * open; which one (shared/sounds.ts), how loud (0-1), and the name of your own mp3 once chosen
+   * (the file is in the data folder).
+   */
+  cubes: { sound: boolean; soundId: SoundId; volume: number; customName: string | null }
 
   /** The map overlay: your zone around you, your tracked pets' spawns and the Hidden Cubes. */
   /** `size` is its width; `height` the map's, dragged by the corner (null: square). */
@@ -447,7 +447,8 @@ export const SETTINGS_DEFAULTS: Settings = {
   panelHideOnGame: false,
   arrangeWithPanel: false,
   clock24: true,
-  hud: { enabled: false, position: { x: 1758, y: 39 }, mode: 'pinned', nearby: true, nearbyCount: 3, pinned: [], recentCount: 3, toasts: true, opacity: 0.92, scale: 1, hideWithoutGame: true, idleHideSeconds: 45, merchant: true, kina: true, abyss: true, cubes: false, cubeSound: true, cubeSoundId: 'chime', cubeVolume: 0.6, cubeCustomName: null },
+  hud: { enabled: false, position: { x: 1758, y: 39 }, mode: 'pinned', nearby: true, nearbyCount: 3, pinned: [], recentCount: 3, toasts: true, opacity: 0.92, scale: 1, hideWithoutGame: true, idleHideSeconds: 45, merchant: true, kina: true, abyss: true, cubes: false },
+  cubes: { sound: true, soundId: 'chime', volume: 0.6, customName: null },
   minimap: { enabled: false, position: { x: 2098, y: 722 }, size: 260, height: null, opacity: 0.92, zoom: 16.26, collapsed: false, gatherables: false },
   mapPage: { needed: true, cubes: false, gatherables: false, hiddenPets: [] },
   gatherables: { pinned: [] },
@@ -477,7 +478,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1181, y: 345 }, ccDebuffs: false, hideIdle: false, idleSeconds: 30 },
   meter: { enabled: true, position: { x: 362, y: 72 }, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 321, height: 328, hideIdle: true, idleSeconds: 15, power: 'below', gear: 'below', deaths: true, style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
-  layoutVersion: 1,
+  layoutVersion: 2,
   language: 'en',
   faction: 'elyos',
   playerLevel: 45,
@@ -575,13 +576,18 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         ...fields(v, d.hud, {
           enabled: BOOL, position: POINT, nearby: BOOL, nearbyCount: whole(1, 8), recentCount: whole(1, 8), toasts: BOOL, opacity: range(0.3, 1),
           scale: range(0.75, 1.75), hideWithoutGame: BOOL, idleHideSeconds: whole(0, 600), merchant: BOOL, kina: BOOL, abyss: BOOL, cubes: BOOL,
-          cubeSound: BOOL, cubeVolume: range(0, 1),
         }),
         // 'nearby' was a mode before it became its own section (0.1.3).
         mode: v.mode === 'pinned' ? 'pinned' : 'recent',
         pinned: Array.isArray(v.pinned) ? [...new Set(v.pinned.filter((n) => Number.isInteger(n)))].slice(0, MAX_PINNED) : [],
-        cubeSoundId: isSound(v.cubeSoundId) ? v.cubeSoundId : d.hud.cubeSoundId,
-        cubeCustomName: typeof v.cubeCustomName === 'string' && v.cubeCustomName ? v.cubeCustomName.slice(0, 200) : null,
+      } as Settings[K]
+    }
+    case 'cubes': {
+      const v = (value ?? {}) as Partial<Settings['cubes']>
+      return {
+        ...fields(v, d.cubes, { sound: BOOL, volume: range(0, 1) }),
+        soundId: isSound(v.soundId) ? v.soundId : d.cubes.soundId,
+        customName: typeof v.customName === 'string' && v.customName ? v.customName.slice(0, 200) : null,
       } as Settings[K]
     }
     case 'timers': {

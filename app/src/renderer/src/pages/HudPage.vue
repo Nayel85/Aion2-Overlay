@@ -14,7 +14,6 @@ import PetIcon from '@/components/PetIcon.vue'
 import Sparkline from '@/components/Sparkline.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
-import { playSound } from '@/lib/sound.ts'
 import { cubeBearings, meters } from '@/lib/cubes.ts'
 import { displayName, GENUS_LABEL, petInfo } from '@/lib/petDb.ts'
 import { nearbyPets, useSpawns, type NearbyPet } from '@/lib/spawns.ts'
@@ -101,16 +100,6 @@ const abyssText = computed(() => {
 })
 /** The Hidden Cubes in view, nearest first, with how far and which way. */
 const cubeRows = computed(() => (hud.value.cubes ? cubeBearings(store.cubes, store.nearby.position) : []))
-// A cube coming into view plays its sound (Settings → HUD), once per cube.
-const chimed = new Set<number>()
-watch(
-  () => store.cubes,
-  (list) => {
-    const fresh = list.filter((c) => !chimed.has(c.id))
-    for (const c of fresh) chimed.add(c.id)
-    if (fresh.length && store.ready && hud.value.cubes && hud.value.cubeSound) void playSound('cube', hud.value.cubeSoundId, hud.value.cubeVolume)
-  },
-)
 // "spawned 3 min ago", kept current.
 const clock = useNow(5000)
 function since(at: number): string {

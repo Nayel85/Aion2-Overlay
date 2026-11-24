@@ -8,6 +8,7 @@ import { statusText, statusTone } from '@/components/StatusDot.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
 import { playChime } from '@/lib/chime.ts'
+import { useCubeAlarm } from '@/lib/cubeAlarm.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import type { UpdateState } from '@shared/update.ts'
@@ -24,7 +25,8 @@ watch(
   },
 )
 
-// The chime plays here: the bubble is up whenever the game is, and one window plays it once.
+// The chime and the Hidden Cube's sound play here: the bubble is up whenever the game is, and one window plays them once.
+useCubeAlarm()
 let offAlert: (() => void) | null = null
 let offUpdate: (() => void) | null = null
 const update = ref<UpdateState | null>(null)

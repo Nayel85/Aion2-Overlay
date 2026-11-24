@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // An alert's sound (a Hidden Cube, an enemy): which one, Test, your own mp3 (copied into the data
-// folder by main/sounds.ts), and how loud, as two setting rows. The cube's settings are in `hud`,
+// folder by main/sounds.ts), and how loud, as two setting rows. The cube's settings are in `cubes`,
 // the enemy's in `enemies`.
 import { percent } from '@shared/format.ts'
 import { computed, ref } from 'vue'
@@ -17,15 +17,15 @@ import { SOUNDS, type SoundId, type SoundSlot } from '@shared/sounds.ts'
 const props = defineProps<{ kind: SoundSlot; label: string }>()
 const store = useApp()
 
-const id = computed<SoundId>(() => (props.kind === 'cube' ? store.settings.hud.cubeSoundId : store.settings.enemies.soundId))
-const volume = computed(() => (props.kind === 'cube' ? store.settings.hud.cubeVolume : store.settings.enemies.volume))
-const customName = computed(() => (props.kind === 'cube' ? store.settings.hud.cubeCustomName : store.settings.enemies.customName))
+const id = computed<SoundId>(() => (props.kind === 'cube' ? store.settings.cubes.soundId : store.settings.enemies.soundId))
+const volume = computed(() => (props.kind === 'cube' ? store.settings.cubes.volume : store.settings.enemies.volume))
+const customName = computed(() => (props.kind === 'cube' ? store.settings.cubes.customName : store.settings.enemies.customName))
 const options = computed(() => SOUNDS.map((s) => ({ id: s.id, label: s.id === 'custom' && customName.value ? t('Your own: {name}', { name: customName.value }) : s.label })))
 const note = ref<string | null>(null)
 
 function save(patch: { id?: SoundId; volume?: number }): void {
   if (props.kind === 'cube') {
-    void store.setHud({ ...(patch.id ? { cubeSoundId: patch.id } : {}), ...(patch.volume !== undefined ? { cubeVolume: patch.volume } : {}) })
+    void store.set('cubes', { ...store.settings.cubes, ...(patch.id ? { soundId: patch.id } : {}), ...(patch.volume !== undefined ? { volume: patch.volume } : {}) })
   } else {
     void store.set('enemies', { ...store.settings.enemies, ...(patch.id ? { soundId: patch.id } : {}), ...(patch.volume !== undefined ? { volume: patch.volume } : {}) })
   }

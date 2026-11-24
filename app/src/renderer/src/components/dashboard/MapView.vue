@@ -11,6 +11,7 @@ import { computed, ref, watch } from 'vue'
 import Button from '@/components/Button.vue'
 import PetIcon from '@/components/PetIcon.vue'
 import SettingRow from '@/components/SettingRow.vue'
+import SoundPicker from '@/components/SoundPicker.vue'
 import Slider from '@/components/Slider.vue'
 import Toggle from '@/components/Toggle.vue'
 import WorldMap, { type MapLayer } from '@/components/WorldMap.vue'
@@ -168,6 +169,20 @@ const setMini = (patch: Partial<typeof mini.value>): void => void store.set('min
         <div v-else class="flex h-full items-center justify-center text-sm text-darker">{{ t('Loading maps…') }}</div>
       </div>
     </div>
+
+    <Section title="Hidden Cubes" icon="M8 1.8l5.5 3.1v6.2L8 14.2l-5.5-3.1V4.9zM2.5 4.9L8 8l5.5-3.1M8 8v6.2">
+      <SettingRow label="Sound for a cube" hint="When one comes into view (the game tells you within about 100 m), whatever overlay is open.">
+        <Toggle :model-value="store.settings.cubes.sound" @update:model-value="store.set('cubes', { ...store.settings.cubes, sound: $event })" />
+      </SettingRow>
+      <SoundPicker v-if="store.settings.cubes.sound" kind="cube" label="Cube sound" />
+      <SettingRow label="On this map" hint="The cubes in view, as golden cubes (also the switch beside the map).">
+        <Toggle v-model="showCubes" />
+      </SettingRow>
+      <SettingRow label="In the pets HUD" hint="At the top of the pets HUD, with how far and which way.">
+        <Toggle :model-value="store.settings.hud.cubes" @update:model-value="store.setHud({ cubes: $event })" />
+      </SettingRow>
+      <p class="text-xs text-darker">{{ t('The map overlay always shows them; the Unified HUD and Map V2 each have their own switch on their page.') }}</p>
+    </Section>
 
     <Section title="Map overlay" icon="M1.5 4l4.5-2 4 2 4.5-2v10l-4.5 2-4-2-4.5 2zM6 2v10M10 4v10">
       <SettingRow label="Show the map overlay" hint="A small map over the game that follows you, with your tracked pets' spawns and the Hidden Cubes. Scroll or use + and − to zoom.">

@@ -408,10 +408,6 @@
  "hud": [
   {
    "abyss": true,
-   "cubeCustomName": null,
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -430,10 +426,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": null,
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -452,10 +444,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": null,
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -474,10 +462,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": null,
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -496,10 +480,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": null,
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -518,10 +498,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": null,
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -543,10 +519,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "x",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -565,10 +537,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": null,
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 1,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -590,10 +558,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": null,
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -615,10 +579,6 @@
   },
   {
    "abyss": false,
-   "cubeCustomName": null,
-   "cubeSound": false,
-   "cubeSoundId": "chime",
-   "cubeVolume": 1,
    "cubes": true,
    "enabled": true,
    "hideWithoutGame": false,
@@ -640,10 +600,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "pinned",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -662,10 +618,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "list",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -684,10 +636,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "always",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -706,10 +654,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "strip",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -728,10 +672,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "players",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -750,10 +690,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "meter",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -772,10 +708,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "ring",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -794,10 +726,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "gauges",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -816,10 +744,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "pill",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -838,10 +762,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "compact",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -860,10 +780,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "bold",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -882,10 +798,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "flat",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -904,10 +816,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "under",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -926,10 +834,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "column",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -948,10 +852,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "hidden",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -970,10 +870,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "fr",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -992,10 +888,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "en",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1014,10 +906,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "es",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1036,10 +924,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "europe",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1058,10 +942,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "na-west",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1080,10 +960,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "#ff0000",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1102,10 +978,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": null,
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1124,10 +996,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "game",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1146,10 +1014,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "word",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1168,10 +1032,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "icon",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1190,10 +1050,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": "drawn",
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1212,10 +1068,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": null,
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1237,10 +1089,6 @@
   },
   {
    "abyss": true,
-   "cubeCustomName": null,
-   "cubeSound": true,
-   "cubeSoundId": "chime",
-   "cubeVolume": 0.6,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
@@ -1259,6 +1107,236 @@
    "recentCount": 3,
    "scale": 1,
    "toasts": true
+  }
+ ],
+ "cubes": [
+  {
+   "customName": null,
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": null,
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": null,
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": null,
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": null,
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": null,
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "x",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": null,
+   "sound": true,
+   "soundId": "chime",
+   "volume": 1
+  },
+  {
+   "customName": null,
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0
+  },
+  {
+   "customName": null,
+   "sound": false,
+   "soundId": "chime",
+   "volume": 1
+  },
+  {
+   "customName": "pinned",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "list",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "always",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "strip",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "players",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "meter",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "ring",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "gauges",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "pill",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "compact",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "bold",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "flat",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "under",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "column",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "hidden",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "fr",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "en",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "es",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "europe",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "na-west",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "#ff0000",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": null,
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "game",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "word",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "icon",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": "drawn",
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": null,
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
+  },
+  {
+   "customName": null,
+   "sound": true,
+   "soundId": "chime",
+   "volume": 0.6
   }
  ],
  "minimap": [
@@ -10115,7 +10193,7 @@
   0,
   0,
   3,
-  1,
+  2,
   0,
   0,
   99,

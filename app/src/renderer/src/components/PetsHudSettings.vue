@@ -5,7 +5,6 @@ import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import Button from '@/components/Button.vue'
 import SettingRow from '@/components/SettingRow.vue'
-import SoundPicker from '@/components/SoundPicker.vue'
 import Slider from '@/components/Slider.vue'
 import Toggle from '@/components/Toggle.vue'
 import Section from '@/components/ui/Section.vue'
@@ -48,15 +47,6 @@ const HUD_MODES = [
       <SettingRow label="Abyss Points per hour" hint="This session's Abyss Points per hour, beside the Kina at the top right of the HUD.">
         <Toggle :model-value="store.settings.hud.abyss" @update:model-value="store.setHud({ abyss: $event })" />
       </SettingRow>
-      <SettingRow label="Hidden Cubes" hint="A cube in view (the game tells you within about 100 m) at the top of the HUD, with how far and which way.">
-        <Toggle :model-value="store.settings.hud.cubes" @update:model-value="store.setHud({ cubes: $event })" />
-      </SettingRow>
-      <SettingRow v-if="store.settings.hud.cubes" label="Sound for a cube" hint="When one comes into view.">
-        <Toggle :model-value="store.settings.hud.cubeSound" @update:model-value="store.setHud({ cubeSound: $event })" />
-      </SettingRow>
-      <template v-if="store.settings.hud.cubes && store.settings.hud.cubeSound">
-        <SoundPicker kind="cube" label="Cube sound" />
-      </template>
       <SettingRow label="Hide without game traffic" hint="When the game has sent nothing for 15 seconds.">
         <Toggle :model-value="store.settings.hud.hideWithoutGame" @update:model-value="store.setHud({ hideWithoutGame: $event })" />
       </SettingRow>

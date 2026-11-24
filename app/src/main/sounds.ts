@@ -38,7 +38,7 @@ export const sounds = {
       await mkdir(join(app.getPath('userData'), 'sounds'), { recursive: true })
       await writeFile(file(slot), bytes)
       const name = basename(from)
-      if (slot === 'cube') settings.set('hud', { ...settings.get('hud'), cubeSoundId: 'custom', cubeCustomName: name })
+      if (slot === 'cube') settings.set('cubes', { ...settings.get('cubes'), soundId: 'custom', customName: name })
       else settings.set('enemies', { ...settings.get('enemies'), soundId: 'custom', customName: name })
       log(`${slot} sound: ${name} (${size} bytes)`)
       return { ok: true, name }

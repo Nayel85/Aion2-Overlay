@@ -48,9 +48,17 @@ export const settings = {
  * `layoutVersion` so it runs once.
  *   1: the Unified HUD takes over: it is turned on and the other widgets are closed (the DPS meter
  *      and the pets HUD keep whatever the player set). They are still a click away on the HUD.
+ *   2: the Hidden Cube's sound leaves the pets HUD's settings for its own (`cubes`): as it was set.
  */
 export function applyLayoutUpdates(): void {
-  if (settings.get('layoutVersion') >= 1) return
+  if (settings.get('layoutVersion') < 1) layoutUpdate1()
+  if (settings.get('layoutVersion') < 2) {
+    const was = (db().get('hud') ?? {}) as { cubeSound?: unknown; cubeSoundId?: unknown; cubeVolume?: unknown; cubeCustomName?: unknown }
+    settings.set('cubes', { sound: was.cubeSound, soundId: was.cubeSoundId, volume: was.cubeVolume, customName: was.cubeCustomName })
+    settings.set('layoutVersion', 2)
+  }
+}
+function layoutUpdate1(): void {
   settings.set('unified', { ...settings.get('unified'), enabled: true })
   settings.set('minimap', { ...settings.get('minimap'), enabled: false })
   settings.set('gameMap', { ...settings.get('gameMap'), enabled: false })
