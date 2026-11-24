@@ -498,6 +498,21 @@ const rect = (v: unknown): Rect | null => {
   return ok ? { x: Math.round(r.x!), y: Math.round(r.y!), width: Math.round(r.width!), height: Math.round(r.height!) } : null
 }
 
+/** A setting's field rule: what it makes of a value, given the default. */
+type Rule = (v: unknown, fallback: never) => unknown
+const BOOL: Rule = (v, fallback) => bool(v, fallback)
+const POINT: Rule = (v) => point(v)
+const COLOUR: Rule = (v, fallback) => colour(v, fallback)
+/** A number held between `lo` and `hi`; `whole` rounds it. */
+const range = (lo: number, hi: number): Rule => (v, fallback) => num(v, lo, hi, fallback)
+const whole = (lo: number, hi: number): Rule => (v, fallback) => Math.round(num(v, lo, hi, fallback))
+/** The fields of a section that follow a plain rule, each from its value and its default. */
+function fields<T extends object>(v: object, d: T, rules: Partial<Record<keyof T, Rule>>): Partial<T> {
+  const given = v as Record<string, unknown>
+  const defaults = d as Record<string, unknown>
+  return Object.fromEntries(Object.entries(rules).map(([k, rule]) => [k, (rule as Rule)(given[k], defaults[k] as never)])) as Partial<T>
+}
+
 /** Coerce one setting to a valid value, falling back to the default for anything malformed. */
 export function normalise<K extends SettingKey>(key: K, value: unknown): Settings[K] {
   const d = SETTINGS_DEFAULTS
@@ -523,26 +538,15 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
     case 'hud': {
       const v = (value ?? {}) as Partial<Settings['hud']>
       return {
-        enabled: bool(v.enabled, d.hud.enabled),
-        position: point(v.position),
+        ...fields(v, d.hud, {
+          enabled: BOOL, position: POINT, nearby: BOOL, nearbyCount: whole(1, 8), recentCount: whole(1, 8), toasts: BOOL, opacity: range(0.3, 1),
+          scale: range(0.75, 1.75), hideWithoutGame: BOOL, idleHideSeconds: whole(0, 600), merchant: BOOL, kina: BOOL, abyss: BOOL, cubes: BOOL,
+          cubeSound: BOOL, cubeVolume: range(0, 1),
+        }),
         // 'nearby' was a mode before it became its own section (0.1.3).
         mode: v.mode === 'pinned' ? 'pinned' : 'recent',
-        nearby: bool(v.nearby, d.hud.nearby),
-        nearbyCount: Math.round(num(v.nearbyCount, 1, 8, d.hud.nearbyCount)),
         pinned: Array.isArray(v.pinned) ? [...new Set(v.pinned.filter((n) => Number.isInteger(n)))].slice(0, MAX_PINNED) : [],
-        recentCount: Math.round(num(v.recentCount, 1, 8, d.hud.recentCount)),
-        toasts: bool(v.toasts, d.hud.toasts),
-        opacity: num(v.opacity, 0.3, 1, d.hud.opacity),
-        scale: num(v.scale, 0.75, 1.75, d.hud.scale),
-        hideWithoutGame: bool(v.hideWithoutGame, d.hud.hideWithoutGame),
-        idleHideSeconds: Math.round(num(v.idleHideSeconds, 0, 600, d.hud.idleHideSeconds)),
-        merchant: bool(v.merchant, d.hud.merchant),
-        kina: bool(v.kina, d.hud.kina),
-        abyss: bool(v.abyss, d.hud.abyss),
-        cubes: bool(v.cubes, d.hud.cubes),
-        cubeSound: bool(v.cubeSound, d.hud.cubeSound),
         cubeSoundId: isSound(v.cubeSoundId) ? v.cubeSoundId : d.hud.cubeSoundId,
-        cubeVolume: num(v.cubeVolume, 0, 1, d.hud.cubeVolume),
         cubeCustomName: typeof v.cubeCustomName === 'string' && v.cubeCustomName ? v.cubeCustomName.slice(0, 200) : null,
       } as Settings[K]
     }
@@ -551,15 +555,15 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       const on = (v.enabled ?? {}) as Partial<Record<TimerId, unknown>>
       const lead = (v.lead ?? {}) as Partial<Record<TimerId, unknown>>
       return {
+        ...fields(v, d.timers, {
+          sound: BOOL, volume: range(0, 1), shake: BOOL,
+        }),
         region: REGIONS.some((r) => r.id === v.region) ? v.region : d.timers.region,
         enabled: Object.fromEntries(TIMERS.map((t) => [t.id, bool(on[t.id], t.defaultOn)])) as Record<TimerId, boolean>,
         // One of the leads offered for that timer; anything else falls back to its default.
         lead: Object.fromEntries(
           TIMERS.map((t) => [t.id, leadChoices(t).includes(lead[t.id] as number) ? (lead[t.id] as number) : t.lead]),
         ) as Record<TimerId, number>,
-        sound: bool(v.sound, d.timers.sound),
-        volume: num(v.volume, 0, 1, d.timers.volume),
-        shake: bool(v.shake, d.timers.shake),
         shown: Object.fromEntries(
           TIMERS.map((t) => [t.id, bool((v.shown as Partial<Record<TimerId, unknown>> | undefined)?.[t.id], defaultShown(t))]),
         ) as Record<TimerId, boolean>,
@@ -568,35 +572,30 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
     case 'minimap': {
       const v = (value ?? {}) as Partial<Settings['minimap']>
       return {
-        enabled: bool(v.enabled, d.minimap.enabled),
-        position: point(v.position),
-        size: Math.round(num(v.size, MINIMAP_WIDTH[0], MINIMAP_WIDTH[1], d.minimap.size)),
+        ...fields(v, d.minimap, {
+          enabled: BOOL, position: POINT, size: whole(MINIMAP_WIDTH[0], MINIMAP_WIDTH[1]), opacity: range(0.3, 1), zoom: range(1, 40),
+          gatherables: BOOL,
+        }),
         height: v.height === null || v.height === undefined ? null : Math.round(num(v.height, MINIMAP_HEIGHT[0], MINIMAP_HEIGHT[1], d.minimap.size)),
-        opacity: num(v.opacity, 0.3, 1, d.minimap.opacity),
-        zoom: num(v.zoom, 1, 40, d.minimap.zoom),
         collapsed: bool(v.collapsed, false),
-        gatherables: bool(v.gatherables, d.minimap.gatherables),
       } as Settings[K]
     }
     case 'mapPage': {
       const v = (value ?? {}) as Partial<Settings['mapPage']>
       return {
-        needed: bool(v.needed, d.mapPage.needed),
-        cubes: bool(v.cubes, d.mapPage.cubes),
-        gatherables: bool(v.gatherables, d.mapPage.gatherables),
+        ...fields(v, d.mapPage, {
+          needed: BOOL, cubes: BOOL, gatherables: BOOL,
+        }),
         hiddenPets: Array.isArray(v.hiddenPets) ? [...new Set(v.hiddenPets.filter((n) => Number.isInteger(n)))].slice(0, MAX_PINNED) : [],
       } as Settings[K]
     }
     case 'gameMap': {
       const v = (value ?? {}) as Partial<Settings['gameMap']>
       return {
-        enabled: bool(v.enabled, d.gameMap.enabled),
+        ...fields(v, d.gameMap, {
+          enabled: BOOL, gatherables: BOOL, pets: BOOL, cubes: BOOL, enemies: BOOL, showArea: BOOL,
+        }),
         region: rect(v.region),
-        gatherables: bool(v.gatherables, d.gameMap.gatherables),
-        pets: bool(v.pets, d.gameMap.pets),
-        cubes: bool(v.cubes, d.gameMap.cubes),
-        enemies: bool(v.enemies, d.gameMap.enemies),
-        showArea: bool(v.showArea, d.gameMap.showArea),
       } as Settings[K]
     }
     case 'gatherables': {
@@ -608,9 +607,9 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
     case 'timerBar': {
       const v = (value ?? {}) as Partial<Settings['timerBar']>
       return {
-        enabled: bool(v.enabled, d.timerBar.enabled),
-        position: point(v.position),
-        opacity: num(v.opacity, 0.3, 1, d.timerBar.opacity),
+        ...fields(v, d.timerBar, {
+          enabled: BOOL, position: POINT, opacity: range(0.3, 1),
+        }),
         layout: v.layout === 'list' ? 'list' : 'bar',
       } as Settings[K]
     }
@@ -618,63 +617,36 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       const v = (value ?? {}) as Partial<Settings['unified']>
       const u = d.unified
       return {
-        enabled: bool(v.enabled, u.enabled),
-        position: point(v.position),
-        opacity: num(v.opacity, 0, 1, u.opacity),
-        scale: num(v.scale, 0.75, 1.75, u.scale),
+        ...fields(v, d.unified, {
+          enabled: BOOL, position: POINT, opacity: range(0, 1), scale: range(0.75, 1.75), events: BOOL, countdownMinutes: whole(1, 60), ping: BOOL,
+          target: BOOL, targetSeconds: whole(3, 60), kina: BOOL, abyssRate: BOOL, season: BOOL, earningsMinutes: whole(1, 60), rift: BOOL,
+          cubes: BOOL, death: BOOL, deathMinutes: whole(1, 60), enemies: BOOL, bosses: BOOL, guild: BOOL, clock: BOOL, odyle: BOOL, runsPinned: BOOL,
+          replace: BOOL,
+        }),
         buttons: v.buttons === 'always' ? 'always' : 'hover',
-        events: bool(v.events, u.events),
-        countdownMinutes: Math.round(num(v.countdownMinutes, 1, 60, u.countdownMinutes)),
-        ping: bool(v.ping, u.ping),
-        target: bool(v.target, u.target),
-        targetSeconds: Math.round(num(v.targetSeconds, 3, 60, u.targetSeconds)),
         targetStyle: v.targetStyle === 'strip' ? 'strip' : 'inline',
         targetMode: v.targetMode === 'players' || v.targetMode === 'meter' ? v.targetMode : 'always',
-        kina: bool(v.kina, u.kina),
-        abyssRate: bool(v.abyssRate, u.abyssRate),
-        season: bool(v.season, u.season),
-        earningsMinutes: Math.round(num(v.earningsMinutes, 1, 60, u.earningsMinutes)),
-        rift: bool(v.rift, u.rift),
-        cubes: bool(v.cubes, u.cubes),
-        death: bool(v.death, u.death),
-        deathMinutes: Math.round(num(v.deathMinutes, 1, 60, u.deathMinutes)),
-        enemies: bool(v.enemies, u.enemies),
-        bosses: bool(v.bosses, u.bosses),
-        guild: bool(v.guild, u.guild),
-        clock: bool(v.clock, u.clock),
-        odyle: bool(v.odyle, u.odyle),
-        runsPinned: bool(v.runsPinned, u.runsPinned),
-        replace: bool(v.replace, u.replace),
       } as Settings[K]
     }
     case 'applicants': {
       const v = (value ?? {}) as Partial<Settings['applicants']>
       return {
-        enabled: bool(v.enabled, d.applicants.enabled),
-        position: point(v.position),
-        opacity: num(v.opacity, 0, 1, d.applicants.opacity),
+        ...fields(v, d.applicants, {
+          enabled: BOOL, position: POINT, opacity: range(0, 1), hideAfter: whole(APPLICANTS_HIDE[0], APPLICANTS_HIDE[1]),
+        }),
         collapsed: bool(v.collapsed, false),
-        hideAfter: Math.round(num(v.hideAfter, APPLICANTS_HIDE[0], APPLICANTS_HIDE[1], d.applicants.hideAfter)),
       } as Settings[K]
     }
     case 'gather': {
       const v = (value ?? {}) as Partial<Settings['gather']>
       const g = d.gather
       return {
-        enabled: bool(v.enabled, g.enabled),
+        ...fields(v, d.gather, {
+          enabled: BOOL, position: POINT, opacity: range(0.2, 1), scale: range(0.6, 2), icon: BOOL, fail: BOOL, rare: BOOL, plain: BOOL, crafts: BOOL,
+          soundFail: BOOL, soundRare: BOOL, volume: range(0, 1),
+        }),
         style: v.style === 'pill' || v.style === 'gauges' ? v.style : 'ring',
-        position: point(v.position),
-        opacity: num(v.opacity, 0.2, 1, g.opacity),
-        scale: num(v.scale, 0.6, 2, g.scale),
-        icon: bool(v.icon, g.icon),
-        fail: bool(v.fail, g.fail),
-        rare: bool(v.rare, g.rare),
-        plain: bool(v.plain, g.plain),
-        crafts: bool(v.crafts, g.crafts),
-        soundFail: bool(v.soundFail, g.soundFail),
-        soundRare: bool(v.soundRare, g.soundRare),
         soundId: isSound(v.soundId) && v.soundId !== 'custom' ? v.soundId : g.soundId,
-        volume: num(v.volume, 0, 1, g.volume),
       } as Settings[K]
     }
     case 'flight': {
@@ -684,66 +656,44 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
     case 'party': {
       const v = (value ?? {}) as Partial<Settings['party']>
       return {
-        enabled: bool(v.enabled, d.party.enabled),
-        position: point(v.position),
-        opacity: num(v.opacity, 0, 1, d.party.opacity),
+        ...fields(v, d.party, {
+          enabled: BOOL, position: POINT, opacity: range(0, 1), self: BOOL, header: BOOL, icon: BOOL, debuffIcons: BOOL, shields: BOOL,
+          bossTarget: BOOL, width: whole(100, 320), barHeight: whole(14, 40), gap: whole(0, 12), fontSize: whole(9, 18), hpColor: COLOUR,
+          afflictedColor: COLOUR,
+        }),
         collapsed: bool(v.collapsed, false),
-        self: bool(v.self, d.party.self),
-        header: bool(v.header, d.party.header),
-        icon: bool(v.icon, d.party.icon),
         hpText: (PARTY_HP_TEXT as readonly unknown[]).includes(v.hpText) ? v.hpText! : d.party.hpText,
-        debuffIcons: bool(v.debuffIcons, d.party.debuffIcons),
-        shields: bool(v.shields, d.party.shields),
-        bossTarget: bool(v.bossTarget, d.party.bossTarget),
-        width: Math.round(num(v.width, 100, 320, d.party.width)),
-        barHeight: Math.round(num(v.barHeight, 14, 40, d.party.barHeight)),
-        gap: Math.round(num(v.gap, 0, 12, d.party.gap)),
-        fontSize: Math.round(num(v.fontSize, 9, 18, d.party.fontSize)),
-        hpColor: colour(v.hpColor, d.party.hpColor),
-        afflictedColor: colour(v.afflictedColor, d.party.afflictedColor),
         afflictedBy: (PARTY_AFFLICTED_BY as readonly unknown[]).includes(v.afflictedBy) ? v.afflictedBy! : d.party.afflictedBy,
       } as Settings[K]
     }
     case 'bossRuns': {
       const v = (value ?? {}) as Partial<Settings['bossRuns']>
       return {
-        enabled: bool(v.enabled, d.bossRuns.enabled),
-        position: point(v.position),
-        opacity: num(v.opacity, 0, 1, d.bossRuns.opacity),
-        windowMinutes: Math.round(num(v.windowMinutes, 5, 60, d.bossRuns.windowMinutes)),
-        rows: Math.round(num(v.rows, 1, 10, d.bossRuns.rows)),
+        ...fields(v, d.bossRuns, {
+          enabled: BOOL, position: POINT, opacity: range(0, 1), windowMinutes: whole(5, 60), rows: whole(1, 10),
+          scale: range(BOSSRUNS_SCALE[0], BOSSRUNS_SCALE[1]), aliveMin: whole(0, 10), ignoreLow: BOOL,
+        }),
         collapsed: bool(v.collapsed, false),
-        scale: num(v.scale, BOSSRUNS_SCALE[0], BOSSRUNS_SCALE[1], d.bossRuns.scale),
-        aliveMin: Math.round(num(v.aliveMin, 0, 10, d.bossRuns.aliveMin)),
-        ignoreLow: bool(v.ignoreLow, d.bossRuns.ignoreLow),
         lowPriority: Array.isArray(v.lowPriority) ? [...new Set(v.lowPriority.filter((id) => BOSS_RUNS.some((r) => r.boss === id)))] : [...d.bossRuns.lowPriority],
       } as Settings[K]
     }
     case 'enemies': {
       const v = (value ?? {}) as Partial<Settings['enemies']>
       return {
-        enabled: bool(v.enabled, d.enemies.enabled),
-        position: point(v.position),
-        opacity: num(v.opacity, 0, 1, d.enemies.opacity),
-        collapsed: bool(v.collapsed, d.enemies.collapsed),
-        mapPins: bool(v.mapPins, d.enemies.mapPins),
-        gearScore: bool(v.gearScore, d.enemies.gearScore),
-        combatPower: bool(v.combatPower, d.enemies.combatPower),
-        sound: bool(v.sound, d.enemies.sound),
-        pvpOnly: bool(v.pvpOnly, d.enemies.pvpOnly),
+        ...fields(v, d.enemies, {
+          enabled: BOOL, position: POINT, opacity: range(0, 1), collapsed: BOOL, mapPins: BOOL, gearScore: BOOL, combatPower: BOOL, sound: BOOL,
+          pvpOnly: BOOL, volume: range(0, 1),
+        }),
         soundId: isSound(v.soundId) ? v.soundId : d.enemies.soundId,
-        volume: num(v.volume, 0, 1, d.enemies.volume),
         customName: typeof v.customName === 'string' && v.customName ? v.customName.slice(0, 200) : null,
       } as Settings[K]
     }
     case 'killFeed': {
       const v = (value ?? {}) as Partial<Settings['killFeed']>
       return {
-        open: bool(v.open, d.killFeed.open),
-        position: point(v.position),
-        opacity: num(v.opacity, 0, 1, d.killFeed.opacity),
-        collapsed: bool(v.collapsed, d.killFeed.collapsed),
-        target: bool(v.target, d.killFeed.target),
+        ...fields(v, d.killFeed, {
+          open: BOOL, position: POINT, opacity: range(0, 1), collapsed: BOOL, target: BOOL,
+        }),
         width: v.width === null || v.width === undefined ? null : Math.round(num(v.width, KILLFEED_WIDTH[0], KILLFEED_WIDTH[1], 300)),
         height: v.height === null || v.height === undefined ? null : Math.round(num(v.height, KILLFEED_HEIGHT[0], KILLFEED_HEIGHT[1], 200)),
       } as Settings[K]
@@ -751,34 +701,26 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
     case 'skills': {
       const v = (value ?? {}) as Partial<Settings['skills']>
       return {
-        enabled: bool(v.enabled, d.skills.enabled),
-        position: point(v.position),
-        rows: Math.round(num(v.rows, 1, 20, d.skills.rows)),
-        opacity: num(v.opacity, 0.3, 1, d.skills.opacity),
+        ...fields(v, d.skills, {
+          enabled: BOOL, position: POINT, rows: whole(1, 20), opacity: range(0.3, 1),
+        }),
       } as Settings[K]
     }
     case 'buffs': {
       const v = (value ?? {}) as Partial<Settings['buffs']>
       return {
-        enabled: bool(v.enabled, d.buffs.enabled),
-        position: point(v.position),
-        opacity: num(v.opacity, 0.3, 1, d.buffs.opacity),
-        size: Math.round(num(v.size, 22, 56, d.buffs.size)),
-        perRow: Math.round(num(v.perRow, 4, 20, d.buffs.perRow)),
-        debuffs: bool(v.debuffs, d.buffs.debuffs),
-        passives: bool(v.passives, d.buffs.passives),
-        consumables: bool(v.consumables, d.buffs.consumables),
-        cc: bool(v.cc, d.buffs.cc),
-        ccPosition: point(v.ccPosition),
-        ccDebuffs: bool(v.ccDebuffs, d.buffs.ccDebuffs),
+        ...fields(v, d.buffs, {
+          enabled: BOOL, position: POINT, opacity: range(0.3, 1), size: whole(22, 56), perRow: whole(4, 20), debuffs: BOOL, passives: BOOL,
+          consumables: BOOL, cc: BOOL, ccPosition: POINT, ccDebuffs: BOOL,
+        }),
       } as Settings[K]
     }
     case 'dummy': {
       const v = (value ?? {}) as Partial<Settings['dummy']>
       return {
-        overlay: bool(v.overlay, d.dummy.overlay),
-        position: point(v.position),
-        autoStart: bool(v.autoStart, d.dummy.autoStart),
+        ...fields(v, d.dummy, {
+          overlay: BOOL, position: POINT, autoStart: BOOL,
+        }),
         goal: v.goal === 'damage' ? 'damage' : 'time',
         limitMs: v.limitMs === null || DUMMY_LIMITS.some((l) => l.id === v.limitMs) ? (v.limitMs ?? null) : d.dummy.limitMs,
         damageGoal: DUMMY_DAMAGE_GOALS.includes(v.damageGoal as number) ? (v.damageGoal as number) : d.dummy.damageGoal,
@@ -788,24 +730,19 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
     case 'meter': {
       const v = (value ?? {}) as Partial<Settings['meter']>
       return {
-        enabled: bool(v.enabled, d.meter.enabled),
-        position: point(v.position),
+        ...fields(v, d.meter, {
+          enabled: BOOL, position: POINT, rows: whole(1, 24), opacity: range(0.3, 1), width: whole(METER_WIDTH[0], METER_WIDTH[1]), hideIdle: BOOL,
+          idleSeconds: whole(5, 300), deaths: BOOL, barsBackground: range(0, 1),
+        }),
         targetMode: (TARGET_MODES as readonly unknown[]).includes(v.targetMode) ? v.targetMode : d.meter.targetMode,
         players: v.players === 'me' || v.players === 'all' ? v.players : 'party',
         stat: v.stat === 'healing' || v.stat === 'taken' ? v.stat : 'damage',
-        rows: Math.round(num(v.rows, 1, 24, d.meter.rows)),
-        opacity: num(v.opacity, 0.3, 1, d.meter.opacity),
         collapsed: bool(v.collapsed, false),
-        width: Math.round(num(v.width, METER_WIDTH[0], METER_WIDTH[1], d.meter.width)),
         height: v.height === null || v.height === undefined ? null : Math.round(num(v.height, METER_HEIGHT[0], METER_HEIGHT[1], METER_HEIGHT[0])),
-        hideIdle: bool(v.hideIdle, d.meter.hideIdle),
-        idleSeconds: Math.round(num(v.idleSeconds, 5, 300, d.meter.idleSeconds)),
         power: v.power === 'beside' || v.power === 'below' ? v.power : 'off',
         gear: v.gear === 'beside' || v.gear === 'below' ? v.gear : 'off',
-        deaths: bool(v.deaths, d.meter.deaths),
         style: v.style === 'flat' || v.style === 'bold' ? v.style : 'compact',
         barsOnly: bool(v.barsOnly, false),
-        barsBackground: num(v.barsBackground, 0, 1, d.meter.barsBackground),
       } as Settings[K]
     }
     case 'language':
