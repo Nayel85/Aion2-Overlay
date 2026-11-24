@@ -1,6 +1,6 @@
 //! The parser's shared state and the DPS meter on top of it.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -288,7 +288,7 @@ impl Meter {
         let Some(me) = self.storage.local_player_id().and_then(|id| i32::try_from(id).ok()) else {
             return serde_json::json!([]);
         };
-        self.buffs_of(me, &HashSet::new())
+        serde_json::Value::Array(self.buffs_of(&[me], &HashSet::new()).remove(&me).unwrap_or_default())
     }
 
     /// What is on each member of your party, you too (by their entity, those with any), as `my_buffs`
@@ -298,24 +298,21 @@ impl Meter {
     pub fn party_debuffs(&self, enemies: &HashSet<u32>) -> serde_json::Value {
         let party: Vec<i32> = self.storage.get_party_members().into_keys().filter_map(|name| self.storage.find_id_by_nickname(&name)).collect();
         let hostile: HashSet<i32> = enemies.iter().filter_map(|&e| i32::try_from(e).ok()).filter(|e| !party.contains(e)).collect();
-        let mut out = serde_json::Map::new();
-        for id in party {
-            // Every effect: the app shows the debuffs and the shields (their barrier icon).
-            let list: Vec<serde_json::Value> = self.buffs_of(id, &hostile).as_array().cloned().unwrap_or_default();
-            if !list.is_empty() {
-                out.insert(id.to_string(), serde_json::json!(list));
-            }
-        }
+        // Every effect: the app shows the debuffs and the shields (their barrier icon).
+        let out: serde_json::Map<String, serde_json::Value> =
+            self.buffs_of(&party, &hostile).into_iter().map(|(id, list)| (id.to_string(), serde_json::json!(list))).collect();
         serde_json::Value::Object(out)
     }
 
-    /// What is on one entity now, as `my_buffs` says it (`mine`: cast by that entity); what the
-    /// `hostile` players cast is a debuff too.
-    fn buffs_of(&self, me: i32, hostile: &HashSet<i32>) -> serde_json::Value {
+    /// What is on each of `who` now (those with anything), as `my_buffs` says it (`mine`: cast by that
+    /// entity); what the `hostile` players cast is a debuff too. The effects and the players are read
+    /// once for them all.
+    fn buffs_of(&self, who: &[i32], hostile: &HashSet<i32>) -> HashMap<i32, Vec<serde_json::Value>> {
         let now = a2tools_dps_meter_lib::clock::now_ms();
         let players = self.storage.get_nicknames();
-        let mut by_id: std::collections::BTreeMap<(u32, i32), serde_json::Value> = std::collections::BTreeMap::new();
-        for i in self.storage.abnormal_instances(now, now).into_iter().filter(|i| i.entity == me && i.end_ms.is_none()) {
+        let mut by_entity: HashMap<i32, std::collections::BTreeMap<(u32, i32), serde_json::Value>> = HashMap::new();
+        for i in self.storage.abnormal_instances(now, now).into_iter().filter(|i| who.contains(&i.entity) && i.end_ms.is_none()) {
+            let me = i.entity;
             // Ran out on the server's clock and nothing said so yet.
             if i.server_end_ms.is_some_and(|e| e < now - 1_000) {
                 continue;
@@ -325,7 +322,7 @@ impl Meter {
             if !i.endless && i.server_end_ms.is_none() {
                 continue;
             }
-            let entry = by_id.entry((i.abnormal, i.caster)).or_insert_with(|| {
+            let entry = by_entity.entry(me).or_default().entry((i.abnormal, i.caster)).or_insert_with(|| {
                 serde_json::json!({
                     "id": i.abnormal, "stacks": 0, "endsAt": i.server_end_ms, "startedAt": i.start_ms,
                     "by": i.caster, "skill": i.skill, "mine": i.caster == me,
@@ -341,7 +338,7 @@ impl Meter {
                 entry["endsAt"] = serde_json::json!(end);
             }
         }
-        serde_json::Value::Array(by_id.into_values().collect())
+        by_entity.into_iter().map(|(id, by_id)| (id, by_id.into_values().collect())).collect()
     }
 
     pub fn set_target_mode(&self, mode: &str) -> bool {

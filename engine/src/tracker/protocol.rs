@@ -683,7 +683,7 @@ pub fn gather_start(frame: &[u8]) -> Option<(u32, u32, u8, u8, bool, u32, Vec<Ga
     let grade = *b.get(at + 7)?;
     let rolls = gather_rolls(&b[at..]);
     let doubled = rolls.iter().any(|r| r.doubled);
-    let ms = gather_ms(&b[at..], grade);
+    let ms = gather_ms(&rolls, grade);
     // Outcomes other than 0, 1 and 7 come too (a Fine Odyle on 2026-11-23 had one): told as they are.
     (grade >= 1 && grade <= 9).then_some((node, tries, outcome, grade, doubled, ms, rolls))
 }
@@ -725,9 +725,9 @@ pub fn craft_start(frame: &[u8]) -> Option<(u32, u8, u32)> {
 
 /// How long a gathering takes, from its rolls (`gather_rolls`): a roll of kind 1, 2, 3 or 5 plays
 /// 1.51 s, of kind 0, 4 or 6 1.21 s, the doubling 1.01 s more, a rank up 1.01 s more, and 0.11 s
-/// besides. The owner's 17 gatherings of 2026-11-22: within 0.04 s each. `b` from its try counter on.
-fn gather_ms(b: &[u8], grade: u8) -> u32 {
-    110 + gather_rolls(b).iter().map(|r| r.ms).sum::<u32>() + if grade > 1 { 1010 } else { 0 }
+/// besides. The owner's 17 gatherings of 2026-11-22: within 0.04 s each.
+fn gather_ms(rolls: &[GatherRoll], grade: u8) -> u32 {
+    110 + rolls.iter().map(|r| r.ms).sum::<u32>() + if grade > 1 { 1010 } else { 0 }
 }
 
 /// One roll of a gathering (its start lists them): how long it plays (ms), what it adds to the success
