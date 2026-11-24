@@ -4434,6 +4434,581 @@
    "kinaDungeons": false
   }
  ],
+ "duty": [
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 1,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.3,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 1,
+   "overlay": false,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": {
+    "x": 11,
+    "y": -3
+   },
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  },
+  {
+   "opacity": 0.95,
+   "overlay": true,
+   "position": null,
+   "values": {
+    "cubeKey": 0,
+    "goldCraft": 150000,
+    "goldEquipment": 0,
+    "kina": 1,
+    "pureCraft": 0,
+    "shugoKey": 0,
+    "theostone": 150000,
+    "tickets": 0
+   }
+  }
+ ],
  "applicants": [
   {
    "collapsed": false,

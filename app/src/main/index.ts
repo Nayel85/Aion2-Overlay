@@ -13,6 +13,7 @@ import { startGather } from './gather.ts'
 import { startCharacters } from './characters.ts'
 import { startSessions } from './sessions.ts'
 import { startInventory } from './inventory.ts'
+import { startDuty } from './duty.ts'
 import { registerIconScheme, startIcons } from './icons.ts'
 import { applyGameMap, onGameMapStatus, startGameMap } from './gameMap.ts'
 import { startFieldBosses } from './fieldBosses.ts'
@@ -43,7 +44,7 @@ app.setName(DISPLAY_NAME)
 // The item icons not bundled come through their own scheme (icons.ts): declared before ready.
 registerIconScheme()
 const copied = copyDataFolder(join(app.getPath('appData'), LOKTHAR_FOLDER), app.getPath('userData'))
-/** A moment after a merchant tab opens before anything is taken as you having left the shop (a position the same tab's traffic brings). */
+/** A moment after a merchant tab or the duty board opens before anything is taken as you having left it (a position the same traffic brings). */
 const SHOP_SETTLE_MS = 1_500
 const migrated = OLD_NAMES.map((name) => moveDataFolder(join(app.getPath('appData'), name), app.getPath('userData')))
   .filter((m) => m !== 'nothing to move')
@@ -68,6 +69,7 @@ if (!app.requestSingleInstanceLock()) {
     startCharacters()
     startSessions()
     startInventory()
+    startDuty()
     startApplicants()
     startParty()
     startFlight()
@@ -101,27 +103,35 @@ if (!app.requestSingleInstanceLock()) {
       gameInFront = ev['game'] === true
       setForeground(ev['game'] === true, ev['app'] === true)
     })
-    // A tab of the Black Cloud Merchant was opened: its pets worth buying, in their own window.
-    // The game says nothing when its window is closed, so it closes when you are plainly out of it:
-    // you moved or killed something, Map V2 found the game's map again (the shop covers it), or the
-    // shop is gone from the screen (shopScreen.ts). A tab opened again brings it back.
-    let shopAt: { at: number; position: string } | null = null
-    tracker.onShop(() => {
-      openOverlay('merchant')
-      shopAt = { at: Date.now(), position: String(tracker.nearby().position) }
-      if (overlayOpen('merchant')) watchShopScreen({ open: () => overlayOpen('merchant'), window: () => overlayBounds('merchant'), gameInFront: () => gameInFront, gone: (share) => leftShop(`the shop is gone from the screen (${Math.round(share * 100)}% changed)`, true) })
-    })
-    // `seen`: told by the screen itself, so taken at once (the settling is for the packets' signs).
-    const leftShop = (why: string, seen = false): void => {
-      if (!shopAt || (!seen && Date.now() - shopAt.at < SHOP_SETTLE_MS)) return
-      shopAt = null
-      stopShopScreen()
-      log(`merchant window closed: ${why}`)
-      closeOverlay('merchant')
+    // A window opened by a screen of the game: the Black Cloud Merchant's pets worth buying as a tab
+    // of its shop opens, the duty board's advice as you open it, reroll it or take a mission. The game
+    // says nothing when that screen is closed, so the window closes when you are plainly out of it:
+    // you moved or fought, Map V2 found the game's map again (the screen covered it), or the screen is
+    // gone (shopScreen.ts: one watched at a time, the two never up together). Opened again, it is back.
+    const SCREENS = ['merchant', 'duty'] as const
+    type Screen = (typeof SCREENS)[number]
+    const screenAt: Record<Screen, { at: number; position: string } | null> = { merchant: null, duty: null }
+    const openedBy = (id: Screen): void => {
+      openOverlay(id)
+      screenAt[id] = { at: Date.now(), position: String(tracker.nearby().position) }
+      if (overlayOpen(id)) watchShopScreen({ open: () => overlayOpen(id), window: () => overlayBounds(id), gameInFront: () => gameInFront, gone: (share) => left(id, `its screen is gone (${Math.round(share * 100)}% changed)`, true) })
     }
-    tracker.onEvent('nearby', () => shopAt && String(tracker.nearby().position) !== shopAt.position && leftShop('you moved'))
-    tracker.onEvent('combat', () => leftShop('you are fighting'))
-    onGameMapStatus((status, was) => status === 'found' && was !== 'found' && leftShop("the game's map is back"))
+    // `seen`: told by the screen itself, so taken at once (the settling is for the packets' signs).
+    const left = (id: Screen, why: string, seen = false): void => {
+      const at = screenAt[id]
+      if (!at || (!seen && Date.now() - at.at < SHOP_SETTLE_MS)) return
+      screenAt[id] = null
+      stopShopScreen()
+      log(`${id} window closed: ${why}`)
+      closeOverlay(id)
+    }
+    const leftAll = (why: string): void => SCREENS.forEach((id) => left(id, why))
+    tracker.onShop(() => openedBy('merchant'))
+    tracker.onEvent('dutyBoard', (ev) => ev['opened'] === true && openedBy('duty'))
+    tracker.onEvent('dutyTaken', () => openedBy('duty'))
+    tracker.onEvent('nearby', () => SCREENS.forEach((id) => screenAt[id] && String(tracker.nearby().position) !== screenAt[id]!.position && left(id, 'you moved')))
+    tracker.onEvent('combat', () => leftAll('you are fighting'))
+    onGameMapStatus((status, was) => status === 'found' && was !== 'found' && leftAll("the game's map is back"))
     tracker.onStatus((status) => {
       const what = {
         starting: 'starting…',

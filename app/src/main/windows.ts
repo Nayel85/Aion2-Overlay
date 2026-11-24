@@ -6,6 +6,8 @@
  *   hud       #/hud       the in-game overlay: click-through, sized to its content
  *   merchant  #/merchant  the Black Cloud Merchant's pets worth buying: opened when a tab of the
  *                         shop is, always movable, closed with its X
+ *   duty      #/duty      the duty board's advice: opened as you open the board in game, reroll it or
+ *                         take a mission, always movable, closed with its X
  *   minimap   #/minimap   the map overlay: your zone around you, tracked pets' spawns, Hidden Cubes
  *   skills    #/skills    your own damage on the meter's target, skill by skill: with the meter
  *   buffs     #/buffs     your buffs and debuffs, with what is left of each
@@ -715,6 +717,19 @@ const merchantOverlay = measuredOverlay({
   manual: true,
 })
 
+/** The duty board's advice: opened as you open the board in game (main/index.ts), right of centre. */
+const dutyOverlay = measuredOverlay({
+  route: 'duty',
+  enabled: () => settings.get('duty').overlay,
+  saved: () => settings.get('duty').position,
+  fallback: () => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: Math.round(area.x + area.width * 0.62), y: area.y + 140 }
+  },
+  save: (position) => settings.set('duty', { ...settings.get('duty'), position }),
+  manual: true,
+})
+
 /** The DPS meter: top left. */
 const meterOverlay = measuredOverlay({
   route: 'meter',
@@ -785,6 +800,7 @@ const OVERLAYS: Record<OverlayId, ReturnType<typeof measuredOverlay>> = {
   timerbar: timerBarOverlay,
   unified: unifiedOverlay,
   killfeed: killFeedOverlay,
+  duty: dutyOverlay,
 }
 const MEASURED = Object.values(OVERLAYS)
 /** Open every overlay that is on (as the game starts): each shows once its page has measured itself. */

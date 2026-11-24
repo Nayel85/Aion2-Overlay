@@ -4,6 +4,7 @@
  */
 
 import { APPLICANTS_HIDE } from './applicants.ts'
+import { DEFAULT_DUTY_VALUES, DUTY_CATEGORIES, type DutyValues } from './dutyValues.ts'
 import type { Lang } from './i18n.ts'
 import { DUMMY_DAMAGE_GOALS, DUMMY_LIMITS, type DummyGoal } from './dummy.ts'
 import { isSound, type SoundId } from './sounds.ts'
@@ -267,6 +268,11 @@ export interface Settings {
    * never rewards. What a dungeon gives (its monsters, its cube) only with these on.
    */
   rates: { kinaDungeons: boolean; abyssDungeons: boolean }
+  /**
+   * The duty board: what each kind of reward is worth to you, in Kina (0: left out); its window over
+   * the game as you open the board (`overlay`), where it was left and how opaque.
+   */
+  duty: { values: DutyValues; overlay: boolean; position: Point | null; opacity: number }
 
   /** The kill feed over the game: open (from the PvP page), and where (null = top right). */
   /**
@@ -452,6 +458,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, rift: false, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, clock: true, odyle: true, replace: false, kinaSession: true, kinaIcon: 'game', apIcon: 'icon', logo: false, widgets: ['party', 'buffs', 'cc', 'flight', 'gather', 'applicants'], applicants: true, bests: true, corridors: true },
   muted: false,
   rates: { kinaDungeons: false, abyssDungeons: false },
+  duty: { values: DEFAULT_DUTY_VALUES, overlay: true, position: null, opacity: 0.95 },
   applicants: { enabled: true, position: { x: 872, y: 220 }, opacity: 0.85, collapsed: false, hideAfter: 60 },
   party: {
     enabled: true, position: { x: 1709, y: 165 }, opacity: 0.85, collapsed: false, self: false, header: false, icon: true, hpText: 'none', debuffIcons: false, shields: true, bossTarget: true,
@@ -537,6 +544,16 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
     case 'panel': {
       const v = (value ?? {}) as Partial<Settings['panel']>
       return { width: num(v.width, 900, 3840, d.panel.width), height: num(v.height, 600, 2160, d.panel.height) } as Settings[K]
+    }
+    case 'duty': {
+      const v = (value ?? {}) as Partial<Settings['duty']>
+      const given = (v.values ?? {}) as Partial<DutyValues>
+      return {
+        values: Object.fromEntries(DUTY_CATEGORIES.map((c) => [c.id, num(given[c.id], 0, 1e9, d.duty.values[c.id])])),
+        overlay: bool(v.overlay, d.duty.overlay),
+        position: point(v.position),
+        opacity: num(v.opacity, 0.3, 1, d.duty.opacity),
+      } as Settings[K]
     }
     case 'rates': {
       const v = (value ?? {}) as Partial<Settings['rates']>

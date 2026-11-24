@@ -40,17 +40,35 @@ impl Tracker {
                     tracing::info!("reward board not read: {raw}");
                 }
             }
+            p::OP_DUTY_OPEN | p::OP_DUTY_REROLL => self.duty_opened_at = ts,
             p::OP_DUTY_TAKEN => {
+                self.duty_opened_at = ts;
                 if let Some(mission) = p::duty_taken(f) {
                     tracing::info!("duty mission taken: {mission:?}");
+                    (self.emit)(json!({ "type": "dutyTaken", "ts": ts, "quest": mission.0, "place": mission.1 }));
                     self.duty_known(ts, vec![mission]);
                 }
             }
             p::OP_DUTY_BOARD => {
                 let missions = p::duty_board(f);
                 self.duty_known(ts, missions);
+                // All of it, the offered missions too: the dashboard's Duty board.
+                if let Some(board) = p::duty_board_full(f) {
+                    let missions: Vec<Value> = board
+                        .missions
+                        .into_iter()
+                        .map(|(quest, place, rewards)| {
+                            let rewards: Vec<Value> = rewards.into_iter().map(|(item, amount, chance)| json!({ "item": item, "amount": amount, "chance": chance })).collect();
+                            json!({ "quest": quest, "place": place, "rewards": rewards })
+                        })
+                        .collect();
+                    // Looked at: right after you opened it, rerolled it or took a mission; not the one sent as you log in.
+                    let opened = ts - self.duty_opened_at <= 2000;
+                    (self.emit)(json!({ "type": "dutyBoard", "ts": ts, "opened": opened, "rerolls": board.rerolls, "expires": board.expires_ms, "missions": missions }));
+                }
             }
             p::OP_DUTY_DONE => {
+                self.duty_opened_at = ts;
                 if let Some((place, indexes)) = p::duty_done(f) {
                     self.duty_done(ts, place, indexes);
                 }

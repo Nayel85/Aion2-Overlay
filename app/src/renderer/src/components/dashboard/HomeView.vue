@@ -107,6 +107,7 @@ const overlays = computed<Overlay[]>(() => {
     },
     { id: 'enemies', name: t('Enemies nearby'), about: t('Enemy players around you'), page: 'pvp', on: s.enemies.enabled, set: flip('enemies', 'enabled') },
     { id: 'merchant', name: t('Merchant pets'), about: t('When you open the Black Cloud shop'), page: 'pets', on: s.hud.merchant, set: flip('hud', 'merchant') },
+    { id: 'duty', name: t('Duty board'), about: t('When you open the duty board: the missions to take'), page: 'duty', on: s.duty.overlay, set: flip('duty', 'overlay') },
   ]
 })
 const overlaysOn = computed(() => overlays.value.filter((o) => o.on).length)

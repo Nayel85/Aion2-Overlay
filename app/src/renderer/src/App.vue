@@ -21,6 +21,7 @@ const PAGES: Record<string, () => Promise<{ default: Component }>> = {
   hud: () => import('./pages/HudPage.vue'),
   killfeed: () => import('./pages/KillFeedPage.vue'),
   merchant: () => import('./pages/MerchantPage.vue'),
+  duty: () => import('./pages/DutyPage.vue'),
   meter: () => import('./pages/MeterPage.vue'),
   minimap: () => import('./pages/MiniMapPage.vue'),
   skills: () => import('./pages/SkillsPage.vue'),

@@ -21,6 +21,7 @@ import BestsView from '@/components/dashboard/BestsView.vue'
 import StatsView from '@/components/dashboard/StatsView.vue'
 import SessionsView from '@/components/dashboard/SessionsView.vue'
 import InventoryView from '@/components/dashboard/InventoryView.vue'
+import DutyView from '@/components/dashboard/DutyView.vue'
 import DetailsPage from '@/pages/DetailsPage.vue'
 import StorageView from '@/components/dashboard/StorageView.vue'
 import HomeView from '@/components/dashboard/HomeView.vue'
@@ -45,7 +46,7 @@ import { serverName } from '@shared/servers.ts'
 import { TIMERS, type TimerId } from '@shared/timers.ts'
 import type { UpdateState } from '@shared/update.ts'
 
-type PageId = 'home' | 'characters' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'applicants' | 'party' | 'flight' | 'gather' | 'history' | 'bests' | 'session' | 'sessions' | 'stats' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
+type PageId = 'home' | 'characters' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'applicants' | 'party' | 'flight' | 'gather' | 'duty' | 'history' | 'bests' | 'session' | 'sessions' | 'stats' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
 interface Page {
   id: PageId
   label: string
@@ -73,6 +74,7 @@ const PAGES: Record<PageId, Page> = {
   flight: { id: 'flight', label: 'Flight timer', icon: 'M7.5 12C5.5 12 2.5 10.5 1 4.5c1.5 1 3 1.5 4.5 1.5C6.5 7 7 8 7.5 9.5ZM8.5 12c2 0 5-1.5 6.5-7.5-1.5 1-3 1.5-4.5 1.5C9.5 7 9 8 8.5 9.5Z' },
   party: { id: 'party', label: 'Party frames', icon: 'M2.5 3.5h11v3h-11zM2.5 9.5h11v3h-11zM4 5h5M4 11h3' },
   applicants: { id: 'applicants', label: 'Join requests', icon: 'M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M12 4.5v4M10 6.5h4' },
+  duty: { id: 'duty', label: 'Duty board', icon: 'M3.5 2.5h9v11h-9zM5.5 5.5h5M5.5 8h5M5.5 10.5h3' },
   history: { id: 'history', label: 'Combat history', icon: 'M2 8a6 6 0 1 0 1.8-4.3M2 2.5v3h3M8 5v3l2 1.5', emoji: '💪' },
   bests: { id: 'bests', label: 'Personal bests', icon: 'M5 2.5h6v3a3 3 0 0 1-6 0zM5 3.5H3v1a2 2 0 0 0 2 2M11 3.5h2v1a2 2 0 0 1-2 2M8 8.5v3M5.5 13.5h5' },
   cache: { id: 'cache', label: 'Cache', icon: 'M2.5 4.5C2.5 3.4 5 2.5 8 2.5s5.5.9 5.5 2S11 6.5 8 6.5 2.5 5.6 2.5 4.5ZM2.5 4.5v7c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-7M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2' },
@@ -86,7 +88,7 @@ const PAGES: Record<PageId, Page> = {
 }
 const SECTIONS: { title: string | null; pages: PageId[] }[] = [
   { title: null, pages: ['home', 'characters'] },
-  { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'party', 'flight', 'gather', 'applicants'] },
+  { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'party', 'flight', 'gather', 'applicants', 'duty'] },
   { title: 'Records', pages: ['history', 'bests', 'session', 'sessions', 'stats', 'inventory', 'cache'] },
   { title: 'App', pages: ['updates', 'changes'] },
 ]
@@ -356,6 +358,7 @@ onBeforeUnmount(() => {
           <StatsView v-else-if="page === 'stats'" />
           <SessionsView v-else-if="page === 'sessions'" />
           <InventoryView v-else-if="page === 'inventory'" />
+          <DutyView v-else-if="page === 'duty'" />
           <StorageView v-else-if="page === 'cache'" />
           <SettingsView v-else-if="page === 'settings'" @go="go" />
           <UpdatesView v-else-if="page === 'updates'" @go="go" />

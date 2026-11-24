@@ -196,6 +196,9 @@ pub struct Tracker {
     duty: HashMap<u32, (u32, Vec<p::DutyReward>)>,
     /// Missions handed in before their place was known (the board follows them): (place, indexes, when).
     duty_pending: Vec<(u32, Vec<u32>, i64)>,
+    /// When you last opened the duty board, rerolled it or took or handed in a mission: the board after
+    /// it is one you are looking at (not the one sent as you log in).
+    duty_opened_at: i64,
     /// The party as last told the app (its members' names, classes and entities), and when checked.
     party_told: Value,
     party_checked: i64,
@@ -291,6 +294,7 @@ impl Tracker {
             pvp_seen: HashMap::new(),
             duty: HashMap::new(),
             duty_pending: Vec::new(),
+            duty_opened_at: i64::MIN,
             party_told: json!([]),
             party_checked: 0,
             objects: HashMap::new(),

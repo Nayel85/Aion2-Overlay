@@ -118,14 +118,38 @@ pub fn duty_taken(frame: &[u8]) -> Option<DutyMission> {
 }
 
 /// The duty board (`1C 8D`, as you open it and as you hand one in): each mission's `<quest u32>
-/// <place u32>`, its rewards a few bytes on. Those on the board (taken or not).
+/// <place u32>`, its rewards a few bytes on. Those taken (a place of their own).
 pub fn duty_board(frame: &[u8]) -> Vec<DutyMission> {
-    let Some(b) = body(frame, OP_DUTY_BOARD) else { return Vec::new() };
+    body(frame, OP_DUTY_BOARD).map(|b| board_missions(b, 1)).unwrap_or_default()
+}
+
+/// The whole duty board: `<rerolls u32> <u32>`, the missions taken (their place) and those offered
+/// (place 0), and at its end `<expires u64 ms> 00 <expires u64 ms>`, when the board is replaced (the
+/// daily reset). The owner's 2026-11-24 boards: rerolls 0, 1, 2 as they rerolled; the one sent at
+/// login was the day before's, expired at 08:00 that morning.
+#[derive(Debug, Clone, PartialEq)]
+pub struct DutyBoard {
+    pub rerolls: u32,
+    pub expires_ms: Option<u64>,
+    pub missions: Vec<DutyMission>,
+}
+pub fn duty_board_full(frame: &[u8]) -> Option<DutyBoard> {
+    let b = body(frame, OP_DUTY_BOARD)?;
+    let missions = board_missions(b, 0);
+    if missions.is_empty() {
+        return None;
+    }
+    let expires_ms = b.len().checked_sub(8).and_then(|at| u64_at(b, at)).filter(|t| (1_600_000_000_000..2_600_000_000_000).contains(t));
+    Some(DutyBoard { rerolls: u32_at(b, 0)?, expires_ms, missions })
+}
+
+/// The board's missions with a place from `least` (0: offered ones too).
+fn board_missions(b: &[u8], least: u32) -> Vec<DutyMission> {
     let mut out = Vec::new();
     let mut p = 0;
     while p + 8 < b.len() {
         let (quest, place) = (u32_at(b, p).unwrap_or(0), u32_at(b, p + 4).unwrap_or(0));
-        if (1_000_000..2_000_000).contains(&quest) && (1..100_000).contains(&place) {
+        if (1_000_000..3_000_000).contains(&quest) && (least..100_000).contains(&place) {
             if let Some((rewards, end)) = (p + 8..p + 24).find_map(|q| duty_rewards(b, q)) {
                 out.push((quest, place, rewards));
                 p = end;
