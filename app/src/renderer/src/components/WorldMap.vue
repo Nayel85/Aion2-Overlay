@@ -68,21 +68,26 @@ const iconPx = computed(() => {
  * dozen screen pixels of each other, so zooming in parts them), ringed in the pet's colour (grey for
  * the ones you still need). Its name on hover.
  */
-const PET_PX = { active: 26, other: 22 }
-/** The portrait clicked: its name shown over it, until a click elsewhere on the map. */
-const pickedPet = ref<string | null>(null)
-const pickPet = (key: string): void => void (pickedPet.value = pickedPet.value === key ? null : key)
+const PET_PX = { active: 40, other: 34 }
+/**
+ * The portrait clicked: its pet alone on the map (the rest hidden, but where you are), its spawns lit
+ * up and its name over the portrait; a click elsewhere on the map, or on it again, shows all again.
+ */
+const picked = ref<{ key: string; pet: number } | null>(null)
+const pickPet = (m: { key: string; pet: number }): void => void (picked.value = picked.value?.key === m.key ? null : { key: m.key, pet: m.pet })
+/** Drawn while a pet is picked: only it. */
+const shownLayers = computed(() => (picked.value ? projected.value.filter((l) => l.pet === picked.value!.pet) : projected.value))
 const petMarkers = computed(() => {
   const { w, h } = boxSize()
   const reach = 36 / (Math.min(w, h) / SIZE) / view.value.k
   const byPet = new Map<number, { color: string; active: boolean; xy: [number, number][] }>()
-  for (const l of projected.value) {
+  for (const l of shownLayers.value) {
     if (l.pet === undefined) continue
     const e = byPet.get(l.pet) ?? { color: l.color, active: l.active, xy: [] }
     e.xy.push(...l.xy)
     byPet.set(l.pet, e)
   }
-  const out: { key: string; icon: string; name: string; color: string; active: boolean; at: [number, number] }[] = []
+  const out: { key: string; pet: number; icon: string; name: string; color: string; active: boolean; at: [number, number] }[] = []
   for (const [pet, e] of byPet) {
     const icon = petIcon(pet)
     if (!icon) continue
@@ -94,7 +99,7 @@ const petMarkers = computed(() => {
     }
     groups.forEach((g, i) => {
       const at: [number, number] = [g.reduce((n, p) => n + p[0], 0) / g.length, g.reduce((n, p) => n + p[1], 0) / g.length]
-      out.push({ key: `${pet}-${i}`, icon, name: petInfo(pet)?.name ?? `#${pet}`, color: e.color, active: e.active, at })
+      out.push({ key: `${pet}-${i}`, pet, icon, name: petInfo(pet)?.name ?? `#${pet}`, color: e.color, active: e.active, at })
     })
   }
   // The tracked ones over the others.
@@ -205,7 +210,7 @@ function onWheel(e: WheelEvent): void {
 
 function onPointerDown(e: PointerEvent): void {
   if (e.button !== 0) return
-  pickedPet.value = null
+  picked.value = null
   const el = e.currentTarget as HTMLElement
   el.setPointerCapture(e.pointerId)
   const start = { ...view.value, px: e.clientX, py: e.clientY }
@@ -273,17 +278,17 @@ defineExpose({ fit, recentre })
       />
       <svg :viewBox="`0 0 ${SIZE} ${SIZE}`" class="absolute inset-0 size-full overflow-visible">
         <!-- Inactive layers first, so the selected monster's dots draw on top. -->
-        <template v-for="layer in [...projected].sort((a, b) => Number(a.active) - Number(b.active))" :key="layer.key">
+        <template v-for="layer in [...shownLayers].sort((a, b) => Number(a.active) - Number(b.active))" :key="layer.key">
           <circle
             v-for="(p, i) in layer.xy"
             :key="i"
             :cx="p[0]"
             :cy="p[1]"
-            :r="(layer.active ? 5.5 : 3.5) / view.k"
-            :fill="layer.color"
-            :fill-opacity="layer.active ? 0.95 : 0.55"
-            stroke="#09090b"
-            :stroke-width="(layer.active ? 1.5 : 1) / view.k"
+            :r="(picked ? 7 : layer.active ? 5.5 : 3.5) / view.k"
+            :fill="picked && !layer.active ? '#facc15' : layer.color"
+            :fill-opacity="picked || layer.active ? 0.95 : 0.55"
+            :stroke="picked ? '#ffffff' : '#09090b'"
+            :stroke-width="(picked ? 2 : layer.active ? 1.5 : 1) / view.k"
           />
         </template>
         <!-- The pets: their portraits over their soul monsters' spawns. -->
@@ -295,7 +300,7 @@ defineExpose({ fit, recentre })
           :key="`pet-${m.key}`"
           :transform="`translate(${m.at[0]} ${m.at[1]})`"
           class="cursor-pointer"
-          @pointerdown.stop="pickPet(m.key)"
+          @pointerdown.stop="pickPet(m)"
         >
           <title>{{ m.name }}</title>
           <circle :r="(m.active ? PET_PX.active : PET_PX.other) / 2 / view.k" fill="#09090b" :stroke="m.color" :stroke-width="2.5 / view.k" />
@@ -310,7 +315,7 @@ defineExpose({ fit, recentre })
           />
         </g>
         <!-- Gatherables: their icons, under the cubes and pins. -->
-        <g v-for="layer in iconXY" :key="`icon-${layer.key}`">
+        <g v-for="layer in picked ? [] : iconXY" :key="`icon-${layer.key}`">
           <image
             v-for="(p, i) in layer.xy"
             :key="i"
@@ -322,23 +327,23 @@ defineExpose({ fit, recentre })
           ><title>{{ layer.name }}</title></image>
         </g>
         <!-- Hidden Cubes: golden cubes. -->
-        <g v-for="(c, i) in cubeXY" :key="`cube-${i}`" :transform="`translate(${c[0]} ${c[1]})`">
+        <g v-for="(c, i) in picked ? [] : cubeXY" :key="`cube-${i}`" :transform="`translate(${c[0]} ${c[1]})`">
           <polygon :points="cubeFaces(9 / view.k).top" fill="#fde68a" stroke="#78350f" :stroke-width="1 / view.k" />
           <polygon :points="cubeFaces(9 / view.k).left" fill="#f59e0b" stroke="#78350f" :stroke-width="1 / view.k" />
           <polygon :points="cubeFaces(9 / view.k).right" fill="#b45309" stroke="#78350f" :stroke-width="1 / view.k" />
         </g>
         <!-- Enemy players: pins pointing at where they stand, red when they can attack you, grey when not. -->
-        <g v-for="(e, i) in enemyXY" :key="`enemy-${i}`" :transform="`translate(${e.xy[0]} ${e.xy[1]})`">
+        <g v-for="(e, i) in picked ? [] : enemyXY" :key="`enemy-${i}`" :transform="`translate(${e.xy[0]} ${e.xy[1]})`">
           <title>{{ e.name }}</title>
           <path :d="pinPath(22 / view.k)" :fill="e.threat ? '#ef4444' : '#9ca3af'" :stroke="e.threat ? '#450a0a' : '#1f2937'" :stroke-width="1.2 / view.k" />
           <circle :cy="-15.8 / view.k" :r="3.2 / view.k" fill="#fff" />
         </g>
         <!-- Where you last died: a skull. -->
-        <SkullMark v-if="deathXY" :at="deathXY" :size="22 / view.k"><title>{{ t('Where you last died') }}</title></SkullMark>
+        <SkullMark v-if="deathXY && !picked" :at="deathXY" :size="22 / view.k"><title>{{ t('Where you last died') }}</title></SkullMark>
         <!-- The clicked one's name, over everything. -->
         <template v-for="m in petMarkers" :key="`pet-name-${m.key}`">
           <text
-            v-if="pickedPet === m.key"
+            v-if="picked?.key === m.key"
             :x="m.at[0]"
             :y="m.at[1] - (m.active ? PET_PX.active : PET_PX.other) / 2 / view.k - 5 / view.k"
             text-anchor="middle"
