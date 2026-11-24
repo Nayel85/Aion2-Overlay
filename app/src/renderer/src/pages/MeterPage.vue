@@ -51,8 +51,15 @@ const status = computed(() => store.status ?? { state: 'starting' as TrackerStat
 const icon = classIconUrl
 
 const all = computed(() => meterRows(meter.value, cfg.value.players, cfg.value.stat))
-/** A height of its own shows every row it fits (scrolling past them); otherwise as many as set. */
-const rows = computed(() => all.value.slice(0, height.value === null ? cfg.value.rows : 24))
+/**
+ * Your party's size (a dungeon's group): each member gets a row whatever the meter's rows or height,
+ * so the whole group shows without resizing it on entering.
+ */
+const partySize = computed(() => store.party.members.length)
+/** A height of its own shows every row it fits (scrolling past them); otherwise as many as set, the whole party at least. */
+const rows = computed(() => all.value.slice(0, height.value === null ? Math.max(cfg.value.rows, partySize.value) : 24))
+/** Its height grows past the one set while its rows are no more than the party's: nothing to scroll for them. */
+const growsForParty = computed(() => height.value !== null && partySize.value > 1 && rows.value.length <= partySize.value)
 const top = computed(() => Math.max(1, ...all.value.map((r) => r.value)))
 const total = computed(() => all.value.reduce((n, r) => n + r.value, 0))
 const totalPerSecond = computed(() => all.value.reduce((n, r) => n + r.perSecond, 0))
@@ -152,7 +159,7 @@ const idle = computed(() => cfg.value.hideIdle && !store.panelVisible && !live.v
 const moreModes = computed(() => !MAIN_TARGET_MODES.some((m) => m.id === cfg.value.targetMode))
 
 /** Tell main how big the window is. */
-watch([rows, () => meter.value.target, status, () => store.ready, () => cfg.value.collapsed, idle, width, height], () => void nextTick(report), { deep: true })
+watch([rows, () => meter.value.target, status, () => store.ready, () => cfg.value.collapsed, idle, width, height, growsForParty], () => void nextTick(report), { deep: true })
 
 const offs: (() => void)[] = []
 /** A personal best just beaten, shown a while over the meter. */
@@ -189,7 +196,7 @@ onBeforeUnmount(() => {
         @pointerenter="over = true"
         @pointerleave="over = false"
         :class="['group relative m-1.5 flex flex-col rounded-xl border', lean ? 'border-transparent' : 'border-card bg-darker/95 shadow-card']"
-        :style="{ opacity: cfg.opacity, width: `${width}px`, height: height === null ? undefined : `${height}px` }"
+        :style="{ opacity: cfg.opacity, width: `${width}px`, height: height === null || growsForParty ? undefined : `${height}px`, minHeight: growsForParty ? `${height}px` : undefined }"
       >
         <!-- A personal best just beaten. -->
         <div v-if="newBest" class="mx-2 mt-2 flex items-center gap-2 rounded-lg bg-yellow/15 px-2.5 py-1.5 text-xs">
@@ -305,7 +312,7 @@ onBeforeUnmount(() => {
             <span class="w-12 shrink-0 text-center">{{ cfg.stat === 'taken' ? t('Taken') : cfg.stat === 'healing' ? t('Healed') : t('Damage') }}</span>
             <span v-if="cfg.style === 'flat' && cfg.stat === 'damage'" class="w-8 shrink-0 text-center">Crit</span>
           </div>
-          <ul :class="['space-y-0.5 px-1.5 pb-1.5', lean ? 'pt-1.5' : 'pt-1', height !== null && 'min-h-0 flex-1 overflow-y-auto']">
+          <ul :class="['space-y-0.5 px-1.5 pb-1.5', lean ? 'pt-1.5' : 'pt-1', height !== null && !growsForParty && 'min-h-0 flex-1 overflow-y-auto']">
             <li
               v-for="r in rows"
               :key="r.id"
