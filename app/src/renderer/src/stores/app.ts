@@ -196,6 +196,8 @@ export const useApp = defineStore('app', () => {
     api.on('hud:editing', (e) => (hudEditing.value = e))
     api.on('panel:visible', (v) => (panelVisible.value = v))
     settings.value = await api.invoke('settings:all')
+    // Opened while the overlays are being placed (one turned on from the dashboard): shown to place too.
+    panelVisible.value = await api.invoke('panel:arranging')
     // The player's region: the rift windows and the corridors' returns shown on its clock.
     setPlayerRegion(settings.value.timers.region)
     const t = await api.invoke('tracker:get', false)

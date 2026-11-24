@@ -32,6 +32,7 @@ import {
   detailsSource,
   hidePanel,
   hudDragEnded,
+  isArranging,
   killFeedDragEnded,
   markQuitting,
   merchantDragEnded,
@@ -188,6 +189,7 @@ export function registerIpc(): void {
   handle('bubble:dragEnd', () => bubbleDragEnded())
   handle('panel:toggle', () => togglePanel())
   handle('panel:hide', () => hidePanel())
+  handle('panel:arranging', () => isArranging())
   handle('panel:minimize', () => minimizePanel())
   handle('panel:maximize', () => toggleMaximizePanel())
 

@@ -352,6 +352,8 @@ function panelShown(up: boolean): void {
  * overlays never catch clicks meant for the game and their previews go.
  */
 let arranging = false
+/** Asked by a window as it opens: the change alone reaches only those already open. */
+export const isArranging = (): boolean => arranging
 function arrangingNow(): boolean {
   if (!panelVisible()) return false
   if (settings.get('panelHideOnGame')) return true

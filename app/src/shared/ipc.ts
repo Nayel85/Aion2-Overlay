@@ -98,6 +98,8 @@ export interface InvokeChannels {
   'bubble:dragEnd': { args: []; result: void }
   'panel:toggle': { args: []; result: void }
   'panel:hide': { args: []; result: void }
+  /** Whether the overlays are being placed (the dashboard up): a window opened meanwhile asks, the change is `panel:visible`. */
+  'panel:arranging': { args: []; result: boolean }
   'panel:minimize': { args: []; result: void }
   /** Maximise the dashboard, or back from maximised. */
   'panel:maximize': { args: []; result: void }
@@ -295,7 +297,7 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'killfeed:open', 'killfeed:close', 'killfeed:moveTo', 'killfeed:dragEnd', 'killfeed:resize',
   'timerbar:moveTo', 'timerbar:dragEnd', 'timerbar:resize',
   'unified:moveTo', 'unified:dragEnd', 'unified:resize', 'panel:open', 'panel:characters',
-  'bubble:moveTo', 'bubble:dragEnd', 'panel:toggle', 'panel:hide', 'panel:minimize', 'panel:maximize',
+  'bubble:moveTo', 'bubble:dragEnd', 'panel:toggle', 'panel:hide', 'panel:arranging', 'panel:minimize', 'panel:maximize',
   'hud:setEditing', 'hud:moveTo', 'hud:dragEnd', 'hud:resize',
   'merchant:moveTo', 'merchant:dragEnd', 'merchant:resize', 'merchant:close', 'merchant:bought', 'panel:showPet', 'timers:get', 'timers:dismiss', 'timers:open',
   'lokthar:test', 'lokthar:sync', 'lokthar:last',
