@@ -2,6 +2,7 @@
 // Settings: the app's own only (language, you and the game, this window, sound, what the per hour
 // figures count, shortcuts, the Lokthar sync, the engine). Each overlay is set on its own page, listed
 // under Overlays. Every change applies at once.
+import { timeOfDay } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import StatusDot, { statusText } from '@/components/StatusDot.vue'
@@ -67,7 +68,6 @@ const who = computed(() => {
   }
 })
 
-const ago = (at: number): string => new Date(at).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
 
 const emit = defineEmits<{ go: [page: string] }>()
 
@@ -190,7 +190,7 @@ const lastPacket = computed(() => {
         </label>
       </div>
       <div class="flex items-center justify-between gap-2 py-3 text-xs">
-        <span v-if="syncResult" :class="['min-w-0 truncate', syncResult.ok ? 'text-darker' : 'text-red']" :title="syncResult.message">{{ ago(syncResult.at) }}: {{ syncResult.message }}</span>
+        <span v-if="syncResult" :class="['min-w-0 truncate', syncResult.ok ? 'text-darker' : 'text-red']" :title="syncResult.message">{{ timeOfDay(syncResult.at) }}: {{ syncResult.message }}</span>
         <span v-else class="text-darkest">{{ t('Not synced yet') }}</span>
         <div class="flex shrink-0 gap-2">
           <Button size="sm" :disabled="testing" @click="testSync">{{ testing ? t('Testing…') : t('Test') }}</Button>

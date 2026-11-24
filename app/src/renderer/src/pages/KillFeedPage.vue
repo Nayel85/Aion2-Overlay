@@ -5,6 +5,7 @@
 // this session's kills and deaths (all it shows between kills), moves the window and closes it;
 // each player kill around you slides in under it and falls off after a few seconds, as the HUD's
 // soul lines do. Its skull opens a small map of where you last died.
+import { ago as timeAgo } from '@/lib/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRaw, watch } from 'vue'
@@ -83,10 +84,7 @@ function toggleDeath(): void {
   showDeath.value = !showDeath.value
   if (showDeath.value && !spawns.value) void loadSpawns().then((d) => (spawns.value = d))
 }
-const ago = (at: number): string => {
-  const m = Math.max(0, Math.round((clock.value - at) / 60_000))
-  return m < 1 ? t('just now') : m < 60 ? t('{n} min ago', { n: m }) : t('{n} h ago', { n: Math.round(m / 60) })
-}
+const ago = (at: number): string => timeAgo(at, clock.value)
 
 /**
  * Its size, dragged from the corner: the width, and the height once the drag goes up or down (null:

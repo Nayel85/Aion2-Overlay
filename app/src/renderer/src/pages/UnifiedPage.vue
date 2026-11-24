@@ -8,6 +8,8 @@
 // total during a Spacetime Rift), a Hidden Cube in view, enemies who can attack you, a field boss
 // alive, and where you last died. Moved by dragging the bar; it grows around its top centre, sized to
 // what it shows (main sizes the window to it).
+import { ago as timeAgo } from '@/lib/format.ts'
+import { compact, duration } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -241,17 +243,6 @@ const hpShare = computed(() => {
 })
 const ttk = computed(() => (fighting.value ? timeToKill(meter.value) : null))
 /** 1234 → 1.2K, 1234567 → 1.23M */
-function short(n: number): string {
-  const abs = Math.abs(n)
-  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`
-  if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`
-  if (abs >= 1e3) return `${(n / 1e3).toFixed(1)}K`
-  return Math.round(n).toLocaleString('en-US')
-}
-const clock = (ms: number): string => {
-  const s = Math.floor(ms / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
 /** A click on it opens the DPS meter, when that is closed. */
 function targetClick(): void {
   if (!store.settings.meter.enabled) toggleOverlay('meter')
@@ -285,10 +276,7 @@ const death = computed(() => {
 })
 const deathWorld = computed(() => (death.value && spawns.value ? (spawns.value.worlds[death.value.place.world] ?? null) : null))
 const deathFocus = computed<[number, number][]>(() => (death.value ? [death.value.place.position] : []))
-const ago = (at: number): string => {
-  const m = Math.max(0, Math.round((now.value - at) / 60_000))
-  return m < 1 ? t('just now') : m < 60 ? t('{n} min ago', { n: m }) : t('{n} h ago', { n: Math.round(m / 60) })
-}
+const ago = (at: number): string => timeAgo(at, now.value)
 
 // ---- peeks: the map, PvP, pets ---------------------------------------------------------------------
 
@@ -497,7 +485,7 @@ onBeforeUnmount(() => {
             @click="openBest"
           >
             <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.5h6v3a3 3 0 0 1-6 0zM5 3.5H3v1a2 2 0 0 0 2 2M11 3.5h2v1a2 2 0 0 1-2 2M8 8.5v3M5.5 13.5h5" /></svg>
-            {{ short(bestShown.dps) }}
+            {{ compact(bestShown.dps) }}
           </button>
 
           <!-- The corridors the character playing still has to do. -->
@@ -590,7 +578,7 @@ onBeforeUnmount(() => {
                       <span v-else-if="sheet?.className" class="text-darker">{{ t(sheet.className) }}</span>
                       <template v-if="fighting && me">
                         <span v-if="hpShare !== null" class="font-semibold tabular-nums text-red">{{ Math.round(hpShare * 100) }}%</span>
-                        <span class="font-semibold tabular-nums">{{ short(me.dps) }}<span class="font-medium text-darker"> DPS</span></span>
+                        <span class="font-semibold tabular-nums">{{ compact(me.dps) }}<span class="font-medium text-darker"> DPS</span></span>
                       </template>
                     </button>
 
@@ -631,10 +619,10 @@ onBeforeUnmount(() => {
             <div v-if="fighting && me" class="text-right tabular-nums">
               <div class="text-[13px] font-bold leading-4">
                 <template v-if="hpShare !== null"><span class="text-red">{{ Math.round(hpShare * 100) }}%</span> <span class="font-normal text-darkest">·</span> </template>
-                {{ short(me.dps) }} <span class="text-[11px] font-medium text-darker">DPS</span>
+                {{ compact(me.dps) }} <span class="text-[11px] font-medium text-darker">DPS</span>
               </div>
               <div class="text-[11px] leading-[14px] text-darker">
-                {{ short(me.damage) }} · {{ clock(meter.battleTime) }}<template v-if="ttk !== null"> · {{ t('{time} to kill', { time: clock(ttk) }) }}</template>
+                {{ compact(me.damage) }} · {{ duration(meter.battleTime) }}<template v-if="ttk !== null"> · {{ t('{time} to kill', { time: duration(ttk) }) }}</template>
               </div>
             </div>
           </div>
@@ -771,7 +759,7 @@ onBeforeUnmount(() => {
           <div v-else-if="shown === 'meter'" class="w-[380px] whitespace-normal">
             <div class="flex items-baseline gap-2">
               <span class="text-[13px] font-semibold">{{ t('DPS meter') }}</span>
-              <span v-if="meter.target" class="truncate text-[11px] text-darker">{{ meter.target.name }} · {{ clock(meter.battleTime) }}</span>
+              <span v-if="meter.target" class="truncate text-[11px] text-darker">{{ meter.target.name }} · {{ duration(meter.battleTime) }}</span>
             </div>
             <div v-if="meterTop.length" class="mt-1.5 space-y-1">
               <div v-for="r in meterTop" :key="r.id" class="relative h-6 overflow-hidden rounded-md bg-dark">
@@ -779,7 +767,7 @@ onBeforeUnmount(() => {
                 <div class="relative flex h-6 items-center gap-1.5 px-2 text-xs">
                   <ClassIcon :class-name="r.className" :size="14" />
                   <span class="truncate font-semibold">{{ r.name }}</span>
-                  <span class="ml-auto font-semibold tabular-nums">{{ short(r.perSecond) }}</span>
+                  <span class="ml-auto font-semibold tabular-nums">{{ compact(r.perSecond) }}</span>
                   <span class="w-11 text-right tabular-nums text-dark">{{ r.part.toFixed(1) }}%</span>
                 </div>
               </div>

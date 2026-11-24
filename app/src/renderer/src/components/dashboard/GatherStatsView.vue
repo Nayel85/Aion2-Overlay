@@ -3,7 +3,9 @@
 // resource, then by character and resource: how many, failed, ranked up, a plant's x3, doubled
 // against what Plentiful Harvest's level makes expected (your luck), Lady Luck's triggers, and the
 // skills' levels the rolls showed. The filters picked are remembered (this window's storage).
-import { classOf, fromOf, namePicker, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
+import FilterRow from '@/components/FilterRow.vue'
+import StatsFilters from '@/components/StatsFilters.vue'
+import { classOf, fromOf, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -35,7 +37,6 @@ const picked = computed(() => filterGatherings(all.value, { names: f.value.names
 const rows = computed(() => gatherRows(picked.value))
 const total = computed(() => gatherTotal(picked.value))
 
-const { toggleName, picked: isPicked } = namePicker(f, characters)
 const className = (name: string): string | null => classOf(sessions.value, name)
 
 const pct = (n: number, of: number): string => (of ? `${Math.round((n / of) * 100)}%` : '–')
@@ -48,30 +49,12 @@ function luckOf(got: number, expected: number | null): { text: string; class: st
 
 <template>
   <div>
-    <!-- The filters. -->
-    <div class="mb-5 space-y-3 rounded-xl border border-card p-4">
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="w-24 text-xs text-darker">{{ t('Characters') }}</span>
-        <button
-          v-for="name in characters"
-          :key="name"
-          type="button"
-          :class="['flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs', isPicked(name) ? 'border-accent bg-accent/15 text-default' : 'border-light text-darker hover:text-default']"
-          @click="toggleName(name)"
-        >
-          <ClassIcon :class-name="className(name)" :size="14" />{{ name }}
-        </button>
-        <button v-if="f.names.length" type="button" class="text-xs text-darker hover:text-default hover:underline" @click="f.names = []">{{ t('All') }}</button>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="w-24 text-xs text-darker">{{ t('Period') }}</span>
-        <Segmented v-model="f.period" size="sm" :options="PERIODS" />
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="w-24 text-xs text-darker">{{ t('Resource') }}</span>
+    <!-- The filters: the characters and the period (components/StatsFilters.vue), then this view's. -->
+    <StatsFilters v-model:names="f.names" v-model:period="f.period" :characters="characters" :class-of="className">
+      <FilterRow label="Resource">
         <SelectBox :model-value="f.resource ?? 0" size="sm" :options="resourceOptions" @update:model-value="(v) => (f.resource = v || null)" />
-      </div>
-    </div>
+      </FilterRow>
+    </StatsFilters>
 
     <div v-if="!total.done" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
       <div class="text-sm font-medium">{{ all.length ? t('No gatherings match.') : t('No gatherings yet.') }}</div>

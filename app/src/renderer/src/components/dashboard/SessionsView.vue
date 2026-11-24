@@ -66,7 +66,8 @@ const picked = ref<string | null>(null)
 /** The session shown: the one picked while the filters keep it, else the first listed. */
 const selected = computed(() => shown.value.find((s) => keyOf(s) === picked.value) ?? shown.value[0] ?? null)
 
-const { toggleName, picked: isPicked } = namePicker(f, characters)
+const names = computed({ get: () => f.value.names, set: (v: string[]) => (f.value = { ...f.value, names: v }) })
+const { toggleName, picked: isPicked } = namePicker(names, characters)
 function className(s: Pick<PlaySession, 'name' | 'server'>): string | null {
   return s.server !== null ? (store.characters[characterId(s.server, s.name)]?.className ?? null) : null
 }

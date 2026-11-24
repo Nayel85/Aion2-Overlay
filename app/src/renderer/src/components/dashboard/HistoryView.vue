@@ -2,6 +2,8 @@
 // History: the boss fights the engine saved (every 30 s while one goes on, and before the meter is
 // cleared), newest first. A click opens one in the Details window: each player's damage, skills and
 // buffs. The last 500 are kept.
+import { classIconUrl, dateTime } from '@/lib/format.ts'
+import { compact, duration } from '@shared/format.ts'
 import { useStored } from '@/lib/now.ts'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import DetailsPage from '@/pages/DetailsPage.vue'
@@ -21,22 +23,7 @@ const grouped = useStored('history.grouped', true, (raw) => raw !== false && raw
 const folded = ref(new Set<string>())
 const toggle = (key: string): void => void (folded.value.has(key) ? folded.value.delete(key) : folded.value.add(key), (folded.value = new Set(folded.value)))
 
-const icons = import.meta.glob<string>('@/assets/classes/*.png', { eager: true, import: 'default' })
-const icon = (job: string): string | null => {
-  const name = CLASS_NAMES[job]
-  return name ? (Object.entries(icons).find(([k]) => k.endsWith(`/classes/${name.toLowerCase()}.png`))?.[1] ?? null) : null
-}
-function short(n: number): string {
-  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`
-  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`
-  if (n >= 1e4) return `${(n / 1e3).toFixed(1)}k`
-  return Math.round(n).toLocaleString('en-US')
-}
-const clock = (ms: number): string => {
-  const s = Math.floor(ms / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
-const when = (ms: number): string => new Date(ms).toLocaleString(loc(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+const icon = (job: string): string | null => classIconUrl(CLASS_NAMES[job])
 
 const shown = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -142,7 +129,7 @@ onBeforeUnmount(() => off?.())
                 <span class="text-sm font-semibold">{{ g.name || t('Other fights') }}</span>
                 <span v-if="g.kind" class="rounded border border-light px-1 text-[10px] text-darker">{{ t(g.kind) }}</span>
                 <span class="text-darker">{{ plural(g.fights.length, '1 fight', '{n} fights') }}</span>
-                <span v-if="g.last" class="ml-auto text-darker">{{ when(g.last) }}</span>
+                <span v-if="g.last" class="ml-auto text-darker">{{ dateTime(g.last) }}</span>
               </div>
             </td>
           </tr>
@@ -161,10 +148,10 @@ onBeforeUnmount(() => off?.())
                 </template>
               </div>
             </td>
-            <td class="px-3 text-right tabular-nums text-darker">{{ clock(f.durationMs) }}</td>
-            <td class="px-3 text-right tabular-nums">{{ short(f.totalDamage) }}</td>
-            <td class="px-3 text-right tabular-nums text-darker">{{ short(f.totalDamage / Math.max(1, f.durationMs / 1000)) }}</td>
-            <td class="px-3 text-xs text-darker">{{ when(f.startTimeMs) }}</td>
+            <td class="px-3 text-right tabular-nums text-darker">{{ duration(f.durationMs) }}</td>
+            <td class="px-3 text-right tabular-nums">{{ compact(f.totalDamage) }}</td>
+            <td class="px-3 text-right tabular-nums text-darker">{{ compact(f.totalDamage / Math.max(1, f.durationMs / 1000)) }}</td>
+            <td class="px-3 text-xs text-darker">{{ dateTime(f.startTimeMs) }}</td>
             <td class="pr-3 text-right">
               <button
                 type="button"

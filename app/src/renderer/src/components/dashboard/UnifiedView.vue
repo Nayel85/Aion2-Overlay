@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // The Unified HUD's page: what it is, a preview of the bar as these settings make it (a sample:
 // Kina coming in, an event a few minutes away), and its settings (pages/UnifiedPage.vue).
+import { percent } from '@shared/format.ts'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
 import Slider from '@/components/Slider.vue'
@@ -18,7 +19,6 @@ import { HUD_WIDGETS, KINA_ICONS, type HudWidget, type KinaIcon } from '@shared/
 const store = useApp()
 const cfg = computed(() => store.settings.unified)
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('unified', { ...cfg.value, ...patch })
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 const minutes = (list: number[]) => list.map((m) => ({ id: m, label: t('{n} min', { n: m }) }))
 const COUNTDOWN = [5, 10, 15, 20, 30]
 const STAY = [2, 5, 10, 15, 30]
@@ -215,10 +215,10 @@ const BUTTON_ICONS = [
 
       <Section title="Look">
         <SettingRow label="Opacity" hint="0% removes the background and leaves only the text, with a soft shadow.">
-          <Slider :model-value="cfg.opacity" :min="0" :max="1" :step="0.02" :format="pct" @update:model-value="set({ opacity: $event })" />
+          <Slider :model-value="cfg.opacity" :min="0" :max="1" :step="0.02" :format="percent" @update:model-value="set({ opacity: $event })" />
         </SettingRow>
         <SettingRow label="Size">
-          <Slider :model-value="cfg.scale" :min="0.75" :max="1.75" :step="0.05" :format="pct" @update:model-value="set({ scale: $event })" />
+          <Slider :model-value="cfg.scale" :min="0.75" :max="1.75" :step="0.05" :format="percent" @update:model-value="set({ scale: $event })" />
         </SettingRow>
         <SettingRow label="Position" hint="Drag the bar in game to move it. This puts it back at the top centre of the screen.">
           <button type="button" class="rounded-md border border-light px-2.5 py-1 text-xs text-dark hover:bg-dark" @click="set({ position: null })">{{ t('Reset') }}</button>

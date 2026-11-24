@@ -5,6 +5,7 @@
 // Gatherables page, or all). Any zone can be picked; it opens on yours. Its switches are kept as they
 // were left (settings `mapPage`). The map overlay's settings are below it; markers on the game's own
 // map are Map V2's.
+import { percent } from '@shared/format.ts'
 import { computed, ref, watch } from 'vue'
 import Button from '@/components/Button.vue'
 import PetIcon from '@/components/PetIcon.vue'
@@ -107,7 +108,6 @@ function findMe(): void {
 watch(worldId, () => (focus.value = []))
 
 const setMini = (patch: Partial<typeof mini.value>): void => void store.set('minimap', { ...mini.value, ...patch })
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 </script>
 
 <template>
@@ -180,7 +180,7 @@ const pct = (v: number): string => `${Math.round(v * 100)}%`
         </div>
       </SettingRow>
       <SettingRow v-if="mini.enabled" label="Opacity">
-        <Slider :model-value="mini.opacity" :min="0.3" :max="1" :step="0.05" :format="pct" @update:model-value="setMini({ opacity: $event })" />
+        <Slider :model-value="mini.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="setMini({ opacity: $event })" />
       </SettingRow>
       <SettingRow v-if="mini.enabled" label="Gatherables" hint="Ores, gemstones, logs and plants around you, as their icons: the ones pinned on the Gatherables page, or all of them while none is.">
         <Toggle :model-value="mini.gatherables" @update:model-value="setMini({ gatherables: $event })" />

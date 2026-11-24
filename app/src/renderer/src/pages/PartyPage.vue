@@ -6,6 +6,8 @@
 // else is a setting (dashboard/PartyView): size, colours, the HP as text, the debuffs' icons, a title
 // bar. Up while you are in a party, moved by dragging it; while the dashboard is up out of a party,
 // it shows a sample to place it by. Nothing to show measures 0, and main keeps it hidden.
+import { classIconUrl } from '@/lib/format.ts'
+import { compact } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { useNow, useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -34,13 +36,7 @@ const STALE_MS = 10_000
 // Ticking in a party (or with the sample shown).
 const now = useNow(500, () => store.party.members.length > 1 || store.panelVisible)
 
-const icons = import.meta.glob<string>('@/assets/classes/*.png', { eager: true, import: 'default' })
-/** The engine's names for one class, the files' for it. */
-const ALIAS: Record<string, string> = { elementalist: 'spiritmaster', summoner: 'spiritmaster' }
-const icon = (className: string | null): string | null => {
-  const name = className?.toLowerCase()
-  return name ? (Object.entries(icons).find(([k]) => k.endsWith(`/classes/${ALIAS[name] ?? name}.png`))?.[1] ?? null) : null
-}
+const icon = classIconUrl
 
 interface Row {
   member: PartyMember
@@ -99,11 +95,10 @@ const list = computed<Row[]>(() =>
 const pct = (v: Vitals | null): number => (v && v.maxHp > 0 ? Math.max(0, Math.min(1, v.hp / v.maxHp)) : 1)
 const down = (v: Vitals | null): boolean => !!v && v.hp === 0
 const stale = (v: Vitals | null): boolean => !v || now.value - v.at > STALE_MS
-const short = (n: number): string => (n >= 10_000 ? `${(n / 1000).toFixed(1)}k` : n.toLocaleString('en-US'))
 const hpText = (v: Vitals | null): string => {
   if (!v || down(v)) return ''
   if (cfg.value.hpText === 'percent') return `${Math.round(pct(v) * 100)}%`
-  if (cfg.value.hpText === 'value') return short(v.hp)
+  if (cfg.value.hpText === 'value') return compact(v.hp)
   return ''
 }
 const fill = (r: Row): string => (down(r.vitals) ? 'transparent' : afflicted(r) ? cfg.value.afflictedColor : cfg.value.hpColor)

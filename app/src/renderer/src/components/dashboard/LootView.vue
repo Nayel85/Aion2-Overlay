@@ -5,7 +5,9 @@
 // a run's chance of it), per run, per cube or per hour in them; beside it, what the game's rates make
 // of the same cubes, and your luck: what you got against that. The filters picked are remembered
 // (this window's storage).
-import { classOf, fromOf, namePicker, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
+import FilterRow from '@/components/FilterRow.vue'
+import StatsFilters from '@/components/StatsFilters.vue'
+import { classOf, fromOf, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -72,7 +74,6 @@ const items = computed(() => {
   return itemStats(runs.value.map((r) => r.run)).filter((i) => (f.value.family === 'all' || (f.value.family === 'gold' ? i.family !== 'other' : i.family === f.value.family)) && (!q || i.name.toLowerCase().includes(q)))
 })
 
-const { toggleName, picked } = namePicker(f, characters)
 const className = (name: string): string | null => classOf(sessions.value, name)
 
 // ---- the numbers ----------------------------------------------------------------------------
@@ -104,35 +105,16 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
   <div>
     <PageHeader v-if="!embedded" title="Loot" about="What your dungeon runs gave, from their cubes: by character and by item, per run, per cube or per hour in them. Only the runs whose cubes the overlay saw count. Your luck: what you got against what the drop rates of the game (questlog.gg) make of your cubes, ×1 being just that." />
 
-    <!-- The filters. -->
-    <div class="mb-5 space-y-3 rounded-xl border border-card p-4">
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="w-24 text-xs text-darker">{{ t('Characters') }}</span>
-        <button
-          v-for="name in characters"
-          :key="name"
-          type="button"
-          :class="['flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs', picked(name) ? 'border-accent bg-accent/15 text-default' : 'border-light text-darker hover:text-default']"
-          @click="toggleName(name)"
-        >
-          <ClassIcon :class-name="className(name)" :size="14" />{{ name }}
-        </button>
-        <button v-if="f.names.length" type="button" class="text-xs text-darker hover:text-default hover:underline" @click="f.names = []">{{ t('All') }}</button>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="w-24 text-xs text-darker">{{ t('Period') }}</span>
-        <Segmented v-model="f.period" size="sm" :options="PERIODS" />
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="w-24 text-xs text-darker">{{ t('Dungeons') }}</span>
+    <!-- The filters: the characters and the period (components/StatsFilters.vue), then this view's. -->
+    <StatsFilters v-model:names="f.names" v-model:period="f.period" :characters="characters" :class-of="className">
+      <FilterRow label="Dungeons">
         <SelectBox :model-value="f.kind ?? ''" size="sm" :options="kindOptions" @update:model-value="(v) => (f = { ...f, kind: v || null, world: null })" />
         <SelectBox :model-value="f.world ?? 0" size="sm" :options="worldOptions" @update:model-value="(v) => (f.world = v || null)" />
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="w-24 text-xs text-darker">{{ t('Rates') }}</span>
+      </FilterRow>
+      <FilterRow label="Rates">
         <Segmented v-model="f.unit" size="sm" :options="UNITS" />
-      </div>
-    </div>
+      </FilterRow>
+    </StatsFilters>
 
     <div v-if="!total.runs" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
       <div class="text-sm font-medium">{{ all.length ? t('No runs match.') : t('No dungeon loot yet.') }}</div>

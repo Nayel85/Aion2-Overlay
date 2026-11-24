@@ -7,6 +7,8 @@
 // corner resizes it (a double-click there goes back to the default size); with "hide while idle" on
 // it hides after that long with nothing new on it, and comes back with the next hit.
 // The numbers are the engine's (A2Tools DPS Meter's parser); the class icons and colours are its too.
+import { classIconUrl } from '@/lib/format.ts'
+import { compact, duration } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
@@ -45,9 +47,7 @@ const meter = ref<MeterData>(NO_METER)
 /** The engine's state: the meter and the tracker are the same process. */
 const status = computed(() => store.status ?? { state: 'starting' as TrackerState, detail: null })
 
-const icons = import.meta.glob<string>('@/assets/classes/*.png', { eager: true, import: 'default' })
-const icon = (className: string | null): string | null =>
-  className ? (Object.entries(icons).find(([k]) => k.endsWith(`/classes/${className.toLowerCase()}.png`))?.[1] ?? null) : null
+const icon = classIconUrl
 
 const all = computed(() => meterRows(meter.value, cfg.value.players, cfg.value.stat))
 /** A height of its own shows every row it fits (scrolling past them); otherwise as many as set. */
@@ -69,17 +69,6 @@ function barGradient(className: string | null, solid = false): string {
   return solid ? `linear-gradient(90deg, ${c}f0 0%, ${c}b0 45%, ${c}50 100%), linear-gradient(rgba(9, 9, 11, 0.75), rgba(9, 9, 11, 0.75))` : `linear-gradient(90deg, ${c}a0 0%, ${c}38 100%)`
 }
 
-function short(n: number): string {
-  const abs = Math.abs(n)
-  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`
-  if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`
-  if (abs >= 1e3) return `${(n / 1e3).toFixed(1)}K`
-  return Math.round(n).toLocaleString('en-US')
-}
-const clock = (ms: number): string => {
-  const s = Math.floor(ms / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
 
 const hpShare = computed(() => {
   const t = meter.value.target
@@ -215,10 +204,10 @@ onBeforeUnmount(() => {
           <div class="flex items-center gap-2">
             <span :class="['size-1.5 shrink-0 rounded-full', statusDot]" :title="status.detail ?? t(STATUS_TEXT[status.state])" />
             <span class="min-w-0 flex-1 truncate text-[13px] font-semibold text-default">
-              {{ t(STAT_TITLE[cfg.stat][0]) }}<span v-if="meter.battleTime" class="font-normal text-darker"> ({{ clock(meter.battleTime) }})</span>
+              {{ t(STAT_TITLE[cfg.stat][0]) }}<span v-if="meter.battleTime" class="font-normal text-darker"> ({{ duration(meter.battleTime) }})</span>
             </span>
             <span v-if="cfg.collapsed && all.length" class="shrink-0 text-[13px] font-bold tabular-nums text-accent">
-              {{ short(totalPerSecond) }}<span class="ml-0.5 text-[10px] font-medium text-darker">{{ STAT_TITLE[cfg.stat][2] }}</span>
+              {{ compact(totalPerSecond) }}<span class="ml-0.5 text-[10px] font-medium text-darker">{{ STAT_TITLE[cfg.stat][2] }}</span>
             </span>
             <span v-else-if="!cfg.collapsed" class="max-w-[45%] truncate text-[11px] text-darker" :title="meter.target?.name">{{ meter.target?.name }}</span>
             <button
@@ -245,8 +234,8 @@ onBeforeUnmount(() => {
             <CloseButton @close="set({ enabled: false })" />
           </div>
           <div v-if="all.length && !cfg.collapsed" class="mt-0.5 flex items-baseline justify-between">
-            <span class="text-[12px] text-darker">{{ t(STAT_TITLE[cfg.stat][1]) }} <span class="font-medium text-dark">{{ short(total) }}</span></span>
-            <span class="text-xl font-bold tabular-nums text-accent">{{ short(totalPerSecond) }}<span class="ml-0.5 text-[11px] font-medium text-darker">{{ STAT_TITLE[cfg.stat][2] }}</span></span>
+            <span class="text-[12px] text-darker">{{ t(STAT_TITLE[cfg.stat][1]) }} <span class="font-medium text-dark">{{ compact(total) }}</span></span>
+            <span class="text-xl font-bold tabular-nums text-accent">{{ compact(totalPerSecond) }}<span class="ml-0.5 text-[11px] font-medium text-darker">{{ STAT_TITLE[cfg.stat][2] }}</span></span>
           </div>
         </header>
 
@@ -295,7 +284,7 @@ onBeforeUnmount(() => {
           <div class="relative h-3.5 overflow-hidden rounded bg-dark">
             <div class="h-full bg-danger/70" :style="{ width: `${hpShare * 100}%` }" />
             <span class="absolute inset-0 flex items-center justify-center gap-1.5 text-[9px] font-semibold tabular-nums text-default">
-              {{ (hpShare * 100).toFixed(1) }}% · {{ short(meter.target!.hp!) }}<template v-if="ttk !== null"> · {{ t('dies in {time}', { time: clock(ttk) }) }}</template>
+              {{ (hpShare * 100).toFixed(1) }}% · {{ compact(meter.target!.hp!) }}<template v-if="ttk !== null"> · {{ t('dies in {time}', { time: duration(ttk) }) }}</template>
             </span>
           </div>
           <!-- The stagger gauge, worn down as it is hit: broken at 100%. -->
@@ -343,12 +332,12 @@ onBeforeUnmount(() => {
                 </span>
                 <!-- Item level and combat power as columns of their own ("In a column"); a dash while unknown. Every column centred under its title. -->
                 <span v-if="cfg.gear === 'beside'" class="w-9 shrink-0 text-center text-[11px] tabular-nums text-yellow/80">{{ r.gearScore > 0 ? r.gearScore : '–' }}</span>
-                <span v-if="cfg.power === 'beside'" class="w-11 shrink-0 text-center text-[11px] tabular-nums text-dark">{{ r.combatPower > 0 ? short(r.combatPower) : '–' }}</span>
+                <span v-if="cfg.power === 'beside'" class="w-11 shrink-0 text-center text-[11px] tabular-nums text-dark">{{ r.combatPower > 0 ? compact(r.combatPower) : '–' }}</span>
                 <!-- Deaths: red once they died, a dash before; centred under the skull. -->
                 <span v-if="cfg.deaths" :class="['w-5 shrink-0 text-center text-[11px] tabular-nums', r.deaths > 0 ? 'font-semibold text-red' : 'text-darker']">{{ r.deaths > 0 ? r.deaths : '–' }}</span>
-                <span class="w-12 shrink-0 text-center font-semibold tabular-nums text-default">{{ short(r.perSecond) }}</span>
+                <span class="w-12 shrink-0 text-center font-semibold tabular-nums text-default">{{ compact(r.perSecond) }}</span>
                 <span class="w-12 shrink-0 text-center tabular-nums text-dark">{{ r.part.toFixed(1) }}%</span>
-                <span class="w-12 shrink-0 text-center tabular-nums text-dark">{{ short(r.value) }}</span>
+                <span class="w-12 shrink-0 text-center tabular-nums text-dark">{{ compact(r.value) }}</span>
                 <span v-if="!lean && cfg.style === 'flat' && cfg.stat === 'damage'" :class="['w-8 shrink-0 text-center tabular-nums', r.you ? 'text-green' : 'text-dark']">{{ Math.round(r.critRate * 100) }}%</span>
               </div>
             </li>

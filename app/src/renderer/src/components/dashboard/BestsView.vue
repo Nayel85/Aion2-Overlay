@@ -2,6 +2,7 @@
 // Personal bests: each character's best on each dungeon boss (the engine keeps them apart from the
 // fights), by character, then dungeon and boss. A row opens the fight of your best DPS on it; each
 // figure opens its own fight (the party's best, the fastest kill). The fight opens in this page.
+import { compact } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import DetailsPage from '@/pages/DetailsPage.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -26,12 +27,6 @@ function dungeonName(id: number): string {
   const name = ZONES[id]?.[0] ?? `#${id}`
   const mode = zoneMode(id, t)
   return mode ? `${name} · ${mode}` : name
-}
-function short(n: number): string {
-  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`
-  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`
-  if (n >= 1e4) return `${(n / 1e3).toFixed(1)}k`
-  return Math.round(n).toLocaleString('en-US')
 }
 const mmss = (ms: number): string => {
   const s = Math.round(ms / 1000)
@@ -89,12 +84,12 @@ onBeforeUnmount(() => off?.())
             <td class="py-1.5 pl-4"><span :class="e.finalBoss && 'font-medium'">{{ e.bossName }}</span></td>
             <td class="px-3 py-1.5 text-dark">{{ dungeonName(e.dungeonId) }}</td>
             <td class="px-3 py-1.5 text-right">
-              <button v-if="e.myDps" type="button" class="font-semibold text-yellow hover:underline" @click.stop="open(e.myDps)">{{ short(e.myDps.value) }}</button>
+              <button v-if="e.myDps" type="button" class="font-semibold text-yellow hover:underline" @click.stop="open(e.myDps)">{{ compact(e.myDps.value) }}</button>
               <span v-else class="text-darker">–</span>
               <span v-if="e.myDps" class="ml-1.5 text-[11px] text-darker">{{ day(e.myDps.atMs) }}</span>
             </td>
             <td class="px-3 py-1.5 text-right">
-              <button v-if="e.partyDps" type="button" class="text-dark hover:underline" @click.stop="open(e.partyDps)">{{ short(e.partyDps.value) }}</button>
+              <button v-if="e.partyDps" type="button" class="text-dark hover:underline" @click.stop="open(e.partyDps)">{{ compact(e.partyDps.value) }}</button>
               <span v-else class="text-darker">–</span>
             </td>
             <td class="px-3 py-1.5 pr-4 text-right">

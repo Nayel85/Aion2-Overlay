@@ -5,6 +5,8 @@
  * falling once you stop.
  */
 
+import { compact } from './format.ts'
+
 export interface Earnings {
   earned: number
   /** Active time between the gains so far (see IDLE_MS). */
@@ -93,8 +95,5 @@ export function series(s: Earnings, now: number): EarnedPoint[] {
 }
 
 /** 950, 12.3k, 1.25M. */
-export function formatAmount(n: number): string {
-  if (n < 1000) return String(Math.round(n))
-  if (n < 1_000_000) return `${(n / 1000).toFixed(n < 10_000 ? 2 : n < 100_000 ? 1 : 0)}k`
-  return `${(n / 1_000_000).toFixed(n < 10_000_000 ? 2 : 1)}M`
-}
+/** Amounts as every number in short (shared/format.ts): 1.92K, 12.3M. */
+export const formatAmount = compact

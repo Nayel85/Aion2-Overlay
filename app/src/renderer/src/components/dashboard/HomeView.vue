@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Home: who is playing and whether the game is being read, every overlay with its switch (the
 // overlays' own settings are on their pages), and a card per page with what it has now.
+import { compact } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import StatusDot, { statusText } from '@/components/StatusDot.vue'
@@ -114,12 +115,6 @@ async function toggleAll(): Promise<void> {
 }
 
 // ---- what each page has now -------------------------------------------------------------------
-function short(n: number): string {
-  if (n >= 1e9) return `${(n / 1e9).toFixed(2)}B`
-  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`
-  if (n >= 1e4) return `${(n / 1e3).toFixed(1)}k`
-  return Math.round(n).toLocaleString('en-US')
-}
 const zone = computed(() => {
   const id = spawns.value ? currentWorld(store.nearby, spawns.value) : null
   return id !== null ? (spawns.value?.worlds[id]?.name ?? null) : null
@@ -237,7 +232,7 @@ const ICONS: Record<string, string> = {
       <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-darker">{{ t('In game') }}</h2>
       <div class="grid grid-cols-2 gap-3">
         <button v-for="card in [
-          { page: 'meter', title: t('Combat Meter'), line: meter.target ? `${meter.target.name}: ${myDps ? t('you {dps}/s', { dps: short(myDps.dps) }) : plural(meter.rows.length, '{n} player', '{n} players')}` : t('No fight right now.') },
+          { page: 'meter', title: t('Combat Meter'), line: meter.target ? `${meter.target.name}: ${myDps ? t('you {dps}/s', { dps: compact(myDps.dps) }) : plural(meter.rows.length, '{n} player', '{n} players')}` : t('No fight right now.') },
           { page: 'map', title: t('Map'), line: zone ? `${zone}${store.cubes.length ? ` · ${plural(store.cubes.length, '{n} Hidden Cube nearby', '{n} Hidden Cubes nearby')}` : ''}` : t('Where you are shows once you enter a zone.') },
           { page: 'pets', title: 'Pets', line: `${plural(store.sessionSouls, '{n} soul this session', '{n} souls this session')} · ${plural(nearbyCount, '{n} pet around you', '{n} pets around you')}` },
           { page: 'buffs', title: 'Buffs', line: store.settings.buffs.enabled ? t('{n} on you now', { n: store.buffs.length }) : t('The buffs overlay is off.') },

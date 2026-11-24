@@ -2,6 +2,7 @@
 // An alert's sound (a Hidden Cube, an enemy): which one, Test, your own mp3 (copied into the data
 // folder by main/sounds.ts), and how loud, as two setting rows. The cube's settings are in `hud`,
 // the enemy's in `enemies`.
+import { percent } from '@shared/format.ts'
 import { computed, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import SettingRow from '@/components/SettingRow.vue'
@@ -45,7 +46,6 @@ function choose(next: SoundId): void {
   if (next === 'custom' && !customName.value) void pick()
   else save({ id: next })
 }
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 </script>
 
 <template>
@@ -57,6 +57,6 @@ const pct = (v: number): string => `${Math.round(v * 100)}%`
     </div>
   </SettingRow>
   <SettingRow :label="t('{name} volume', { name: t(label) })">
-    <Slider :model-value="volume" :min="0" :max="1" :step="0.05" :format="pct" @update:model-value="save({ volume: $event })" />
+    <Slider :model-value="volume" :min="0" :max="1" :step="0.05" :format="percent" @update:model-value="save({ volume: $event })" />
   </SettingRow>
 </template>

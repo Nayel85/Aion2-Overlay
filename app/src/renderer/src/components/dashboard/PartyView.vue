@@ -2,6 +2,7 @@
 // Party frames: the widget over the game with a bar per member of your party (pages/PartyPage.vue),
 // and its settings: what each bar shows, its size and colours, and when it turns to the afflicted
 // colour.
+import { percent } from '@shared/format.ts'
 import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
@@ -17,7 +18,6 @@ import { PARTY_DEFAULT_COLORS } from '@shared/settings.ts'
 const store = useApp()
 const cfg = computed(() => store.settings.party)
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('party', { ...cfg.value, ...patch })
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 const px = (v: number): string => `${v} px`
 const HP_TEXT = [
   { id: 'none', label: 'None' },
@@ -46,7 +46,7 @@ const AFFLICTED_BY = [
           <Toggle :model-value="cfg.header" @update:model-value="set({ header: $event })" />
         </SettingRow>
         <SettingRow label="Opacity">
-          <Slider :model-value="cfg.opacity" :min="0.2" :max="1" :step="0.05" :format="pct" @update:model-value="set({ opacity: $event })" />
+          <Slider :model-value="cfg.opacity" :min="0.2" :max="1" :step="0.05" :format="percent" @update:model-value="set({ opacity: $event })" />
         </SettingRow>
         <IdleHideRow :value="cfg" @set="set" />
       </template>

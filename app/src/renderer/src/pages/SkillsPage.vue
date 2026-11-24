@@ -2,6 +2,7 @@
 // Your own damage on the meter's target, skill by skill: your DPS large, then each skill's icon,
 // DPS, share and damage, a bar behind each as long as its share. Redrawn every second; moved by its
 // header, sized to its rows (hidden while none of your damage is on the target).
+import { compact, duration } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -40,17 +41,6 @@ const shownView = computed(() => (!view.value.skills.length && store.panelVisibl
 const rows = computed(() => shownView.value.skills.slice(0, cfg.value.rows))
 const top = computed(() => Math.max(1, ...shownView.value.skills.map((s) => s.damage)))
 
-function short(n: number): string {
-  const abs = Math.abs(n)
-  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`
-  if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`
-  if (abs >= 1e3) return `${(n / 1e3).toFixed(1)}K`
-  return Math.round(n).toLocaleString('en-US')
-}
-const clock = (ms: number): string => {
-  const s = Math.floor(ms / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
 
 async function load(): Promise<void> {
   view.value = await api.invoke('skills:get')
@@ -81,7 +71,7 @@ onBeforeUnmount(() => {
         <header class="cursor-move px-2.5 pb-1.5 pt-2" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
           <div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-darker">
             <span>{{ t('My skills') }}</span>
-            <span class="tabular-nums text-default">{{ clock(shownView.battleTime) }}</span>
+            <span class="tabular-nums text-default">{{ duration(shownView.battleTime) }}</span>
             <span class="ml-auto truncate normal-case tracking-normal text-darkest">{{ shownView.target }}</span>
             <button
               type="button"
@@ -95,9 +85,9 @@ onBeforeUnmount(() => {
             </button>
           </div>
           <div class="flex items-baseline gap-1.5">
-            <span class="text-2xl font-semibold tabular-nums text-accent-text">{{ short(shownView.dps) }}</span>
+            <span class="text-2xl font-semibold tabular-nums text-accent-text">{{ compact(shownView.dps) }}</span>
             <span class="text-xs text-darker">DPS</span>
-            <span class="ml-auto text-xs tabular-nums text-darker">{{ t('{n} damage', { n: short(shownView.damage) }) }}</span>
+            <span class="ml-auto text-xs tabular-nums text-darker">{{ t('{n} damage', { n: compact(shownView.damage) }) }}</span>
           </div>
         </header>
         <ul class="space-y-0.5 px-1.5 pb-1.5">
@@ -108,9 +98,9 @@ onBeforeUnmount(() => {
               <span class="min-w-0 flex-1 truncate font-medium text-default" :title="s.name">
                 {{ s.name }}<span v-if="s.dot" class="ml-1 text-[10px] text-darker">DoT</span>
               </span>
-              <span class="w-12 shrink-0 text-right font-semibold tabular-nums text-default">{{ short(s.dps) }}</span>
+              <span class="w-12 shrink-0 text-right font-semibold tabular-nums text-default">{{ compact(s.dps) }}</span>
               <span class="w-11 shrink-0 text-right tabular-nums text-darker">{{ s.share.toFixed(1) }}%</span>
-              <span class="w-12 shrink-0 text-right tabular-nums text-darker">{{ short(s.damage) }}</span>
+              <span class="w-12 shrink-0 text-right tabular-nums text-darker">{{ compact(s.damage) }}</span>
             </div>
           </li>
         </ul>

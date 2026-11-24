@@ -3,6 +3,7 @@
 // respawns), when that was, and its alert. The list comes from the game when you open the map; the
 // Lokthar sync can fill in what others' maps saw. Verteron's bosses, Altgard's (the Asmodians', from
 // its map) and the Abyss's (read as you enter the Abyss, by any of your characters) are known so far.
+import { ago as timeAgo } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import Toggle from '@/components/Toggle.vue'
@@ -30,14 +31,7 @@ const ZONES: { id: BossZone; label: string }[] = [
 ]
 const zone = ref<BossZone>('verteron')
 
-function ago(ms: number): string {
-  const s = Math.max(0, Math.round((now.value - ms) / 1000))
-  if (s < 60) return t('just now')
-  const m = Math.round(s / 60)
-  if (m < 60) return t('{n} min ago', { n: m })
-  const h = Math.round(m / 60)
-  return h < 48 ? t('{n} h ago', { n: h }) : t('{n} d ago', { n: Math.round(h / 24) })
-}
+const ago = (at: number): string => timeAgo(at, now.value)
 /** "Oct 21, 14:56": the exact time a respawn or a read was, to check against the game's map. */
 const stamp = (ms: number): string => new Date(ms).toLocaleString(loc(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 

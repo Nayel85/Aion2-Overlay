@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Gathering outcome: the pill over the game that says, as a gathering starts, how it will end
 // (pages/GatherPage.vue), and its settings.
+import { percent } from '@shared/format.ts'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
 import Slider from '@/components/Slider.vue'
@@ -18,7 +19,6 @@ import { SOUNDS } from '@shared/sounds.ts'
 const store = useApp()
 const cfg = computed(() => store.settings.gather)
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('gather', { ...cfg.value, ...patch })
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 const times = (v: number): string => `×${v.toFixed(1)}`
 const STYLES = [
   { id: 'ring', label: 'Ring' },
@@ -48,7 +48,7 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
           <Slider :model-value="cfg.scale" :min="0.6" :max="2" :step="0.1" :format="times" @update:model-value="set({ scale: $event })" />
         </SettingRow>
         <SettingRow label="Opacity">
-          <Slider :model-value="cfg.opacity" :min="0.2" :max="1" :step="0.05" :format="pct" @update:model-value="set({ opacity: $event })" />
+          <Slider :model-value="cfg.opacity" :min="0.2" :max="1" :step="0.05" :format="percent" @update:model-value="set({ opacity: $event })" />
         </SettingRow>
       </template>
     </Section>
@@ -83,7 +83,7 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
           </span>
         </SettingRow>
         <SettingRow label="Volume">
-          <Slider :model-value="cfg.volume" :min="0" :max="1" :step="0.05" :format="pct" @update:model-value="set({ volume: $event })" />
+          <Slider :model-value="cfg.volume" :min="0" :max="1" :step="0.05" :format="percent" @update:model-value="set({ volume: $event })" />
         </SettingRow>
       </template>
     </Section>

@@ -5,6 +5,7 @@
 // two minutes) and while the dashboard is up, to be placed; moved by its header. Its dash shrinks it
 // to that line (the clock and your DPS while a run goes on); its X turns it off (the Training Dummy
 // page turns it on again). The last run's Details opens its breakdown.
+import { compact, duration } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -27,17 +28,8 @@ const idle = useIdle(() => store.settings.dummy)
 const state = ref<DummyState>(structuredClone(NO_DUMMY))
 const now = ref(Date.now())
 
-function short(n: number): string {
-  const abs = Math.abs(n)
-  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`
-  if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`
-  if (abs >= 1e3) return `${(n / 1e3).toFixed(1)}K`
-  return Math.round(n).toLocaleString('en-US')
-}
-const clock = (ms: number): string => {
-  const s = Math.max(0, Math.ceil(ms / 1000))
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
+/** A countdown: its seconds rounded up. */
+const clock = (ms: number): string => duration(ms, true)
 
 const active = computed(() => state.value.active)
 const elapsed = computed(() => (active.value?.startedAt ? Math.max(active.value.elapsedMs, now.value - active.value.startedAt) : 0))
@@ -55,7 +47,7 @@ const progress = computed(() => {
 })
 const last = computed(() => state.value.runs[0] ?? null)
 const planText = computed(() => {
-  const goal = cfg.value.goal === 'time' ? (cfg.value.limitMs ? t('{time} run', { time: clock(cfg.value.limitMs) }) : t('Untimed run')) : t('{n} damage', { n: short(cfg.value.damageGoal) })
+  const goal = cfg.value.goal === 'time' ? (cfg.value.limitMs ? t('{time} run', { time: clock(cfg.value.limitMs) }) : t('Untimed run')) : t('{n} damage', { n: compact(cfg.value.damageGoal) })
   return `${goal} · ${cfg.value.autoStart ? t('starts on your first hit') : t('starts when you press Start')}`
 })
 const shown = computed(
@@ -94,7 +86,7 @@ onBeforeUnmount(() => {
           <span class="text-base font-semibold">Training</span>
           <span v-if="active?.startedAt" class="size-2 animate-pulse rounded-full bg-danger" />
           <span v-if="cfg.collapsed && active" class="ml-auto truncate text-sm tabular-nums">
-            {{ shownTime }} · <span class="font-semibold text-accent">{{ short(active.dps) }}</span><span class="text-xs text-darker"> DPS</span>
+            {{ shownTime }} · <span class="font-semibold text-accent">{{ compact(active.dps) }}</span><span class="text-xs text-darker"> DPS</span>
           </span>
           <span v-else class="flex-1" />
           <CollapseButton :collapsed="cfg.collapsed" @toggle="set({ collapsed: !cfg.collapsed })" />
@@ -119,7 +111,7 @@ onBeforeUnmount(() => {
           <div class="relative mx-3 mt-2 flex h-9 items-center overflow-hidden rounded-lg bg-dark px-3">
             <div class="absolute inset-y-0 left-0 bg-accent/30" :style="{ width: `${progress * 100}%` }" />
             <span class="relative text-sm text-dark">DPS</span>
-            <span class="relative ml-auto text-base font-semibold tabular-nums text-accent">{{ short(active.dps) }}</span>
+            <span class="relative ml-auto text-base font-semibold tabular-nums text-accent">{{ compact(active.dps) }}</span>
           </div>
           <div class="flex gap-2 p-3">
             <button
@@ -140,8 +132,8 @@ onBeforeUnmount(() => {
               <button v-if="last.details" type="button" class="ml-auto text-accent hover:underline" @click="api.invoke('details:open', { kind: 'run', id: last.id })">{{ t('Details') }}</button>
             </div>
             <div class="flex items-baseline gap-2">
-              <span class="text-lg font-semibold tabular-nums text-accent">{{ short(last.dps) }}</span><span class="text-darker">DPS</span>
-              <span class="ml-auto tabular-nums text-darker">{{ short(last.damage) }} · {{ clock(last.durationMs) }}</span>
+              <span class="text-lg font-semibold tabular-nums text-accent">{{ compact(last.dps) }}</span><span class="text-darker">DPS</span>
+              <span class="ml-auto tabular-nums text-darker">{{ compact(last.damage) }} · {{ clock(last.durationMs) }}</span>
             </div>
           </div>
           <div class="p-3">

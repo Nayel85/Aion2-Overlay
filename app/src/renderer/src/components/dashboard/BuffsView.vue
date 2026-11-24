@@ -2,6 +2,7 @@
 // Buffs: what is on your character now, as the buffs overlay shows it, in a list with names; and
 // the overlay's settings. From A2Tools DPS Meter's buff timeline (the game's buff records). A
 // fight's buffs, each player's and the target's, are in the Details window's Buffs tab.
+import { percent } from '@shared/format.ts'
 import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
@@ -35,7 +36,6 @@ const groups = computed(() => [
 const from = (b: Buff): string => (b.mine ? t('You') : b.debuff ? t('A monster') : b.by ? t('Another player') : '—')
 const share = (b: Buff): number => (b.endsAt === null ? 1 : Math.max(0, Math.min(1, (b.endsAt - now.value) / Math.max(1, b.endsAt - b.startedAt))))
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('buffs', { ...cfg.value, ...patch })
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 </script>
 
 <template>
@@ -125,7 +125,7 @@ const pct = (v: number): string => `${Math.round(v * 100)}%`
           <Slider :model-value="cfg.perRow" :min="4" :max="20" :step="1" @update:model-value="set({ perRow: $event })" />
         </SettingRow>
         <SettingRow label="Opacity">
-          <Slider :model-value="cfg.opacity" :min="0.3" :max="1" :step="0.05" :format="pct" @update:model-value="set({ opacity: $event })" />
+          <Slider :model-value="cfg.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="set({ opacity: $event })" />
         </SettingRow>
         <IdleHideRow :value="cfg" @set="set" />
       </template>

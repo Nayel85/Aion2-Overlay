@@ -3,6 +3,8 @@
 // Which targets and players it counts and what it ranks by (shared with the overlay), each player's
 // numbers (a click opens their details), the meter and My skills overlays' settings, and recordings
 // of the game's traffic.
+import { classIconUrl, dateTime } from '@/lib/format.ts'
+import { compact, duration, percent } from '@shared/format.ts'
 import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
@@ -38,20 +40,8 @@ const meter = ref<MeterData>(NO_METER)
 const cfg = computed(() => store.settings.meter)
 const skills = computed(() => store.settings.skills)
 
-const icons = import.meta.glob<string>('@/assets/classes/*.png', { eager: true, import: 'default' })
-const icon = (className: string | null): string | null => (className ? (icons[`/src/assets/classes/${className.toLowerCase()}.png`] ?? null) : null)
+const icon = classIconUrl
 
-function short(n: number): string {
-  const abs = Math.abs(n)
-  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`
-  if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`
-  if (abs >= 1e4) return `${(n / 1e3).toFixed(1)}k`
-  return Math.round(n).toLocaleString('en-US')
-}
-const clock = (ms: number): string => {
-  const s = Math.floor(ms / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
 const rows = computed(() => meterRows(meter.value, cfg.value.players, cfg.value.stat))
 const top = computed(() => Math.max(1, ...rows.value.map((r) => r.value)))
 const perSecond = computed(() => rows.value.reduce((n, r) => n + r.perSecond, 0))
@@ -80,10 +70,8 @@ const empty = computed(() => {
 // Recordings of the game's traffic: replayed with the engine's --replay after a game patch.
 const rec = ref<Recordings>(NO_RECORDINGS)
 const size = (b: number): string => (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`)
-const when = (ms: number): string => new Date(ms).toLocaleString(loc(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 const setMeter = (patch: Partial<typeof cfg.value>): void => void store.set('meter', { ...cfg.value, ...patch })
 const setSkills = (patch: Partial<typeof skills.value>): void => void store.set('skills', { ...skills.value, ...patch })
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 function details(actor: number): void {
   const target = meter.value.target?.id
   if (target) void api.invoke('details:open', { kind: 'live', target, actor })
@@ -135,13 +123,13 @@ onBeforeUnmount(() => offs.forEach((off) => off()))
           <div class="min-w-0 flex-1">
             <div class="truncate text-base font-semibold">{{ meter.target?.name || t('No target yet') }}</div>
             <div class="text-xs tabular-nums text-darker">
-              <template v-if="meter.battleTime">{{ clock(meter.battleTime) }} · {{ short(total) }} {{ t(UNIT[cfg.stat][1]).toLowerCase() }} · {{ short(perSecond) }} {{ UNIT[cfg.stat][0] === 'Per second' ? t('per second') : UNIT[cfg.stat][0] }}</template>
+              <template v-if="meter.battleTime">{{ duration(meter.battleTime) }} · {{ compact(total) }} {{ t(UNIT[cfg.stat][1]).toLowerCase() }} · {{ compact(perSecond) }} {{ UNIT[cfg.stat][0] === 'Per second' ? t('per second') : UNIT[cfg.stat][0] }}</template>
               <template v-else>{{ t('Hit something and the fight shows here.') }}</template>
             </div>
           </div>
           <div v-if="hp !== null" class="w-56">
             <div class="mb-0.5 flex justify-between text-[11px] tabular-nums text-darker">
-              <span>HP<template v-if="ttk !== null"> · {{ t('dies in {time}', { time: clock(ttk) }) }}</template></span><span>{{ (hp * 100).toFixed(1) }}% · {{ short(meter.target!.hp!) }}</span>
+              <span>HP<template v-if="ttk !== null"> · {{ t('dies in {time}', { time: duration(ttk) }) }}</template></span><span>{{ (hp * 100).toFixed(1) }}% · {{ compact(meter.target!.hp!) }}</span>
             </div>
             <div class="h-1.5 overflow-hidden rounded-full bg-dark"><div class="h-full bg-danger" :style="{ width: `${hp * 100}%` }" /></div>
           </div>
@@ -180,8 +168,8 @@ onBeforeUnmount(() => offs.forEach((off) => off()))
                   <div class="h-full" :style="{ width: `${(r.value / top) * 100}%`, background: CLASS_COLORS[r.className ?? ''] ?? '#787b8a' }" />
                 </div>
               </td>
-              <td class="px-3 text-right font-medium tabular-nums">{{ short(r.perSecond) }}</td>
-              <td class="px-3 text-right tabular-nums text-darker">{{ short(r.value) }}</td>
+              <td class="px-3 text-right font-medium tabular-nums">{{ compact(r.perSecond) }}</td>
+              <td class="px-3 text-right tabular-nums text-darker">{{ compact(r.value) }}</td>
               <td class="px-3 text-right tabular-nums text-darker">{{ r.part.toFixed(1) }}%</td>
               <td class="pr-4 text-right tabular-nums text-darker">{{ cfg.stat === 'damage' ? `${Math.round(r.critRate * 100)}%` : '' }}</td>
             </tr>
@@ -202,7 +190,7 @@ onBeforeUnmount(() => offs.forEach((off) => off()))
         <Slider :model-value="cfg.rows" :min="1" :max="24" :step="1" @update:model-value="setMeter({ rows: $event })" />
       </SettingRow>
       <SettingRow v-if="cfg.enabled" label="Opacity">
-        <Slider :model-value="cfg.opacity" :min="0.3" :max="1" :step="0.05" :format="pct" @update:model-value="setMeter({ opacity: $event })" />
+        <Slider :model-value="cfg.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="setMeter({ opacity: $event })" />
       </SettingRow>
       <MeterSizeSettings v-if="cfg.enabled" />
     </Section>
@@ -222,7 +210,7 @@ onBeforeUnmount(() => offs.forEach((off) => off()))
         <span v-if="f.path === rec.recording" class="size-2 animate-pulse rounded-full bg-danger" />
         <span class="min-w-0 flex-1 truncate font-mono text-xs">{{ f.name }}</span>
         <span class="text-xs tabular-nums text-darker">{{ size(f.bytes) }}</span>
-        <span class="w-32 text-right text-xs text-darker">{{ when(f.modified) }}</span>
+        <span class="w-32 text-right text-xs text-darker">{{ dateTime(f.modified) }}</span>
       </div>
       <p v-if="!rec.files.length" class="py-3 text-sm text-darkest">{{ t('No recordings yet.') }}</p>
     </Section>
@@ -235,7 +223,7 @@ onBeforeUnmount(() => offs.forEach((off) => off()))
         <Slider :model-value="skills.rows" :min="1" :max="20" :step="1" @update:model-value="setSkills({ rows: $event })" />
       </SettingRow>
       <SettingRow v-if="skills.enabled" label="Opacity">
-        <Slider :model-value="skills.opacity" :min="0.3" :max="1" :step="0.05" :format="pct" @update:model-value="setSkills({ opacity: $event })" />
+        <Slider :model-value="skills.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="setSkills({ opacity: $event })" />
       </SettingRow>
       <IdleHideRow v-if="skills.enabled" :value="skills" @set="setSkills" />
     </Section>

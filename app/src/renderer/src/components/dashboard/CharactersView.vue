@@ -4,6 +4,7 @@
 // Odyle energy, entry counts, Kina and Abyss corridors at a glance, and what a server's characters share
 // (Daily Dungeon, Shugo and invasion keys). Counters are read at each login and worked out from the
 // game's refill times since: a character not logged in with the overlay yet shows greyed out.
+import { ago as timeAgo } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import Countdown from '@/components/ui/Countdown.vue'
@@ -96,13 +97,7 @@ async function refresh(id: string): Promise<void> {
 
 const num = (n: number | null): string => (n === null ? '–' : n.toLocaleString('en-US'))
 
-function ago(ms: number): string {
-  const m = Math.max(0, Math.round((now.value - ms) / 60_000))
-  if (m < 1) return t('just now')
-  if (m < 60) return t('{n} min ago', { n: m })
-  const h = Math.round(m / 60)
-  return h < 48 ? t('{n} h ago', { n: h }) : t('{n} d ago', { n: Math.round(h / 24) })
-}
+const ago = (at: number): string => timeAgo(at, now.value)
 /** A membership's time left: days, or hours in its last day. */
 function left(end: number): string {
   const h = Math.floor((end - now.value) / 3_600_000)

@@ -29,14 +29,14 @@ export function useSessions(): ComputedRef<PlaySession[]> {
   return computed(() => (store.sessions.current ? [store.sessions.current, ...store.sessions.history] : store.sessions.history))
 }
 
-/** The characters picked in `f.names` (none: all), out of `characters`. */
-export function namePicker(f: Ref<{ names: string[] }>, characters: Ref<string[]>): { toggleName: (name: string) => void; picked: (name: string) => boolean } {
+/** The characters picked in `names` (none: all), out of `characters`; all of them picked is none picked. */
+export function namePicker(names: Ref<string[]>, characters: Ref<string[]>): { toggleName: (name: string) => void; picked: (name: string) => boolean } {
   return {
     toggleName(name) {
-      const names = f.value.names.includes(name) ? f.value.names.filter((n) => n !== name) : [...f.value.names, name]
-      f.value = { ...f.value, names: names.length === characters.value.length ? [] : names }
+      const next = names.value.includes(name) ? names.value.filter((n) => n !== name) : [...names.value, name]
+      names.value = next.length === characters.value.length ? [] : next
     },
-    picked: (name) => !f.value.names.length || f.value.names.includes(name),
+    picked: (name) => !names.value.length || names.value.includes(name),
   }
 }
 

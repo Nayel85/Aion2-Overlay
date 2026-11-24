@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // The pets HUD's settings (pages/HudPage.vue), on the Pets page: what it shows, its look, and the
 // pets left out (maxed) and the Black Cloud Merchant's window.
+import { percent } from '@shared/format.ts'
 import Button from '@/components/Button.vue'
 import SettingRow from '@/components/SettingRow.vue'
 import SoundPicker from '@/components/SoundPicker.vue'
@@ -13,7 +14,6 @@ import { t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 
 const store = useApp()
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 const HUD_MODES = [
   { id: 'recent' as const, label: "This session's pets" },
   { id: 'pinned' as const, label: 'Pinned pets' },
@@ -70,10 +70,10 @@ const HUD_MODES = [
         />
       </SettingRow>
       <SettingRow label="Opacity">
-        <Slider :model-value="store.settings.hud.opacity" :min="0.3" :max="1" :step="0.05" :format="pct" @update:model-value="store.setHud({ opacity: $event })" />
+        <Slider :model-value="store.settings.hud.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="store.setHud({ opacity: $event })" />
       </SettingRow>
       <SettingRow label="Size">
-        <Slider :model-value="store.settings.hud.scale" :min="0.75" :max="1.75" :step="0.05" :format="pct" @update:model-value="store.setHud({ scale: $event })" />
+        <Slider :model-value="store.settings.hud.scale" :min="0.75" :max="1.75" :step="0.05" :format="percent" @update:model-value="store.setHud({ scale: $event })" />
       </SettingRow>
       <SettingRow label="Position" hint="While this window is open the HUD can be dragged anywhere; it goes back to click-through when you close it.">
         <Button size="sm" @click="bridge().invoke('hud:setEditing', !store.hudEditing)">{{ store.hudEditing ? t('Done') : t('Move HUD') }}</Button>

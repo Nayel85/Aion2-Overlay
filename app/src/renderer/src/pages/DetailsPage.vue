@@ -5,6 +5,8 @@
 // landed), Buffs (A2Tools DPS Meter's buff timeline, as its Details does) and Healing. From A2Tools
 // DPS Meter's parser. Opened on the live target from a meter row (it follows the fight, redrawn
 // every second), or on a saved fight from the History page. Moved by its header; its X closes it.
+import { classIconUrl } from '@/lib/format.ts'
+import { compact, duration } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
 import RotationTimeline from '@/components/RotationTimeline.vue'
@@ -43,21 +45,8 @@ const loading = ref(true)
 const chosen = ref<number | null>(null)
 const tab = ref<Tab>('skills')
 
-const icons = import.meta.glob<string>('@/assets/classes/*.png', { eager: true, import: 'default' })
-const icon = (className: string | null): string | null =>
-  className ? (icons[`/src/assets/classes/${className.toLowerCase()}.png`] ?? null) : null
+const icon = classIconUrl
 
-function short(n: number): string {
-  const abs = Math.abs(n)
-  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`
-  if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`
-  if (abs >= 1e3) return `${(n / 1e3).toFixed(1)}K`
-  return Math.round(n).toLocaleString('en-US')
-}
-const clock = (ms: number): string => {
-  const s = Math.floor(ms / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
 const pct = (n: number, of: number): string => (of > 0 ? `${((n / of) * 100).toFixed(0)}%` : '-')
 
 const live = computed(() => view.value?.source.kind === 'live')
@@ -227,7 +216,7 @@ onBeforeUnmount(() => {
       <div class="min-w-0 flex-1">
         <div class="truncate text-sm font-semibold text-default">{{ view?.title ?? t('Details') }}</div>
         <div v-if="view" class="text-[11px] tabular-nums text-darker">
-          {{ clock(view.battleTime) }} · {{ t('{n} damage', { n: short(view.totalDamage) }) }}<template v-if="view.maxHp">{{ ' ' + t('of {n} HP', { n: short(view.maxHp) }) }}</template
+          {{ duration(view.battleTime) }} · {{ t('{n} damage', { n: compact(view.totalDamage) }) }}<template v-if="view.maxHp">{{ ' ' + t('of {n} HP', { n: compact(view.maxHp) }) }}</template
           ><template v-if="started"> · {{ started }}</template>
         </div>
       </div>
@@ -260,14 +249,14 @@ onBeforeUnmount(() => {
                 <span v-else class="size-4 shrink-0" />
                 <span :class="['min-w-0 flex-1 truncate font-medium', a.you ? 'text-accent' : a.enemy ? 'text-red' : 'text-default']">{{ a.name }}</span>
                 <template v-if="pvp">
-                  <span class="w-14 text-right font-semibold tabular-nums">{{ a.damage ? short(a.damage) : '-' }}</span>
-                  <span class="w-14 text-right tabular-nums text-dark" :title="t('Damage taken')">{{ takenOf(a.id) ? short(takenOf(a.id)) : '-' }}</span>
-                  <span class="w-11 text-right tabular-nums text-dark">{{ a.damage ? short(a.dps) : '-' }}</span>
+                  <span class="w-14 text-right font-semibold tabular-nums">{{ a.damage ? compact(a.damage) : '-' }}</span>
+                  <span class="w-14 text-right tabular-nums text-dark" :title="t('Damage taken')">{{ takenOf(a.id) ? compact(takenOf(a.id)) : '-' }}</span>
+                  <span class="w-11 text-right tabular-nums text-dark">{{ a.damage ? compact(a.dps) : '-' }}</span>
                 </template>
                 <template v-else>
-                  <span class="w-14 text-right font-semibold tabular-nums">{{ short(a.dps) }}</span>
+                  <span class="w-14 text-right font-semibold tabular-nums">{{ compact(a.dps) }}</span>
                   <span class="w-11 text-right tabular-nums text-dark">{{ a.share.toFixed(1) }}%</span>
-                  <span class="w-14 text-right tabular-nums text-dark">{{ short(a.damage) }}</span>
+                  <span class="w-14 text-right tabular-nums text-dark">{{ compact(a.damage) }}</span>
                 </template>
               </div>
             </li>
@@ -285,18 +274,18 @@ onBeforeUnmount(() => {
               <span v-if="actor.you" class="rounded bg-accent/20 px-1.5 text-[10px] font-bold text-accent">ME</span>
             </div>
             <div class="text-xs text-darker">
-              <template v-if="!pvp">#{{ rank }} · </template>{{ actor.className ?? t('Unknown class') }}<template v-if="actor.combatPower"> · {{ short(actor.combatPower) }}</template>
+              <template v-if="!pvp">#{{ rank }} · </template>{{ actor.className ?? t('Unknown class') }}<template v-if="actor.combatPower"> · {{ compact(actor.combatPower) }}</template>
             </div>
           </div>
         </div>
         <div class="mt-3 grid grid-cols-4 gap-2">
           <div class="rounded-lg bg-dark px-2.5 py-2">
             <div class="text-[10px] text-darker">DPS</div>
-            <div class="text-base font-semibold tabular-nums">{{ short(actor.dps) }}</div>
+            <div class="text-base font-semibold tabular-nums">{{ compact(actor.dps) }}</div>
           </div>
           <div class="rounded-lg bg-dark px-2.5 py-2">
             <div class="text-[10px] text-darker">{{ t('Damage') }}</div>
-            <div class="text-base font-semibold tabular-nums">{{ short(actor.damage) }}</div>
+            <div class="text-base font-semibold tabular-nums">{{ compact(actor.damage) }}</div>
           </div>
           <div class="rounded-lg bg-dark px-2.5 py-2">
             <div class="text-[10px] text-darker">{{ t('Contribution') }}</div>
@@ -304,7 +293,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="rounded-lg bg-dark px-2.5 py-2">
             <div class="text-[10px] text-darker">{{ t('Active') }}</div>
-            <div class="text-base font-semibold tabular-nums">{{ active !== null ? clock(active) : '-' }}<span class="text-xs font-normal text-darker"> / {{ clock(view.battleTime) }}</span></div>
+            <div class="text-base font-semibold tabular-nums">{{ active !== null ? duration(active) : '-' }}<span class="text-xs font-normal text-darker"> / {{ duration(view.battleTime) }}</span></div>
           </div>
         </div>
         <nav class="mt-2 flex gap-4 border-b border-card text-sm">
@@ -329,11 +318,11 @@ onBeforeUnmount(() => {
             <div class="relative flex items-center gap-2 px-1.5 py-1 tabular-nums">
               <SkillIcon :code="s.code" :size="20" />
               <span class="min-w-0 flex-1 truncate font-medium text-default">{{ s.name }}<span v-if="s.dot" class="ml-1 text-[10px] text-darker">DoT</span></span>
-              <span class="w-14 text-right font-semibold">{{ short(s.damage) }}</span>
-              <span class="w-12 text-right text-dark">{{ short(s.damage / seconds) }}</span>
+              <span class="w-14 text-right font-semibold">{{ compact(s.damage) }}</span>
+              <span class="w-12 text-right text-dark">{{ compact(s.damage / seconds) }}</span>
               <span class="w-10 text-right text-dark">{{ pct(s.crits, s.hits) }}</span>
               <span class="w-10 text-right text-dark">{{ s.hits }}</span>
-              <span class="w-12 text-right text-dark">{{ s.maxHit ? short(s.maxHit) : '-' }}</span>
+              <span class="w-12 text-right text-dark">{{ s.maxHit ? compact(s.maxHit) : '-' }}</span>
             </div>
           </div>
           <p v-if="!skills.length" class="px-1.5 py-2 text-darker">{{ t('No damage by this player in this fight.') }}</p>
@@ -373,18 +362,18 @@ onBeforeUnmount(() => {
             <div class="mb-3 grid grid-cols-3 gap-2 px-1">
               <div class="rounded-lg bg-dark px-2.5 py-2">
                 <div class="text-[10px] text-darker">{{ t('Damage taken') }}</div>
-                <div class="text-base font-semibold tabular-nums">{{ short(defense?.taken ?? 0) }}</div>
-                <div class="text-[10px] tabular-nums text-darkest">{{ short((defense?.taken ?? 0) / seconds) }} {{ t('per second') }}</div>
+                <div class="text-base font-semibold tabular-nums">{{ compact(defense?.taken ?? 0) }}</div>
+                <div class="text-[10px] tabular-nums text-darkest">{{ compact((defense?.taken ?? 0) / seconds) }} {{ t('per second') }}</div>
               </div>
               <div class="rounded-lg bg-dark px-2.5 py-2">
                 <div class="text-[10px] text-darker">{{ t('Hits taken') }}</div>
                 <div class="text-base font-semibold tabular-nums">{{ defense?.hitsTaken ?? 0 }}</div>
-                <div class="text-[10px] tabular-nums text-darkest">{{ defense?.hitsTaken ? short((defense.taken ?? 0) / defense.hitsTaken) : '-' }} {{ t('a hit') }}</div>
+                <div class="text-[10px] tabular-nums text-darkest">{{ defense?.hitsTaken ? compact((defense.taken ?? 0) / defense.hitsTaken) : '-' }} {{ t('a hit') }}</div>
               </div>
               <div class="rounded-lg bg-dark px-2.5 py-2">
                 <div class="text-[10px] text-darker">{{ t('Healing done') }}</div>
-                <div class="text-base font-semibold tabular-nums">{{ short(defense?.heal ?? actor?.heal ?? 0) }}</div>
-                <div class="text-[10px] tabular-nums text-darkest">{{ short((defense?.heal ?? actor?.heal ?? 0) / seconds) }} {{ t('per second') }}</div>
+                <div class="text-base font-semibold tabular-nums">{{ compact(defense?.heal ?? actor?.heal ?? 0) }}</div>
+                <div class="text-[10px] tabular-nums text-darkest">{{ compact((defense?.heal ?? actor?.heal ?? 0) / seconds) }} {{ t('per second') }}</div>
               </div>
             </div>
             <div class="px-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-darkest">{{ t('Damage taken by player') }}</div>
@@ -393,7 +382,7 @@ onBeforeUnmount(() => {
               <div class="relative flex items-center gap-1.5 px-1.5 py-0.5">
                 <img v-if="icon(r.a.className)" :src="icon(r.a.className)!" class="size-4 shrink-0" alt="" />
                 <span :class="['min-w-0 flex-1 truncate', r.a.id === actor?.id ? 'font-semibold text-accent' : 'text-default']">{{ r.a.name }}</span>
-                <span class="tabular-nums">{{ short(r.taken) }}</span>
+                <span class="tabular-nums">{{ compact(r.taken) }}</span>
               </div>
             </div>
             <p v-if="!takenRanked.length" class="px-1.5 text-darker">{{ t('Nobody took damage from this target.') }}</p>
@@ -408,7 +397,7 @@ onBeforeUnmount(() => {
             <div class="mb-3 flex flex-wrap items-center gap-1 px-1.5">
               <template v-for="(h, i) in sequence.slice(0, 24)" :key="i">
                 <span v-if="i" class="text-[9px] text-darkest">›</span>
-                <span :title="t('{name} at {time}', { name: h.name, time: clock(h.t) })"><SkillIcon :code="h.code" :size="22" /></span>
+                <span :title="t('{name} at {time}', { name: h.name, time: duration(h.t) })"><SkillIcon :code="h.code" :size="22" /></span>
               </template>
             </div>
             <div class="px-1.5 pb-1 text-[10px] font-semibold uppercase tracking-wide text-darkest">{{ t('Over the fight: each cast an icon') }}</div>
@@ -452,8 +441,8 @@ onBeforeUnmount(() => {
             <div class="relative flex items-center gap-2 px-1.5 py-1 tabular-nums">
               <SkillIcon :code="s.code" :size="20" />
               <span class="min-w-0 flex-1 truncate font-medium text-default">{{ s.name }}<span v-if="s.dot" class="ml-1 text-[10px] text-darker">HoT</span></span>
-              <span class="w-14 text-right font-semibold">{{ short(s.damage) }}</span>
-              <span class="w-12 text-right text-dark">{{ short(s.damage / seconds) }}/s</span>
+              <span class="w-14 text-right font-semibold">{{ compact(s.damage) }}</span>
+              <span class="w-12 text-right text-dark">{{ compact(s.damage / seconds) }}/s</span>
               <span class="w-10 text-right text-dark">{{ s.hits }}</span>
             </div>
           </div>

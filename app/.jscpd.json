@@ -1,0 +1,29 @@
+{
+  "path": [
+    "src"
+  ],
+  "format": [
+    "typescript",
+    "markup",
+    "rust"
+  ],
+  "minLines": 6,
+  "minTokens": 60,
+  "ignore": [
+    "**/i18n.fr.ts",
+    "**/items.ts",
+    "**/recipes.ts",
+    "**/gatherables.ts",
+    "**/supplies.ts",
+    "**/loot.ts",
+    "**/zones.ts",
+    "**/quests.ts",
+    "**/*.json",
+    "**/testdata/**"
+  ],
+  "reporters": [
+    "console"
+  ],
+  "absolute": false,
+  "gitignore": false
+}

@@ -3,6 +3,7 @@
 // off, and how early). The bar above: the server region, the chime and its volume, the bubble's
 // shake, and the countdown bar over the game. A click on the bubble during an alert opens this page
 // with that event highlighted.
+import { percent } from '@shared/format.ts'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import Button from '@/components/Button.vue'
 import Slider from '@/components/Slider.vue'
@@ -41,7 +42,6 @@ const rows = computed(() =>
 const on = (def: TimerDef): boolean => (cfg.value.enabled[def.id] ?? false) && (cfg.value.shown[def.id] ?? false)
 
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('timers', { ...cfg.value, ...patch })
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 const bar = computed(() => store.settings.timerBar)
 
 // The timers the bubble was clicked for: scrolled to, and highlighted for a moment.
@@ -89,7 +89,7 @@ onBeforeUnmount(() => flashTimer && clearTimeout(flashTimer))
       </label>
       <label v-if="cfg.sound" class="flex items-center gap-2">
         <span class="text-xs font-medium uppercase tracking-wide text-darker">{{ t('Volume') }}</span>
-        <Slider :model-value="cfg.volume" :min="0.1" :max="1" :step="0.05" :format="pct" @update:model-value="set({ volume: $event })" />
+        <Slider :model-value="cfg.volume" :min="0.1" :max="1" :step="0.05" :format="percent" @update:model-value="set({ volume: $event })" />
       </label>
       <span class="h-6 w-px bg-light" />
       <label class="flex items-center gap-2">
@@ -110,7 +110,7 @@ onBeforeUnmount(() => flashTimer && clearTimeout(flashTimer))
       />
       <label v-if="bar.enabled" class="flex items-center gap-2">
         <span class="text-xs font-medium uppercase tracking-wide text-darker">{{ t('Opacity') }}</span>
-        <Slider :model-value="bar.opacity" :min="0.3" :max="1" :step="0.05" :format="pct" @update:model-value="store.set('timerBar', { ...bar, opacity: $event })" />
+        <Slider :model-value="bar.opacity" :min="0.3" :max="1" :step="0.05" :format="percent" @update:model-value="store.set('timerBar', { ...bar, opacity: $event })" />
       </label>
     </div>
 

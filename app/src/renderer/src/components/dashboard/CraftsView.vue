@@ -3,7 +3,9 @@
 // craft, then by character (how many, how many procced, your proc rate against the game's chances:
 // your luck) and by recipe (the same, with what the proc gives: a better item or the same twice).
 // The filters picked are remembered (this window's storage).
-import { classOf, fromOf, namePicker, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
+import FilterRow from '@/components/FilterRow.vue'
+import StatsFilters from '@/components/StatsFilters.vue'
+import { classOf, fromOf, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -67,7 +69,6 @@ const recipes = computed(() => {
   )
 })
 
-const { toggleName, picked } = namePicker(f, characters)
 const className = (name: string): string | null => classOf(sessions.value, name)
 
 // ---- the numbers ------------------------------------------------------------------------------
@@ -87,35 +88,16 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
   <div>
     <PageHeader v-if="!embedded" title="Crafts" about="Your crafts over the sessions kept: by character and by recipe, how many procced (a better item, or the same one twice), against the game's proc chances (questlog.gg). Your luck: the procs you got against what those chances make of your crafts, ×1 being just that." />
 
-    <!-- The filters. -->
-    <div class="mb-5 space-y-3 rounded-xl border border-card p-4">
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="w-24 text-xs text-darker">{{ t('Characters') }}</span>
-        <button
-          v-for="name in characters"
-          :key="name"
-          type="button"
-          :class="['flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs', picked(name) ? 'border-accent bg-accent/15 text-default' : 'border-light text-darker hover:text-default']"
-          @click="toggleName(name)"
-        >
-          <ClassIcon :class-name="className(name)" :size="14" />{{ name }}
-        </button>
-        <button v-if="f.names.length" type="button" class="text-xs text-darker hover:text-default hover:underline" @click="f.names = []">{{ t('All') }}</button>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="w-24 text-xs text-darker">{{ t('Period') }}</span>
-        <Segmented v-model="f.period" size="sm" :options="PERIODS" />
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="w-24 text-xs text-darker">{{ t('Craft') }}</span>
+    <!-- The filters: the characters and the period (components/StatsFilters.vue), then this view's. -->
+    <StatsFilters v-model:names="f.names" v-model:period="f.period" :characters="characters" :class-of="className">
+      <FilterRow label="Craft">
         <SelectBox :model-value="f.kind ?? ''" size="sm" :options="kindOptions" @update:model-value="(v) => (f.kind = v || null)" />
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="w-24 text-xs text-darker">{{ t('Recipes') }}</span>
+      </FilterRow>
+      <FilterRow label="Recipes">
         <Segmented v-model="f.show" size="sm" :options="SHOWS" />
         <input v-model="query" type="search" :placeholder="t('Search a recipe or an item')" class="h-7 w-56 rounded-md border border-light bg-transparent px-2 text-xs outline-none focus:border-accent" />
-      </div>
-    </div>
+      </FilterRow>
+    </StatsFilters>
 
     <div v-if="!total.crafts" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
       <div class="text-sm font-medium">{{ all.length ? t('No crafts match.') : t('No crafts yet.') }}</div>

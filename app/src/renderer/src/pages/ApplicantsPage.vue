@@ -5,6 +5,8 @@
 // hides it until the next one. Moved by its header; minimized it is the header with the count.
 // While the dashboard is up with nobody applying, it shows a sample to place it by. Nothing to
 // show measures 0, and main keeps the window hidden.
+import { classIconUrl } from '@/lib/format.ts'
+import { compact } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
@@ -27,13 +29,7 @@ const cfg = computed(() => store.settings.applicants)
 const now = ref(Date.now())
 const ticker = setInterval(() => (now.value = Date.now()), 1000)
 
-const icons = import.meta.glob<string>('@/assets/classes/*.png', { eager: true, import: 'default' })
-/** The engine's names for one class, the files' for it. */
-const ALIAS: Record<string, string> = { elementalist: 'spiritmaster', summoner: 'spiritmaster' }
-const icon = (className: string | null): string | null => {
-  const name = className?.toLowerCase()
-  return name ? (Object.entries(icons).find(([k]) => k.endsWith(`/classes/${ALIAS[name] ?? name}.png`))?.[1] ?? null) : null
-}
+const icon = classIconUrl
 /** A class's bar: its colour, fading out to the right (the DPS meter's rows). */
 const bar = (className: string | null): string => {
   const c = CLASS_COLORS[className ?? ''] ?? '#787b8a'
@@ -66,12 +62,8 @@ const left = computed(() => {
 })
 
 /** 102709 → 102.7K, as the meter writes it. */
-function short(n: number | null): string {
-  if (n === null || n <= 0) return '–'
-  if (n >= 1e6) return `${(n / 1e6).toFixed(2)}M`
-  if (n >= 1e4) return `${(n / 1e3).toFixed(1)}K`
-  return Math.round(n).toLocaleString('en-US')
-}
+/** None known: a dash. */
+const short = (n: number | null): string => (n === null || n <= 0 ? '–' : compact(n))
 const ago = (at: number): string => {
   const s = Math.max(0, Math.floor((now.value - at) / 1000))
   return s < 60 ? `${s}s` : `${Math.floor(s / 60)}m`

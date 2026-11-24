@@ -5,6 +5,8 @@
 // Each run is saved with its skills; open one for its skills' DPS, or its Details for the whole
 // breakdown (hits, rotation, buffs...), or tick two to compare them (DPS, damage, crits, hits, and
 // skill by skill). Runs are kept in groups: "New group" starts the next.
+import { dateTime } from '@/lib/format.ts'
+import { compact, duration } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import SkillIcon from '@/components/SkillIcon.vue'
@@ -42,18 +44,6 @@ const now = ref(Date.now())
 const ticker = setInterval(() => (now.value = Date.now()), 250)
 onBeforeUnmount(() => clearInterval(ticker))
 
-function short(n: number): string {
-  const abs = Math.abs(n)
-  if (abs >= 1e9) return `${(n / 1e9).toFixed(2)}B`
-  if (abs >= 1e6) return `${(n / 1e6).toFixed(2)}M`
-  if (abs >= 1e3) return `${(n / 1e3).toFixed(1)}K`
-  return Math.round(n).toLocaleString('en-US')
-}
-const clock = (ms: number): string => {
-  const s = Math.floor(ms / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
-const when = (ms: number): string => new Date(ms).toLocaleString(loc(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 
 const inGroup = computed(() => state.value.runs.filter((r) => r.group === state.value.group).length)
 const placeholder = computed(() => nextRunName(state.value))
@@ -70,7 +60,7 @@ const progress = computed(() => {
   return a.damageGoal ? Math.min(1, a.damage / a.damageGoal) : 0
 })
 const goalText = (r: { goal: DummyGoal; limitMs: number | null; damageGoal: number | null }): string =>
-  r.goal === 'time' ? (r.limitMs ? t('{time} on the clock', { time: clock(r.limitMs) }) : t('Until stopped')) : t('{n} damage', { n: short(r.damageGoal ?? 0) })
+  r.goal === 'time' ? (r.limitMs ? t('{time} on the clock', { time: duration(r.limitMs) }) : t('Until stopped')) : t('{n} damage', { n: compact(r.damageGoal ?? 0) })
 
 const groups = computed(() => {
   const by = new Map<number, DummyRun[]>()
@@ -131,7 +121,7 @@ onBeforeUnmount(() => off?.())
         </div>
         <div v-else>
           <div class="mb-1 text-xs text-darker">{{ t('Damage goal') }}</div>
-          <Segmented :model-value="cfg.damageGoal" :options="DUMMY_DAMAGE_GOALS.map((d) => ({ id: d, label: short(d) }))" @update:model-value="set({ damageGoal: $event })" />
+          <Segmented :model-value="cfg.damageGoal" :options="DUMMY_DAMAGE_GOALS.map((d) => ({ id: d, label: compact(d) }))" @update:model-value="set({ damageGoal: $event })" />
         </div>
         <div class="flex gap-2">
           <Button intent="primary" @click="start">{{ t('Start run') }}</Button>
@@ -166,8 +156,8 @@ onBeforeUnmount(() => off?.())
             <div class="text-xs text-darker">{{ active.startedAt ? t('Running: keep hitting the dummy.') : t('Hit a training dummy: the clock starts with your first hit.') }}</div>
           </div>
           <div class="text-right">
-            <div class="text-2xl font-bold tabular-nums">{{ short(active.dps) }}<span class="ml-1 text-xs font-normal text-darker">DPS</span></div>
-            <div class="text-xs tabular-nums text-darker">{{ clock(elapsed) }} · {{ t('{n} damage', { n: short(active.damage) }) }}</div>
+            <div class="text-2xl font-bold tabular-nums">{{ compact(active.dps) }}<span class="ml-1 text-xs font-normal text-darker">DPS</span></div>
+            <div class="text-xs tabular-nums text-darker">{{ duration(elapsed) }} · {{ t('{n} damage', { n: compact(active.damage) }) }}</div>
           </div>
           <Button intent="primary" :disabled="!active.startedAt" @click="api.invoke('dummy:stop', true)">{{ t('Stop and save') }}</Button>
           <Button @click="api.invoke('dummy:stop', false)">{{ t('Cancel') }}</Button>
@@ -183,10 +173,10 @@ onBeforeUnmount(() => off?.())
       <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-darker">{{ compared.x.name }} → {{ compared.y.name }}</h2>
       <div class="mb-3 grid grid-cols-5 gap-2">
         <div v-for="c in [
-          { label: 'DPS', a: compared.x.dps, b: compared.y.dps, f: short },
-          { label: 'Damage', a: compared.x.damage, b: compared.y.damage, f: short },
+          { label: 'DPS', a: compared.x.dps, b: compared.y.dps, f: compact },
+          { label: 'Damage', a: compared.x.damage, b: compared.y.damage, f: compact },
           { label: 'Crit rate', a: compared.x.critRate * 100, b: compared.y.critRate * 100, f: (n: number) => `${n.toFixed(1)}%` },
-          { label: 'Time', a: compared.x.durationMs, b: compared.y.durationMs, f: clock },
+          { label: 'Time', a: compared.x.durationMs, b: compared.y.durationMs, f: (n: number) => duration(n) },
           { label: 'Hits', a: compared.x.skills.reduce((n, s) => n + s.hits, 0), b: compared.y.skills.reduce((n, s) => n + s.hits, 0), f: (n: number) => String(n) },
         ]" :key="c.label" class="rounded-xl border border-card bg-card px-3 py-2.5">
           <div class="text-xs text-darker">{{ t(c.label) }}</div>
@@ -207,8 +197,8 @@ onBeforeUnmount(() => off?.())
           <tbody class="divide-y divide-[color:var(--line)]">
             <tr v-for="s in compared.skills" :key="s.key">
               <td class="py-1.5 pl-4"><span class="flex items-center gap-2"><SkillIcon :code="s.code" :size="20" />{{ s.name }}<span v-if="s.dot" class="text-xs text-darker">DoT</span></span></td>
-              <td class="px-3 text-right tabular-nums text-darker">{{ s.a ? short(s.a) : '-' }}</td>
-              <td class="px-3 text-right tabular-nums">{{ s.b ? short(s.b) : '-' }}</td>
+              <td class="px-3 text-right tabular-nums text-darker">{{ s.a ? compact(s.a) : '-' }}</td>
+              <td class="px-3 text-right tabular-nums">{{ s.b ? compact(s.b) : '-' }}</td>
               <td :class="['pr-4 text-right tabular-nums', s.b >= s.a ? 'text-green' : 'text-danger']">{{ s.a && s.b ? change(s.a, s.b) : s.b ? t('new') : t('gone') }}</td>
             </tr>
           </tbody>
@@ -236,11 +226,11 @@ onBeforeUnmount(() => off?.())
                 <div class="font-medium">{{ r.name }}<span v-if="!r.finished" class="ml-1.5 rounded border border-light px-1 text-[10px] font-normal text-darker">{{ t('stopped') }}</span></div>
                 <div class="text-xs text-darker">{{ goalText(r) }}</div>
               </td>
-              <td class="w-24 px-3 text-right font-semibold tabular-nums">{{ short(r.dps) }}<span class="ml-0.5 text-[10px] font-normal text-darker">DPS</span></td>
-              <td class="w-24 px-3 text-right tabular-nums text-darker">{{ short(r.damage) }}</td>
-              <td class="w-16 px-3 text-right tabular-nums text-darker">{{ clock(r.durationMs) }}</td>
+              <td class="w-24 px-3 text-right font-semibold tabular-nums">{{ compact(r.dps) }}<span class="ml-0.5 text-[10px] font-normal text-darker">DPS</span></td>
+              <td class="w-24 px-3 text-right tabular-nums text-darker">{{ compact(r.damage) }}</td>
+              <td class="w-16 px-3 text-right tabular-nums text-darker">{{ duration(r.durationMs) }}</td>
               <td class="w-16 px-3 text-right tabular-nums text-darker">{{ (r.critRate * 100).toFixed(0) }}%</td>
-              <td class="w-32 px-3 text-xs text-darker">{{ when(r.at) }}</td>
+              <td class="w-32 px-3 text-xs text-darker">{{ dateTime(r.at) }}</td>
               <td class="w-40 px-1 text-right">
                 <button
                   type="button"
@@ -280,8 +270,8 @@ onBeforeUnmount(() => off?.())
                   <tbody>
                     <tr v-for="s in skillRows(r)" :key="s.key">
                       <td class="py-1"><span class="flex items-center gap-2"><SkillIcon :code="s.code" :size="18" />{{ s.name }}<span v-if="s.dot" class="text-darker">DoT</span></span></td>
-                      <td class="text-right font-semibold tabular-nums">{{ short(s.dps) }}</td>
-                      <td class="text-right tabular-nums text-darker">{{ short(s.damage) }}</td>
+                      <td class="text-right font-semibold tabular-nums">{{ compact(s.dps) }}</td>
+                      <td class="text-right tabular-nums text-darker">{{ compact(s.damage) }}</td>
                       <td class="pl-3">
                         <span class="flex items-center gap-2">
                           <span class="h-1.5 w-20 overflow-hidden rounded-full bg-dark"><span class="block h-full bg-accent" :style="{ width: `${s.share}%` }" /></span>
@@ -290,7 +280,7 @@ onBeforeUnmount(() => off?.())
                       </td>
                       <td class="text-right tabular-nums text-darker">{{ s.hits }}</td>
                       <td class="text-right tabular-nums text-darker">{{ s.critRate.toFixed(0) }}%</td>
-                      <td class="text-right tabular-nums text-darker">{{ short(s.avg) }}</td>
+                      <td class="text-right tabular-nums text-darker">{{ compact(s.avg) }}</td>
                     </tr>
                   </tbody>
                 </table>

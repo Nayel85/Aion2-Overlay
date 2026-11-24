@@ -2,6 +2,7 @@
 // Join requests: the widget over the game that lists everyone who asks to join your party
 // (pages/ApplicantsPage.vue), and its settings. The game shows only the first request until it is
 // answered; this shows all of them, with class, combat power and gear score.
+import { percent } from '@shared/format.ts'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
 import Slider from '@/components/Slider.vue'
@@ -15,7 +16,6 @@ import { useApp } from '@/stores/app.ts'
 const store = useApp()
 const cfg = computed(() => store.settings.applicants)
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('applicants', { ...cfg.value, ...patch })
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 /** How long it stays after the last request. */
 const HIDE = [15, 30, 45, 60, 90, 120, 180, 300]
 const label = (s: number): string => (s < 60 ? t('{n} seconds', { n: s }) : s === 60 ? t('1 minute') : t('{n} minutes', { n: s / 60 }))
@@ -38,7 +38,7 @@ const choices = computed(() => [...new Set([...HIDE, cfg.value.hideAfter])].sort
           <SelectBox size="sm" :model-value="cfg.hideAfter" :options="choices" @update:model-value="set({ hideAfter: $event })" />
         </SettingRow>
         <SettingRow label="Opacity">
-          <Slider :model-value="cfg.opacity" :min="0" :max="1" :step="0.05" :format="pct" @update:model-value="set({ opacity: $event })" />
+          <Slider :model-value="cfg.opacity" :min="0" :max="1" :step="0.05" :format="percent" @update:model-value="set({ opacity: $event })" />
         </SettingRow>
       </template>
     </Section>

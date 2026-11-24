@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // The flight timer: the ring over the game with your seconds of flight left (pages/FlightPage.vue),
 // and its settings.
+import { percent } from '@shared/format.ts'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
 import Slider from '@/components/Slider.vue'
@@ -13,7 +14,6 @@ import { useApp } from '@/stores/app.ts'
 const store = useApp()
 const cfg = computed(() => store.settings.flight)
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('flight', { ...cfg.value, ...patch })
-const pct = (v: number): string => `${Math.round(v * 100)}%`
 </script>
 
 <template>
@@ -25,7 +25,7 @@ const pct = (v: number): string => `${Math.round(v * 100)}%`
         <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />
       </SettingRow>
       <SettingRow v-if="cfg.enabled" label="Opacity">
-        <Slider :model-value="cfg.opacity" :min="0.2" :max="1" :step="0.05" :format="pct" @update:model-value="set({ opacity: $event })" />
+        <Slider :model-value="cfg.opacity" :min="0.2" :max="1" :step="0.05" :format="percent" @update:model-value="set({ opacity: $event })" />
       </SettingRow>
     </Section>
 
