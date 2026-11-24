@@ -438,7 +438,8 @@ function handleLine(line: string): void {
       bossKilled(ev['npc'] as number)
       break
     case 'kina':
-      setKina(kinaBalance(kina, ev['balance'] as number, Date.now()))
+      // What a dungeon gives counts in the rate only if the setting says (settings.rates).
+      setKina(kinaBalance(kina, ev['balance'] as number, Date.now(), settings.get('rates').kinaDungeons || !pveInstance(nearby.world)))
       break
     case 'abyss':
       abyss.read({

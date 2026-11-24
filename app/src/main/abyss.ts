@@ -11,6 +11,8 @@ import { join } from 'node:path'
 import { broadcast } from './broadcast.ts'
 import { currentSeason, NO_ABYSS, riftFarms, type AbyssGain, type AbyssSession, type RiftFarm } from '../shared/abyss.ts'
 import { earn, unearn } from '../shared/earnings.ts'
+import { pveInstance } from '../shared/sessions.ts'
+import { settings } from './settings.ts'
 
 const KEEP_MS = 90 * 24 * 3_600_000
 const SAVE_AFTER_MS = 3000
@@ -68,7 +70,8 @@ export const abyss = {
     list.push([now, ev.gained, ev.name, ev.world])
     const old = list.findIndex(([at]) => at > now - KEEP_MS)
     if (old > 0) list.splice(0, old)
-    setSession(earn(session, ev.gained, now))
+    // What a dungeon gives counts in the rate only if the setting says (settings.rates).
+    if (settings.get('rates').abyssDungeons || !pveInstance(ev.world)) setSession(earn(session, ev.gained, now))
     farms = riftFarms(list)
     broadcast('tracker:rifts', farms)
     save()

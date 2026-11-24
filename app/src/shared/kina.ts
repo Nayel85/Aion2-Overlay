@@ -15,9 +15,10 @@ export interface KinaSession extends Earnings {
 
 export const NO_KINA: KinaSession = { ...NO_EARNINGS, balance: null }
 
-/** A new balance from the tracker, at `now`. */
-export function kinaBalance(s: KinaSession, balance: number, now: number): KinaSession {
+/** A new balance from the tracker, at `now`; `counted` false: a rise not to count (a dungeon's, unless the setting says). */
+export function kinaBalance(s: KinaSession, balance: number, now: number, counted = true): KinaSession {
   if (s.balance === null) return { ...s, balance, lastAt: s.earned ? s.lastAt : now }
+  if (!counted) return { ...s, balance }
   return { ...earn(s, balance - s.balance, now), balance }
 }
 

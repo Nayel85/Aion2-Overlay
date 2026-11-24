@@ -128,6 +128,12 @@ const BUTTON_ICONS = [
         <SettingRow label="Abyss Points per hour" hint="Your farming's Abyss Points per hour, at your pace of the last 15 seconds, always shown while on: rewards are left out.">
           <Toggle :model-value="cfg.abyssRate" @update:model-value="set({ abyssRate: $event })" />
         </SettingRow>
+        <SettingRow label="Dungeons in Kina per hour" hint="Count what dungeons give (their monsters, their cube) in the Kina per hour, here and on the Session page.">
+          <Toggle :model-value="store.settings.rates.kinaDungeons" @update:model-value="store.set('rates', { ...store.settings.rates, kinaDungeons: $event })" />
+        </SettingRow>
+        <SettingRow label="Dungeons in Abyss Points per hour" hint="The same for the Abyss Points per hour.">
+          <Toggle :model-value="store.settings.rates.abyssDungeons" @update:model-value="store.set('rates', { ...store.settings.rates, abyssDungeons: $event })" />
+        </SettingRow>
         <SettingRow label="Rift farm" hint="During a Spacetime Rift, show that rift's total Abyss Points instead of the hourly rate.">
           <Toggle :model-value="cfg.rift" @update:model-value="set({ rift: $event })" />
         </SettingRow>
