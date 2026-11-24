@@ -8,9 +8,6 @@ import ApplicantsView from '@/components/dashboard/ApplicantsView.vue'
 import PartyView from '@/components/dashboard/PartyView.vue'
 import FlightView from '@/components/dashboard/FlightView.vue'
 import GatherView from '@/components/dashboard/GatherView.vue'
-import GuildView from '@/components/dashboard/GuildView.vue'
-import BossRunsView from '@/components/dashboard/BossRunsView.vue'
-import GuildEventsView from '@/components/dashboard/GuildEventsView.vue'
 import ChangelogView from '@/components/dashboard/ChangelogView.vue'
 import CharactersView from '@/components/dashboard/CharactersView.vue'
 import UnifiedView from '@/components/dashboard/UnifiedView.vue'
@@ -43,11 +40,10 @@ import { useApp } from '@/stores/app.ts'
 import { DISPLAY_NAME } from '@shared/app.ts'
 import { CHANGELOG } from '@shared/changelog.ts'
 import { serverName } from '@shared/servers.ts'
-import { needsAnswer } from '@shared/guildEvents.ts'
 import { TIMERS, type TimerId } from '@shared/timers.ts'
 import type { UpdateState } from '@shared/update.ts'
 
-type PageId = 'home' | 'characters' | 'roster' | 'guild' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'bossRuns' | 'applicants' | 'party' | 'flight' | 'gather' | 'history' | 'session' | 'sessions' | 'stats' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
+type PageId = 'home' | 'characters' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'applicants' | 'party' | 'flight' | 'gather' | 'history' | 'session' | 'sessions' | 'stats' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
 interface Page {
   id: PageId
   label: string
@@ -60,8 +56,6 @@ interface Page {
 const PAGES: Record<PageId, Page> = {
   home: { id: 'home', label: 'Home', icon: 'M2.5 7 8 2.5 13.5 7v6.5h-3.5v-4H6v4H2.5z' },
   characters: { id: 'characters', label: 'Characters', icon: 'M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M11 7a2 2 0 1 0 0-4M12.5 9.7c1.2.6 2 1.9 2 3.3' },
-  roster: { id: 'roster', label: 'Guild', icon: 'M8 1.5 2.5 3.5v4c0 3.2 2.3 5.6 5.5 7 3.2-1.4 5.5-3.8 5.5-7v-4zM5.5 8h5M8 5.5v5' },
-  guild: { id: 'guild', label: 'Guild Events', icon: 'M2 3.5h12v10.5H2zM2 6.5h12M5.5 1.5v3M10.5 1.5v3M5.5 10l1.8 1.8 3.2-3.3' },
   unified: { id: 'unified', label: 'Unified HUD', icon: 'M2 5.5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zM5 6h.01M8 6h3M4.5 11h7M6 13.5h4' },
   meter: { id: 'meter', label: 'Combat Meter', icon: 'M2.5 13.5h11M4.5 11V8M8 11V4.5M11.5 11V6.5' },
   training: { id: 'training', label: 'Training Dummy', icon: 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8 8h.01' },
@@ -73,7 +67,6 @@ const PAGES: Record<PageId, Page> = {
   buffs: { id: 'buffs', label: 'Buffs', icon: 'M8 1.5 9.8 6l4.7.4-3.6 3 1.1 4.6L8 11.6 4 14l1.1-4.6-3.6-3L6.2 6z' },
   events: { id: 'events', label: 'Event Alerts', icon: 'M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11zM6.5 14h3' },
   bosses: { id: 'bosses', label: 'Field Bosses', icon: 'M8 2a5 5 0 0 0-3.5 8.5V13h7v-2.5A5 5 0 0 0 8 2zM6 8.5h.01M10 8.5h.01M7 13v-1.5M9 13v-1.5' },
-  bossRuns: { id: 'bossRuns', label: 'Boss Runs', icon: 'M2.5 4h2M2.5 8h2M2.5 12h2M6.5 4h7M6.5 8h7M6.5 12h4' },
   gather: { id: 'gather', label: 'Gathering outcome', icon: 'M3 13c0-6 4-10 10-10 0 6-4 10-10 10ZM3 13l5-5' },
   flight: { id: 'flight', label: 'Flight timer', icon: 'M7.5 12C5.5 12 2.5 10.5 1 4.5c1.5 1 3 1.5 4.5 1.5C6.5 7 7 8 7.5 9.5ZM8.5 12c2 0 5-1.5 6.5-7.5-1.5 1-3 1.5-4.5 1.5C9.5 7 9 8 8.5 9.5Z' },
   party: { id: 'party', label: 'Party frames', icon: 'M2.5 3.5h11v3h-11zM2.5 9.5h11v3h-11zM4 5h5M4 11h3' },
@@ -89,8 +82,8 @@ const PAGES: Record<PageId, Page> = {
   settings: { id: 'settings', label: 'Settings', icon: 'M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM13 8a5 5 0 0 0-.1-.9l1.4-1.1-1.4-2.4-1.7.6a5 5 0 0 0-1.5-.9L9.4 1.5H6.6l-.3 1.8a5 5 0 0 0-1.5.9l-1.7-.6-1.4 2.4 1.4 1.1a5 5 0 0 0 0 1.8l-1.4 1.1 1.4 2.4 1.7-.6a5 5 0 0 0 1.5.9l.3 1.8h2.8l.3-1.8a5 5 0 0 0 1.5-.9l1.7.6 1.4-2.4-1.4-1.1c.1-.3.1-.6.1-.9Z' },
 }
 const SECTIONS: { title: string | null; pages: PageId[] }[] = [
-  { title: null, pages: ['home', 'characters', 'roster', 'guild'] },
-  { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'bossRuns', 'party', 'flight', 'gather', 'applicants'] },
+  { title: null, pages: ['home', 'characters'] },
+  { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'party', 'flight', 'gather', 'applicants'] },
   { title: 'Records', pages: ['history', 'session', 'sessions', 'stats', 'inventory', 'cache'] },
   { title: 'App', pages: ['updates', 'changes'] },
 ]
@@ -155,14 +148,11 @@ const nextAlert = computed(() => {
   const min = Math.max(0, Math.round((soonest - now.value) / 60_000))
   return min < 60 ? `${min}m` : min < 24 * 60 ? `${Math.floor(min / 60)}h` : `${Math.floor(min / 1440)}d`
 })
-/** Guild events still to answer. */
-const toAnswer = computed(() => store.guildEvents.events.filter((e) => needsAnswer(e, now.value)).length)
 const badge = computed<Partial<Record<PageId, string>>>(() => {
   const up = Object.values(store.fieldBosses).filter((b) => b.up).length
   return {
     events: nextAlert.value ?? undefined,
     bosses: up ? String(up) : undefined,
-    guild: toAnswer.value ? String(toAnswer.value) : undefined,
     unified: isNew('unified') ? t('New') : undefined,
     pets: store.sessionSouls ? `+${store.sessionSouls}` : undefined,
     updates:
@@ -344,13 +334,10 @@ onBeforeUnmount(() => {
           <BuffsView v-else-if="page === 'buffs'" />
           <EventsView v-else-if="page === 'events'" />
           <BossesView v-else-if="page === 'bosses'" />
-          <BossRunsView v-else-if="page === 'bossRuns'" />
           <ApplicantsView v-else-if="page === 'applicants'" />
           <PartyView v-else-if="page === 'party'" />
           <FlightView v-else-if="page === 'flight'" />
           <GatherView v-else-if="page === 'gather'" />
-          <GuildView v-else-if="page === 'roster'" />
-          <GuildEventsView v-else-if="page === 'guild'" />
           <HistoryView v-else-if="page === 'history'" />
           <StatsView v-else-if="page === 'stats'" />
           <SessionsView v-else-if="page === 'sessions'" />

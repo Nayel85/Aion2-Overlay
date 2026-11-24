@@ -85,12 +85,10 @@ const overlays = computed<Overlay[]>(() => {
     { id: 'cc', name: t('CC / Debuffs'), about: t('When you are stunned, rooted, feared…'), page: 'buffs', on: s.buffs.cc, set: flip('buffs', 'cc') },
     { id: 'training', name: t('Training'), about: t('Training dummy runs: clock and DPS'), page: 'training', on: s.dummy.overlay, set: flip('dummy', 'overlay') },
     { id: 'minimap', name: t('Map'), about: t('Your zone, tracked pets, cubes'), page: 'map', on: s.minimap.enabled, set: flip('minimap', 'enabled') },
-    { id: 'bossRuns', name: t('Boss Runs'), about: t('Field bosses about to spawn, with their TP'), page: 'bossRuns', on: s.bossRuns.enabled, set: flip('bossRuns', 'enabled') },
     { id: 'gather', name: t('Gathering outcome'), about: t('Fail, rank up or x2, as it starts'), page: 'gather', on: s.gather.enabled, set: flip('gather', 'enabled') },
     { id: 'flight', name: t('Flight timer'), about: t('Seconds of flight left'), page: 'flight', on: s.flight.enabled, set: flip('flight', 'enabled') },
     { id: 'party', name: t('Party frames'), about: t('Your party members and their HP'), page: 'party', on: s.party.enabled, set: flip('party', 'enabled') },
     { id: 'applicants', name: t('Join requests'), about: t('Everyone who asks to join your party'), page: 'applicants', on: s.applicants.enabled, set: flip('applicants', 'enabled') },
-    { id: 'eventToast', name: t('Guild event popup'), about: t('Answer the guild\'s events over the game'), page: 'guild', on: s.guildEvents.enabled && s.guildEvents.popup, set: (on) => void store.set('guildEvents', { enabled: on || s.guildEvents.enabled, popup: on }) },
     { id: 'timerBar', name: t('Countdown bar'), about: t('Events with an alert on'), page: 'events', on: s.timerBar.enabled, set: flip('timerBar', 'enabled') },
     {
       id: 'killFeed',

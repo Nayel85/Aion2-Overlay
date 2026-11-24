@@ -152,9 +152,6 @@ const BUTTON_ICONS = [
             <Toggle :model-value="cfg.death" @update:model-value="set({ death: $event })" />
           </div>
         </SettingRow>
-        <SettingRow label="Guild events" hint="A line under the bar 5 minutes before an event starts, and again when it does.">
-          <Toggle :model-value="cfg.guild" @update:model-value="set({ guild: $event })" />
-        </SettingRow>
       </Section>
 
       <Section title="Look">

@@ -14,7 +14,6 @@ import { startCharacters } from './characters.ts'
 import { startSessions } from './sessions.ts'
 import { startInventory } from './inventory.ts'
 import { registerIconScheme, startIcons } from './icons.ts'
-import { startGuild } from './guild.ts'
 import { applyGameMap, onGameMapStatus, startGameMap } from './gameMap.ts'
 import { startFieldBosses } from './fieldBosses.ts'
 import { startHealthWatch } from './health.ts'
@@ -22,7 +21,6 @@ import { registerIpc } from './ipc.ts'
 import { applyLayoutUpdates, settings } from './settings.ts'
 import { startIdleWatch } from './idle.ts'
 import { startLokthar } from './lokthar.ts'
-import { startGuildEvents } from './guildEvents.ts'
 import { join } from 'node:path'
 import { copyDataFolder, moveDataFolder, OLD_NAMES } from './migrate.ts'
 import { startHotkeys, stopHotkeys } from './hotkeys.ts'
@@ -74,10 +72,8 @@ if (!app.requestSingleInstanceLock()) {
     startParty()
     startFlight()
     startGather()
-    startGuild()
     startGameMap()
     startLokthar()
-    startGuildEvents()
     startOnTopWatch()
     registerIpc()
     startNpcapWatch()

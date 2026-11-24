@@ -4,7 +4,6 @@
  */
 
 import { APPLICANTS_HIDE } from './applicants.ts'
-import { BOSS_RUNS, DEFAULT_LOW_PRIORITY } from './bossRuns.ts'
 import type { Lang } from './i18n.ts'
 import { DUMMY_DAMAGE_GOALS, DUMMY_LIMITS, type DummyGoal } from './dummy.ts'
 import { isSound, type SoundId } from './sounds.ts'
@@ -38,8 +37,6 @@ export const MINIMAP_HEIGHT = [120, 900] as const
 /** The kill feed's size, dragged from its corner (never narrower than its title bar). */
 export const KILLFEED_WIDTH = [240, 900] as const
 export const KILLFEED_HEIGHT = [60, 900] as const
-/** Boss Runs' size, as a scale of its 260 px: its corner drags it bigger, text and all. */
-export const BOSSRUNS_SCALE = [0.75, 2.5] as const
 
 /** Party frames: the HP as text on a bar. */
 export const PARTY_HP_TEXT = ['none', 'percent', 'value'] as const
@@ -138,13 +135,6 @@ export interface Settings {
   /** `layout`: a bar of icons and countdowns, or a list, a timer a line with its name. */
   timerBar: { enabled: boolean; position: Point | null; opacity: number; layout: 'bar' | 'list' }
 
-  /**
-   * Boss Runs (shared/bossRuns.ts): Verteron's field bosses about to spawn, with their Kibelisk,
-   * up by itself when more than 2 spawn close together. How far ahead it looks (minutes), how
-   * many it lists, minimized to its header, its size (a scale of its 260 px), how many alive at
-   * once bring it up too (0: never), the bosses of low priority (list ids), and whether those are
-   * left out of that count.
-   */
   /** Join requests to your party: a widget that comes up when someone applies. */
   applicants: { enabled: boolean; position: Point | null; opacity: number; collapsed: boolean; /** Seconds it stays after the last application. */ hideAfter: number }
   /**
@@ -201,15 +191,14 @@ export interface Settings {
   }
   /** The flight timer: seconds of flight left, while flying or refilling. */
   flight: { enabled: boolean; position: Point | null; opacity: number }
-  bossRuns: { enabled: boolean; position: Point | null; opacity: number; windowMinutes: number; rows: number; collapsed: boolean; scale: number; aliveMin: number; ignoreLow: boolean; lowPriority: number[] }
 
   /**
    * The Unified HUD (pages/UnifiedPage.vue): one small bar at the top of the game that unfolds on
    * hover and shows things as they matter. `position` is its top centre (it grows both ways from
    * there; null = the top centre of the primary display). `buttons`: the overlays' buttons always,
    * or only while hovered. The minutes and seconds are how long each thing stays after its last
-   * news. `runsPinned`: Boss Runs kept open under the bar. `replace`: Enemies nearby and the Boss
-   * Runs list stay closed while it is on (the timer bar is not: the HUD shows only two events).
+   * news. `replace`: Enemies nearby stays closed while it is on (the timer bar does
+   * not: the HUD shows only two events).
    */
   unified: {
     enabled: boolean
@@ -238,10 +227,8 @@ export interface Settings {
     deathMinutes: number
     enemies: boolean
     bosses: boolean
-    guild: boolean
     clock: boolean
     odyle: boolean
-    runsPinned: boolean
     replace: boolean
   }
 
@@ -348,7 +335,7 @@ export interface Settings {
   /** Which one-time layout updates were applied to these settings (main/settings.ts `applyLayoutUpdates`). */
   layoutVersion: number
 
-  /** The app's language (shared/i18n.ts): French unless changed. */
+  /** The app's language (shared/i18n.ts): English unless changed. */
   language: Lang
 
   /** Your side: its zones are listed first where a soul drops. */
@@ -388,8 +375,8 @@ export interface Settings {
 
   /**
    * Sync the field bosses to the Lokthar site's timers (main/lokthar.ts): off until turned on with
-   * a token. Besides the update check (Settings → Updates, by hand), NCSoft's character pages and
-   * the guild events below, the only requests the app makes: to `url` alone.
+   * a token. Besides the update check (Settings → Updates, by hand), and NCSoft's character pages,
+   * the only requests the app makes: to `url` alone.
    */
   lokthar: {
     sync: boolean
@@ -398,15 +385,6 @@ export interface Settings {
     /** From the site: bin/rails 'overlay:token[you]'. */
     token: string
   }
-
-  /**
-   * Guild events from the Lokthar site (main/guildEvents.ts, at lokthar.url): the events that ask
-   * who comes, answered here; on, it sends the site your characters' names and servers to know you
-   * by (and main/guild.ts their class, level, gear score, combat power and Odyle energy). Off by
-   * default in Nayel Overlay: nothing goes to the site unless you turn it on. `popup`: an event to
-   * answer pops up over the game, bottom right.
-   */
-  guildEvents: { enabled: boolean; popup: boolean }
 
   tracker: {
     /** The collection file; empty = <userData>/collection.json. */
@@ -437,7 +415,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   merchantWindow: { x: 342, y: 859 },
   detailsWindow: { x: 449, y: 251 },
   timerBar: { enabled: true, position: { x: 859, y: 141 }, opacity: 0.92, layout: 'list' },
-  unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, buttons: 'hover', events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, earningsMinutes: 10, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, guild: false, clock: true, odyle: true, runsPinned: false, replace: false },
+  unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, buttons: 'hover', events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, earningsMinutes: 10, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, clock: true, odyle: true, replace: false },
   muted: false,
   applicants: { enabled: true, position: null, opacity: 0.85, collapsed: false, hideAfter: 60 },
   party: {
@@ -449,7 +427,6 @@ export const SETTINGS_DEFAULTS: Settings = {
     enabled: true, style: 'ring', position: null, opacity: 1, scale: 1, icon: true, fail: true, rare: true, plain: false, crafts: true,
     soundFail: false, soundRare: false, soundId: 'bell', volume: 0.6,
   },
-  bossRuns: { enabled: false, position: { x: 1890, y: 30 }, opacity: 0.85, windowMinutes: 15, rows: 4, collapsed: false, scale: 1, aliveMin: 0, ignoreLow: true, lowPriority: [101001, 101002, 101006, 101007, 101019, 101017, 101005, 101004, 101003, 101015, 101010, 101008, 101009, 101016, 101012, 101014, 101020, 101013, 101011, 101018] },
   killFeed: { open: false, position: null, opacity: 0.9, collapsed: false, target: true, width: null, height: null },
   enemies: { enabled: false, position: null, opacity: 0.75, collapsed: false, mapPins: true, gearScore: true, combatPower: true, sound: true, pvpOnly: true, soundId: 'enemy-spotted', volume: 0.7, customName: null },
   skills: { enabled: false, position: { x: 500, y: 413 }, rows: 6, opacity: 0.92 },
@@ -458,7 +435,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   meter: { enabled: true, position: { x: 410, y: 206 }, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 340, height: null, hideIdle: false, idleSeconds: 15, power: 'beside', gear: 'beside', deaths: true, style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
   layoutVersion: 1,
-  language: 'fr',
+  language: 'en',
   faction: 'elyos',
   playerLevel: 45,
   hideMaxed: true,
@@ -474,7 +451,6 @@ export const SETTINGS_DEFAULTS: Settings = {
   sleepWithoutGame: true,
   hideWhenGameAway: true,
   lokthar: { sync: false, url: 'https://lokthar.com', token: '' },
-  guildEvents: { enabled: false, popup: false },
   tracker: { dataFile: '', bossDiagnostics: false },
 }
 
@@ -620,7 +596,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         ...fields(v, d.unified, {
           enabled: BOOL, position: POINT, opacity: range(0, 1), scale: range(0.75, 1.75), events: BOOL, countdownMinutes: whole(1, 60), ping: BOOL,
           target: BOOL, targetSeconds: whole(3, 60), kina: BOOL, abyssRate: BOOL, season: BOOL, earningsMinutes: whole(1, 60), rift: BOOL,
-          cubes: BOOL, death: BOOL, deathMinutes: whole(1, 60), enemies: BOOL, bosses: BOOL, guild: BOOL, clock: BOOL, odyle: BOOL, runsPinned: BOOL,
+          cubes: BOOL, death: BOOL, deathMinutes: whole(1, 60), enemies: BOOL, bosses: BOOL, clock: BOOL, odyle: BOOL,
           replace: BOOL,
         }),
         buttons: v.buttons === 'always' ? 'always' : 'hover',
@@ -664,17 +640,6 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         collapsed: bool(v.collapsed, false),
         hpText: (PARTY_HP_TEXT as readonly unknown[]).includes(v.hpText) ? v.hpText! : d.party.hpText,
         afflictedBy: (PARTY_AFFLICTED_BY as readonly unknown[]).includes(v.afflictedBy) ? v.afflictedBy! : d.party.afflictedBy,
-      } as Settings[K]
-    }
-    case 'bossRuns': {
-      const v = (value ?? {}) as Partial<Settings['bossRuns']>
-      return {
-        ...fields(v, d.bossRuns, {
-          enabled: BOOL, position: POINT, opacity: range(0, 1), windowMinutes: whole(5, 60), rows: whole(1, 10),
-          scale: range(BOSSRUNS_SCALE[0], BOSSRUNS_SCALE[1]), aliveMin: whole(0, 10), ignoreLow: BOOL,
-        }),
-        collapsed: bool(v.collapsed, false),
-        lowPriority: Array.isArray(v.lowPriority) ? [...new Set(v.lowPriority.filter((id) => BOSS_RUNS.some((r) => r.boss === id)))] : [...d.bossRuns.lowPriority],
       } as Settings[K]
     }
     case 'enemies': {
@@ -754,10 +719,6 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       return Math.round(num(value, 0, 99, 0)) as Settings[K]
     case 'playerLevel':
       return (typeof value === 'number' && Number.isFinite(value) ? Math.round(num(value, 1, 99, 1)) : null) as Settings[K]
-    case 'guildEvents': {
-      const v = (value ?? {}) as Partial<Settings['guildEvents']>
-      return { enabled: bool(v.enabled, d.guildEvents.enabled), popup: bool(v.popup, d.guildEvents.popup) } as Settings[K]
-    }
     case 'lokthar': {
       const v = (value ?? {}) as Partial<Settings['lokthar']>
       return {

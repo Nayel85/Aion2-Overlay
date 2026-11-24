@@ -78,11 +78,6 @@ const servers = computed(() => {
 })
 /** The account's memberships: one for every character. */
 const memberships = computed(() => membershipsNow(Object.values(store.characters), now.value))
-/** Your main, as you registered it on the Lokthar site (the roster's): starred. */
-const isMain = (c: TrackedCharacter): boolean => {
-  const m = store.guild.main
-  return !!m && c.server === m.server && c.name.toLowerCase() === m.name.toLowerCase()
-}
 const tracked = computed(() => Object.values(store.characters).filter((c) => c.counters).length)
 const total = computed(() => Object.keys(store.characters).length)
 
@@ -214,7 +209,6 @@ function corridorTitle(list: CorridorState[]): string {
             <div class="absolute inset-x-0 bottom-0 px-3 pb-2.5">
               <div class="flex items-center gap-1.5">
                 <ClassIcon :class-name="r.c.className" :size="18" />
-                <svg v-if="isMain(r.c)" viewBox="0 0 16 16" class="size-3.5 shrink-0 text-[#ffc53d]" fill="currentColor" :title="t('Main')"><path d="M8 1.5 9.8 6l4.7.4-3.6 3 1.1 4.6L8 11.6 4 14l1.1-4.6-3.6-3L6.2 6z" /></svg>
                 <span class="truncate text-[15px] font-semibold leading-tight">{{ r.c.name }}</span>
               </div>
               <div class="truncate text-[11px] text-darker">{{ r.c.className ?? '' }}<template v-if="r.c.legion"> · {{ r.c.legion }}</template></div>
@@ -289,7 +283,6 @@ function corridorTitle(list: CorridorState[]): string {
                 <div class="flex items-center gap-2.5">
                   <img v-if="r.c.portrait" :src="r.c.portrait" alt="" draggable="false" :class="['size-8 shrink-0 rounded-full border border-card object-cover object-top', !r.c.counters && 'opacity-50 grayscale']" />
                   <span v-else class="flex size-8 shrink-0 items-center justify-center rounded-full border border-card bg-dark"><ClassIcon :class-name="r.c.className" :size="16" /></span>
-                  <svg v-if="isMain(r.c)" viewBox="0 0 16 16" class="size-3 shrink-0 text-[#ffc53d]" fill="currentColor" :title="t('Main')"><path d="M8 1.5 9.8 6l4.7.4-3.6 3 1.1 4.6L8 11.6 4 14l1.1-4.6-3.6-3L6.2 6z" /></svg>
                 <span class="font-medium">{{ r.c.name }}</span>
                   <span v-if="r.playing" class="size-1.5 rounded-full bg-accent" :title="t('Playing')" />
                 </div>

@@ -6,12 +6,10 @@ import { defineAsyncComponent, onMounted, type Component } from 'vue'
 import { useApp } from './stores/app.ts'
 
 const PAGES: Record<string, () => Promise<{ default: Component }>> = {
-  bossruns: () => import('./pages/BossRunsPage.vue'),
   applicants: () => import('./pages/ApplicantsPage.vue'),
   party: () => import('./pages/PartyPage.vue'),
   flight: () => import('./pages/FlightPage.vue'),
   gather: () => import('./pages/GatherPage.vue'),
-  eventtoast: () => import('./pages/EventToastPage.vue'),
   bubble: () => import('./pages/BubblePage.vue'),
   buffs: () => import('./pages/BuffsPage.vue'),
   cc: () => import('./pages/CcPage.vue'),

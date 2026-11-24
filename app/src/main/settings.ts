@@ -55,7 +55,6 @@ export function applyLayoutUpdates(): void {
   settings.set('minimap', { ...settings.get('minimap'), enabled: false })
   settings.set('gameMap', { ...settings.get('gameMap'), enabled: false })
   settings.set('timerBar', { ...settings.get('timerBar'), enabled: false })
-  settings.set('bossRuns', { ...settings.get('bossRuns'), enabled: false })
   settings.set('killFeed', { ...settings.get('killFeed'), open: false })
   settings.set('enemies', { ...settings.get('enemies'), enabled: false })
   settings.set('skills', { ...settings.get('skills'), enabled: false })

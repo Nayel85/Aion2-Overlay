@@ -12,7 +12,6 @@ import type { Applicants } from './applicants.ts'
 import type { Party } from './party.ts'
 import type { FlightPower } from './flight.ts'
 import type { GatherForecast } from './gather.ts'
-import type { GuildState } from './guild.ts'
 import type { GameMapState, MapDetail } from './gameMap.ts'
 import type { DummyState } from './dummy.ts'
 import type { UpdateState } from './update.ts'
@@ -21,7 +20,6 @@ import type { AbyssSession, RiftFarm } from './abyss.ts'
 import type { StorageId, StorageUsage } from './storage.ts'
 import type { DetailsSource, DetailsView, Encounter, FightSummary, MeterData, NewBest, PacketLog, PersonalView, Recordings } from './meter.ts'
 import type { SyncResult } from './lokthar.ts'
-import type { GuildEventDetail, GuildEventsState, Rsvp } from './guildEvents.ts'
 import type { CustomSoundResult, SoundSlot } from './sounds.ts'
 import type { Point, Rect, SettingKey, Settings } from './settings.ts'
 import type { FieldBosses, TimerAlert, TimerId } from './timers.ts'
@@ -29,7 +27,7 @@ import type { Cube, Enemy, Nearby, TargetPlayer, Pet, PvpKill, PvpSummary, ShopS
 
 /** Renderer → main, request/response. */
 /** The overlays that size themselves to their page, by their route. */
-export const OVERLAY_IDS = ['applicants', 'party', 'flight', 'gather', 'skills', 'minimap', 'buffs', 'cc', 'enemies', 'training', 'packets', 'bossruns', 'eventtoast'] as const
+export const OVERLAY_IDS = ['applicants', 'party', 'flight', 'gather', 'skills', 'minimap', 'buffs', 'cc', 'enemies', 'training', 'packets'] as const
 export type OverlayId = (typeof OVERLAY_IDS)[number]
 
 export interface InvokeChannels {
@@ -70,9 +68,6 @@ export interface InvokeChannels {
   'inventory:get': { args: []; result: Inventories }
   /** An equipment's base stats and enchantment bonuses (questlog's, asked once: main/itemDetails.ts). */
   'items:details': { args: [item: number]; result: ItemDetails | null }
-  /** The guild as the Lokthar site has it (the Guild page). */
-  'guild:get': { args: []; result: GuildState }
-  'guild:refresh': { args: []; result: void }
   /** Join requests to your party (the Applicants widget). */
   'applicants:get': { args: []; result: Applicants }
   /** Your party and its members' HP (the party frames). */
@@ -183,12 +178,6 @@ export interface InvokeChannels {
   'dummy:delete': { args: [id: string]; result: void }
   /** Your buffs and debuffs (the buffs overlay). */
   'buffs:get': { args: []; result: Buff[] }
-  /** Guild events (main/guildEvents.ts): the list, asked again, answered (null, or why not), one with who comes, closed unanswered. */
-  'guildEvents:get': { args: []; result: GuildEventsState }
-  'guildEvents:refresh': { args: []; result: void }
-  'guildEvents:respond': { args: [id: number, status: Rsvp]; result: string | null }
-  'guildEvents:detail': { args: [id: number]; result: GuildEventDetail | null }
-  'guildEvents:dismiss': { args: [id: number]; result: void }
   /** Open the Details window on a fight (a meter row, a saved fight), or what it shows now. */
   'details:open': { args: [source: DetailsSource]; result: void }
   'details:get': { args: []; result: DetailsView | null }
@@ -251,8 +240,6 @@ export interface EventChannels {
   'party:changed': Party
   'flight:changed': FlightPower | null
   'gather:changed': GatherForecast | null
-  /** The guild, whenever the site answers (or the connection changes). */
-  'guild:changed': GuildState
   /** A timer started alerting (once per start: the chime). */
   'timers:alert': TimerAlert
   /** Every timer alerting now (the bubble shakes while there are any). */
@@ -279,9 +266,6 @@ export interface EventChannels {
   'buffs:list': Buff[]
   /** An update check or download moved on. */
   'update:state': UpdateState
-  'guildEvents:state': GuildEventsState
-  /** Someone answered this event: its detail, if open, is asked again. */
-  'guildEvents:changed': number
   /** The training dummy runs changed, or the one going on moved. */
   'dummy:state': DummyState
   /** A recording started or stopped. */
@@ -318,10 +302,9 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'meter:get', 'meter:reset', 'meter:moveTo', 'meter:dragEnd', 'meter:resize',
   
   'skills:get', 
-  'buffs:get', 'guild:get', 'guild:refresh', 'applicants:get', 'gather:get', 'flight:get', 'party:get', 'overlay:moveTo', 'overlay:dragEnd', 'overlay:resize', 'applicants:dismiss', 'applicants:clear', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
+  'buffs:get', 'applicants:get', 'gather:get', 'flight:get', 'party:get', 'overlay:moveTo', 'overlay:dragEnd', 'overlay:resize', 'applicants:dismiss', 'applicants:clear', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
   'details:open', 'details:get', 'details:view', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:bests', 'history:delete',
 ]
 
 export const EVENT_CHANNELS: readonly EventChannel[] = [
-  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'party:changed', 'gather:changed', 'flight:changed', 'guild:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'meter:personalBest', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', 'guildEvents:state', 'guildEvents:changed',
-]
+  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'party:changed', 'gather:changed', 'flight:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'meter:personalBest', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', ]

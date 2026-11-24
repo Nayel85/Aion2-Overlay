@@ -18,14 +18,10 @@
  *   unified   #/unified   the Unified HUD: one small bar at the top of the game, unfolded on hover,
  *                         showing things as they matter; sized to what it shows, around its top centre
  *   killfeed  #/killfeed  player kills around you, as they happen: opened from the PvP page
- *   bossruns  #/bossruns  Verteron's field bosses about to spawn, with their Kibelisk: up by itself
- *                         when several spawn close together; moved by its header, sized by its corner
  *   applicants #/applicants join requests to your party, as people apply (its own widget; up while there are any)
  *   party      #/party      party frames: each member's HP, while in a party
  *   gather     #/gather     a gathering's outcome as it starts (fail, rank up, x2); click-through
  *   flight     #/flight     the flight timer: seconds of flight left, while flying or refilling; click-through
- *   eventtoast #/eventtoast a guild event to answer (going, maybe, not going): popped up in the
- *                         bottom right corner of the screen the game is on, above the taskbar
  *   meter     #/meter     the DPS meter: open while the game is (and the meter is on), movable by
  *                         its header, sized to its rows
  *
@@ -813,35 +809,6 @@ const gatherOverlay = measuredOverlay({
   clickThrough: true,
 })
 
-/** Boss Runs: right of centre, a third of the way down. */
-const bossRunsOverlay = measuredOverlay({
-  route: 'bossruns',
-  enabled: () => bossRunsOn(),
-  saved: () => settings.get('bossRuns').position,
-  fallback: () => {
-    const area = screen.getPrimaryDisplay().workArea
-    return { x: Math.round(area.x + area.width * 0.62), y: Math.round(area.y + area.height * 0.3) }
-  },
-  save: (position) => settings.set('bossRuns', { ...settings.get('bossRuns'), position }),
-})
-
-/**
- * A guild event to answer: in the bottom right corner of the screen the game is on (the one the
- * bubble sits on, the primary without it), above the taskbar.
- */
-const eventToastEnabled = (): boolean => settings.get('guildEvents').enabled && settings.get('guildEvents').popup
-const eventToastOverlay = measuredOverlay({
-  route: 'eventtoast',
-  enabled: () => eventToastEnabled(),
-  saved: () => null,
-  fallback: () => ({ x: 0, y: 0 }),
-  save: () => {},
-  corner: () => {
-    const area = (alive(bubble) ? screen.getDisplayMatching(bubble.getBounds()) : screen.getPrimaryDisplay()).workArea
-    return { x: area.x + area.width - EDGE, y: area.y + area.height - EDGE }
-  },
-})
-
 /** Every overlay that sizes itself to its page, by its route (shared/ipc.ts `OverlayId`). */
 const OVERLAYS: Record<OverlayId, ReturnType<typeof measuredOverlay>> = {
   applicants: applicantsOverlay,
@@ -855,8 +822,6 @@ const OVERLAYS: Record<OverlayId, ReturnType<typeof measuredOverlay>> = {
   enemies: enemiesOverlay,
   training: trainingOverlay,
   packets: packetsOverlay,
-  bossruns: bossRunsOverlay,
-  eventtoast: eventToastOverlay,
 }
 const MEASURED = Object.values(OVERLAYS)
 /** Open every overlay that is on (as the game starts): each shows once its page has measured itself. */
@@ -976,12 +941,11 @@ export function timerBarDragEnded(): void {
 
 // ---- unified HUD ----------------------------------------------------------------------------
 
-/** The Unified HUD is on and stands in for the timer bar, Enemies nearby and the Boss Runs list. */
+/** The Unified HUD is on and stands in for Enemies nearby. */
 const replaced = (): boolean => settings.get('unified').enabled && settings.get('unified').replace
 // Not replaced by the HUD: it shows only the next two events, the bar (or list) every one alerted.
 const timerBarOn = (): boolean => settings.get('timerBar').enabled
 const enemiesOn = (): boolean => settings.get('enemies').enabled && !replaced()
-const bossRunsOn = (): boolean => settings.get('bossRuns').enabled && !replaced()
 
 /** Its top centre: it grows and shrinks around this point, so the bar stays where it was put. */
 function unifiedAnchor(): Point {

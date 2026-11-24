@@ -5,8 +5,7 @@
 // that mutes every sound, and the cog that opens the app. The rest shows up when it matters and
 // goes by itself: what you are hitting, Kina and Abyss Points per hour while they come in (a rift's
 // total during a Spacetime Rift), a Hidden Cube in view, enemies who can attack you, a field boss
-// alive, a guild event about to start, and where you last died. Boss Runs live here: pinned open
-// under the bar until folded. Moved by dragging the bar; it grows around its top centre, sized to
+// alive, and where you last died. Moved by dragging the bar; it grows around its top centre, sized to
 // what it shows (main sizes the window to it).
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -25,7 +24,6 @@ import { CLOCK_ICON, EVENT_ICONS } from '@/lib/timerView.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { riftOf } from '@shared/abyss.ts'
-import { runRows, type RunRow } from '@shared/bossRuns.ts'
 import { characterId, counterNow, ENERGY } from '@shared/characters.ts'
 import { formatAmount, livePerHour } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
@@ -34,8 +32,8 @@ import { serverTag } from '@shared/servers.ts'
 import { bossPortrait, bossState, nextStart, TIMERS, type TimerDef } from '@shared/timers.ts'
 import { blankPet, canAttack, nextLevelSouls, type Pet } from '@shared/tracker.ts'
 
-/** What can be open under the bar: a peek at an overlay, Boss Runs, or what a chip points at. */
-type PanelId = 'meter' | 'map' | 'pvp' | 'pets' | 'runs' | 'timers' | 'cube' | 'death' | 'enemies'
+/** What can be open under the bar: a peek at an overlay, or what a chip points at. */
+type PanelId = 'meter' | 'map' | 'pvp' | 'pets' | 'timers' | 'cube' | 'death' | 'enemies'
 type Peek = 'meter' | 'map' | 'pvp' | 'pets'
 
 const store = useApp()
@@ -49,7 +47,7 @@ const ticker = setInterval(() => (now.value = Date.now()), 1000)
 // ---- the mouse: over it, the bar unfolds; off it, back to compact ------------------------------
 
 const hover = ref(false)
-/** Opened by a hover or a click; gone when the mouse leaves. Boss Runs, pinned, stay under it. */
+/** Opened by a hover or a click; gone when the mouse leaves. */
 const panel = ref<PanelId | null>(null)
 /** A slip of the mouse past the edge does not fold it: only this long off it does. */
 const LEAVE_MS = 350
@@ -67,7 +65,7 @@ function leave(): void {
     panel.value = null
   }, LEAVE_MS)
 }
-const shown = computed<PanelId | null>(() => panel.value ?? (cfg.value.runsPinned ? 'runs' : null))
+const shown = computed<PanelId | null>(() => panel.value)
 const show = (id: PanelId): void => void (panel.value = id)
 /**
  * The first peek after the mouse enters waits this long: the buttons appear and the bar widens
@@ -89,12 +87,11 @@ const tools = computed(() => hover.value || cfg.value.buttons === 'always')
 
 // ---- the overlays' buttons ---------------------------------------------------------------------
 
-const ICONS: Record<Peek | 'runs', string> = {
+const ICONS: Record<Peek, string> = {
   meter: 'M2.5 13.5h11M4.5 11V8M8 11V4.5M11.5 11V6.5',
   map: 'M1.5 4l4.5-2 4 2 4.5-2v10l-4.5 2-4-2-4.5 2zM6 2v10M10 4v10',
   pvp: 'M3 13 13 3M9.5 3H13v3.5M3 3l4 4M13 13l-3-3',
   pets: 'M5 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM3 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM13 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM8 9c-2 0-3.5 2-3.5 3.3 0 1 1 1.2 2.2 1.2.6 0 .9-.3 1.3-.3s.7.3 1.3.3c1.2 0 2.2-.2 2.2-1.2C11.5 11 10 9 8 9Z',
-  runs: 'M2.5 4h2M2.5 8h2M2.5 12h2M6.5 4h7M6.5 8h7M6.5 12h4',
 }
 const PEEKS: { id: Peek; label: string }[] = [
   { id: 'meter', label: 'DPS meter' },
@@ -121,11 +118,6 @@ const peekHint = computed(() => {
 })
 
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('unified', { ...cfg.value, ...patch })
-/** Boss Runs: pinned under the bar, or folded. */
-function toggleRuns(): void {
-  set({ runsPinned: !cfg.value.runsPinned })
-  panel.value = null
-}
 const toggleMute = (): void => void store.set('muted', !store.settings.muted)
 const openApp = (): void => void api.invoke('panel:open')
 const openCharacters = (): void => void api.invoke('panel:characters')
@@ -275,17 +267,6 @@ const ago = (at: number): string => {
   return m < 1 ? t('just now') : m < 60 ? t('{n} min ago', { n: m }) : t('{n} h ago', { n: Math.round(m / 60) })
 }
 
-const runsCfg = computed(() => store.settings.bossRuns)
-/** Boss Runs' list: the bosses within its look-ahead, then the next to spawn, up to its rows. */
-const runs = computed<RunRow[]>(() => {
-  const near = runRows(store.fieldBosses, now.value, runsCfg.value.windowMinutes * 60_000)
-  const seen = new Set(near.map((r) => r.run.boss))
-  const later = runRows(store.fieldBosses, now.value, 24 * 3600_000).filter((r) => r.status === 'soon' && !seen.has(r.run.boss))
-  return [...near, ...later.slice(0, Math.max(0, runsCfg.value.rows - near.length))]
-})
-const isLow = (boss: number): boolean => runsCfg.value.lowPriority.includes(boss)
-const runClock = (r: RunRow): string => (r.status === 'killed' ? t('killed') : r.at <= now.value ? t('up') : countdown(r.at))
-
 // ---- peeks: the map, PvP, pets ---------------------------------------------------------------------
 
 const NO_FOCUS: [number, number][] = []
@@ -331,19 +312,6 @@ const odyle = computed(() => {
   const c = counterNow(ENERGY, store.characters[characterId(s.server, s.character)]?.counters ?? null, now.value)
   return c ? c.now + c.extra : null
 })
-/** A guild event about to start: said for a moment 5 minutes before, and again as it starts. */
-const NOTICE_MS = 20_000
-const LEAD_MS = 5 * 60_000
-const notice = computed(() => {
-  if (!cfg.value.guild) return null
-  for (const e of store.guildEvents.events) {
-    if (e.status === 'declined') continue
-    const left = e.startsAt - now.value
-    if ((left <= LEAD_MS && left > LEAD_MS - NOTICE_MS) || (left <= 0 && left > -NOTICE_MS)) return e
-  }
-  return null
-})
-
 const drag = windowDrag({ move: 'unified:moveTo', end: 'unified:dragEnd' })
 
 /** Tell main how big the window is: it grows and shrinks around its top centre. */
@@ -359,7 +327,7 @@ function report(): void {
 }
 // Measured after each change too, not only by the observer: a hidden window (Alt+Shift+E, an
 // alt-tab) does not run it, and would come back at its old size.
-watch([tools, shown, targetOn, () => cfg.value.targetStyle, notice, kinaText, sessionKina, abyssText, season, rift, cube, death, () => threats.value.length, () => aliveBosses.value.length, () => upcoming.value.length, () => cfg.value.scale], () => void nextTick(report))
+watch([tools, shown, targetOn, () => cfg.value.targetStyle, kinaText, sessionKina, abyssText, season, rift, cube, death, () => threats.value.length, () => aliveBosses.value.length, () => upcoming.value.length, () => cfg.value.scale], () => void nextTick(report))
 
 let observer: ResizeObserver | null = null
 const offs: (() => void)[] = []
@@ -522,17 +490,6 @@ onBeforeUnmount(() => {
                 <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS[p.id]" /></svg>
                 <span v-if="overlayOn(p.id)" class="absolute bottom-0.5 left-[11px] h-0.5 w-2 rounded-full bg-accent" />
               </button>
-              <button
-                type="button"
-                :class="['relative flex h-7 w-[30px] items-center justify-center rounded-lg transition-colors hover:bg-light hover:text-default', cfg.runsPinned ? 'bg-light text-default' : 'text-darker']"
-                :aria-label="t('Boss Runs')"
-                :title="cfg.runsPinned ? t('Fold Boss Runs') : t('Boss Runs: keep them open here')"
-                @pointerdown.stop
-                @click="toggleRuns"
-              >
-                <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS.runs" /></svg>
-                <span v-if="cfg.runsPinned" class="absolute bottom-0.5 left-3 h-0.5 w-1.5 rounded-full bg-accent" />
-              </button>
             </div>
             <span class="h-4 w-px bg-light" />
             <div class="unfold flex items-center gap-0.5">
@@ -591,16 +548,6 @@ onBeforeUnmount(() => {
           <div class="h-0.5 bg-danger transition-[width] duration-500 ease-linear" :style="{ width: `${hpShare * 100}%` }" />
         </div>
 
-        <!-- A guild event about to start. -->
-        <div v-if="notice" class="flex min-w-[300px] items-center gap-2 whitespace-nowrap border-t border-card px-3 py-1.5 text-xs">
-          <span class="size-2 shrink-0 rounded-full" :style="{ background: notice.color }" />
-          <span class="font-semibold">{{ notice.name }}</span>
-          <span class="text-darker">{{ t('Guild event') }}</span>
-          <span class="ml-auto pl-3 font-semibold tabular-nums text-orange">
-            {{ notice.startsAt > now ? t('starts in {time}', { time: countdown(notice.startsAt) }) : t('starting now') }}
-          </span>
-        </div>
-
         <!-- What you are hitting: two short lines and a health line. -->
         <button
           v-if="targetOn && cfg.targetStyle === 'strip'"
@@ -642,36 +589,11 @@ onBeforeUnmount(() => {
           </div>
         </button>
 
-        <!-- Under the bar: a peek at an overlay, Boss Runs, or what a chip points at. -->
+        <!-- Under the bar: a peek at an overlay, or what a chip points at. -->
         <!-- w-0 min-w-full: it fills the bar but never widens it, so opening or changing a peek does not move the buttons under the mouse. -->
         <div v-if="shown" class="unfold w-0 min-w-full border-t border-card px-3.5 py-2.5">
-          <!-- Boss Runs: pinned until folded. -->
-          <div v-if="shown === 'runs'" class="min-w-[280px]">
-            <div class="flex items-center gap-2">
-              <span class="text-[13px] font-semibold">{{ t('Boss Runs') }}</span>
-              <button
-                type="button"
-                class="ml-auto flex h-[22px] w-6 items-center justify-center rounded-md bg-dark text-dark hover:bg-light"
-                :aria-label="t('Minimize')"
-                :title="t('Minimize')"
-                @click="toggleRuns"
-              >
-                <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 8h8" /></svg>
-              </button>
-            </div>
-            <div v-if="runs.length" class="mt-1.5 space-y-1">
-              <div v-for="r in runs" :key="r.run.boss" :class="['flex items-center gap-2 whitespace-nowrap text-[13px]', r.status === 'killed' && 'opacity-50']">
-                <img v-if="bossPortrait(r.run.boss)" :src="bossPortrait(r.run.boss)!" alt="" draggable="false" :class="['size-5 shrink-0 rounded-sm object-cover', isLow(r.run.boss) && 'opacity-60 grayscale']" />
-                <span :class="['font-medium', isLow(r.run.boss) ? 'text-darker' : 'text-default', r.status === 'killed' && 'line-through decoration-red decoration-2']">{{ r.run.short }}</span>
-                <span v-if="r.run.tp !== null" :class="['rounded px-1 text-[11px] font-semibold tabular-nums leading-4', isLow(r.run.boss) ? 'bg-white/10 text-darker' : 'bg-yellow/15 text-yellow']">TP {{ r.run.tp }}</span>
-                <span :class="['ml-auto pl-4 text-xs font-semibold tabular-nums', r.status === 'killed' ? 'uppercase text-red' : isLow(r.run.boss) ? 'text-darker' : r.at <= now ? 'text-green' : r.at - now < 60_000 ? 'text-yellow' : 'text-default']">{{ runClock(r) }}</span>
-              </div>
-            </div>
-            <p v-else class="mt-1.5 text-xs text-darker">{{ t('No boss times known yet: open the map\'s field boss list in game.') }}</p>
-          </div>
-
           <!-- The timers with their alert on, as the timer bar listed them. -->
-          <div v-else-if="shown === 'timers'" class="min-w-[260px]">
+          <div v-if="shown === 'timers'" class="min-w-[260px]">
             <div class="text-[13px] font-semibold">{{ t('Next events') }}</div>
             <div class="mt-1.5 space-y-1">
               <div v-for="{ def, at, up } in timerItems" :key="def.id" class="flex items-center gap-2 whitespace-nowrap text-xs">

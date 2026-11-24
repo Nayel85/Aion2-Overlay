@@ -1,6 +1,6 @@
 /**
- * Boss Runs: Verteron's field bosses about to spawn, soonest first, each with the teleport (the
- * Kibelisk) closest to it, as players call them in chat: "Neikel, TP 6", "Dartan, TP 33".
+ * Verteron's field bosses, each with the teleport (the Kibelisk) closest to it, as players call
+ * them in chat: "Neikel, TP 6", "Dartan, TP 33" (the Field Bosses page; a boss chest's name).
  *
  * The closest Kibelisk is worked out from questlog.gg's map (2026-11-03): its Kibelisks
  * (`teleport-artifact` markers) and the boss's own marker, as the crow flies. Its number is the
@@ -10,13 +10,10 @@
  *
  * The small ones: Neikel, Kutar and Kernon, never seen more than 24 minutes from respawning in the
  * owner's logs (2026-10-21 to 11-03), back every 30 minutes; every other one was seen 37 or more.
- * They start as low priority (settings' bossRuns.lowPriority), which the player changes on the page.
  *
  * `npc` is the boss's monster code (scripts/fetch-boss-icons.mjs, data/fieldBossNpcs.json), which
  * the engine names when one dies in view (FIELD_BOSS_NPCS in engine/src/tracker/mod.rs).
  */
-import type { FieldBosses } from './timers.ts'
-
 export interface BossRun {
   /** The boss's id in the map's list (shared/timers.ts FIELD_BOSSES). */
   boss: number
@@ -25,7 +22,7 @@ export interface BossRun {
   npc: number
   tp: number | null
   tpName: string | null
-  /** A small one, back every 30 minutes, which runs often skip: low priority unless the player says otherwise. */
+  /** A small one, back every 30 minutes. */
   small?: boolean
 }
 
@@ -69,58 +66,4 @@ const ALTGARD_NPCS = [
 export function bossOfNpc(npc: number): number | null {
   const altgard = ALTGARD_NPCS.indexOf(npc)
   return BOSS_RUNS.find((r) => r.npc === npc)?.boss ?? ABYSS_NPCS[npc] ?? (altgard >= 0 ? 111001 + altgard : null)
-}
-
-/** A killed boss stays on the list, struck out, this long; then it fades out. */
-export const KILLED_SHOWN_MS = 15_000
-/** The list comes up by itself when more than 2 bosses spawn this close one after another. */
-export const CLUSTER_GAP_MS = 10 * 60_000
-export const CLUSTER_MIN = 3
-/** A boss alive is listed while its spawn is within the look-ahead, or the map said so this recently. */
-export const ALIVE_SEEN_MS = 30 * 60_000
-
-export interface RunRow {
-  run: BossRun
-  /** When it spawns (or did); for a killed one, when it died. */
-  at: number
-  status: 'soon' | 'up' | 'killed'
-}
-
-/**
- * The list: each boss spawning within `windowMs`, or spawned within it (or read alive within
- * ALIVE_SEEN_MS) and not seen killed, or killed a moment ago: the alive ones first, then the
- * ones to spawn, each in spawn order.
- */
-export function runRows(bosses: FieldBosses, now: number, windowMs: number): RunRow[] {
-  const rows: RunRow[] = []
-  for (const run of BOSS_RUNS) {
-    const s = bosses[run.boss]
-    if (!s) continue
-    if (s.killedAt && now - s.killedAt < KILLED_SHOWN_MS) rows.push({ run, at: s.killedAt, status: 'killed' })
-    else if (s.up) {
-      if (now - (s.at || s.seen) <= windowMs || now - s.seen <= ALIVE_SEEN_MS) rows.push({ run, at: s.at || s.seen, status: 'up' })
-    } else if (s.at > 0 && s.at - now <= windowMs && now - s.at <= windowMs) {
-      rows.push({ run, at: s.at, status: s.at > now ? 'soon' : 'up' })
-    }
-  }
-  // Alive (and just killed) first, then the ones still to spawn; each by when.
-  const rank = (r: RunRow): number => (r.status === 'soon' ? 1 : 0)
-  return rows.sort((a, b) => rank(a) - rank(b) || a.at - b.at)
-}
-
-/** The bosses low priority until the player picks others: the small ones. */
-export const DEFAULT_LOW_PRIORITY: number[] = BOSS_RUNS.filter((r) => r.small).map((r) => r.boss)
-
-/** How many on the list are alive (up, or due), leaving out the ones in `ignore`. */
-export const aliveCount = (rows: RunRow[], ignore: readonly number[] = []): number => rows.filter((r) => r.status === 'up' && !ignore.includes(r.run.boss)).length
-
-/** More than 2 of them spawning one after another, each within CLUSTER_GAP_MS of the one before. */
-export function clustered(rows: RunRow[]): boolean {
-  const ats = rows.filter((r) => r.status !== 'killed').map((r) => r.at)
-  let run = 1
-  for (let i = 1; i < ats.length; i++) {
-    run = ats[i]! - ats[i - 1]! < CLUSTER_GAP_MS ? run + 1 : 1
-    if (run >= CLUSTER_MIN) return true
-  }
-  return false
 }

@@ -10,7 +10,6 @@ import { applicantStore } from './applicants.ts'
 import { partyStore } from './party.ts'
 import { flightStore } from './flight.ts'
 import { gatherStore } from './gather.ts'
-import { guild } from './guild.ts'
 import { characterStore } from './characters.ts'
 import { sessionStore } from './sessions.ts'
 import { inventoryStore } from './inventory.ts'
@@ -18,7 +17,6 @@ import { itemDetails } from './itemDetails.ts'
 import { gameMap, regionDisplay } from './gameMap.ts'
 import { mapDetail } from './gameMapDetail.ts'
 import { lokthar } from './lokthar.ts'
-import { guildEvents } from './guildEvents.ts'
 import { pvpLog } from './pvpLog.ts'
 import { packets } from './packets.ts'
 import { settings } from './settings.ts'
@@ -156,8 +154,6 @@ export function registerIpc(): void {
   handle('gamemap:grab', (w, h) => gameMap.grab(Math.round(Number(w)), Math.round(Number(h))))
   handle('gamemap:detail', (key, cols, rows, col, row) => mapDetail.get(key, cols, rows, col, row))
   handle('gamemap:saveFeatures', (key, data, col, row) => mapDetail.saveFeatures(key, data, col, row))
-  handle('guild:get', () => guild.get())
-  handle('guild:refresh', () => guild.refresh())
   handle('applicants:get', () => applicantStore.all())
   handle('party:get', () => partyStore.all())
   handle('overlay:moveTo', (id, to) => {
@@ -263,15 +259,6 @@ export function registerIpc(): void {
   handle('overlays:toggle', () => toggleOverlays())
   handle('overlays:hidden', () => overlaysHidden())
   handle('buffs:get', () => meterState.buffs())
-  handle('guildEvents:get', () => guildEvents.get())
-  handle('guildEvents:refresh', () => guildEvents.refresh())
-  handle('guildEvents:respond', (id, status) =>
-    Number.isInteger(id) && ['going', 'maybe', 'declined'].includes(status) ? guildEvents.respond(id, status) : Promise.resolve('not an answer'),
-  )
-  handle('guildEvents:detail', (id) => (Number.isInteger(id) ? guildEvents.detail(id) : Promise.resolve(null)))
-  handle('guildEvents:dismiss', (id) => {
-    if (Number.isInteger(id)) guildEvents.dismiss(id)
-  })
   handle('details:open', (source) => {
     const ok = source?.kind === 'live' ? Number.isInteger(source.target) : (source?.kind === 'saved' || source?.kind === 'run' || source?.kind === 'pvp') && isPlainId(source.id)
     if (ok) openDetails(source)
