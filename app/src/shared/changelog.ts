@@ -13,6 +13,16 @@ export const CHANGELOG: ChangelogEntry[] = [
   {
     version: '0.3.16',
     items: [
+      "New Inventory page: each character's bag, equipment laid out as in game (soul binding, stones, each stat's roll), warehouse and Arcana, and the account's warehouse.",
+      "Party frames made to heal by: shields, debuffs and the boss's target. A flight timer and a stagger gauge.",
+      'Gathering and crafting: the outcome (fail, rank up, x2, proc) known as it starts, in its own window. A Stats page with Loot, Crafts and Gathering.',
+      'Personal bests on their own page (best DPS, party DPS and fastest kill on each dungeon boss), each opening its fight. World bosses and dummies you did not hit are no longer kept.',
+      'Unified HUD by click only: Kina and Abyss Points per hour for farming only (dungeons apart unless set), session totals, join requests, personal bests and corridors, the icons to pick.',
+      "Rift, Kaira, corridors and the siege on Europe's server clock (corridors and the siege on Thursday and Saturday).",
+      'French in place of Spanish. Guild, Guild Events and Boss Runs removed.',
+      "Settings reorganised: each overlay's on its own page, with the same rows (opacity, size, hide while idle, reset position). Every overlay shows a sample to be placed.",
+      'DPS meter: every member of your party gets a row, without resizing it in a dungeon.',
+      "Maps: each pet's portrait over its spawns; a click on one shows that pet alone, its spawns lit up.",
       "A run you go into as the app first knows your character (started before a Shugo Festival's game or a dungeon, the teleport telling it who you are) is kept in your session.",
       'The portable update no longer leaves a window waiting: the new files are put in as soon as the app has closed.',
     ],
