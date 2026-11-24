@@ -12,7 +12,7 @@
  * anywhere) has none: it downloads the release's zip, checks it against the release's SHA-256,
  * unpacks it next to the system's temp files, and on quitting hands over to a small script that
  * waits for the app to close, copies the new files over this folder and starts it again. The data
- * is in %APPDATA%\Lokthar either way, untouched.
+ * is in %APPDATA%\Nayel Overlay either way, untouched.
  *
  * The exe was renamed in 0.3.7 (Aion2DropTracker.exe -> lokthar-overlay.exe): a zip with either name
  * is taken, its exe is the one started, and the old one is deleted. Copies before 0.3.7 look for
