@@ -25,16 +25,17 @@ import { CLOCK_ICON, EVENT_ICONS } from '@/lib/timerView.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { riftOf } from '@shared/abyss.ts'
-import { characterId, counterNow, ENERGY } from '@shared/characters.ts'
+import { characterId, CORRIDORS, corridorStates, counterNow, ENERGY, nextCorridorReset } from '@shared/characters.ts'
+import type { HudWidget } from '@shared/settings.ts'
 import { formatAmount, livePerHour } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
-import { CLASS_COLORS, meterRows, NO_METER, timeToKill, type MeterData } from '@shared/meter.ts'
+import { CLASS_COLORS, meterRows, NO_METER, timeToKill, type MeterData, type NewBest } from '@shared/meter.ts'
 import { serverTag } from '@shared/servers.ts'
 import { bossPortrait, bossState, nextStart, TIMERS, type TimerDef } from '@shared/timers.ts'
 import { blankPet, canAttack, nextLevelSouls, type Pet } from '@shared/tracker.ts'
 
 /** What can be open under the bar: a peek at an overlay, or what a chip points at. */
-type PanelId = 'meter' | 'map' | 'pvp' | 'pets' | 'timers' | 'cube' | 'death' | 'enemies'
+type PanelId = 'meter' | 'map' | 'pvp' | 'pets' | 'applicants' | 'corridors' | 'timers' | 'cube' | 'death' | 'enemies'
 type Peek = 'meter' | 'map' | 'pvp' | 'pets'
 
 const store = useApp()
@@ -83,6 +84,54 @@ const peekHint = computed(() => {
 })
 
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('unified', { ...cfg.value, ...patch })
+
+// ---- the other overlays' buttons: a click turns the overlay on or off ----------------------------
+
+const WIDGET_ICONS: Record<HudWidget, string> = {
+  party: 'M2.5 3.5h11v3h-11zM2.5 9.5h11v3h-11zM4 5h5M4 11h3',
+  buffs: 'M8 1.5 9.8 6l4.7.4-3.6 3 1.1 4.6L8 11.6 4 14l1.1-4.6-3.6-3L6.2 6z',
+  cc: 'M8 1.5v3M8 11.5v3M1.5 8h3M11.5 8h3M3.5 3.5l2 2M10.5 10.5l2 2M12.5 3.5l-2 2M5.5 10.5l-2 2',
+  flight: 'M7.5 12C5.5 12 2.5 10.5 1 4.5c1.5 1 3 1.5 4.5 1.5C6.5 7 7 8 7.5 9.5ZM8.5 12c2 0 5-1.5 6.5-7.5-1.5 1-3 1.5-4.5 1.5C9.5 7 9 8 8.5 9.5Z',
+  gather: 'M3 13c0-6 4-10 10-10 0 6-4 10-10 10ZM3 13l5-5',
+  applicants: 'M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M12 4.5v4M10 6.5h4',
+  training: 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8 8h.01',
+}
+const WIDGET_LABELS: Record<HudWidget, string> = {
+  party: 'Party frames', buffs: 'Buffs', cc: 'CC / Debuffs', flight: 'Flight timer', gather: 'Gathering outcome', applicants: 'Join requests', training: 'Training',
+}
+function widgetOn(w: HudWidget): boolean {
+  const s = store.settings
+  return w === 'cc' ? s.buffs.cc : w === 'training' ? s.dummy.overlay : s[w].enabled
+}
+function toggleWidget(w: HudWidget): void {
+  const s = store.settings
+  if (w === 'cc') void store.set('buffs', { ...s.buffs, cc: !s.buffs.cc })
+  else if (w === 'training') void store.set('dummy', { ...s.dummy, overlay: !s.dummy.overlay })
+  else void store.set(w, { ...s[w], enabled: !s[w].enabled } as never)
+}
+
+// ---- join requests, a personal best, the corridors -------------------------------------------------
+
+const applicants = computed(() => (cfg.value.applicants ? store.applicants.list : []))
+const dismiss = (character: number): void => void api.invoke('applicants:dismiss', character)
+/** A personal best just beaten: on the bar this long. */
+const BEST_MS = 10 * 60_000
+const best = ref<(NewBest & { at: number }) | null>(null)
+const bestShown = computed(() => (cfg.value.bests && best.value && now.value - best.value.at < BEST_MS ? best.value : null))
+const openBest = (): void => void (bestShown.value && api.invoke('details:open', { kind: 'saved', id: bestShown.value.fight }))
+/** Each character's corridors since the last reset; the one playing's to do bring the chip up. */
+const corridorRows = computed(() =>
+  Object.values(store.characters)
+    .filter((c) => c.corridors)
+    .map((c) => ({ c, states: corridorStates(c.corridors, now.value) }))
+    .sort((a, b) => a.c.name.localeCompare(b.c.name)),
+)
+const corridorsToDo = computed(() => {
+  const s = store.status
+  if (!cfg.value.corridors || !s?.character || !s.server) return 0
+  const mine = corridorRows.value.find((r) => r.c.server === s.server && r.c.name === s.character)
+  return mine ? mine.states.filter((x) => x !== 'done').length : 0
+})
 const toggleMute = (): void => void store.set('muted', !store.settings.muted)
 const openApp = (): void => void api.invoke('panel:open')
 const openCharacters = (): void => void api.invoke('panel:characters')
@@ -128,20 +177,19 @@ const startsAt = (at: number): string => new Date(at).toLocaleTimeString(loc(), 
 
 // ---- Kina and Abyss Points, to the left while they come in --------------------------------------
 
-const earningMs = computed(() => cfg.value.earningsMinutes * 60_000)
-const coming = (lastAt: number | null): boolean => lastAt !== null && now.value - lastAt < earningMs.value
-const kinaText = computed(() => (cfg.value.kina && coming(store.kina.lastAt) ? (store.kinaRate !== null ? formatKina(store.kinaRate) : '…') : null))
-/** Abyss Points per hour at the pace of the last 15 seconds (0 between pulls), while they come in. */
-const abyssText = computed(() => (cfg.value.abyssRate && coming(store.abyss.lastAt) ? formatAmount(livePerHour(store.abyss, now.value)) : null))
+// Farming only (rewards are taken off: main/sessions.ts), and shown all the time while on, 0 too.
+const kinaText = computed(() => (cfg.value.kina ? formatKina(store.kinaRate ?? 0) : null))
+/** Abyss Points per hour at the pace of the last 15 seconds (0 between pulls). */
+const abyssText = computed(() => (cfg.value.abyssRate ? formatAmount(livePerHour(store.abyss, now.value)) : null))
 /** The Kina of the session going on: the character playing's, since their login. */
 const sessionKina = computed(() => {
   const s = store.sessions.current
-  return cfg.value.kina && s && s.kina > 0 && s.name === store.status?.character ? s.kina : null
+  return cfg.value.kinaSession && s && s.name === store.status?.character ? s.kina : null
 })
 /** The Abyss Points of the session going on: the character playing's, since their login. */
 const season = computed(() => {
   const s = store.sessions.current
-  return cfg.value.season && s && s.ap > 0 && s.name === store.status?.character ? { points: s.ap } : null
+  return cfg.value.season && s && s.name === store.status?.character ? { points: s.ap } : null
 })
 /** The Spacetime Rift going on, once it is a farm (shared/abyss.ts): its total, beside the hourly rate. */
 const rift = computed(() => {
@@ -292,7 +340,7 @@ function report(): void {
 }
 // Measured after each change too, not only by the observer: a hidden window (Alt+Shift+E, an
 // alt-tab) does not run it, and would come back at its old size.
-watch([shown, targetOn, () => cfg.value.targetStyle, kinaText, sessionKina, abyssText, season, rift, cube, death, () => threats.value.length, () => aliveBosses.value.length, () => upcoming.value.length, () => cfg.value.scale], () => void nextTick(report))
+watch([shown, targetOn, () => cfg.value.targetStyle, kinaText, sessionKina, abyssText, season, rift, cube, death, () => applicants.value.length, bestShown, corridorsToDo, () => threats.value.length, () => aliveBosses.value.length, () => upcoming.value.length, () => cfg.value.scale], () => void nextTick(report))
 
 let observer: ResizeObserver | null = null
 const offs: (() => void)[] = []
@@ -301,6 +349,7 @@ onMounted(async () => {
   if (root.value) observer.observe(root.value)
   report()
   offs.push(api.on('meter:dps', (m) => (meter.value = m)))
+  offs.push(api.on('meter:personalBest', (b) => (best.value = { ...b, at: Date.now() })))
   meter.value = await api.invoke('meter:get')
   void nextTick(() => (meterLoaded = true))
 })
@@ -429,6 +478,46 @@ onBeforeUnmount(() => {
             <SkullMark :size="16" />
           </button>
 
+          <!-- Join requests to your party. -->
+          <button
+            v-if="applicants.length"
+            type="button"
+            class="flex h-6 items-center gap-1 rounded-lg border border-accent/50 bg-accent/15 px-1.5 text-xs font-bold tabular-nums text-accent"
+            :aria-label="t('Join requests')"
+            @pointerdown.stop
+            @click="show('applicants')"
+          >
+            <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="WIDGET_ICONS.applicants" /></svg>
+            {{ applicants.length }}
+          </button>
+
+          <!-- A personal best just beaten: its fight. -->
+          <button
+            v-if="bestShown"
+            type="button"
+            class="flex h-6 items-center gap-1 rounded-lg border border-yellow/50 bg-yellow/15 px-1.5 text-xs font-semibold tabular-nums text-yellow"
+            :title="t('New personal best') + ` · ${bestShown.character} · ${bestShown.boss}`"
+            @pointerdown.stop
+            @click="openBest"
+          >
+            <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2.5h6v3a3 3 0 0 1-6 0zM5 3.5H3v1a2 2 0 0 0 2 2M11 3.5h2v1a2 2 0 0 1-2 2M8 8.5v3M5.5 13.5h5" /></svg>
+            {{ short(bestShown.dps) }}
+          </button>
+
+          <!-- The corridors the character playing still has to do. -->
+          <button
+            v-if="corridorsToDo"
+            type="button"
+            class="flex h-6 items-center gap-1 rounded-lg border border-orange/50 bg-orange/15 px-1.5 text-xs font-semibold tabular-nums text-orange"
+            :aria-label="t('Corridors')"
+            :title="t('Corridors')"
+            @pointerdown.stop
+            @click="show('corridors')"
+          >
+            <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 13.5V6a5.5 5.5 0 0 1 11 0v7.5M5.5 13.5V7.5a2.5 2.5 0 0 1 5 0v6" /></svg>
+            {{ corridorsToDo }}
+          </button>
+
           <!-- The overlays' buttons, the speaker and the cog. -->
           <template>
             <span class="unfold h-4 w-px bg-light" />
@@ -445,6 +534,19 @@ onBeforeUnmount(() => {
               >
                 <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS[p.id]" /></svg>
                 <span v-if="overlayOn(p.id)" class="absolute bottom-0.5 left-[11px] h-0.5 w-2 rounded-full bg-accent" />
+              </button>
+              <button
+                v-for="w in cfg.widgets"
+                :key="w"
+                type="button"
+                :class="['relative flex h-7 w-[30px] items-center justify-center rounded-lg transition-colors hover:text-default', widgetOn(w) ? 'bg-accent/15 text-accent' : 'text-darker']"
+                :aria-label="t(WIDGET_LABELS[w])"
+                :title="widgetOn(w) ? t('{name}: click to close its overlay', { name: t(WIDGET_LABELS[w]) }) : t('{name}: click to open its overlay', { name: t(WIDGET_LABELS[w]) })"
+                @pointerdown.stop
+                @click="toggleWidget(w)"
+              >
+                <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="WIDGET_ICONS[w]" /></svg>
+                <span v-if="widgetOn(w)" class="absolute bottom-0.5 left-[11px] h-0.5 w-2 rounded-full bg-accent" />
               </button>
             </div>
             <span class="h-4 w-px bg-light" />
@@ -548,8 +650,45 @@ onBeforeUnmount(() => {
         <!-- Under the bar: a peek at an overlay, or what a chip points at. -->
         <!-- w-0 min-w-full: it fills the bar but never widens it, so opening or changing a peek does not move the buttons under the mouse. -->
         <div v-if="shown" class="unfold w-0 min-w-full border-t border-card px-3.5 py-2.5">
+          <!-- Join requests: each who asks, with an X to take them off. -->
+          <div v-if="shown === 'applicants'" class="min-w-[320px]">
+            <div class="text-[13px] font-semibold">{{ t('Join requests') }}</div>
+            <div class="mt-1.5 space-y-0.5">
+              <div v-for="a in applicants" :key="a.character" class="flex items-center gap-1.5 whitespace-nowrap text-[13px]">
+                <ClassIcon :class-name="a.className" :size="16" />
+                <span class="max-w-[150px] truncate font-medium">{{ a.name }}</span>
+                <span v-if="a.server" class="text-[11px] tabular-nums text-darker">[{{ serverTag(a.server) }}]</span>
+                <span v-if="a.combatPower" class="text-[11px] font-semibold tabular-nums text-yellow">{{ a.combatPower.toLocaleString('en-US') }}</span>
+                <span v-if="a.gearScore" class="text-[11px] tabular-nums text-dark">ilvl {{ a.gearScore }}</span>
+                <button type="button" class="ml-auto flex size-5 items-center justify-center rounded text-darker hover:bg-light hover:text-default" :title="t('Remove from the list')" @pointerdown.stop @click="dismiss(a.character)">
+                  <svg viewBox="0 0 16 16" class="size-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8" /></svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Each character's corridors since the last reset. -->
+          <div v-else-if="shown === 'corridors'" class="min-w-[300px]">
+            <div class="flex items-baseline gap-2">
+              <span class="text-[13px] font-semibold">{{ t('Corridors') }}</span>
+              <span class="text-[11px] text-darker">{{ t('Back {when}', { when: new Date(nextCorridorReset(now)).toLocaleString(loc(), { weekday: 'short', hour: '2-digit', minute: '2-digit' }) }) }}</span>
+            </div>
+            <div class="mt-1.5 space-y-1">
+              <div v-for="r in corridorRows" :key="r.c.name + r.c.server" class="flex items-center gap-2 whitespace-nowrap text-xs">
+                <ClassIcon :class-name="r.c.className" :size="14" />
+                <span class="w-24 truncate font-medium">{{ r.c.name }}</span>
+                <span
+                  v-for="(st, i) in r.states"
+                  :key="i"
+                  :class="['size-2.5 rounded-full', st === 'done' ? 'bg-light' : st === 'open' ? 'bg-orange' : 'border border-orange']"
+                  :title="`${CORRIDORS[i]!.name}: ${st === 'done' ? t('done') : st === 'open' ? t('still to do') : t('not seen since the reset (likely still to do: enter the Abyss to check)')}`"
+                />
+              </div>
+            </div>
+          </div>
+
           <!-- The timers with their alert on, as the timer bar listed them. -->
-          <div v-if="shown === 'timers'" class="min-w-[260px]">
+          <div v-else-if="shown === 'timers'" class="min-w-[260px]">
             <div class="text-[13px] font-semibold">{{ t('Next events') }}</div>
             <div class="mt-1.5 space-y-1">
               <div v-for="{ def, at, up } in timerItems" :key="def.id" class="flex items-center gap-2 whitespace-nowrap text-xs">

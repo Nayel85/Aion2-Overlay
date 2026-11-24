@@ -13,6 +13,7 @@ import { t } from '@/lib/i18n.ts'
 import { panelStyle } from '@/lib/overlayLook.ts'
 import { EVENT_ICONS } from '@/lib/timerView.ts'
 import { useApp } from '@/stores/app.ts'
+import { HUD_WIDGETS, type HudWidget } from '@shared/settings.ts'
 
 const store = useApp()
 const cfg = computed(() => store.settings.unified)
@@ -21,6 +22,9 @@ const pct = (v: number): string => `${Math.round(v * 100)}%`
 const minutes = (list: number[]) => list.map((m) => ({ id: m, label: t('{n} min', { n: m }) }))
 const COUNTDOWN = [5, 10, 15, 20, 30]
 const STAY = [2, 5, 10, 15, 30]
+const WIDGET_LABELS: Record<HudWidget, string> = {
+  party: 'Party frames', buffs: 'Buffs', cc: 'CC / Debuffs', flight: 'Flight timer', gather: 'Gathering outcome', applicants: 'Join requests', training: 'Training',
+}
 const SECONDS = [5, 8, 12, 20, 30]
 const TARGET_STYLES = [
   { id: 'inline' as const, label: 'In the bar' },
@@ -51,7 +55,7 @@ const BUTTON_ICONS = [
     <!-- The bar as these settings make it. -->
     <div class="mb-6 flex flex-col items-center gap-2.5 rounded-xl border border-card bg-[#1b2224] px-4 py-5">
       <div class="flex h-9 items-center gap-2.5 whitespace-nowrap rounded-[14px] border px-2.5" :style="{ ...panelStyle(cfg.opacity), textShadow: cfg.opacity < 0.6 ? '0 1px 3px rgb(0 0 0 / 0.9)' : 'none', zoom: cfg.scale }">
-        <template v-if="cfg.kina || cfg.season">
+        <template v-if="cfg.kina || cfg.kinaSession || cfg.season">
           <span v-if="cfg.kina" class="text-xs font-semibold tabular-nums text-yellow">1.72M <span class="font-medium text-darker">Kina/h</span></span>
           <span v-if="cfg.season" class="flex items-center gap-1 text-xs font-semibold tabular-nums text-blue"><img :src="'items/abyss-point.webp'" alt="AP" class="size-4" draggable="false" />12.3k</span>
           <span class="h-4 w-px bg-light" />
@@ -115,14 +119,14 @@ const BUTTON_ICONS = [
         <SettingRow label="Abyss Points this session" hint="The Abyss Points you earned since you logged in with this character, with a coin, to the left of the bar. The Session page has them by source.">
           <Toggle :model-value="cfg.season" @update:model-value="set({ season: $event })" />
         </SettingRow>
-        <SettingRow label="Kina per hour" hint="This session's Kina per hour, to the left of the bar while it comes in.">
+        <SettingRow label="Kina this session" hint="The Kina you earned since you logged in with this character, rewards included, with a coin, to the left of the bar.">
+          <Toggle :model-value="cfg.kinaSession" @update:model-value="set({ kinaSession: $event })" />
+        </SettingRow>
+        <SettingRow label="Kina per hour" hint="Your farming's Kina per hour, always shown while on: quests', supply requests' and duty missions' rewards are left out.">
           <Toggle :model-value="cfg.kina" @update:model-value="set({ kina: $event })" />
         </SettingRow>
-        <SettingRow label="Abyss Points per hour" hint="This session's Abyss Points per hour, to the left of the bar while they come in.">
+        <SettingRow label="Abyss Points per hour" hint="Your farming's Abyss Points per hour, at your pace of the last 15 seconds, always shown while on: rewards are left out.">
           <Toggle :model-value="cfg.abyssRate" @update:model-value="set({ abyssRate: $event })" />
-        </SettingRow>
-        <SettingRow v-if="cfg.kina || cfg.abyssRate" label="Hide the per hour figures after" hint="They disappear this long after the last gain.">
-          <SelectBox size="sm" :model-value="cfg.earningsMinutes" :options="minutes(STAY)" @update:model-value="set({ earningsMinutes: $event })" />
         </SettingRow>
         <SettingRow label="Rift farm" hint="During a Spacetime Rift, show that rift's total Abyss Points instead of the hourly rate.">
           <Toggle :model-value="cfg.rift" @update:model-value="set({ rift: $event })" />
@@ -130,16 +134,25 @@ const BUTTON_ICONS = [
       </Section>
 
       <Section title="Shows up when it matters">
-        <SettingRow label="Enemies nearby" hint="A red count of the players in view who can attack you (PvP on, or anyone in the Abyss). Hover it for the list.">
+        <SettingRow label="Join requests" hint="How many ask to join your party; click it for each one's class, combat power and gear score.">
+          <Toggle :model-value="cfg.applicants" @update:model-value="set({ applicants: $event })" />
+        </SettingRow>
+        <SettingRow label="Personal bests" hint="A personal best you just beat, for 10 minutes; click it for its fight.">
+          <Toggle :model-value="cfg.bests" @update:model-value="set({ bests: $event })" />
+        </SettingRow>
+        <SettingRow label="Corridors" hint="How many corridors the character you play still has to do since the last reset; click it for each character's.">
+          <Toggle :model-value="cfg.corridors" @update:model-value="set({ corridors: $event })" />
+        </SettingRow>
+        <SettingRow label="Enemies nearby" hint="A red count of the players in view who can attack you (PvP on, or anyone in the Abyss). Click it for the list.">
           <Toggle :model-value="cfg.enemies" @update:model-value="set({ enemies: $event })" />
         </SettingRow>
         <SettingRow label="Field boss alive" hint="A field boss you have an alert for stays on the bar, as its portrait, while it is alive.">
           <Toggle :model-value="cfg.bosses" @update:model-value="set({ bosses: $event })" />
         </SettingRow>
-        <SettingRow label="Hidden Cube" hint="A cube in view, with how far away it is and which way. Hover it for the map.">
+        <SettingRow label="Hidden Cube" hint="A cube in view, with how far away it is and which way. Click it for the map.">
           <Toggle :model-value="cfg.cubes" @update:model-value="set({ cubes: $event })" />
         </SettingRow>
-        <SettingRow label="Your last death" hint="A skull on the bar; hover it to see where you died. It goes away this long after.">
+        <SettingRow label="Your last death" hint="A skull on the bar; click it to see where you died. It goes away this long after.">
           <div class="flex items-center gap-3">
             <SelectBox v-if="cfg.death" size="sm" :model-value="cfg.deathMinutes" :options="minutes(STAY)" @update:model-value="set({ deathMinutes: $event })" />
             <Toggle :model-value="cfg.death" @update:model-value="set({ death: $event })" />
@@ -159,8 +172,24 @@ const BUTTON_ICONS = [
         </SettingRow>
       </Section>
 
+      <Section title="Overlay buttons">
+        <SettingRow label="Buttons on the bar" hint="Besides the DPS meter, Map, Kill feed and Pets: a click turns each overlay on or off.">
+          <div class="flex flex-wrap justify-end gap-1">
+            <button
+              v-for="w in HUD_WIDGETS"
+              :key="w"
+              type="button"
+              :class="['rounded-md border px-2 py-0.5 text-xs', cfg.widgets.includes(w) ? 'border-accent bg-accent/15 text-accent' : 'border-light text-dark hover:bg-dark']"
+              @click="set({ widgets: cfg.widgets.includes(w) ? cfg.widgets.filter((x) => x !== w) : HUD_WIDGETS.filter((x) => x === w || cfg.widgets.includes(x)) })"
+            >
+              {{ t(WIDGET_LABELS[w]) }}
+            </button>
+          </div>
+        </SettingRow>
+      </Section>
+
       <Section title="Widgets and sound">
-        <SettingRow label="Hide the widgets it replaces" hint="Keeps the Enemies overlay and the Boss Runs list closed while the Unified HUD is on, since the bar shows the same things. The enemy sound still plays.">
+        <SettingRow label="Hide the widgets it replaces" hint="Keeps the Enemies overlay closed while the Unified HUD is on, since the bar shows the same things. The enemy sound still plays.">
           <Toggle :model-value="cfg.replace" @update:model-value="set({ replace: $event })" />
         </SettingRow>
         <SettingRow label="Mute every sound" hint="Cubes, enemies and the timers' chime: the same switch as the speaker on the bar.">

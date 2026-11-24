@@ -11,11 +11,9 @@ import { earn, formatAmount, NO_EARNINGS, perHour, series, type EarnedPoint, typ
 export interface KinaSession extends Earnings {
   /** The last balance seen; null until one arrives (and again after entering the world). */
   balance: number | null
-  /** The same of bound Kina (quests' and requests' rewards): earned as much as the rest. */
-  bound?: number | null
 }
 
-export const NO_KINA: KinaSession = { ...NO_EARNINGS, balance: null, bound: null }
+export const NO_KINA: KinaSession = { ...NO_EARNINGS, balance: null }
 
 /** A new balance from the tracker, at `now`. */
 export function kinaBalance(s: KinaSession, balance: number, now: number): KinaSession {
@@ -23,14 +21,8 @@ export function kinaBalance(s: KinaSession, balance: number, now: number): KinaS
   return { ...earn(s, balance - s.balance, now), balance }
 }
 
-/** A new bound Kina balance: its rises are earned too. */
-export function boundKinaBalance(s: KinaSession, balance: number, now: number): KinaSession {
-  if (s.bound === null || s.bound === undefined) return { ...s, bound: balance }
-  return { ...earn(s, balance - s.bound, now), bound: balance }
-}
-
-/** Entering the world (maybe as another character): the next balances are a new starting point. */
-export const kinaRebase = (s: KinaSession): KinaSession => ({ ...s, balance: null, bound: null })
+/** Entering the world (maybe as another character): the next balance is a new starting point. */
+export const kinaRebase = (s: KinaSession): KinaSession => ({ ...s, balance: null })
 
 /** Kina per hour at `now`, or null before there is enough to tell. */
 export const kinaPerHour = perHour

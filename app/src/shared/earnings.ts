@@ -36,6 +36,24 @@ export function earn<S extends Earnings>(s: S, gain: number, now: number): S {
   return { ...s, earned: s.earned + gain, activeMs: s.activeMs + gap, lastAt: now, gains }
 }
 
+/**
+ * Up to `amount` of the gains from `from` to `to` were a reward (a supply request's, a duty
+ * mission's), not farming: taken off, the latest first. The rates count farming only.
+ */
+export function unearn<S extends Earnings>(s: S, amount: number, from: number, to: number): S {
+  let left = amount
+  const gains = s.gains.map(([at, g]): [number, number] => [at, g])
+  for (let i = gains.length - 1; i >= 0 && left > 0; i--) {
+    const [at, g] = gains[i]!
+    if (at < from || at > to) continue
+    const off = Math.min(g, left)
+    gains[i] = [at, g - off]
+    left -= off
+  }
+  const taken = amount - left
+  return taken ? { ...s, earned: Math.max(0, s.earned - taken), gains: gains.filter(([, g]) => g > 0) } : s
+}
+
 /** Earned per hour at `now`, or null before there is enough to tell. */
 export function perHour(s: Earnings, now: number): number | null {
   if (!s.earned || s.lastAt === null) return null

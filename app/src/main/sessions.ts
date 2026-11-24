@@ -296,6 +296,8 @@ export function startSessions(): void {
     // where you stood, nor a rift's.
     const ap = recent.filter((g) => g.kind === 'ap' && g.gained > 0 && at - g.at >= 0 && at - g.at <= QUEST_WITHIN_MS).map((g) => g.gained)
     for (const n of ap) questReward(s, recent, 'ap', n, at)
+    // A reward, not farming: off the Abyss Points per hour.
+    for (const n of ap) abyss.notFarmed(n, at - QUEST_WITHIN_MS, at)
     const apTotal = ap.reduce((a, n) => a + n, 0)
     if (apTotal) {
       rewards[AP_ITEM] = (rewards[AP_ITEM] ?? 0) + apTotal
@@ -339,9 +341,13 @@ export function startSessions(): void {
         let moved = false
         if (ap && questReward(s, recent, 'ap', ap, now, 'supply')) {
           abyss.notRift(at - QUEST_WITHIN_MS, now)
+          abyss.notFarmed(ap, at - QUEST_WITHIN_MS, now)
           moved = true
         }
-        if (kina && questReward(s, recent, 'kina', kina, now, 'supply')) moved = true
+        if (kina && questReward(s, recent, 'kina', kina, now, 'supply')) {
+          tracker.kinaNotFarmed(kina, at - QUEST_WITHIN_MS, now)
+          moved = true
+        }
         if (moved) changed()
         else log(`session: supply request ${String(ev['request'])}'s rewards came with no gain to take them from`)
       }, 1_500)

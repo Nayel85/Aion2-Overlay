@@ -263,3 +263,14 @@ test("Europe's corridors come back with the siege: Thursday and Saturday 21:00 B
   assert.equal(new Date(nextCorridorReset(monday)).toISOString(), '2026-11-26T20:00:00.000Z')
   setPlayerRegion('na-east')
 })
+
+test("A reward comes off the farming rate: the latest gains in its window first", async () => {
+  const { earn, unearn, NO_EARNINGS } = await import('../src/shared/earnings.ts')
+  let s = earn(earn(earn(NO_EARNINGS, 100, 1_000), 50, 5_000), 1_640, 6_000)
+  // A supply request's 1,640 Abyss Points, handed in around 6 s.
+  s = unearn(s, 1_640, 3_000, 7_000)
+  assert.equal(s.earned, 150)
+  assert.deepEqual(s.gains, [[1_000, 100], [5_000, 50]])
+  // Nothing in its window: unchanged.
+  assert.equal(unearn(s, 500, 10_000, 12_000), s)
+})

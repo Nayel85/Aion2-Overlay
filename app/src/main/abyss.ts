@@ -10,7 +10,7 @@ import { readFileSync, writeFile, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { broadcast } from './broadcast.ts'
 import { currentSeason, NO_ABYSS, riftFarms, type AbyssGain, type AbyssSession, type RiftFarm } from '../shared/abyss.ts'
-import { earn } from '../shared/earnings.ts'
+import { earn, unearn } from '../shared/earnings.ts'
 
 const KEEP_MS = 90 * 24 * 3_600_000
 const SAVE_AFTER_MS = 3000
@@ -72,6 +72,11 @@ export const abyss = {
     farms = riftFarms(list)
     broadcast('tracker:rifts', farms)
     save()
+  },
+
+  /** Up to `amount` of the gains from `from` to `to` were a reward, not farming: off the rate. */
+  notFarmed(amount: number, from: number, to: number): void {
+    setSession(unearn(session, amount, from, to))
   },
 
   /**

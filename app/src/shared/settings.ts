@@ -47,6 +47,10 @@ export type PartyAfflictedBy = (typeof PARTY_AFFLICTED_BY)[number]
 /** Party frames: a red HP bar, green while afflicted. */
 export const PARTY_DEFAULT_COLORS = { hp: '#c0392b', afflicted: '#2ea043' } as const
 
+/** The overlays the Unified HUD can have a button for (main/windows.ts OVERLAYS, the training dummy's). */
+export const HUD_WIDGETS = ['party', 'buffs', 'cc', 'flight', 'gather', 'applicants', 'training'] as const
+export type HudWidget = (typeof HUD_WIDGETS)[number]
+
 export interface Settings {
   /** Where the floating icon sits, in screen DIPs; null = bottom right of the primary display. */
   bubble: Point | null
@@ -213,12 +217,13 @@ export interface Settings {
     targetStyle: 'strip' | 'inline'
     /** What the meter follows while it is on: 'always' your last hit, 'players' your last hit while a player is selected, 'meter' as the meter is set. */
     targetMode: 'always' | 'players' | 'meter'
-    /** Kina per hour, and Abyss Points per hour, to the left of the bar while they come in (off by default). */
+    /** Kina per hour and Abyss Points per hour (farming only: rewards are left out), always shown while on. */
     kina: boolean
+    /** The Kina of the session (a coin), every gain counted. */
+    kinaSession: boolean
     abyssRate: boolean
     /** The Abyss Points of the season going on (coin icon): it ends after 15 minutes without any. */
     season: boolean
-    earningsMinutes: number
     rift: boolean
     cubes: boolean
     death: boolean
@@ -228,6 +233,12 @@ export interface Settings {
     clock: boolean
     odyle: boolean
     replace: boolean
+    /** The other overlays' buttons on the bar: each turns its overlay on or off. */
+    widgets: HudWidget[]
+    /** Chips: join requests to your party, a personal best just beaten, the corridors still to do. */
+    applicants: boolean
+    bests: boolean
+    corridors: boolean
   }
 
   /** Every alert's sound off (the Unified HUD's speaker): cubes, enemies, the timers' chime. */
@@ -413,7 +424,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   merchantWindow: { x: 342, y: 859 },
   detailsWindow: { x: 449, y: 251 },
   timerBar: { enabled: true, position: { x: 859, y: 141 }, opacity: 0.92, layout: 'list' },
-  unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, earningsMinutes: 10, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, clock: true, odyle: true, replace: false },
+  unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, clock: true, odyle: true, replace: false, kinaSession: true, widgets: ['party', 'buffs', 'cc', 'flight', 'gather', 'applicants'], applicants: true, bests: true, corridors: true },
   muted: false,
   applicants: { enabled: true, position: null, opacity: 0.85, collapsed: false, hideAfter: 60 },
   party: {
@@ -593,10 +604,11 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       return {
         ...fields(v, d.unified, {
           enabled: BOOL, position: POINT, opacity: range(0, 1), scale: range(0.75, 1.75), events: BOOL, countdownMinutes: whole(1, 60), ping: BOOL,
-          target: BOOL, targetSeconds: whole(3, 60), kina: BOOL, abyssRate: BOOL, season: BOOL, earningsMinutes: whole(1, 60), rift: BOOL,
+          target: BOOL, targetSeconds: whole(3, 60), kina: BOOL, abyssRate: BOOL, season: BOOL, rift: BOOL,
           cubes: BOOL, death: BOOL, deathMinutes: whole(1, 60), enemies: BOOL, bosses: BOOL, clock: BOOL, odyle: BOOL,
-          replace: BOOL,
+          replace: BOOL, kinaSession: BOOL, applicants: BOOL, bests: BOOL, corridors: BOOL,
         }),
+        widgets: Array.isArray(v.widgets) ? HUD_WIDGETS.filter((w) => v.widgets!.includes(w)) : [...u.widgets],
         targetStyle: v.targetStyle === 'strip' ? 'strip' : 'inline',
         targetMode: v.targetMode === 'players' || v.targetMode === 'meter' ? v.targetMode : 'always',
       } as Settings[K]
