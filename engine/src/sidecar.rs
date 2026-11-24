@@ -37,7 +37,6 @@
 //!                                                     a player (you, your party) down to 0 HP
 //!   {"type": "loot", "ts": ms, "source": 2, "items": [{"item": 631800004, "amount": 1}]}
 //!                                                     a reward cube opened: everything it gave
-//!   {"type": "questReward", "ts": ms, "quest": 5401914, "rewards": [{"item": 930100003, "amount": 770}]}
 //!                                                     a quest handed in: what it gave (after the items' changes)
 //!   {"type": "wallet", "ts": ms, "name": "Ksix", "server": 1104, "kina": 12800000, "boundKina": 0}
 //!                                                     your Kina and bound Kina, at login (null: not listed)
@@ -57,7 +56,7 @@
 //!   {"type": "craftDone", "recipe"}   a craft over, made or failed
 //!   {"type": "spot", "template", "world", "position": [x, y]}   a gathering spot in view (the map's frame)
 //!   {"type": "gatherEnd", "node"}   the gathering over: done (its result follows) or given up
-//!   {"type": "gatherStart", "node", "template" | null, "kind" | null, "try", "outcome": 1 gathered | 7 ranked up | 0 failed, "grade", "doubled", "durationMs"}   a gathering starting, its outcome already known
+//!   {"type": "gatherStart", "node", "template" | null, "try", "outcome": 1 gathered | 7 ranked up | 0 failed, "grade", "doubled", "durationMs"}   a gathering starting, its outcome already known
 //!   {"type": "partyDebuffs", "debuffs": {"<entity>": [buff as in "buffs"]}}   what is on your party, you too (debuffs, shields...), as it changes
 //!   {"type": "bossTarget", "boss", "target"}   a boss hit a player: the one it is on
 //!   {"type": "partyVitals", "entity", "hp", "maxHp", "flight", "maxFlight"}   a member's vitals (`1B 92`, about once a second each)

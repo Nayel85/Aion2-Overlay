@@ -198,7 +198,7 @@ pub struct Tracker {
     party_checked: i64,
     /// Objects in view but cubes (gathering spots...), their template by id: a gathering's start
     /// names only its spot, whose template says what it gives.
-    objects: HashMap<u32, (u32, Option<u32>)>,
+    objects: HashMap<u32, u32>,
     /// The craft going on (its recipe), and once done, when: the bags' next change is its item.
     craft: Option<u32>,
     craft_done: Option<(u32, i64)>,
@@ -910,7 +910,7 @@ impl Tracker {
                         if self.objects.len() > 5000 {
                             self.objects.clear();
                         }
-                        self.objects.insert(o.id, (o.template, o.tail));
+                        self.objects.insert(o.id, o.template);
                         // A gathering spot (templates 1500000 up, one per resource): where it is, for
                         // the app to tell its resource by the map's.
                         if (1_500_000..1_501_000).contains(&o.template) {
@@ -1160,8 +1160,8 @@ impl Tracker {
                     // Its bytes, to read what a new skill or outcome looks like without a packet log.
                     tracing::info!("gathering start: {}", f.iter().map(|b| format!("{b:02x}")).collect::<String>());
                     self.gathering = Some(node);
-                    let (template, kind) = self.objects.get(&node).map_or((None, None), |&(t, k)| (Some(t), k));
-                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "kind": kind, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled, "durationMs": ms,
+                    let template = self.objects.get(&node).copied();
+                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled, "durationMs": ms,
                         "rolls": rolls.iter().map(|r| json!({ "ms": r.ms, "success": r.success, "failure": r.failure, "luck": r.luck, "doubled": r.doubled, "skills": r.skills })).collect::<Vec<_>>() }));
                 }
             }
@@ -1227,17 +1227,12 @@ impl Tracker {
                 let raw: String = f.iter().map(|b| format!("{b:02x}")).collect();
                 tracing::info!("nightmare ended: {raw}");
             }
-            p::OP_QUEST_REWARD => {
+            p::OP_SUPPLY_DONE => {
                 // A supply request handed in (its id the second number).
                 if let Some((request, rewards)) = p::supply_done(f) {
                     tracing::info!("supply request {request} handed in: {rewards:?}");
                     let rewards: Vec<Value> = rewards.iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect();
                     (self.emit)(json!({ "type": "supplyDone", "ts": ts, "request": request, "rewards": rewards }));
-                }
-                if let Some((quest, rewards)) = p::quest_reward(f) {
-                    let rewards: Vec<Value> = rewards.into_iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect();
-                    tracing::info!("quest reward: {quest} {rewards:?}");
-                    (self.emit)(json!({ "type": "questReward", "ts": ts, "quest": quest, "rewards": rewards }));
                 }
             }
             p::OP_ITEM_LIST => {

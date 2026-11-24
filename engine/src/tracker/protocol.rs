@@ -41,7 +41,7 @@ pub const OP_COUNTER: [u8; 2] = [0x0C, 0x61];
 pub const OP_ABYSS_POINTS: [u8; 2] = [0xAB, 0xFF];
 pub const OP_SUBSCRIPTIONS: [u8; 2] = [0x3B, 0xE3];
 pub const OP_ITEM_LIST: [u8; 2] = [0x11, 0x56];
-pub const OP_QUEST_REWARD: [u8; 2] = [0x3F, 0xE2];
+pub const OP_SUPPLY_DONE: [u8; 2] = [0x3F, 0xE2];
 pub const OP_DUNGEON_START: [u8; 2] = [0x01, 0x40];
 pub const OP_DUNGEON_CLEAR: [u8; 2] = [0x01, 0x61];
 pub const OP_NIGHTMARE_START: [u8; 2] = [0x35, 0xE2];
@@ -615,17 +615,6 @@ pub fn wallet(frame: &[u8]) -> Option<(Option<u64>, Option<u64>)> {
     (kina.is_some() || bound.is_some()).then_some((kina, bound))
 }
 
-/// A quest's rewards (`3F E2`, sent with the items' changes as you hand it in): `<quest u32> <u32>
-/// <u32> <count u8> (<item u32> <amount u32>)*`. The owner's 2026-11-22 Abyss Supply Request: quest
-/// 5401914, 770 Abyss Points (930100003) and 200 enhancement stones (930100023). (quest, rewards).
-pub fn quest_reward(frame: &[u8]) -> Option<(u32, Vec<(u32, u32)>)> {
-    let b = body(frame, OP_QUEST_REWARD)?;
-    let quest = u32_at(b, 0)?;
-    let count = *b.get(12)? as usize;
-    let rewards: Option<Vec<(u32, u32)>> = (0..count).map(|i| Some((u32_at(b, 13 + 8 * i)?, u32_at(b, 17 + 8 * i)?))).collect();
-    (13 + 8 * count == b.len()).then_some((quest, rewards?))
-}
-
 /// The currencies the Session page counts besides Kina and Abyss Points (questlog.gg's item ids):
 /// the Enhance Stones (dailies, quests) and the Phantasmal Fragments (the Nightmares).
 pub const SESSION_CURRENCIES: [u32; 2] = [930_100_023, 930_100_017];
@@ -699,12 +688,11 @@ pub fn gather_start(frame: &[u8]) -> Option<(u32, u32, u8, u8, bool, u32, Vec<Ga
     (grade >= 1 && grade <= 9).then_some((node, tries, outcome, grade, doubled, ms, rolls))
 }
 
-/// A supply request handed in (`3F E2 <u32> <request u32> <u32> <n u8> (<item u32> <amount u32>)×n`, the
-/// message `quest_reward` reads):
+/// A supply request handed in (`3F E2 <u32> <request u32> <u32> <n u8> (<item u32> <amount u32>)×n`):
 /// its rewards, the game's set ones. The owner's 2026-11-23 Silentium (1011117): 1640 Abyss Points
 /// and 420 Enhance Stones; Blacksmith Weapon (1013001): 1840 Abyss Points. (request, rewards).
 pub fn supply_done(frame: &[u8]) -> Option<(u32, Vec<(u32, u32)>)> {
-    let b = body(frame, OP_QUEST_REWARD)?;
+    let b = body(frame, OP_SUPPLY_DONE)?;
     let request = u32_at(b, 4)?;
     let n = *b.get(12)? as usize;
     let rewards = (0..n).map(|i| Some((u32_at(b, 13 + 8 * i)?, u32_at(b, 17 + 8 * i)?))).collect::<Option<Vec<_>>>()?;
@@ -1305,9 +1293,6 @@ pub struct ObjectSpawn {
     pub z: f32,
     /// When it spawned (ms since 1970); None when the record has no time.
     pub created_ms: Option<u64>,
-    /// The u32 before the record's closing `07 00 00`. Not a gathering spot's resource (its template
-    /// is: Odyle spots of 2026-11-23 had another than those of the 22nd); told for reading.
-    pub tail: Option<u32>,
 }
 
 /// `34 36 <id varint> <kind u16> <template u32> <x y z f32> <f32> <heading f32>
@@ -1324,8 +1309,7 @@ pub fn object_spawn(frame: &[u8]) -> Option<ObjectSpawn> {
         return None;
     }
     let created_ms = u64_at(b, o + 29).filter(|t| (1_600_000_000_000..2_600_000_000_000).contains(t));
-    let tail = (b.len() >= 7 && b[b.len() - 3..] == [0x07, 0x00, 0x00]).then(|| u32_at(b, b.len() - 7)).flatten();
-    Some(ObjectSpawn { id, template: u32_at(b, o + 2)?, x, y, z, created_ms, tail })
+    Some(ObjectSpawn { id, template: u32_at(b, o + 2)?, x, y, z, created_ms })
 }
 
 /// `35 36 <id varint> <reason u8> ...`: an object gone from view: 04 destroyed
@@ -1694,8 +1678,8 @@ mod tests {
         // An invasion's board names its player with 1E after the name (the Shugo Festival's 0E).
         assert_eq!(board_name(&hex("01190500 2a1a0300 00001905 054e6179656c1e00000001".replace(' ', "").as_str())), Some("Nayel".to_string()));
         // The owner's supply requests: Silentium, then Blacksmith Weapon.
-        assert_eq!(supply_done(&frame(OP_QUEST_REWARD, &hex("3c6d5200ad6d0f000000000002233370376806000037337037a4010000"))), Some((1_011_117, vec![(930_100_003, 1640), (930_100_023, 420)])));
-        assert_eq!(supply_done(&frame(OP_QUEST_REWARD, &hex("0572520009750f0000000000012333703730070000"))), Some((1_013_001, vec![(930_100_003, 1840)])));
+        assert_eq!(supply_done(&frame(OP_SUPPLY_DONE, &hex("3c6d5200ad6d0f000000000002233370376806000037337037a4010000"))), Some((1_011_117, vec![(930_100_003, 1640), (930_100_023, 420)])));
+        assert_eq!(supply_done(&frame(OP_SUPPLY_DONE, &hex("0572520009750f0000000000012333703730070000"))), Some((1_013_001, vec![(930_100_003, 1840)])));
         // The owner's crafts: an Orichalcum Guard (recipe 111086001), then the one that procced.
         assert_eq!(craft_start(&frame(OP_CRAFT_START, &hex("0005b08701b1099f0601000304006500000065000000060070000000700000000100f3010000f3010000"))), Some((111_086_001, 1, 5200)));
         assert_eq!(
@@ -1817,10 +1801,11 @@ mod tests {
     }
 
     #[test]
-    fn a_quest_reward_reads_each_item_and_amount() {
+    fn an_abyss_supply_request_reads_each_item_and_amount() {
+        // The owner's 2026-11-22 Abyss Supply Request: 770 Abyss Points and 200 Enhance Stones.
         let body = hex("3a6d5200c26d0f000000000002233370370203000037337037c8000000");
-        assert_eq!(quest_reward(&frame(OP_QUEST_REWARD, &body)), Some((5_401_914, vec![(930_100_003, 770), (930_100_023, 200)])));
-        assert_eq!(quest_reward(&frame(OP_QUEST_REWARD, &body[..body.len() - 1])), None);
+        assert_eq!(supply_done(&frame(OP_SUPPLY_DONE, &body)), Some((1_011_138, vec![(930_100_003, 770), (930_100_023, 200)])));
+        assert_eq!(supply_done(&frame(OP_SUPPLY_DONE, &body[..body.len() - 1])), None);
     }
 
     #[test]
