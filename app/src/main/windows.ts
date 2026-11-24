@@ -413,7 +413,9 @@ export function createHud(): BrowserWindow {
   hudEditing = false
   win.webContents.once('did-finish-load', () => {
     // Made while the panel is open (the game started meanwhile, or turned on from it): in move mode, like the panel's.
-    if (arranging) setHudEditing(true, false)
+    // Move mode may have begun while the page was still loading, its message lost: told again now.
+    if (arranging && !hudEditing) setHudEditing(true, false)
+    else send(win, 'hud:editing', hudEditing)
     refreshHud()
   })
   load(win, 'hud')
