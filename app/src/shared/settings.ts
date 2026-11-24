@@ -233,6 +233,10 @@ export interface Settings {
     kinaSession: boolean
     /** The Kina's icon: the game's coin (gold, bound), a drawn one, or the word. */
     kinaIcon: KinaIcon
+    /** The Abyss Points': the game's icon, or the word. */
+    apIcon: 'icon' | 'word'
+    /** The app's logo on the bar: only a mark (the cog opens the app). */
+    logo: boolean
     abyssRate: boolean
     /** The Abyss Points of the season going on (coin icon): it ends after 15 minutes without any. */
     season: boolean
@@ -442,7 +446,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   merchantWindow: { x: 342, y: 859 },
   detailsWindow: { x: 449, y: 251 },
   timerBar: { enabled: true, position: { x: 859, y: 141 }, opacity: 0.92, layout: 'list' },
-  unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, clock: true, odyle: true, replace: false, kinaSession: true, kinaIcon: 'game', widgets: ['party', 'buffs', 'cc', 'flight', 'gather', 'applicants'], applicants: true, bests: true, corridors: true },
+  unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, clock: true, odyle: true, replace: false, kinaSession: true, kinaIcon: 'game', apIcon: 'icon', logo: false, widgets: ['party', 'buffs', 'cc', 'flight', 'gather', 'applicants'], applicants: true, bests: true, corridors: true },
   muted: false,
   rates: { kinaDungeons: false, abyssDungeons: false },
   applicants: { enabled: true, position: null, opacity: 0.85, collapsed: false, hideAfter: 60 },
@@ -630,8 +634,9 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
           enabled: BOOL, position: POINT, opacity: range(0, 1), scale: range(0.75, 1.75), events: BOOL, countdownMinutes: whole(1, 60), ping: BOOL,
           target: BOOL, targetSeconds: whole(3, 60), kina: BOOL, abyssRate: BOOL, season: BOOL, rift: BOOL,
           cubes: BOOL, death: BOOL, deathMinutes: whole(1, 60), enemies: BOOL, bosses: BOOL, clock: BOOL, odyle: BOOL,
-          replace: BOOL, kinaSession: BOOL, applicants: BOOL, bests: BOOL, corridors: BOOL,
+          replace: BOOL, logo: BOOL, kinaSession: BOOL, applicants: BOOL, bests: BOOL, corridors: BOOL,
         }),
+        apIcon: v.apIcon === 'word' ? 'word' : 'icon',
         kinaIcon: (KINA_ICONS as readonly unknown[]).includes(v.kinaIcon) ? v.kinaIcon! : u.kinaIcon,
         widgets: Array.isArray(v.widgets) ? HUD_WIDGETS.filter((w) => v.widgets!.includes(w)) : [...u.widgets],
         targetStyle: v.targetStyle === 'strip' ? 'strip' : 'inline',

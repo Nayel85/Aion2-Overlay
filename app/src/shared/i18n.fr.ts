@@ -1613,4 +1613,8 @@ export const FR: Record<string, string> = {
   'Gold coin': 'Pièce d\'or',
   'Drawn coin': 'Pièce dessinée',
   'The word': 'Le mot',
+  'The game's icon': 'L'icône du jeu',
+  'Logo': 'Logo',
+  'The app's logo on the bar: only a mark, the cog opens the app.': 'Le logo de l'app sur la barre : juste une marque, l'engrenage ouvre l'app.',
+  'Abyss Points icon': 'Icône des Abyss Points',
 }

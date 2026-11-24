@@ -389,7 +389,8 @@ onBeforeUnmount(() => {
               <span v-if="kinaText" class="font-medium" :title="t('Your farming\'s Kina per hour (rewards left out)')">{{ kinaText }}<span class="text-darker">/h</span></span>
             </span>
             <span v-if="abyssText || season" class="flex items-center gap-1.5 text-xs font-semibold tabular-nums text-blue">
-              <img :src="'items/abyss-point.webp'" alt="AP" class="size-4" draggable="false" />
+              <img v-if="cfg.apIcon === 'icon'" :src="'items/abyss-point.webp'" alt="AP" class="size-4" draggable="false" />
+              <span v-else class="font-medium text-darker">AP</span>
               <span v-if="season" :title="t('Abyss Points earned since you logged in with this character (by source on the Session page)')">{{ formatAmount(season.points) }}</span>
               <span v-if="abyssText" class="font-medium" :title="t('Your farming\'s Abyss Points per hour, at your pace of the last 15 seconds (rewards left out)')">{{ abyssText }}<span class="text-darker">/h</span></span>
             </span>
@@ -401,7 +402,7 @@ onBeforeUnmount(() => {
             <span class="h-4 w-px bg-light" />
           </template>
 
-          <img src="/icon.png" alt="Lokthar" class="size-[18px] shrink-0" draggable="false" />
+          <img v-if="cfg.logo" src="/icon.png" alt="Nayel Overlay" class="size-[18px] shrink-0" draggable="false" />
 
           <span v-if="cfg.clock" class="text-xs font-medium tabular-nums text-dark" :title="t('Local time')">{{ localTime }}</span>
           <button

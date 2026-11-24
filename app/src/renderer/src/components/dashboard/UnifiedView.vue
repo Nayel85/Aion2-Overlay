@@ -72,13 +72,14 @@ const BUTTON_ICONS = [
             <span v-if="cfg.kina" class="font-medium">1.72M<span class="text-darker">/h</span></span>
           </span>
           <span v-if="cfg.season || cfg.abyssRate" class="flex items-center gap-1.5 text-xs font-semibold tabular-nums text-blue">
-            <img :src="'items/abyss-point.webp'" alt="AP" class="size-4" draggable="false" />
+            <img v-if="cfg.apIcon === 'icon'" :src="'items/abyss-point.webp'" alt="AP" class="size-4" draggable="false" />
+            <span v-else class="font-medium text-darker">AP</span>
             <span v-if="cfg.season">12.3k</span>
             <span v-if="cfg.abyssRate" class="font-medium">8.4k<span class="text-darker">/h</span></span>
           </span>
           <span class="h-4 w-px bg-light" />
         </template>
-        <img src="/icon.png" alt="" class="size-[18px]" draggable="false" />
+        <img v-if="cfg.logo" src="/icon.png" alt="" class="size-[18px]" draggable="false" />
         <span v-if="cfg.clock" class="text-xs font-medium tabular-nums text-dark">21:52</span>
         <span v-if="cfg.odyle" class="flex items-center gap-1 text-xs font-medium tabular-nums text-dark"><img :src="'items/odyle-energy.webp'" alt="" class="size-4" draggable="false" />120</span>
         <template v-if="cfg.events">
@@ -112,6 +113,9 @@ const BUTTON_ICONS = [
         </SettingRow>
         <SettingRow label="Ping" hint="Your ping to the game server.">
           <Toggle :model-value="cfg.ping" @update:model-value="set({ ping: $event })" />
+        </SettingRow>
+        <SettingRow label="Logo" hint="The app's logo on the bar: only a mark, the cog opens the app.">
+          <Toggle :model-value="cfg.logo" @update:model-value="set({ logo: $event })" />
         </SettingRow>
         <SettingRow label="Local time" hint="A clock, for when you play full screen.">
           <Toggle :model-value="cfg.clock" @update:model-value="set({ clock: $event })" />
@@ -153,6 +157,21 @@ const BUTTON_ICONS = [
               <img v-if="KINA_ICON_IMG[i]" :src="KINA_ICON_IMG[i]!" alt="" class="size-5" draggable="false" />
               <svg v-else-if="i === 'drawn'" viewBox="0 0 16 16" class="size-5" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6" /><path d="M8 4.5v7M6 6.2c.3-.7 1-1 2-1s1.9.5 1.9 1.3c0 1.8-3.8 1-3.8 2.9 0 .8.8 1.3 1.9 1.3s1.7-.3 2-1" stroke-linecap="round" /></svg>
               <span v-else>Kina</span>
+            </button>
+          </div>
+        </SettingRow>
+        <SettingRow label="Abyss Points icon">
+          <div class="flex items-center gap-1">
+            <button
+              v-for="i in (['icon', 'word'] as const)"
+              :key="i"
+              type="button"
+              :class="['flex h-8 min-w-8 items-center justify-center rounded-md border px-1.5 text-xs font-semibold text-blue', cfg.apIcon === i ? 'border-accent bg-accent/15' : 'border-light hover:bg-dark']"
+              :title="i === 'icon' ? t('The game\'s icon') : t('The word')"
+              @click="set({ apIcon: i })"
+            >
+              <img v-if="i === 'icon'" :src="'items/abyss-point.webp'" alt="" class="size-5" draggable="false" />
+              <span v-else>AP</span>
             </button>
           </div>
         </SettingRow>
