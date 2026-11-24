@@ -16,7 +16,7 @@ import { ITEMS } from './items.ts'
 import { QUESTS } from './quests.ts'
 import { SUPPLIES } from './supplies.ts'
 import { GATHERABLES } from './gatherables.ts'
-import type { ItemTuple } from './itemRef.ts'
+import { itemIcon, type ItemTuple } from './itemRef.ts'
 import { RECIPES } from './recipes.ts'
 import { ZONES } from './zones.ts'
 
@@ -258,7 +258,7 @@ export const LOOT_KINDS: { key: keyof LootCounts; label: string }[] = [
  * serves it: a bundled one by its name, one with a path ("Item/Armor/...") through the main
  * process, which fetches it once and keeps it (main/icons.ts).
  */
-export const itemIcon = (icon: string | null | undefined): string | null => (icon ? (icon.includes('/') ? `itemicon://icon/${icon}.webp` : `items/loot/${icon}.webp`) : null)
+export { itemIcon }
 
 /** One line of what a run gave: an item, how many, and whether it is a currency (Kina, Abyss Points...). */
 export interface RewardRow {

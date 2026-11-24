@@ -1,61 +1,42 @@
 <script setup lang="ts">
-// One renderer, nineteen windows: the hash says which one this is. Read once, from location rather
-// than a router, so a window never flashes another window's page (a marnis-app lesson).
-import { onMounted } from 'vue'
-import BossRunsPage from './pages/BossRunsPage.vue'
-import ApplicantsPage from './pages/ApplicantsPage.vue'
-import PartyPage from './pages/PartyPage.vue'
-import FlightPage from './pages/FlightPage.vue'
-import GatherPage from './pages/GatherPage.vue'
-import EventToastPage from './pages/EventToastPage.vue'
-import BubblePage from './pages/BubblePage.vue'
-import BuffsPage from './pages/BuffsPage.vue'
-import CcPage from './pages/CcPage.vue'
-import EnemiesPage from './pages/EnemiesPage.vue'
-import TrainingPage from './pages/TrainingPage.vue'
-import DetailsPage from './pages/DetailsPage.vue'
-import GameMapPage from './pages/GameMapPage.vue'
-import RegionPickPage from './pages/RegionPickPage.vue'
-import HudPage from './pages/HudPage.vue'
-import KillFeedPage from './pages/KillFeedPage.vue'
-import MerchantPage from './pages/MerchantPage.vue'
-import MeterPage from './pages/MeterPage.vue'
-import MiniMapPage from './pages/MiniMapPage.vue'
-import SkillsPage from './pages/SkillsPage.vue'
-import TimerBarPage from './pages/TimerBarPage.vue'
-import UnifiedPage from './pages/UnifiedPage.vue'
-import PacketsPage from './pages/PacketsPage.vue'
-import PanelPage from './pages/PanelPage.vue'
+// One renderer, many windows: the hash says which one this is. Read once, from location rather
+// than a router, so a window never flashes another window's page (a marnis-app lesson). Each page is
+// loaded on its own, so a small overlay does not load the dashboard's code and tables.
+import { defineAsyncComponent, onMounted, type Component } from 'vue'
 import { useApp } from './stores/app.ts'
 
+const PAGES: Record<string, () => Promise<{ default: Component }>> = {
+  bossruns: () => import('./pages/BossRunsPage.vue'),
+  applicants: () => import('./pages/ApplicantsPage.vue'),
+  party: () => import('./pages/PartyPage.vue'),
+  flight: () => import('./pages/FlightPage.vue'),
+  gather: () => import('./pages/GatherPage.vue'),
+  eventtoast: () => import('./pages/EventToastPage.vue'),
+  bubble: () => import('./pages/BubblePage.vue'),
+  buffs: () => import('./pages/BuffsPage.vue'),
+  cc: () => import('./pages/CcPage.vue'),
+  enemies: () => import('./pages/EnemiesPage.vue'),
+  training: () => import('./pages/TrainingPage.vue'),
+  details: () => import('./pages/DetailsPage.vue'),
+  gamemap: () => import('./pages/GameMapPage.vue'),
+  regionpick: () => import('./pages/RegionPickPage.vue'),
+  hud: () => import('./pages/HudPage.vue'),
+  killfeed: () => import('./pages/KillFeedPage.vue'),
+  merchant: () => import('./pages/MerchantPage.vue'),
+  meter: () => import('./pages/MeterPage.vue'),
+  minimap: () => import('./pages/MiniMapPage.vue'),
+  skills: () => import('./pages/SkillsPage.vue'),
+  timerbar: () => import('./pages/TimerBarPage.vue'),
+  unified: () => import('./pages/UnifiedPage.vue'),
+  packets: () => import('./pages/PacketsPage.vue'),
+  panel: () => import('./pages/PanelPage.vue'),
+}
 const page = location.hash.replace(/^#\/?/, '') || 'panel'
+const Page = defineAsyncComponent(PAGES[page] ?? PAGES['panel']!)
 const store = useApp()
 onMounted(() => void store.init())
 </script>
 
 <template>
-  <BubblePage v-if="page === 'bubble'" />
-  <HudPage v-else-if="page === 'hud'" />
-  <MerchantPage v-else-if="page === 'merchant'" />
-  <MeterPage v-else-if="page === 'meter'" />
-  <KillFeedPage v-else-if="page === 'killfeed'" />
-  <TimerBarPage v-else-if="page === 'timerbar'" />
-  <UnifiedPage v-else-if="page === 'unified'" />
-  <DetailsPage v-else-if="page === 'details'" />
-  <SkillsPage v-else-if="page === 'skills'" />
-  <MiniMapPage v-else-if="page === 'minimap'" />
-  <BuffsPage v-else-if="page === 'buffs'" />
-  <CcPage v-else-if="page === 'cc'" />
-  <EnemiesPage v-else-if="page === 'enemies'" />
-  <BossRunsPage v-else-if="page === 'bossruns'" />
-  <EventToastPage v-else-if="page === 'eventtoast'" />
-  <ApplicantsPage v-else-if="page === 'applicants'" />
-  <PartyPage v-else-if="page === 'party'" />
-  <FlightPage v-else-if="page === 'flight'" />
-  <GatherPage v-else-if="page === 'gather'" />
-  <TrainingPage v-else-if="page === 'training'" />
-  <PacketsPage v-else-if="page === 'packets'" />
-  <GameMapPage v-else-if="page === 'gamemap'" />
-  <RegionPickPage v-else-if="page === 'regionpick'" />
-  <PanelPage v-else />
+  <component :is="Page" />
 </template>

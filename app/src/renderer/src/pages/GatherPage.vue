@@ -14,7 +14,7 @@ import { playSound } from '@/lib/sound.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import type { GatherForecast } from '@shared/gather.ts'
-import { itemIcon } from '@shared/sessions.ts'
+import { itemIcon } from '@shared/itemRef.ts'
 
 const store = useApp()
 const api = bridge()

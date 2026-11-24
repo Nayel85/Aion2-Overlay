@@ -12,7 +12,9 @@ import { perHour, series } from '@shared/earnings.ts'
 import type { FieldBosses, TimerAlert, TimerId } from '@shared/timers.ts'
 import type { Buff } from '@shared/buffs.ts'
 import type { Characters } from '@shared/characters.ts'
-import { NO_SESSIONS, type Sessions } from '@shared/sessions.ts'
+// Only its type: the sessions module brings the item, recipe and gathering tables, which only the
+// dashboard needs (each window loads its own page).
+import type { Sessions } from '@shared/sessions.ts'
 import { NO_INVENTORIES, type Inventories } from '@shared/inventory.ts'
 import { NO_APPLICANTS, type Applicants } from '@shared/applicants.ts'
 import { NO_PARTY, type Party } from '@shared/party.ts'
@@ -43,7 +45,7 @@ export const useApp = defineStore('app', () => {
   /** Your characters, with their counters at their last login (the Characters page). */
   const characters = ref<Characters>({})
   /** The play sessions: the character playing's since their login, and the past ones. */
-  const sessions = ref<Sessions>(NO_SESSIONS)
+  const sessions = ref<Sessions>({ current: null, history: [] })
   /** Your characters' items, as of each one's last login. */
   const inventories = ref<Inventories>(NO_INVENTORIES)
   /** Join requests to your party (the Applicants widget). */
