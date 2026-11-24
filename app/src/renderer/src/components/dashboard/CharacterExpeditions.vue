@@ -4,10 +4,11 @@
 // cubes opened of the guaranteed chest's ceiling, a bar each; a chest due stands out in green. As the
 // game said at each one's last login, counted on with each cube since.
 import { computed } from 'vue'
+import ClassIcon from '@/components/ClassIcon.vue'
 import { plural, t } from '@/lib/i18n.ts'
 import { EXPEDITION_MODES, expeditionCell, shownExpeditions, type Expeditions } from '@shared/expeditions.ts'
 
-const props = defineProps<{ characters: { id: string; name: string }[]; state: Expeditions }>()
+const props = defineProps<{ characters: { id: string; name: string; className: string | null }[]; state: Expeditions }>()
 const names = computed(() => shownExpeditions(props.state))
 const known = computed(() => props.characters.filter((c) => props.state[c.id]))
 function title(name: string, mode: string, cell: { cubes: number | null; ceiling: number; left: number | null }): string {
@@ -26,7 +27,9 @@ function title(name: string, mode: string, cell: { cubes: number | null; ceiling
       <thead class="text-darker">
         <tr class="border-b border-card">
           <th class="py-2 pl-4 text-left font-medium">{{ t('Expedition') }}</th>
-          <th v-for="c in known" :key="c.id" class="px-3 text-left font-medium">{{ c.name }}</th>
+          <th v-for="c in known" :key="c.id" class="px-3 text-left font-medium">
+            <span class="flex items-center gap-1.5"><ClassIcon :class-name="c.className" :size="16" />{{ c.name }}</span>
+          </th>
         </tr>
       </thead>
       <tbody>

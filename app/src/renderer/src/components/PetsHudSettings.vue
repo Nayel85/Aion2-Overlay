@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// The pets HUD's settings (pages/HudPage.vue), on the Pets page: what it shows, its look, and the
-// pets left out (maxed) and the Black Cloud Merchant's window.
+// The Pets page's settings, each part on its own: the pets HUD over the game (pages/HudPage.vue),
+// the Black Cloud Merchant's window (pages/MerchantPage.vue), and the pets left out (maxed). The Hidden
+// Cubes' are on the Map page; the session's Kina and Abyss Points per hour on the Unified HUD.
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import Button from '@/components/Button.vue'
@@ -41,12 +42,6 @@ const HUD_MODES = [
       <SettingRow label="Soul pop-ups" hint="A line for each soul as it drops.">
         <Toggle :model-value="store.settings.hud.toasts" @update:model-value="store.setHud({ toasts: $event })" />
       </SettingRow>
-      <SettingRow label="Kina per hour" hint="This session's Kina per hour, at the top right of the HUD.">
-        <Toggle :model-value="store.settings.hud.kina" @update:model-value="store.setHud({ kina: $event })" />
-      </SettingRow>
-      <SettingRow label="Abyss Points per hour" hint="This session's Abyss Points per hour, beside the Kina at the top right of the HUD.">
-        <Toggle :model-value="store.settings.hud.abyss" @update:model-value="store.setHud({ abyss: $event })" />
-      </SettingRow>
       <SettingRow label="Hide without game traffic" hint="When the game has sent nothing for 15 seconds.">
         <Toggle :model-value="store.settings.hud.hideWithoutGame" @update:model-value="store.setHud({ hideWithoutGame: $event })" />
       </SettingRow>
@@ -62,12 +57,18 @@ const HUD_MODES = [
       </SettingRow>
       <OverlayWindowSettings overlay="hud" setting="hud" :scale="[0.75, 1.75]" />
     </template>
-    <SettingRow label="Hide maxed (Lv3) pets" hint="They earn no more souls: left out of the Pets page, Nearby and the HUD.">
-      <Toggle :model-value="store.settings.hideMaxed" @update:model-value="store.set('hideMaxed', $event)" />
-    </SettingRow>
-    <SettingRow label="Black Cloud Merchant pets" hint="When you open one of its tabs, a window lists the pets it sells that you have not maxed: prices, and where they spawn.">
+  </Section>
+
+  <Section title="Black Cloud Merchant window" icon="M2.5 5.5h11l-1 8h-9zM5.5 5.5V4a2.5 2.5 0 0 1 5 0v1.5" class="mt-6">
+    <SettingRow label="Show as you open the shop" hint="When you open one of its tabs, a window lists the pets it sells that you have not maxed: prices, where they come from, and where they spawn.">
       <Toggle :model-value="store.settings.hud.merchant" @update:model-value="store.setHud({ merchant: $event })" />
     </SettingRow>
     <OverlayWindowSettings v-if="store.settings.hud.merchant" overlay="merchant" setting="hud" :opacity-min="null" />
+  </Section>
+
+  <Section title="Pets list" icon="M2.5 3.5h11M2.5 8h11M2.5 12.5h7" class="mt-6">
+    <SettingRow label="Hide maxed (Lv3) pets" hint="They earn no more souls: left out of the Pets page, Nearby and the HUD.">
+      <Toggle :model-value="store.settings.hideMaxed" @update:model-value="store.set('hideMaxed', $event)" />
+    </SettingRow>
   </Section>
 </template>

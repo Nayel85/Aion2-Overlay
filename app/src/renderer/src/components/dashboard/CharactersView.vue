@@ -372,7 +372,7 @@ function corridorTitle(list: CorridorState[]): string {
       </div>
 
       <!-- Expeditions: each character's cubes toward the guaranteed chests. -->
-      <CharacterExpeditions :characters="s.rows.map((r) => ({ id: r.id, name: r.c.name }))" :state="expeditions" />
+      <CharacterExpeditions :characters="s.rows.map((r) => ({ id: r.id, name: r.c.name, className: r.c.className }))" :state="expeditions" />
     </section>
   </div>
 </template>

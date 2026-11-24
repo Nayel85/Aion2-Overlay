@@ -102,10 +102,6 @@ export interface Settings {
     idleHideSeconds: number
     /** Pop up the Black Cloud Merchant's pets worth buying when one of its tabs is opened. */
     merchant: boolean
-    /** This session's Kina per hour, at the top right. */
-    kina: boolean
-    /** This session's Abyss Points per hour, beside the Kina. */
-    abyss: boolean
     /** Hidden Cubes in view at the top, with how far and which way (set on the Map page, with the other cube settings). */
     cubes: boolean
   }
@@ -447,7 +443,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   panelHideOnGame: false,
   arrangeWithPanel: false,
   clock24: true,
-  hud: { enabled: false, position: { x: 1758, y: 39 }, mode: 'pinned', nearby: true, nearbyCount: 3, pinned: [], recentCount: 3, toasts: true, opacity: 0.92, scale: 1, hideWithoutGame: true, idleHideSeconds: 45, merchant: true, kina: true, abyss: true, cubes: false },
+  hud: { enabled: false, position: { x: 1758, y: 39 }, mode: 'pinned', nearby: true, nearbyCount: 3, pinned: [], recentCount: 3, toasts: true, opacity: 0.92, scale: 1, hideWithoutGame: true, idleHideSeconds: 45, merchant: true, cubes: false },
   cubes: { sound: true, soundId: 'chime', volume: 0.6, customName: null },
   minimap: { enabled: false, position: { x: 2098, y: 722 }, size: 260, height: null, opacity: 0.92, zoom: 16.26, collapsed: false, gatherables: false },
   mapPage: { needed: true, cubes: false, gatherables: false, hiddenPets: [] },
@@ -575,7 +571,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
       return {
         ...fields(v, d.hud, {
           enabled: BOOL, position: POINT, nearby: BOOL, nearbyCount: whole(1, 8), recentCount: whole(1, 8), toasts: BOOL, opacity: range(0.3, 1),
-          scale: range(0.75, 1.75), hideWithoutGame: BOOL, idleHideSeconds: whole(0, 600), merchant: BOOL, kina: BOOL, abyss: BOOL, cubes: BOOL,
+          scale: range(0.75, 1.75), hideWithoutGame: BOOL, idleHideSeconds: whole(0, 600), merchant: BOOL, cubes: BOOL,
         }),
         // 'nearby' was a mode before it became its own section (0.1.3).
         mode: v.mode === 'pinned' ? 'pinned' : 'recent',

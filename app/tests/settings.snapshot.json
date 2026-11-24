@@ -407,12 +407,10 @@
  ],
  "hud": [
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -425,12 +423,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -443,12 +439,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -461,12 +455,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -479,12 +471,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -497,12 +487,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "pinned",
    "nearby": true,
@@ -518,12 +506,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -536,12 +522,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 600,
-   "kina": true,
    "merchant": true,
    "mode": "pinned",
    "nearby": true,
@@ -557,12 +541,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 0,
-   "kina": true,
    "merchant": true,
    "mode": "pinned",
    "nearby": true,
@@ -578,12 +560,10 @@
    "toasts": true
   },
   {
-   "abyss": false,
    "cubes": true,
    "enabled": true,
    "hideWithoutGame": false,
    "idleHideSeconds": 45,
-   "kina": false,
    "merchant": false,
    "mode": "pinned",
    "nearby": false,
@@ -599,12 +579,10 @@
    "toasts": false
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "pinned",
    "nearby": true,
@@ -617,12 +595,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -635,12 +611,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -653,12 +627,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -671,12 +643,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -689,12 +659,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -707,12 +675,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -725,12 +691,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -743,12 +707,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -761,12 +723,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -779,12 +739,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -797,12 +755,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -815,12 +771,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -833,12 +787,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -851,12 +803,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -869,12 +819,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -887,12 +835,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -905,12 +851,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -923,12 +867,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -941,12 +883,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -959,12 +899,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -977,12 +915,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -995,12 +931,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -1013,12 +947,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -1031,12 +963,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -1049,12 +979,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -1067,12 +995,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
@@ -1088,12 +1014,10 @@
    "toasts": true
   },
   {
-   "abyss": true,
    "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
-   "kina": true,
    "merchant": true,
    "mode": "recent",
    "nearby": true,
