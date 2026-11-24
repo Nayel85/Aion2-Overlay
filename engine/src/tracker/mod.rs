@@ -9,6 +9,9 @@
 
 pub mod damage;
 pub mod data;
+mod gathering;
+mod party;
+mod rewards;
 pub mod protocol;
 pub mod pvp;
 pub mod store;
@@ -1116,125 +1119,6 @@ impl Tracker {
                     self.pending_counters = Some((ts, list));
                 }
             }
-            p::OP_DUNGEON_START => {
-                if let Some(zone) = p::dungeon_start(f) {
-                    (self.emit)(json!({ "type": "dungeonStart", "ts": ts, "zone": zone }));
-                }
-            }
-            p::OP_DUNGEON_CLEAR => {
-                if let Some(zone) = p::dungeon_clear(f) {
-                    tracing::info!("dungeon cleared: {zone}");
-                    (self.emit)(json!({ "type": "dungeonClear", "ts": ts, "zone": zone }));
-                }
-            }
-            p::OP_NIGHTMARE_START => {
-                if let Some((boss, level)) = p::nightmare_start(f) {
-                    (self.emit)(json!({ "type": "nightmare", "ts": ts, "boss": boss, "level": level }));
-                }
-            }
-            p::OP_CRAFT_START => {
-                if let Some((recipe, outcome, ms)) = p::craft_start(f) {
-                    tracing::info!("craft {recipe}: will be {outcome}");
-                    self.craft = Some(recipe);
-                    (self.emit)(json!({ "type": "craftStart", "ts": ts, "recipe": recipe, "outcome": outcome, "durationMs": ms }));
-                }
-            }
-            p::OP_CRAFT_DONE => {
-                if let Some(recipe) = self.craft.take() {
-                    self.craft_done = Some((recipe, ts));
-                    // Done, made or failed: a failed one puts nothing in the bags (no craftResult).
-                    (self.emit)(json!({ "type": "craftDone", "ts": ts, "recipe": recipe }));
-                }
-            }
-            p::OP_INTERACTION_OVER => {
-                if let Some(object) = p::interaction_over(f)
-                    && self.gathering == Some(object)
-                {
-                    self.gathering = None;
-                    (self.emit)(json!({ "type": "gatherEnd", "ts": ts, "node": object }));
-                }
-            }
-            p::OP_GATHER_START => {
-                if let Some((node, tries, outcome, grade, doubled, ms, rolls)) = p::gather_start(f) {
-                    tracing::info!("gathering {node} (try {tries}): will be {outcome}, grade {grade}, doubled {doubled}");
-                    // Its bytes, to read what a new skill or outcome looks like without a packet log.
-                    tracing::info!("gathering start: {}", f.iter().map(|b| format!("{b:02x}")).collect::<String>());
-                    self.gathering = Some(node);
-                    let template = self.objects.get(&node).copied();
-                    (self.emit)(json!({ "type": "gatherStart", "ts": ts, "node": node, "template": template, "try": tries, "outcome": outcome, "grade": grade, "doubled": doubled, "durationMs": ms,
-                        "rolls": rolls.iter().map(|r| json!({ "ms": r.ms, "success": r.success, "failure": r.failure, "luck": r.luck, "doubled": r.doubled, "skills": r.skills })).collect::<Vec<_>>() }));
-                }
-            }
-            p::OP_GATHER => {
-                if let Some((result, item, amount, bonus)) = p::gather(f) {
-                    tracing::info!("gathered: {amount} + {bonus} x {item} (result {result})");
-                    (self.emit)(json!({ "type": "gather", "ts": ts, "item": item, "amount": amount, "bonus": bonus, "result": result }));
-                }
-            }
-            p::OP_REWARD_BOARD => {
-                if let Some(entries) = p::reward_board(f) {
-                    let entries: Vec<Value> = entries
-                        .into_iter()
-                        .map(|(name, items)| json!({ "name": name, "items": items.into_iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect::<Vec<_>>() }))
-                        .collect();
-                    tracing::info!("reward board: {entries:?}");
-                    (self.emit)(json!({ "type": "rewardBoard", "ts": ts, "entries": entries }));
-                } else {
-                    let raw: String = f.iter().map(|b| format!("{b:02x}")).collect();
-                    tracing::info!("reward board not read: {raw}");
-                }
-            }
-            p::OP_PARTY_VITALS => {
-                if let Some((entity, hp, max_hp, fp, max_fp)) = p::party_vitals(f) {
-                    (self.emit)(json!({ "type": "partyVitals", "ts": ts, "entity": entity, "hp": hp, "maxHp": max_hp, "flight": fp, "maxFlight": max_fp }));
-                }
-            }
-            p::OP_DUTY_TAKEN => {
-                if let Some(mission) = p::duty_taken(f) {
-                    tracing::info!("duty mission taken: {mission:?}");
-                    self.duty_known(ts, vec![mission]);
-                }
-            }
-            p::OP_DUTY_BOARD => {
-                let missions = p::duty_board(f);
-                self.duty_known(ts, missions);
-            }
-            p::OP_DUTY_DONE => {
-                if let Some((place, indexes)) = p::duty_done(f) {
-                    self.duty_done(ts, place, indexes);
-                }
-            }
-            p::OP_BOX_OPENED => {
-                if let Some(items) = p::box_opened(f) {
-                    // Its bytes too: a box's contents vary (equipment...), what was not read shows.
-                    let raw: String = f.iter().map(|b| format!("{b:02x}")).collect();
-                    tracing::info!("box opened: {items:?} ({raw})");
-                    let items: Vec<Value> = items.into_iter().map(|(item, spent, amount)| json!({ "item": item, "spent": spent, "amount": amount })).collect();
-                    (self.emit)(json!({ "type": "boxOpened", "ts": ts, "items": items }));
-                } else {
-                    let raw: String = f.iter().map(|b| format!("{b:02x}")).collect();
-                    tracing::info!("box opened not read: {raw}");
-                }
-            }
-            p::OP_LOOT => {
-                if let Some((source, items)) = p::loot(f) {
-                    let items: Vec<Value> = items.into_iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect();
-                    tracing::info!("loot ({source}): {items:?}");
-                    (self.emit)(json!({ "type": "loot", "ts": ts, "source": source, "items": items }));
-                }
-            }
-            p::OP_NIGHTMARE_END => {
-                let raw: String = f.iter().map(|b| format!("{b:02x}")).collect();
-                tracing::info!("nightmare ended: {raw}");
-            }
-            p::OP_SUPPLY_DONE => {
-                // A supply request handed in (its id the second number).
-                if let Some((request, rewards)) = p::supply_done(f) {
-                    tracing::info!("supply request {request} handed in: {rewards:?}");
-                    let rewards: Vec<Value> = rewards.iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect();
-                    (self.emit)(json!({ "type": "supplyDone", "ts": ts, "request": request, "rewards": rewards }));
-                }
-            }
             p::OP_ITEM_LIST => {
                 if let Some((kina, bound)) = p::wallet(f) {
                     // Sent a few seconds before the record naming the character (a switch's new
@@ -1311,24 +1195,6 @@ impl Tracker {
                     self.player_card(ts, card);
                 }
             }
-            p::OP_APPLICANT => {
-                if let Some((character, card)) = p::applicant(f) {
-                    (self.emit)(json!({
-                        "type": "applicant", "ts": ts, "character": character, "name": card.name, "server": card.server,
-                        "className": p::roster_class(card.class), "level": card.level, "gearScore": card.gear_score, "combatPower": card.combat_power,
-                    }));
-                }
-            }
-            p::OP_APPLICANT_GONE => {
-                if let Some(character) = p::applicant_gone(f) {
-                    (self.emit)(json!({ "type": "applicantGone", "ts": ts, "character": character }));
-                }
-            }
-            p::OP_MEMBER_JOINED => {
-                if let Some(character) = p::member_joined(f) {
-                    (self.emit)(json!({ "type": "applicantGone", "ts": ts, "character": character }));
-                }
-            }
             p::OP_PLAYER => {
                 if let Some(player) = p::player(f) {
                     let enemy = matches!((player.faction, self.my_faction()), (Some(theirs), Some(mine)) if theirs != mine);
@@ -1364,7 +1230,10 @@ impl Tracker {
                     self.legions.insert(entity, name);
                 }
             }
-            _ => {}
+            // The rest, by domain: gathering and crafts, dungeons and rewards, the party.
+            _ => {
+                let _ = self.gathering_frame(op, ts, f) || self.rewards_frame(op, ts, f) || self.party_frame(op, ts, f);
+            }
         }
     }
 
