@@ -7,6 +7,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { IconLayer } from '@/lib/gatherables.ts'
 import { mapImage, project, type World } from '@/lib/spawns.ts'
+import { petIcon, petInfo } from '@/lib/petDb.ts'
 import { t } from '@/lib/i18n.ts'
 import SkullMark from '@/components/SkullMark.vue'
 
@@ -15,6 +16,8 @@ export interface MapLayer {
   points: [number, number][]
   color: string
   active: boolean
+  /** The pet whose soul monsters these are: its portrait over each group of them. */
+  pet?: number
 }
 
 const props = defineProps<{
@@ -59,6 +62,40 @@ const iconPx = computed(() => {
   const { w, h } = boxSize()
   const ratio = view.value.k / (Math.min(w, h) / SIZE)
   return Math.min(18, Math.max(6, 4.5 + ratio * 1.7))
+})
+/**
+ * The pets' portraits: one over each group of their soul monsters' spawns (the points within a few
+ * dozen screen pixels of each other, so zooming in parts them), ringed in the pet's colour (grey for
+ * the ones you still need). Its name on hover.
+ */
+const PET_PX = { active: 26, other: 22 }
+const petMarkers = computed(() => {
+  const { w, h } = boxSize()
+  const reach = 36 / (Math.min(w, h) / SIZE) / view.value.k
+  const byPet = new Map<number, { color: string; active: boolean; xy: [number, number][] }>()
+  for (const l of projected.value) {
+    if (l.pet === undefined) continue
+    const e = byPet.get(l.pet) ?? { color: l.color, active: l.active, xy: [] }
+    e.xy.push(...l.xy)
+    byPet.set(l.pet, e)
+  }
+  const out: { key: string; icon: string; name: string; color: string; active: boolean; at: [number, number] }[] = []
+  for (const [pet, e] of byPet) {
+    const icon = petIcon(pet)
+    if (!icon) continue
+    const groups: [number, number][][] = []
+    for (const p of e.xy) {
+      const near = groups.find((g) => Math.hypot(g[0]![0] - p[0], g[0]![1] - p[1]) < reach)
+      if (near) near.push(p)
+      else groups.push([p])
+    }
+    groups.forEach((g, i) => {
+      const at: [number, number] = [g.reduce((n, p) => n + p[0], 0) / g.length, g.reduce((n, p) => n + p[1], 0) / g.length]
+      out.push({ key: `${pet}-${i}`, icon, name: petInfo(pet)?.name ?? `#${pet}`, color: e.color, active: e.active, at })
+    })
+  }
+  // The tracked ones over the others.
+  return out.sort((a, b) => Number(a.active) - Number(b.active))
 })
 const deathXY = computed(() => (props.death ? (project(props.world, props.death).map((v) => v * SIZE) as [number, number]) : null))
 const cubeXY = computed(() => (props.cubes ?? []).map((c) => project(props.world, c).map((v) => v * SIZE) as [number, number]))
@@ -245,6 +282,23 @@ defineExpose({ fit, recentre })
             :stroke-width="(layer.active ? 1.5 : 1) / view.k"
           />
         </template>
+        <!-- The pets: their portraits over their soul monsters' spawns. -->
+        <defs>
+          <clipPath id="pet-portrait" clipPathUnits="objectBoundingBox"><circle cx="0.5" cy="0.5" r="0.5" /></clipPath>
+        </defs>
+        <g v-for="m in petMarkers" :key="`pet-${m.key}`" :transform="`translate(${m.at[0]} ${m.at[1]})`">
+          <title>{{ m.name }}</title>
+          <circle :r="(m.active ? PET_PX.active : PET_PX.other) / 2 / view.k" fill="#09090b" :stroke="m.color" :stroke-width="2.5 / view.k" />
+          <image
+            :href="m.icon"
+            :x="-(m.active ? PET_PX.active : PET_PX.other) / 2 / view.k"
+            :y="-(m.active ? PET_PX.active : PET_PX.other) / 2 / view.k"
+            :width="(m.active ? PET_PX.active : PET_PX.other) / view.k"
+            :height="(m.active ? PET_PX.active : PET_PX.other) / view.k"
+            clip-path="url(#pet-portrait)"
+            :opacity="m.active ? 1 : 0.85"
+          />
+        </g>
         <!-- Gatherables: their icons, under the cubes and pins. -->
         <g v-for="layer in iconXY" :key="`icon-${layer.key}`">
           <image

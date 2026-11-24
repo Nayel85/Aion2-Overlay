@@ -73,7 +73,7 @@ const layers = computed<MapLayer[]>(() =>
   tracked.value.flatMap(({ id, color }) =>
     (spawns.value?.pets[id] ?? []).flatMap((d) => {
       const w = d.worlds.find((x) => x.world === worldId.value)
-      return w ? [{ key: `${id}-${d.npc}`, points: w.points, color, active: false }] : []
+      return w ? [{ key: `${id}-${d.npc}`, points: w.points, color, active: false, pet: id }] : []
     }),
   ),
 )
