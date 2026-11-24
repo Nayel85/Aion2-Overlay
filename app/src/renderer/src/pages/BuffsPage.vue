@@ -33,8 +33,24 @@ const live = computed(() =>
       !hiddenBuff(b.id, b.skill, b.endsAt !== null, (b.endsAt ?? 0) - b.startedAt),
   ),
 )
-const buffs = computed(() => live.value.filter((b) => !b.debuff || !cfg.value.debuffs).sort(order))
-const debuffs = computed(() => (cfg.value.debuffs ? live.value.filter((b) => b.debuff).sort(order) : []))
+/**
+ * Nothing on you while the dashboard is up: a sample to place it by, as every overlay has. Common
+ * buffs of the owner's fights (A2Tools' ids, their icons bundled), each running down over and over.
+ */
+const preview = computed(() => !live.value.length && store.panelVisible)
+const SAMPLE: [id: number, secs: number, debuff: boolean][] = [
+  [181900411, 30, false], [181600211, 12, false], [181200101, 20, false], [170902301, 8, false], [22101051, 60, false], [12000161, 6, true],
+]
+const sample = computed<Buff[]>(() =>
+  SAMPLE.map(([id, secs, debuff]) => {
+    const span = secs * 1000
+    const startedAt = now.value - (now.value % span)
+    return { id, stacks: 1, endsAt: startedAt + span, startedAt, by: 0, skill: null, mine: !debuff, debuff, passive: false }
+  }),
+)
+const shown = computed(() => (preview.value ? sample.value : live.value))
+const buffs = computed(() => shown.value.filter((b) => !b.debuff || !cfg.value.debuffs).sort(order))
+const debuffs = computed(() => (cfg.value.debuffs ? shown.value.filter((b) => b.debuff).sort(order) : []))
 const rows = computed(() => [debuffs.value, buffs.value].filter((r) => r.length))
 
 const left = (b: Buff): number | null => (b.endsAt === null ? null : b.endsAt - now.value)
@@ -101,16 +117,6 @@ onBeforeUnmount(() => {
             <span :class="['h-3.5 text-[10px] font-semibold leading-tight tabular-nums', (left(b) ?? Infinity) < 5000 ? 'text-danger' : 'text-default']">{{ remaining(left(b)) }}</span>
           </div>
         </div>
-      </div>
-      <!-- Nothing on you, the dashboard up: an empty frame of one row, to place it. -->
-      <div
-        v-else-if="store.panelVisible"
-        class="m-1.5 flex cursor-move items-center justify-center rounded-lg border border-dashed border-accent bg-darker/80 p-1.5 text-xs text-dark"
-        :style="{ width: `${cfg.perRow * (cfg.size + 4) + 12}px`, height: `${cfg.size + 30}px` }"
-        :title="t('Drag to move')"
-        @pointerdown="drag.onPointerDown"
-      >
-        {{ t('Buffs') }} · {{ t('Drag to move') }}
       </div>
     </div>
   </div>

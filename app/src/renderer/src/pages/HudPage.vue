@@ -55,14 +55,23 @@ const pinnedRows = computed<Pet[]>(() => {
   const shown = new Set(nearRows.value.map((p) => p.id))
   return hud.value.pinned.map((id) => store.pets.find((p) => p.id === id)).filter((p): p is Pet => !!p && !shown.has(p.id))
 })
-const rows = computed<Pet[]>(() => {
+const listed = computed<Pet[]>(() => {
   const shown = new Set(nearRows.value.map((p) => p.id))
   return hud.value.mode === 'pinned'
     ? pinnedRows.value.slice(0, HUD_PINNED_ROWS)
     : store.recentPets.filter((p) => !shown.has(p.id)).slice(0, hud.value.recentCount)
 })
+/**
+ * Nothing to list while it is being placed: a sample to place it by, as every overlay has (your
+ * own pets still to level, as many rows as it lists).
+ */
+const rows = computed<Pet[]>(() =>
+  listed.value.length || nearRows.value.length || !store.hudEditing
+    ? listed.value
+    : store.pets.filter((p) => nextLevelSouls(p) !== null).slice(0, hud.value.mode === 'pinned' ? 3 : hud.value.recentCount),
+)
 /** Pinned pets past the HUD's rows: counted under them. */
-const morePinned = computed(() => (hud.value.mode === 'pinned' ? pinnedRows.value.length - rows.value.length : 0))
+const morePinned = computed(() => (hud.value.mode === 'pinned' ? pinnedRows.value.length - listed.value.length : 0))
 const toasts = computed(() => (hud.value.toasts ? store.toasts : []))
 /** The count towards the next level, against what it needs: 0/5 at Lv0, 5/25 at Lv1, 9/75 at Lv2. */
 const progressText = (pet: Pet): string => {

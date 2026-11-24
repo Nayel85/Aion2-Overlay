@@ -49,7 +49,7 @@ const isUp = (def: TimerDef): boolean =>
   def.schedule.kind === 'boss' && !!bossState(def.schedule.boss, store.fieldBosses, now.value, cfg.value.region)?.up
 
 /** The timers to show: alert on, up or starting within the horizon (or alerting now), soonest first. */
-const items = computed(() =>
+const alerted = computed(() =>
   TIMERS.filter((def) => cfg.value.enabled[def.id] && cfg.value.shown[def.id])
     .map((def) => {
       const up = !alerting.value.has(def.id) && isUp(def)
@@ -63,6 +63,19 @@ const items = computed(() =>
     })
     .filter(({ at, up }) => up || (Number.isFinite(at) && at - now.value <= HORIZON_MS))
     .sort((a, b) => a.at - b.at),
+)
+/**
+ * None within its hours while the overlays are being placed: a sample to place it by, as every
+ * overlay has (the next three events, alert or not).
+ */
+const items = computed(() =>
+  alerted.value.length || !store.panelVisible
+    ? alerted.value
+    : TIMERS.filter((def) => def.schedule.kind !== 'boss')
+        .map((def) => ({ def, up: false, at: nextStart(def.schedule, now.value, cfg.value.region, store.fieldBosses) }))
+        .filter(({ at }) => Number.isFinite(at))
+        .sort((a, b) => a.at - b.at)
+        .slice(0, 3),
 )
 
 /** 48:09, 1:48:09; "now" once it has started. */

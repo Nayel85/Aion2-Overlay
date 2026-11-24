@@ -21,8 +21,22 @@ const cfg = computed(() => store.settings.skills)
 const idle = useIdle(() => store.settings.skills)
 const view = ref<PersonalView>(NO_PERSONAL)
 
-const rows = computed(() => view.value.skills.slice(0, cfg.value.rows))
-const top = computed(() => Math.max(1, ...view.value.skills.map((s) => s.damage)))
+/**
+ * No fight while the dashboard is up: a sample to place it by, as every overlay has (an Assassin's
+ * fight of the owner's: its skills and their damage).
+ */
+const SAMPLE: PersonalView = (() => {
+  const list: [number, string, number][] = [
+    [13130000, 'Insignia Explosion', 320657], [13350000, 'Heart Gore', 309294], [13040000, 'Swift Slice', 142221],
+    [13030000, 'Breaking Slice', 112747], [13100000, 'Savage Roar', 110178], [13120000, 'Savage Smash', 104406],
+  ]
+  const damage = list.reduce((n, [, , d]) => n + d, 0)
+  const secs = 42
+  return { target: 'Training Scarecrow', battleTime: secs * 1000, dps: damage / secs, damage, skills: list.map(([code, name, d]) => ({ code, name, damage: d, dps: d / secs, share: (d / damage) * 100, dot: false })) }
+})()
+const shownView = computed(() => (!view.value.skills.length && store.panelVisible ? SAMPLE : view.value))
+const rows = computed(() => shownView.value.skills.slice(0, cfg.value.rows))
+const top = computed(() => Math.max(1, ...shownView.value.skills.map((s) => s.damage)))
 
 function short(n: number): string {
   const abs = Math.abs(n)
@@ -79,8 +93,8 @@ onBeforeUnmount(() => {
         <header class="cursor-move px-2.5 pb-1.5 pt-2" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
           <div class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-darker">
             <span>{{ t('My skills') }}</span>
-            <span class="tabular-nums text-default">{{ clock(view.battleTime) }}</span>
-            <span class="ml-auto truncate normal-case tracking-normal text-darkest">{{ view.target }}</span>
+            <span class="tabular-nums text-default">{{ clock(shownView.battleTime) }}</span>
+            <span class="ml-auto truncate normal-case tracking-normal text-darkest">{{ shownView.target }}</span>
             <button
               type="button"
               class="-my-1 -mr-1 flex size-5 shrink-0 items-center justify-center rounded text-darker hover:bg-dark hover:text-default"
@@ -93,9 +107,9 @@ onBeforeUnmount(() => {
             </button>
           </div>
           <div class="flex items-baseline gap-1.5">
-            <span class="text-2xl font-semibold tabular-nums text-accent-text">{{ short(view.dps) }}</span>
+            <span class="text-2xl font-semibold tabular-nums text-accent-text">{{ short(shownView.dps) }}</span>
             <span class="text-xs text-darker">DPS</span>
-            <span class="ml-auto text-xs tabular-nums text-darker">{{ t('{n} damage', { n: short(view.damage) }) }}</span>
+            <span class="ml-auto text-xs tabular-nums text-darker">{{ t('{n} damage', { n: short(shownView.damage) }) }}</span>
           </div>
         </header>
         <ul class="space-y-0.5 px-1.5 pb-1.5">
@@ -112,15 +126,6 @@ onBeforeUnmount(() => {
             </div>
           </li>
         </ul>
-      </div>
-      <!-- No fight, the dashboard up: an empty card, to place it. -->
-      <div
-        v-else-if="store.panelVisible"
-        class="m-1.5 flex h-[120px] w-[300px] cursor-move items-center justify-center rounded-lg border border-dashed border-accent bg-darker text-xs text-dark"
-        :title="t('Drag to move')"
-        @pointerdown="drag.onPointerDown"
-      >
-        {{ t('My skills') }} · {{ t('Drag to move') }}
       </div>
     </div>
   </div>

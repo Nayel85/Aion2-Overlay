@@ -377,6 +377,8 @@ function syncArranging(): void {
   // never catches a click meant for the game.
   setHudEditing(on, false)
   for (const m of MEASURED) m.panelUp(on)
+  // The merchant's window opens with the shop only: to be placed, it opens now too (its sample).
+  if (on) showMerchant()
 }
 // Focus moving between the app's windows (a drag starts on an overlay) and the game: a moment
 // later, once the window taking it has it.

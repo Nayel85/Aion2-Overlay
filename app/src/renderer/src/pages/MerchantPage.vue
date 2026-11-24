@@ -27,6 +27,22 @@ const ticker = setInterval(() => (now.value = Date.now()), 30_000)
 const offers = computed(() =>
   merchantOffers(store.shop, (id) => store.pets.find((p) => p.id === id)?.level ?? null, now.value, petItems),
 )
+/**
+ * No shop open while the overlays are being placed: a sample to place it by, as every overlay has
+ * (your pets still to level, at a price and a discount of the shop's kind).
+ */
+const SAMPLE_PRICES: [price: number, base: number][] = [[24_000, 30_000], [27_000, 30_000], [30_000, 30_000]]
+const shownOffers = computed<MerchantOffer[]>(() =>
+  offers.value.length || !store.panelVisible
+    ? offers.value
+    : store.pets
+        .filter((p) => nextLevelSouls(p) !== null)
+        .slice(0, 3)
+        .map((p, i) => {
+          const [price, base] = SAMPLE_PRICES[i]!
+          return { pet: p.id, item: 0, gives: 'soul' as const, price, base, discount: Math.round((1 - price / base) * 100) }
+        }),
+)
 const pet = (id: number): Pet => store.pets.find((p) => p.id === id) ?? blankPet(id)
 const progress = (o: MerchantOffer): string => {
   const need = nextLevelSouls(pet(o.pet))
@@ -65,13 +81,13 @@ const showPet = (id: number): void => void bridge().invoke('panel:showPet', id)
 let sent = ''
 function report(): void {
   const el = root.value
-  const r = el && offers.value.length ? el.getBoundingClientRect() : { width: 0, height: 0 }
+  const r = el && shownOffers.value.length ? el.getBoundingClientRect() : { width: 0, height: 0 }
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
   void bridge().invoke('merchant:resize', { width: r.width, height: r.height })
 }
-watch([offers, continents, () => store.ready], () => void nextTick(report), { deep: true })
+watch([shownOffers, continents, () => store.ready], () => void nextTick(report), { deep: true })
 
 let observer: ResizeObserver | null = null
 onMounted(() => {
@@ -88,7 +104,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="inline-block">
     <div ref="root" class="inline-block">
-      <div v-if="offers.length" class="m-1.5 w-[388px] rounded-lg border border-yellow/40 bg-darker/95 shadow-card">
+      <div v-if="shownOffers.length" class="m-1.5 w-[388px] rounded-lg border border-yellow/40 bg-darker/95 shadow-card">
         <header
           class="flex cursor-move items-center gap-2 border-b border-card px-3 py-2"
           :title="t('Drag to move')"
@@ -113,7 +129,7 @@ onBeforeUnmount(() => {
         <!-- A fixed cap, not vh: the window is sized to this list, so vh would shrink with it. -->
         <ul class="max-h-[520px] space-y-1 overflow-y-auto px-2 py-2">
           <li
-            v-for="o in offers"
+            v-for="o in shownOffers"
             :key="o.pet"
             :class="[
               'flex cursor-pointer items-center gap-2 rounded-md border-l-2 px-1.5 py-1 transition hover:bg-dark',

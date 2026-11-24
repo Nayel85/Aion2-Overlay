@@ -108,7 +108,7 @@ const empty = computed(() => {
 
 /** The pointer is over the meter: in bars-only mode that is when all of it shows. */
 const over = ref(false)
-const lean = computed(() => cfg.value.barsOnly && !over.value && !cfg.value.collapsed && rows.value.length > 0)
+const lean = computed(() => cfg.value.barsOnly && !store.panelVisible && !over.value && !cfg.value.collapsed && rows.value.length > 0)
 /** The bars' own background while it is lean: none unless the setting gives it one. */
 const leanBg = computed(() => `rgba(9, 9, 11, ${cfg.value.barsBackground})`)
 
@@ -156,7 +156,8 @@ const now = ref(Date.now())
 const ticker = setInterval(() => (now.value = Date.now()), 1000)
 const lastActive = ref(0)
 watch([total, () => meter.value.target?.id], () => (lastActive.value = Date.now()))
-const idle = computed(() => cfg.value.hideIdle && !live.value && now.value - lastActive.value >= cfg.value.idleSeconds * 1000)
+// Never while the overlays are being placed: shown whole to place it, as every overlay.
+const idle = computed(() => cfg.value.hideIdle && !store.panelVisible && !live.value && now.value - lastActive.value >= cfg.value.idleSeconds * 1000)
 const moreModes = computed(() => !MAIN_TARGET_MODES.some((m) => m.id === cfg.value.targetMode))
 
 /** Tell main how big the window is. */
