@@ -27,15 +27,20 @@ const now = ref(Date.now())
 const ticker = setInterval(() => (now.value = Date.now()), 1000)
 const meter = ref<MeterData>(NO_METER)
 const fights = ref<number | null>(null)
+/** Bosses with a personal best of yours. */
+const bests = ref<number | null>(null)
+const loadBests = async (): Promise<void> => void (bests.value = (await api.invoke('history:bests')).filter((e) => e.myDps).length)
 const overlaysOff = ref(false)
 const offs: (() => void)[] = []
 onMounted(async () => {
   offs.push(api.on('meter:dps', (m) => (meter.value = m)))
   offs.push(api.on('overlays:hidden', (off) => (overlaysOff.value = off)))
   offs.push(api.on('history:changed', async () => (fights.value = (await api.invoke('history:list')).filter((f) => !f.isTrain).length)))
+  offs.push(api.on('history:changed', () => void loadBests()))
   meter.value = await api.invoke('meter:get')
   overlaysOff.value = await api.invoke('overlays:hidden')
   fights.value = (await api.invoke('history:list')).filter((f) => !f.isTrain).length
+  void loadBests()
 })
 onBeforeUnmount(() => {
   clearInterval(ticker)
@@ -78,7 +83,8 @@ function flip<K extends keyof Settings>(key: K, field: string): (on: boolean) =>
 const overlays = computed<Overlay[]>(() => {
   const s = store.settings
   return [
-    { id: 'hud', name: t('Pets HUD'), about: t('Souls, nearby soul monsters, Hidden Cubes'), page: 'settings', on: s.hud.enabled, set: flip('hud', 'enabled') },
+    { id: 'unified', name: t('Unified HUD'), about: t('One small bar at the top of the game'), page: 'unified', on: s.unified.enabled, set: flip('unified', 'enabled') },
+    { id: 'hud', name: t('Pets HUD'), about: t('Souls, nearby soul monsters, Hidden Cubes'), page: 'pets', on: s.hud.enabled, set: flip('hud', 'enabled') },
     { id: 'meter', name: t('Damage meter'), about: t('You and your party, live'), page: 'meter', on: s.meter.enabled, set: flip('meter', 'enabled') },
     { id: 'skills', name: t('My skills'), about: t('Your damage, skill by skill'), page: 'meter', on: s.skills.enabled, set: flip('skills', 'enabled') },
     { id: 'buffs', name: 'Buffs', about: t('What is on you, and for how long'), page: 'buffs', on: s.buffs.enabled, set: flip('buffs', 'enabled') },
@@ -98,7 +104,8 @@ const overlays = computed<Overlay[]>(() => {
       on: s.killFeed.open,
       set: (on) => void api.invoke(on ? 'killfeed:open' : 'killfeed:close'),
     },
-    { id: 'merchant', name: t('Merchant pets'), about: t('When you open the Black Cloud shop'), page: 'settings', on: s.hud.merchant, set: flip('hud', 'merchant') },
+    { id: 'enemies', name: t('Enemies nearby'), about: t('Enemy players around you'), page: 'pvp', on: s.enemies.enabled, set: flip('enemies', 'enabled') },
+    { id: 'merchant', name: t('Merchant pets'), about: t('When you open the Black Cloud shop'), page: 'pets', on: s.hud.merchant, set: flip('hud', 'merchant') },
   ]
 })
 const overlaysOn = computed(() => overlays.value.filter((o) => o.on).length)
@@ -126,6 +133,12 @@ const nextEvent = computed(() => {
 const bossesUp = computed(() => Object.entries(store.fieldBosses).filter(([id, b]) => b.up && bossZone(Number(id)) === 'verteron').length)
 const pvp = computed(() => store.pvpStats)
 const myDps = computed(() => meter.value.rows.find((r) => r.you) ?? null)
+/** Every session kept, the one going on too: their crafts and gatherings, for the Stats card. */
+const allSessions = computed(() => (store.sessions.current ? [store.sessions.current, ...store.sessions.history] : store.sessions.history))
+const crafts = computed(() => allSessions.value.reduce((n, x) => n + (x.crafts?.length ?? 0), 0))
+const gatherings = computed(() => allSessions.value.reduce((n, x) => n + (x.gatherings?.length ?? 0), 0))
+/** Characters whose items the Inventory page has. */
+const stocked = computed(() => Object.keys(store.inventories.characters ?? {}).length)
 
 const ICONS: Record<string, string> = {
   meter: 'M2.5 13.5h11M4.5 11V8M8 11V4.5M11.5 11V6.5',
@@ -137,6 +150,10 @@ const ICONS: Record<string, string> = {
   bosses: 'M8 2a5 5 0 0 0-3.5 8.5V13h7v-2.5A5 5 0 0 0 8 2zM6 8.5h.01M10 8.5h.01',
   history: 'M2 8a6 6 0 1 0 1.8-4.3M2 2.5v3h3M8 5v3l2 1.5',
   session: 'M2.5 11.5 6 8l2.5 2.5 5-5M10 5.5h3.5V9',
+  bests: 'M5 2.5h6v3a3 3 0 0 1-6 0zM5 3.5H3v1a2 2 0 0 0 2 2M11 3.5h2v1a2 2 0 0 1-2 2M8 8.5v3M5.5 13.5h5',
+  sessions: 'M2.5 3.5h11M2.5 8h11M2.5 12.5h7M12 11l1.5 1.5L16 10',
+  stats: 'M2.5 13.5h11M4 11V7M7 11V4M10 11V8M13 11V5.5',
+  inventory: 'M3 5.5h10v8H3zM5.5 5.5V4a2.5 2.5 0 0 1 5 0v1.5M3 9h10',
 }
 </script>
 
@@ -255,7 +272,11 @@ const ICONS: Record<string, string> = {
       <div class="grid grid-cols-2 gap-3">
         <button v-for="card in [
           { page: 'history', title: t('Combat history'), line: fights === null ? '…' : plural(fights, '{n} boss fight saved', '{n} boss fights saved') },
+          { page: 'bests', title: t('Personal bests'), line: bests === null ? '…' : bests ? plural(bests, '{n} boss with a record', '{n} bosses with a record') : t('No personal best yet.') },
           { page: 'session', title: t('Session'), line: store.kinaRate !== null ? t('{kina} Kina per hour · {n} souls', { kina: formatKina(store.kinaRate), n: store.sessionSouls }) : t('{n} souls so far', { n: store.sessionSouls }) },
+          { page: 'sessions', title: t('Past sessions'), line: plural(store.sessions.history.length, '{n} session', '{n} sessions') },
+          { page: 'stats', title: t('Stats'), line: `${plural(crafts, '{n} craft', '{n} crafts')} · ${plural(gatherings, '{n} gathering', '{n} gatherings')}` },
+          { page: 'inventory', title: t('Inventory'), line: stocked ? plural(stocked, '{n} character', '{n} characters') : t('No inventory yet.') },
         ]" :key="card.page" type="button" class="group flex items-center gap-4 rounded-xl border border-card bg-card px-4 py-3.5 text-left transition hover:border-light hover:bg-dark" @click="emit('go', card.page)">
           <span class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-dark text-accent group-hover:bg-light">
             <span v-if="card.page === 'history'" class="text-xl leading-none" aria-hidden="true">💪</span>

@@ -1600,4 +1600,10 @@ export const FR: Record<string, string> = {
   'Markers on the game\'s map': 'Repères sur la carte du jeu',
   'Hidden after this long with no fight (no hit, heal or damage taken, yours or your party\'s); back with the next one.': 'Cachée après ce délai sans combat (aucun coup, soin ni dégât subi, toi ou ton groupe) ; elle revient au combat suivant.',
   'Widgets': 'Widgets',
+  'One small bar at the top of the game': 'Une petite barre en haut du jeu',
+  'Enemy players around you': 'Les joueurs ennemis autour de toi',
+  '{n} boss with a record': '{n} boss avec un record',
+  '{n} bosses with a record': '{n} boss avec un record',
+  '{n} character': '{n} personnage',
+  '{n} characters': '{n} personnages',
 }
