@@ -35,7 +35,7 @@ import {
   type TargetMode,
   type NewBest,
 } from '@shared/meter.ts'
-import { METER_HEIGHT, METER_WIDTH } from '@shared/settings.ts'
+import { METER_HEIGHT, METER_WIDTH, SETTINGS_DEFAULTS } from '@shared/settings.ts'
 import type { TrackerState } from '@shared/tracker.ts'
 
 const store = useApp()
@@ -148,7 +148,7 @@ const onGrip = cornerResize({
     live.value = null
   },
 })
-const resetSize = (): void => set({ width: 340, height: null })
+const resetSize = (): void => set({ width: SETTINGS_DEFAULTS.meter.width, height: SETTINGS_DEFAULTS.meter.height })
 
 // Hide while idle: the time the numbers last moved (a hit, a heal, a reset).
 const now = useNow(1000)

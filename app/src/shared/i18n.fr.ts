@@ -1642,4 +1642,9 @@ export const FR: Record<string, string> = {
   'Done placing the overlays': 'Fin du placement des overlays',
   'Place the overlays: they show their samples, to be dragged': 'Placer les overlays : ils montrent leur exemple, à déplacer',
   'Place overlays': 'Placer les overlays',
+  'What comes into your characters\' hands is journaled, with when and where from (a Hidden Cube, a dungeon\'s cube, a box, a duty mission); the Inventory page shows what came lately, and a searched item when it last came.': 'Ce qui arrive chez tes personnages est noté, avec quand et d\'où (Hidden Cube, cube de donjon, boîte, mission de service) ; la page Inventaire montre les arrivées récentes, et un objet cherché quand il est arrivé pour la dernière fois.',
+  'Each Hidden Cube you open is in the session and its history, with what it gave.': 'Chaque Hidden Cube ouvert est dans la session et son historique, avec ce qu\'il a donné.',
+  'The overlays can be placed with a button in the dashboard\'s title bar instead of whenever it is in front (Settings → This window); an Alt+Tab through the dashboard no longer shows them all.': 'Les overlays peuvent se placer avec un bouton dans la barre de titre de l\'app plutôt que dès qu\'elle est au premier plan (Réglages → Cette fenêtre) ; un Alt+Tab qui traverse l\'app ne les affiche plus tous.',
+  'The Unified HUD\'s buttons are back.': 'Les boutons du HUD unifié sont de retour.',
+  'New default settings: the overlays\' places and sizes, the party frames, the DPS meter and the map\'s options as Nayel plays with them.': 'Nouveaux réglages par défaut : emplacements et tailles des overlays, cadres de groupe, DPS meter et options de la carte tels que Nayel les utilise.',
 }

@@ -11,6 +11,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.17',
+    items: [
+      "What comes into your characters' hands is journaled, with when and where from (a Hidden Cube, a dungeon's cube, a box, a duty mission); the Inventory page shows what came lately, and a searched item when it last came.",
+      'Each Hidden Cube you open is in the session and its history, with what it gave.',
+      "The overlays can be placed with a button in the dashboard's title bar instead of whenever it is in front (Settings → This window); an Alt+Tab through the dashboard no longer shows them all.",
+      "The Unified HUD's buttons are back.",
+      "New default settings: the overlays' places and sizes, the party frames, the DPS meter and the map's options as Nayel plays with them.",
+    ],
+  },
+  {
     version: '0.3.16',
     items: [
       "New Inventory page: each character's bag, equipment laid out as in game (soul binding, stones, each stat's roll), warehouse and Arcana, and the account's warehouse.",

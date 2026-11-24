@@ -6,8 +6,8 @@
   null,
   null,
   {
-   "x": 2636,
-   "y": 938
+   "x": 2632,
+   "y": 822
   },
   null,
   {
@@ -19,8 +19,8 @@
    "y": -1000000000
   },
   {
-   "x": 2636,
-   "y": 938
+   "x": 2632,
+   "y": 822
   },
   null,
   null,
@@ -53,32 +53,32 @@
  ],
  "panel": [
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
    "height": 2160,
@@ -89,120 +89,120 @@
    "width": 900
   },
   {
-   "height": 898.4,
-   "width": 1411.4
+   "height": 926.4,
+   "width": 1543.4
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   },
   {
-   "height": 898,
-   "width": 1411
+   "height": 926,
+   "width": 1543
   }
  ],
  "panelPosition": [
@@ -212,8 +212,8 @@
   null,
   null,
   {
-   "x": -1585,
-   "y": 155
+   "x": -1711,
+   "y": 149
   },
   null,
   {
@@ -225,8 +225,8 @@
    "y": -1000000000
   },
   {
-   "x": -1585,
-   "y": 155
+   "x": -1711,
+   "y": 149
   },
   null,
   null,
@@ -332,41 +332,41 @@
   false
  ],
  "arrangeWithPanel": [
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
+  false,
+  false,
+  false,
+  false,
+  false,
   false,
   true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true,
-  true
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false
  ],
  "clock24": [
   true,
@@ -413,7 +413,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -435,7 +435,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -457,7 +457,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -479,7 +479,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -501,7 +501,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -523,7 +523,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -548,7 +548,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -570,7 +570,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 1,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 600,
    "kina": true,
@@ -595,7 +595,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 0,
    "kina": true,
@@ -620,7 +620,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 1,
    "cubes": true,
-   "enabled": false,
+   "enabled": true,
    "hideWithoutGame": false,
    "idleHideSeconds": 45,
    "kina": false,
@@ -645,7 +645,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -667,7 +667,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -689,7 +689,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -711,7 +711,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -733,7 +733,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -755,7 +755,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -777,7 +777,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -799,7 +799,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -821,7 +821,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -843,7 +843,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -865,7 +865,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -887,7 +887,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -909,7 +909,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -931,7 +931,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -953,7 +953,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -975,7 +975,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -997,7 +997,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1019,7 +1019,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1041,7 +1041,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1063,7 +1063,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1085,7 +1085,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1107,7 +1107,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1129,7 +1129,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1151,7 +1151,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1173,7 +1173,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1195,7 +1195,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1217,7 +1217,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1242,7 +1242,7 @@
    "cubeSoundId": "chime",
    "cubeVolume": 0.6,
    "cubes": false,
-   "enabled": true,
+   "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
    "kina": true,
@@ -1270,7 +1270,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1280,7 +1280,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1290,7 +1290,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1300,7 +1300,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1310,7 +1310,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1323,7 +1323,7 @@
     "y": 722
    },
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1333,7 +1333,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1372,7 +1372,7 @@
     "y": 722
    },
    "size": 260,
-   "zoom": 13.9
+   "zoom": 16.66
   },
   {
    "collapsed": false,
@@ -1382,7 +1382,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1392,7 +1392,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1402,7 +1402,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1412,7 +1412,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1422,7 +1422,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1432,7 +1432,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1442,7 +1442,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1452,7 +1452,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1462,7 +1462,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1472,7 +1472,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1482,7 +1482,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1492,7 +1492,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1502,7 +1502,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1512,7 +1512,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1522,7 +1522,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1532,7 +1532,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1542,7 +1542,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1552,7 +1552,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1562,7 +1562,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1572,7 +1572,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1582,7 +1582,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1592,7 +1592,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1602,7 +1602,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1612,7 +1612,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1622,7 +1622,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1632,7 +1632,7 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1645,7 +1645,7 @@
     "y": -3
    },
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   },
   {
    "collapsed": false,
@@ -1655,240 +1655,240 @@
    "opacity": 0.92,
    "position": null,
    "size": 260,
-   "zoom": 13.5
+   "zoom": 16.26
   }
  ],
  "mapPage": [
   {
    "cubes": false,
-   "gatherables": true,
-   "hiddenPets": [],
-   "needed": false
-  },
-  {
-   "cubes": false,
-   "gatherables": true,
-   "hiddenPets": [],
-   "needed": false
-  },
-  {
-   "cubes": false,
-   "gatherables": true,
-   "hiddenPets": [],
-   "needed": false
-  },
-  {
-   "cubes": false,
-   "gatherables": true,
-   "hiddenPets": [],
-   "needed": false
-  },
-  {
-   "cubes": false,
-   "gatherables": true,
-   "hiddenPets": [],
-   "needed": false
-  },
-  {
-   "cubes": false,
-   "gatherables": true,
-   "hiddenPets": [],
-   "needed": false
-  },
-  {
-   "cubes": false,
-   "gatherables": true,
-   "hiddenPets": [],
-   "needed": false
-  },
-  {
-   "cubes": false,
-   "gatherables": true,
-   "hiddenPets": [],
-   "needed": false
-  },
-  {
-   "cubes": false,
-   "gatherables": true,
-   "hiddenPets": [],
-   "needed": false
-  },
-  {
-   "cubes": true,
    "gatherables": false,
    "hiddenPets": [],
    "needed": true
   },
   {
    "cubes": false,
+   "gatherables": false,
+   "hiddenPets": [],
+   "needed": true
+  },
+  {
+   "cubes": false,
+   "gatherables": false,
+   "hiddenPets": [],
+   "needed": true
+  },
+  {
+   "cubes": false,
+   "gatherables": false,
+   "hiddenPets": [],
+   "needed": true
+  },
+  {
+   "cubes": false,
+   "gatherables": false,
+   "hiddenPets": [],
+   "needed": true
+  },
+  {
+   "cubes": false,
+   "gatherables": false,
+   "hiddenPets": [],
+   "needed": true
+  },
+  {
+   "cubes": false,
+   "gatherables": false,
+   "hiddenPets": [],
+   "needed": true
+  },
+  {
+   "cubes": false,
+   "gatherables": false,
+   "hiddenPets": [],
+   "needed": true
+  },
+  {
+   "cubes": false,
+   "gatherables": false,
+   "hiddenPets": [],
+   "needed": true
+  },
+  {
+   "cubes": true,
    "gatherables": true,
    "hiddenPets": [],
    "needed": false
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
    "hiddenPets": [],
-   "needed": false
+   "needed": true
   },
   {
    "cubes": false,
-   "gatherables": true,
+   "gatherables": false,
+   "hiddenPets": [],
+   "needed": true
+  },
+  {
+   "cubes": false,
+   "gatherables": false,
    "hiddenPets": [
     1,
     2
    ],
-   "needed": false
+   "needed": true
   }
  ],
  "gatherables": [
@@ -2368,8 +2368,8 @@
   null,
   null,
   {
-   "x": 342,
-   "y": 859
+   "x": 446,
+   "y": 755
   },
   null,
   {
@@ -2381,8 +2381,8 @@
    "y": -1000000000
   },
   {
-   "x": 342,
-   "y": 859
+   "x": 446,
+   "y": 755
   },
   null,
   null,
@@ -2501,8 +2501,8 @@
    "layout": "list",
    "opacity": 0.92,
    "position": {
-    "x": 859,
-    "y": 141
+    "x": 0,
+    "y": 394
    }
   },
   {
@@ -2516,8 +2516,8 @@
    "layout": "list",
    "opacity": 1,
    "position": {
-    "x": 859,
-    "y": 141
+    "x": 0,
+    "y": 394
    }
   },
   {
@@ -2525,8 +2525,8 @@
    "layout": "list",
    "opacity": 0.3,
    "position": {
-    "x": 859,
-    "y": 141
+    "x": 0,
+    "y": 394
    }
   },
   {
@@ -2534,8 +2534,8 @@
    "layout": "list",
    "opacity": 1,
    "position": {
-    "x": 859,
-    "y": 141
+    "x": 0,
+    "y": 394
    }
   },
   {
@@ -2735,7 +2735,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -2775,7 +2775,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -2815,7 +2815,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -2855,7 +2855,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -2895,7 +2895,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -2938,7 +2938,7 @@
     "y": 0
    },
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -2978,7 +2978,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3021,7 +3021,7 @@
     "y": 0
    },
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1.75,
    "season": true,
    "target": true,
@@ -3064,7 +3064,7 @@
     "y": 0
    },
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 0.75,
    "season": true,
    "target": true,
@@ -3107,7 +3107,7 @@
     "y": 0
    },
    "replace": true,
-   "rift": false,
+   "rift": true,
    "scale": 1.4,
    "season": false,
    "target": false,
@@ -3147,7 +3147,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3187,7 +3187,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3227,7 +3227,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3267,7 +3267,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3307,7 +3307,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3347,7 +3347,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3387,7 +3387,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3427,7 +3427,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3467,7 +3467,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3507,7 +3507,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3547,7 +3547,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3587,7 +3587,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3627,7 +3627,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3667,7 +3667,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3707,7 +3707,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3747,7 +3747,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3787,7 +3787,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3827,7 +3827,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3867,7 +3867,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3907,7 +3907,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3947,7 +3947,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -3987,7 +3987,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -4027,7 +4027,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -4067,7 +4067,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -4107,7 +4107,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -4147,7 +4147,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -4190,7 +4190,7 @@
     "y": -3
    },
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -4230,7 +4230,7 @@
    "ping": true,
    "position": null,
    "replace": false,
-   "rift": true,
+   "rift": false,
    "scale": 1,
    "season": true,
    "target": true,
@@ -4475,7 +4475,10 @@
    "enabled": true,
    "hideAfter": 60,
    "opacity": 0.85,
-   "position": null
+   "position": {
+    "x": 872,
+    "y": 220
+   }
   },
   {
    "collapsed": false,
@@ -4489,21 +4492,30 @@
    "enabled": true,
    "hideAfter": 300,
    "opacity": 1,
-   "position": null
+   "position": {
+    "x": 872,
+    "y": 220
+   }
   },
   {
    "collapsed": false,
    "enabled": true,
    "hideAfter": 10,
    "opacity": 0,
-   "position": null
+   "position": {
+    "x": 872,
+    "y": 220
+   }
   },
   {
    "collapsed": true,
    "enabled": false,
    "hideAfter": 60,
    "opacity": 1,
-   "position": null
+   "position": {
+    "x": 872,
+    "y": 220
+   }
   },
   {
    "collapsed": false,
@@ -4722,9 +4734,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -4744,9 +4756,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -4766,9 +4778,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -4788,9 +4800,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -4810,9 +4822,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -4832,9 +4844,12 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
-   "position": null,
-   "self": true,
+   "opacity": 0.85,
+   "position": {
+    "x": 1709,
+    "y": 165
+   },
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -4854,9 +4869,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -4877,8 +4892,11 @@
    "icon": true,
    "idleSeconds": 600,
    "opacity": 1,
-   "position": null,
-   "self": true,
+   "position": {
+    "x": 1709,
+    "y": 165
+   },
+   "self": false,
    "shields": true,
    "width": 320
   },
@@ -4899,8 +4917,11 @@
    "icon": true,
    "idleSeconds": 5,
    "opacity": 0,
-   "position": null,
-   "self": true,
+   "position": {
+    "x": 1709,
+    "y": 165
+   },
+   "self": false,
    "shields": true,
    "width": 100
   },
@@ -4921,8 +4942,11 @@
    "icon": false,
    "idleSeconds": 30,
    "opacity": 1,
-   "position": null,
-   "self": false,
+   "position": {
+    "x": 1709,
+    "y": 165
+   },
+   "self": true,
    "shields": false,
    "width": 180
   },
@@ -4942,9 +4966,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -4964,9 +4988,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -4986,9 +5010,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5008,9 +5032,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5030,9 +5054,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5052,9 +5076,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5074,9 +5098,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5096,9 +5120,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5118,9 +5142,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5140,9 +5164,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5162,9 +5186,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5184,9 +5208,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5206,9 +5230,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5228,9 +5252,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5250,9 +5274,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5272,9 +5296,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5294,9 +5318,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5316,9 +5340,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5338,9 +5362,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5360,9 +5384,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5382,9 +5406,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5404,9 +5428,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5426,9 +5450,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5448,9 +5472,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5470,9 +5494,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5492,9 +5516,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5514,12 +5538,12 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": {
     "x": 11,
     "y": -3
    },
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   },
@@ -5539,9 +5563,9 @@
    "hpText": "none",
    "icon": true,
    "idleSeconds": 30,
-   "opacity": 1,
+   "opacity": 0.85,
    "position": null,
-   "self": true,
+   "self": false,
    "shields": true,
    "width": 180
   }
@@ -5575,7 +5599,10 @@
   {
    "enabled": true,
    "opacity": 1,
-   "position": null
+   "position": {
+    "x": 1149,
+    "y": 526
+   }
   },
   {
    "enabled": true,
@@ -5585,17 +5612,26 @@
   {
    "enabled": true,
    "opacity": 1,
-   "position": null
+   "position": {
+    "x": 1149,
+    "y": 526
+   }
   },
   {
    "enabled": true,
    "opacity": 0.2,
-   "position": null
+   "position": {
+    "x": 1149,
+    "y": 526
+   }
   },
   {
    "enabled": false,
    "opacity": 1,
-   "position": null
+   "position": {
+    "x": 1149,
+    "y": 526
+   }
   },
   {
    "enabled": true,
@@ -5748,7 +5784,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -5764,7 +5800,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -5780,7 +5816,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -5796,7 +5832,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -5812,7 +5848,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -5828,7 +5864,26 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
+   "position": {
+    "x": 1351,
+    "y": 773
+   },
+   "rare": true,
+   "scale": 1,
+   "soundFail": false,
+   "soundId": "bell",
+   "soundRare": false,
+   "style": "ring",
+   "volume": 0.6
+  },
+  {
+   "crafts": true,
+   "enabled": true,
+   "fail": true,
+   "icon": true,
+   "opacity": 1,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -5844,24 +5899,11 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
-   "position": null,
-   "rare": true,
-   "scale": 1,
-   "soundFail": false,
-   "soundId": "bell",
-   "soundRare": false,
-   "style": "ring",
-   "volume": 0.6
-  },
-  {
-   "crafts": true,
-   "enabled": true,
-   "fail": true,
-   "icon": true,
-   "opacity": 1,
-   "plain": false,
-   "position": null,
+   "plain": true,
+   "position": {
+    "x": 1351,
+    "y": 773
+   },
    "rare": true,
    "scale": 2,
    "soundFail": false,
@@ -5876,8 +5918,11 @@
    "fail": true,
    "icon": true,
    "opacity": 0.2,
-   "plain": false,
-   "position": null,
+   "plain": true,
+   "position": {
+    "x": 1351,
+    "y": 773
+   },
    "rare": true,
    "scale": 0.6,
    "soundFail": false,
@@ -5892,8 +5937,11 @@
    "fail": false,
    "icon": false,
    "opacity": 1,
-   "plain": true,
-   "position": null,
+   "plain": false,
+   "position": {
+    "x": 1351,
+    "y": 773
+   },
    "rare": false,
    "scale": 1.4,
    "soundFail": true,
@@ -5908,7 +5956,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -5924,7 +5972,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -5940,7 +5988,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -5956,7 +6004,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -5972,7 +6020,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -5988,7 +6036,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6004,7 +6052,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6020,7 +6068,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6036,7 +6084,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6052,7 +6100,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6068,7 +6116,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6084,7 +6132,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6100,7 +6148,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6116,7 +6164,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6132,7 +6180,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6148,7 +6196,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6164,7 +6212,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6180,7 +6228,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6196,7 +6244,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6212,7 +6260,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6228,7 +6276,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6244,7 +6292,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6260,7 +6308,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6276,7 +6324,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6292,7 +6340,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6308,7 +6356,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6324,7 +6372,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": {
     "x": 11,
     "y": -3
@@ -6343,7 +6391,7 @@
    "fail": true,
    "icon": true,
    "opacity": 1,
-   "plain": false,
+   "plain": true,
    "position": null,
    "rare": true,
    "scale": 1,
@@ -6782,7 +6830,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": null,
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -6796,7 +6844,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": null,
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -6810,7 +6858,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": null,
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -6824,7 +6872,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": null,
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -6838,7 +6886,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": null,
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -6852,11 +6900,14 @@
    "collapsed": false,
    "combatPower": true,
    "customName": null,
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
-   "position": null,
+   "position": {
+    "x": 1218,
+    "y": 131
+   },
    "pvpOnly": true,
    "sound": true,
    "soundId": "enemy-spotted",
@@ -6866,7 +6917,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "x",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -6880,11 +6931,14 @@
    "collapsed": false,
    "combatPower": true,
    "customName": null,
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 1,
-   "position": null,
+   "position": {
+    "x": 1218,
+    "y": 131
+   },
    "pvpOnly": true,
    "sound": true,
    "soundId": "enemy-spotted",
@@ -6894,11 +6948,14 @@
    "collapsed": false,
    "combatPower": true,
    "customName": null,
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0,
-   "position": null,
+   "position": {
+    "x": 1218,
+    "y": 131
+   },
    "pvpOnly": true,
    "sound": true,
    "soundId": "enemy-spotted",
@@ -6908,11 +6965,14 @@
    "collapsed": true,
    "combatPower": false,
    "customName": null,
-   "enabled": true,
+   "enabled": false,
    "gearScore": false,
    "mapPins": false,
    "opacity": 1,
-   "position": null,
+   "position": {
+    "x": 1218,
+    "y": 131
+   },
    "pvpOnly": false,
    "sound": false,
    "soundId": "enemy-spotted",
@@ -6922,7 +6982,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "pinned",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -6936,7 +6996,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "list",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -6950,7 +7010,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "always",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -6964,7 +7024,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "strip",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -6978,7 +7038,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "players",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -6992,7 +7052,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "meter",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7006,7 +7066,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "ring",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7020,7 +7080,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "gauges",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7034,7 +7094,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "pill",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7048,7 +7108,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "compact",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7062,7 +7122,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "bold",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7076,7 +7136,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "flat",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7090,7 +7150,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "under",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7104,7 +7164,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "column",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7118,7 +7178,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "hidden",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7132,7 +7192,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "fr",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7146,7 +7206,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "en",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7160,7 +7220,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "es",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7174,7 +7234,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "europe",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7188,7 +7248,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "na-west",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7202,7 +7262,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "#ff0000",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7216,7 +7276,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": null,
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7230,7 +7290,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "game",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7244,7 +7304,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "word",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7258,7 +7318,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "icon",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7272,7 +7332,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": "drawn",
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7286,7 +7346,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": null,
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -7303,7 +7363,7 @@
    "collapsed": false,
    "combatPower": true,
    "customName": null,
-   "enabled": false,
+   "enabled": true,
    "gearScore": true,
    "mapPins": true,
    "opacity": 0.75,
@@ -8138,8 +8198,8 @@
    "cc": true,
    "ccDebuffs": false,
    "ccPosition": {
-    "x": 1145,
-    "y": 359
+    "x": 1181,
+    "y": 345
    },
    "consumables": false,
    "debuffs": true,
@@ -8174,8 +8234,8 @@
    "cc": true,
    "ccDebuffs": false,
    "ccPosition": {
-    "x": 1145,
-    "y": 359
+    "x": 1181,
+    "y": 345
    },
    "consumables": false,
    "debuffs": true,
@@ -8195,8 +8255,8 @@
    "cc": true,
    "ccDebuffs": false,
    "ccPosition": {
-    "x": 1145,
-    "y": 359
+    "x": 1181,
+    "y": 345
    },
    "consumables": false,
    "debuffs": true,
@@ -8216,8 +8276,8 @@
    "cc": false,
    "ccDebuffs": true,
    "ccPosition": {
-    "x": 1145,
-    "y": 359
+    "x": 1181,
+    "y": 345
    },
    "consumables": true,
    "debuffs": false,
@@ -8669,7 +8729,7 @@
    "enabled": true,
    "gear": "off",
    "height": null,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8679,7 +8739,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8689,7 +8749,7 @@
    "enabled": true,
    "gear": "off",
    "height": null,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8699,7 +8759,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8709,7 +8769,7 @@
    "enabled": true,
    "gear": "off",
    "height": null,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8719,7 +8779,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8729,7 +8789,7 @@
    "enabled": true,
    "gear": "off",
    "height": null,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8739,7 +8799,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8749,7 +8809,7 @@
    "enabled": true,
    "gear": "off",
    "height": null,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8759,7 +8819,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8767,22 +8827,22 @@
    "collapsed": false,
    "deaths": true,
    "enabled": true,
-   "gear": "beside",
-   "height": null,
-   "hideIdle": false,
+   "gear": "below",
+   "height": 328,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
    "position": {
-    "x": 410,
-    "y": 206
+    "x": 362,
+    "y": 72
    },
-   "power": "beside",
+   "power": "below",
    "rows": 8,
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8792,7 +8852,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8802,7 +8862,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 1,
@@ -8810,17 +8870,17 @@
    "collapsed": false,
    "deaths": true,
    "enabled": true,
-   "gear": "beside",
-   "height": null,
-   "hideIdle": false,
+   "gear": "below",
+   "height": 1200,
+   "hideIdle": true,
    "idleSeconds": 300,
    "opacity": 1,
    "players": "party",
    "position": {
-    "x": 410,
-    "y": 206
+    "x": 362,
+    "y": 72
    },
-   "power": "beside",
+   "power": "below",
    "rows": 24,
    "stat": "damage",
    "style": "compact",
@@ -8833,17 +8893,17 @@
    "collapsed": false,
    "deaths": true,
    "enabled": true,
-   "gear": "beside",
-   "height": null,
-   "hideIdle": false,
+   "gear": "below",
+   "height": 120,
+   "hideIdle": true,
    "idleSeconds": 5,
    "opacity": 0.3,
    "players": "party",
    "position": {
-    "x": 410,
-    "y": 206
+    "x": 362,
+    "y": 72
    },
-   "power": "beside",
+   "power": "below",
    "rows": 1,
    "stat": "damage",
    "style": "compact",
@@ -8856,22 +8916,22 @@
    "collapsed": true,
    "deaths": false,
    "enabled": false,
-   "gear": "beside",
-   "height": null,
-   "hideIdle": true,
+   "gear": "below",
+   "height": 328,
+   "hideIdle": false,
    "idleSeconds": 15,
    "opacity": 1,
    "players": "party",
    "position": {
-    "x": 410,
-    "y": 206
+    "x": 362,
+    "y": 72
    },
-   "power": "beside",
+   "power": "below",
    "rows": 8,
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8881,7 +8941,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8891,7 +8951,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8901,7 +8961,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8911,7 +8971,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8921,7 +8981,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8931,7 +8991,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8941,7 +9001,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8951,7 +9011,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8961,7 +9021,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8971,7 +9031,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -8981,7 +9041,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -8991,7 +9051,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9001,7 +9061,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9011,7 +9071,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9021,7 +9081,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9031,7 +9091,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9041,7 +9101,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9051,7 +9111,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9061,7 +9121,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9071,7 +9131,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9081,7 +9141,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9091,7 +9151,7 @@
    "stat": "damage",
    "style": "bold",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9101,7 +9161,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9111,7 +9171,7 @@
    "stat": "damage",
    "style": "flat",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9121,7 +9181,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9131,7 +9191,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9141,7 +9201,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9151,7 +9211,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9161,7 +9221,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9171,7 +9231,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9181,7 +9241,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9191,7 +9251,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9201,7 +9261,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9211,7 +9271,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9221,7 +9281,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9231,7 +9291,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9241,7 +9301,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9251,7 +9311,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9261,7 +9321,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9271,7 +9331,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9281,7 +9341,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9291,7 +9351,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9301,7 +9361,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9311,7 +9371,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9321,7 +9381,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9331,7 +9391,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9341,7 +9401,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9351,7 +9411,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9361,7 +9421,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9371,7 +9431,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9381,7 +9441,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9391,7 +9451,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9401,7 +9461,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9414,7 +9474,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   },
   {
    "barsBackground": 0.6,
@@ -9424,7 +9484,7 @@
    "enabled": true,
    "gear": "off",
    "height": 120,
-   "hideIdle": false,
+   "hideIdle": true,
    "idleSeconds": 15,
    "opacity": 0.92,
    "players": "party",
@@ -9434,7 +9494,7 @@
    "stat": "damage",
    "style": "compact",
    "targetMode": "bossTargets",
-   "width": 340
+   "width": 321
   }
  ],
  "hideFromCapture": [
