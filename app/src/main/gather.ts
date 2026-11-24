@@ -6,6 +6,9 @@
 // gathered yet is told by the map (the app's gathering points, maps/gatherables.json): each spot of it
 // that comes into view votes for the resource of the point nearest to it; the most voted one is taken,
 // and kept once sure (3 votes, three in four). The owner's captures: 6 kinds told right that way.
+//
+// It also follows each one to its end for the sessions (main/sessions.ts): `onGathered` with a
+// gathering's start and result (or none: given up), `onCrafted` with a craft's.
 import { app } from 'electron'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -19,11 +22,44 @@ import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, plainItem, type GatherFor
 const FORGET_AFTER_MS = 2_000
 /** And without a duration told, this long after its start (a long craft takes 16 s). */
 const FORGET_MS = 25_000
+/** A gathering over with no result this long after: given up (a done one's result comes just after). */
+const GIVEN_UP_MS = 1_500
+
+/** What a gathering's start said: its outcome code, grade, the skills its rolls fired, its spot's kind. */
+export interface GatheringStart {
+  outcome: number
+  grade: number
+  doubled: boolean
+  skills: number[]
+  template: number | null
+}
+/** A gathering over: its start (null when it began before the app saw it) and its result, or null: given up. */
+export interface GatheringOver {
+  at: number
+  start: GatheringStart | null
+  result: { item: number; amount: number; bonus: number; result: number } | null
+  /** The spot's plain item, as known (for a given up one, which says none). */
+  plain: number | null
+}
+/** A craft over: made (its item) or failed (none). */
+export interface CraftOver {
+  at: number
+  recipe: number
+  proc: boolean
+  failed: boolean
+  item: number | null
+}
+const gatheredListeners: ((g: GatheringOver) => void)[] = []
+const craftedListeners: ((c: CraftOver) => void)[] = []
+export const onGathered = (f: (g: GatheringOver) => void): void => void gatheredListeners.push(f)
+export const onCrafted = (f: (c: CraftOver) => void): void => void craftedListeners.push(f)
+/** The gathering going on, as its start said. */
+let gathering: GatheringStart | null = null
+/** The craft going on. */
+let crafting: { recipe: number; proc: boolean; failed: boolean } | null = null
 
 let state: GatherForecast | null = null
 let timer: NodeJS.Timeout | null = null
-/** The spot's kind of the gathering going on, for its result to teach. */
-let pendingTemplate: string | null = null
 let templates: GatherTemplates = { ...GATHER_TEMPLATES_SEED }
 const file = (): string => join(app.getPath('userData'), 'gather-spots.json')
 
@@ -118,31 +154,43 @@ export function startGather(): void {
     // rolled and failed (2026-11-23: a Pure Diamond, nothing gathered).
     const outcome = (code & 1) === 0 ? 'fail' : grade > 1 || (code & 6) !== 0 ? 'rankUp' : 'ok'
     if (![0, 1, 6, 7].includes(code)) log(`gathering: outcome ${code} (grade ${grade}) not known before`)
-    const template = ev['template'] as number | null | undefined
-    pendingTemplate = template === null || template === undefined ? null : String(template)
-    const plain = pendingTemplate !== null ? (templates[pendingTemplate] ?? voted(Number(pendingTemplate))?.item) : undefined
+    const template = (ev['template'] as number | null | undefined) ?? null
+    const plain = gatherStore.plainOf(template) ?? undefined
     const item = gatherItem(plain, outcome === 'fail' ? 1 : grade)
     // A grade that gives the plain item more times (a plant's x3) is no rank up.
     const base = plainItem(plain)
     const times = outcome === 'rankUp' && item && base && item.id === base.id ? item.count : 1
     const rolls = (ev['rolls'] as GatherRoll[] | undefined) ?? []
+    gathering = { outcome: code, grade, doubled: ev['doubled'] === true, skills: rolls.flatMap((r) => r.skills ?? []), template }
     set({ kind: 'gather', grade, outcome: times > 1 ? 'ok' : outcome, times, doubled: ev['doubled'] === true, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls })
   })
-  // Over: done (its result just after) or given up, walking away. Its spot's kind waits for a result.
+  // Over: done (its result just after) or given up, walking away. The next gathering's start, coming
+  // meanwhile, is left alone.
   tracker.onEvent('gatherEnd', () => {
     if (state?.kind === 'gather') set(null)
+    const over = gathering
+    if (!over) return
+    setTimeout(() => {
+      if (gathering !== over) return
+      gathering = null
+      for (const f of gatheredListeners) f({ at: Date.now(), start: over, result: null, plain: gatherStore.plainOf(over.template) })
+    }, GIVEN_UP_MS)
   })
   tracker.onEvent('gather', (ev) => {
+    const start = gathering
+    gathering = null
     // Its result says the spot's resource, even failed or ranked up (a Fine Yggdrasil Log's plain one).
-    const item = ev['item'] as number | undefined
+    const item = (ev['item'] as number | undefined) ?? 0
     const plain = item ? resourceOf(item) : undefined
-    if (pendingTemplate !== null && plain && templates[pendingTemplate] !== plain) {
-      templates = { ...templates, [pendingTemplate]: plain }
-      votes.delete(Number(pendingTemplate))
+    const template = start?.template ?? null
+    if (template !== null && plain && templates[String(template)] !== plain) {
+      templates = { ...templates, [template]: plain }
+      votes.delete(template)
       keep()
     }
-    pendingTemplate = null
     if (state) set(null)
+    const result = { item, amount: (ev['amount'] as number | undefined) ?? 0, bonus: (ev['bonus'] as number | undefined) ?? 0, result: (ev['result'] as number | undefined) ?? 0 }
+    for (const f of gatheredListeners) f({ at: Date.now(), start, result, plain: plain ?? null })
   })
   tracker.onEvent('craftStart', (ev) => {
     const code = ev['outcome'] as number
@@ -151,9 +199,21 @@ export function startGather(): void {
     const made = (code & 1) === 1
     const proc = made && (code & 12) !== 0
     const { item, doubled } = craftItem(ev['recipe'] as number, proc)
+    crafting = { recipe: ev['recipe'] as number, proc, failed: !made }
     set({ kind: 'craft', times: 1, outcome: !made ? 'fail' : proc ? 'proc' : 'ok', doubled, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls: [] })
   })
-  tracker.onEvent('craftDone', () => {
+  // Done: a failed one made nothing (no result follows); a made one's item comes with `craftResult`.
+  tracker.onEvent('craftDone', (ev) => {
     if (state?.kind === 'craft') set(null)
+    const c = crafting
+    if (!c?.failed || c.recipe !== ev['recipe']) return
+    crafting = null
+    for (const f of craftedListeners) f({ at: Date.now(), recipe: c.recipe, proc: false, failed: true, item: null })
+  })
+  tracker.onEvent('craftResult', (ev) => {
+    const c = crafting
+    crafting = null
+    if (!c || c.failed || c.recipe !== ev['recipe']) return
+    for (const f of craftedListeners) f({ at: Date.now(), recipe: c.recipe, proc: c.proc, failed: false, item: ev['item'] as number })
   })
 }

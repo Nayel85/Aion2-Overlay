@@ -17,7 +17,7 @@ import { join } from 'node:path'
 import { abyss } from './abyss.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
-import { gatherStore } from './gather.ts'
+import { onCrafted, onGathered } from './gather.ts'
 import { RECIPES } from '../shared/recipes.ts'
 import { BOSS_RUNS } from '../shared/bossRuns.ts'
 import { AP_ITEM, apSource, GATHER_FAILED, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
@@ -306,37 +306,15 @@ export function startSessions(): void {
     log(`session: duty mission ${String(ev['quest'])} gave ${JSON.stringify(rewards)}`)
     changed()
   })
-  // A craft: as it starts the game says whether it will proc; once done, what it made (its count the
-  // recipe's, shared/recipes.ts: a proc can be the item twice).
-  let crafting: { recipe: number; proc: boolean } | null = null
-  tracker.onEvent('craftStart', (ev) => {
-    const code = ev['outcome'] as number
-    crafting = { recipe: ev['recipe'] as number, proc: (code & 1) === 1 && (code & 12) !== 0 }
-    // A failed one (its outcome without 1) makes nothing: recorded as it ends.
-    if ((code & 1) === 0) failing = ev['recipe'] as number
-  })
-  let failing: number | null = null
-  tracker.onEvent('craftDone', (ev) => {
+  // A craft over (main/gather.ts follows it): what it made, its count the recipe's (shared/recipes.ts:
+  // a proc can be the item twice), or nothing, failed.
+  onCrafted((c) => {
     const s = sessions.current
-    if (failing === null || failing !== ev['recipe']) return
-    failing = null
-    crafting = null
     if (!s) return
-    const at = Date.now()
-    s.crafts = [...(s.crafts ?? []), { at, recipe: ev['recipe'] as number, proc: false, failed: true, item: 0, count: 0 }]
-    s.last = at
-    changed()
-  })
-  tracker.onEvent('craftResult', (ev) => {
-    const s = sessions.current
-    const c = crafting
-    crafting = null
-    if (!s || !c || c.recipe !== ev['recipe']) return
-    const at = Date.now()
     const r = RECIPES[String(c.recipe)]
-    const count = (c.proc ? r?.[1]?.[1] : r?.[0][1]) ?? 1
-    s.crafts = [...(s.crafts ?? []), { at, recipe: c.recipe, proc: c.proc, item: ev['item'] as number, count }]
-    s.last = at
+    const count = c.failed ? 0 : ((c.proc ? r?.[1]?.[1] : r?.[0][1]) ?? 1)
+    s.crafts = [...(s.crafts ?? []), c.failed ? { at: c.at, recipe: c.recipe, proc: false, failed: true, item: 0, count } : { at: c.at, recipe: c.recipe, proc: c.proc, item: c.item ?? 0, count }]
+    s.last = c.at
     changed()
   })
   // A supply request handed in: its rewards, the game's set ones. Its Abyss Points rose the balance
@@ -401,51 +379,23 @@ export function startSessions(): void {
     s.last = Date.now()
     changed()
   })
-  // A gathering: the session's stats (done, failed, doubled, ranked up) and what it gave.
-  // Each gathering whole: its start (outcome, grade, the skills its rolls fired), then its result.
-  let gatherStart: { outcome: number; grade: number; doubled: boolean; skills: number[]; template: number | null } | null = null
-  tracker.onEvent('gatherStart', (ev) => {
-    const rolls = (ev['rolls'] as { skills?: number[] }[] | undefined) ?? []
-    gatherStart = {
-      outcome: ev['outcome'] as number,
-      grade: (ev['grade'] as number | undefined) ?? 1,
-      doubled: ev['doubled'] === true,
-      skills: rolls.flatMap((r) => r.skills ?? []),
-      template: (ev['template'] as number | null | undefined) ?? null,
-    }
-  })
-  tracker.onEvent('gatherEnd', () => {
-    // A done one's result comes just after; with none, it was given up: counted as a failure, its
-    // resource the spot's; not counted at all when the spot's resource is not known. The next
-    // gathering's start, coming meanwhile, is left alone.
-    const over = gatherStart
-    setTimeout(() => {
-      if (!over || gatherStart !== over) return
-      gatherStart = null
-      const s = sessions.current
-      if (!s) return
-      const plain = gatherStore.plainOf(over.template)
-      if (!plain) return
-      s.gatherings = [...(s.gatherings ?? []), { at: Date.now(), resource: plain, outcome: over.outcome, grade: over.grade, doubled: over.doubled, failed: true, abandoned: true, item: plain, amount: 0, skills: over.skills }]
-      noteGathering(s, plain, 0, GATHER_FAILED)
-      s.last = Date.now()
-      changed()
-    }, 1_500)
-  })
-  tracker.onEvent('gather', (ev) => {
+  // A gathering over (main/gather.ts follows it): the session's stats (done, failed, doubled, ranked
+  // up) and what it gave. Given up, it counts as a failure of the spot's resource; not at all when
+  // that is not known. One begun before the app saw it counts in the stats only.
+  onGathered(({ at, start, result, plain }) => {
     const s = sessions.current
-    const start = gatherStart
-    gatherStart = null
-    if (s && start) {
-      const item = ev['item'] as number
-      const amount = ((ev['amount'] as number | undefined) ?? 0) + ((ev['bonus'] as number | undefined) ?? 0)
-      s.gatherings = [...(s.gatherings ?? []), { at: Date.now(), resource: resourceOf(item), outcome: start.outcome, grade: start.grade, doubled: start.doubled, failed: ev['result'] === 2 || amount <= 0, item, amount, skills: start.skills }]
-    }
     if (!s) return
-    const result = ev['result'] as number
-    if (result > 2) log(`session: a gathering's result ${result} not known (${ev['amount']} x ${ev['item']})`)
-    noteGathering(s, ev['item'] as number, ev['amount'] as number, result, (ev['bonus'] as number | undefined) ?? 0)
-    s.last = Date.now()
+    if (!result) {
+      if (!start || !plain) return
+      s.gatherings = [...(s.gatherings ?? []), { at, resource: plain, outcome: start.outcome, grade: start.grade, doubled: start.doubled, failed: true, abandoned: true, item: plain, amount: 0, skills: start.skills }]
+      noteGathering(s, plain, 0, GATHER_FAILED)
+    } else {
+      const amount = result.amount + result.bonus
+      if (start) s.gatherings = [...(s.gatherings ?? []), { at, resource: resourceOf(result.item), outcome: start.outcome, grade: start.grade, doubled: start.doubled, failed: result.result === 2 || amount <= 0, item: result.item, amount, skills: start.skills }]
+      if (result.result > 2) log(`session: a gathering's result ${result.result} not known (${result.amount} x ${result.item})`)
+      noteGathering(s, result.item, result.amount, result.result, result.bonus)
+    }
+    s.last = at
     changed()
   })
   tracker.onEvent('pvpKill', (ev) => {
