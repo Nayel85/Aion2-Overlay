@@ -6,14 +6,17 @@
  * display). Under CLICK_SLOP pixels of travel it is a click, not a drag. The position is saved
  * once, on release, not on every move.
  */
-import type { Bridge } from '@shared/ipc.ts'
+import type { Bridge, OverlayId } from '@shared/ipc.ts'
+import type { Point } from '@shared/settings.ts'
 import { bridge } from './bridge.ts'
 
 const CLICK_SLOP = 4
 
 export interface WindowDragOptions {
-  move: 'applicants:moveTo' | 'party:moveTo' | 'flight:moveTo' | 'gather:moveTo' | 'bubble:moveTo' | 'unified:moveTo' | 'hud:moveTo' | 'merchant:moveTo' | 'meter:moveTo' | 'killfeed:moveTo' | 'timerbar:moveTo' | 'details:moveTo' | 'skills:moveTo' | 'minimap:moveTo' | 'buffs:moveTo' | 'cc:moveTo' | 'enemies:moveTo' | 'bossruns:moveTo' | 'training:moveTo'
-  end: 'applicants:dragEnd' | 'party:dragEnd' | 'flight:dragEnd' | 'gather:dragEnd' | 'bubble:dragEnd' | 'unified:dragEnd' | 'hud:dragEnd' | 'merchant:dragEnd' | 'meter:dragEnd' | 'killfeed:dragEnd' | 'timerbar:dragEnd' | 'details:dragEnd' | 'skills:dragEnd' | 'minimap:dragEnd' | 'buffs:dragEnd' | 'cc:dragEnd' | 'enemies:dragEnd' | 'bossruns:dragEnd' | 'training:dragEnd'
+  /** One of the overlays sized to their page (shared/ipc.ts `OverlayId`), or a window with channels of its own. */
+  overlay?: OverlayId
+  move?: 'bubble:moveTo' | 'unified:moveTo' | 'hud:moveTo' | 'merchant:moveTo' | 'meter:moveTo' | 'killfeed:moveTo' | 'timerbar:moveTo' | 'details:moveTo'
+  end?: 'bubble:dragEnd' | 'unified:dragEnd' | 'hud:dragEnd' | 'merchant:dragEnd' | 'meter:dragEnd' | 'killfeed:dragEnd' | 'timerbar:dragEnd' | 'details:dragEnd'
   onClick?: () => void
 }
 
@@ -22,6 +25,9 @@ export function windowDrag(opts: WindowDragOptions): {
   onPointerUp: (e: PointerEvent) => void
 } {
   const api: Bridge = bridge()
+  const move = (to: Point): void =>
+    void (opts.overlay ? api.invoke('overlay:moveTo', opts.overlay, to) : opts.move && api.invoke(opts.move, to))
+  const end = (): void => void (opts.overlay ? api.invoke('overlay:dragEnd', opts.overlay) : opts.end && api.invoke(opts.end))
   /** A press this window saw, whose release it is waiting for. */
   let pressed = false
 
@@ -41,7 +47,7 @@ export function windowDrag(opts: WindowDragOptions): {
 
     const flush = (): void => {
       frame = 0
-      if (last) void api.invoke(opts.move, { x: last.screenX - grabX, y: last.screenY - grabY })
+      if (last) move({ x: last.screenX - grabX, y: last.screenY - grabY })
     }
     const onMove = (ev: PointerEvent): void => {
       if (!dragging && Math.hypot(ev.screenX - startX, ev.screenY - startY) < CLICK_SLOP) return
@@ -60,7 +66,7 @@ export function windowDrag(opts: WindowDragOptions): {
       if (dragging) {
         last = ev
         flush()
-        void api.invoke(opts.end)
+        end()
       } else if (ev.type === 'pointerup') {
         opts.onClick?.()
       }

@@ -105,7 +105,7 @@ function countdown(at: number): string {
   return `${m}:${String(s % 60).padStart(2, '0')}`
 }
 
-const drag = windowDrag({ move: 'bossruns:moveTo', end: 'bossruns:dragEnd' })
+const drag = windowDrag({ overlay: 'bossruns' })
 
 let sent = ''
 function report(): void {
@@ -114,7 +114,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('bossruns:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'bossruns', { width: r.width, height: r.height })
 }
 watch([() => list.value.length, scale, () => cfg.value.collapsed], () => void nextTick(report))
 

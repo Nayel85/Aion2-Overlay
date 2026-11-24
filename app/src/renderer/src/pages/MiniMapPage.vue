@@ -83,7 +83,7 @@ const death = computed(() => {
 })
 const pet = (id: number) => store.pets.find((p) => p.id === id) ?? blankPet(id)
 
-const drag = windowDrag({ move: 'minimap:moveTo', end: 'minimap:dragEnd' })
+const drag = windowDrag({ overlay: 'minimap' })
 const setZoom = (zoom: number): void =>
   void store.set('minimap', { ...cfg.value, zoom: Math.min(40, Math.max(1, zoom)) })
 const set = (patch: Partial<Settings['minimap']>): void => void store.set('minimap', { ...cfg.value, ...patch })
@@ -125,7 +125,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('minimap:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'minimap', { width: r.width, height: r.height })
 }
 watch([world, width, mapHeight, () => cfg.value.collapsed, () => legend.value.length], () => void nextTick(report))
 

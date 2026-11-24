@@ -45,7 +45,7 @@ import { broadcast, registerWindowRoute, send } from './broadcast.ts'
 import { DISPLAY_NAME } from '../shared/app.ts'
 import { settings } from './settings.ts'
 import { tracker } from './tracker.ts'
-import type { EventChannels } from '../shared/ipc.ts'
+import type { EventChannels, OverlayId } from '../shared/ipc.ts'
 import type { DetailsSource } from '../shared/meter.ts'
 import type { Point } from '../shared/settings.ts'
 import type { TimerId } from '../shared/timers.ts'
@@ -609,6 +609,8 @@ function measuredOverlay(o: {
   clickThrough?: boolean
   /** Kept with its bottom right corner here, whatever its size (not moved by hand). */
   corner?: () => Point
+  /** Opened by its own module only (the packet log's pill), not with the others. */
+  manual?: boolean
 }) {
   let win: BrowserWindow | null = null
   let size = { width: 0, height: 0 }
@@ -629,6 +631,8 @@ function measuredOverlay(o: {
   }
   return {
     win: (): BrowserWindow | null => (alive(win) ? win : null),
+    enabled: o.enabled,
+    manual: o.manual === true,
     /** Open it, unless it is turned off. It shows once its page has measured itself. */
     create(): void {
       if (!o.enabled() || alive(win)) return
@@ -681,11 +685,6 @@ const skillsOverlay = measuredOverlay({
   },
   save: (position) => settings.set('skills', { ...settings.get('skills'), position }),
 })
-export const createSkills = skillsOverlay.create
-export const closeSkills = skillsOverlay.close
-export const resizeSkills = skillsOverlay.resize
-export const moveSkills = skillsOverlay.move
-export const skillsDragEnded = skillsOverlay.dragEnded
 
 const miniMapOverlay = measuredOverlay({
   route: 'minimap',
@@ -698,11 +697,6 @@ const miniMapOverlay = measuredOverlay({
   },
   save: (position) => settings.set('minimap', { ...settings.get('minimap'), position }),
 })
-export const createMiniMap = miniMapOverlay.create
-export const closeMiniMap = miniMapOverlay.close
-export const resizeMiniMap = miniMapOverlay.resize
-export const moveMiniMap = miniMapOverlay.move
-export const miniMapDragEnded = miniMapOverlay.dragEnded
 
 const buffsOverlay = measuredOverlay({
   route: 'buffs',
@@ -714,11 +708,6 @@ const buffsOverlay = measuredOverlay({
   },
   save: (position) => settings.set('buffs', { ...settings.get('buffs'), position }),
 })
-export const createBuffs = buffsOverlay.create
-export const closeBuffs = buffsOverlay.close
-export const resizeBuffs = buffsOverlay.resize
-export const moveBuffs = buffsOverlay.move
-export const buffsDragEnded = buffsOverlay.dragEnded
 
 const ccOverlay = measuredOverlay({
   route: 'cc',
@@ -731,10 +720,6 @@ const ccOverlay = measuredOverlay({
   save: (ccPosition) => settings.set('buffs', { ...settings.get('buffs'), ccPosition }),
   clickThrough: true,
 })
-export const createCc = ccOverlay.create
-export const resizeCc = ccOverlay.resize
-export const moveCc = ccOverlay.move
-export const ccDragEnded = ccOverlay.dragEnded
 
 /** Enemies nearby: top centre, under where the CC banner sits. */
 const enemiesOverlay = measuredOverlay({
@@ -748,10 +733,6 @@ const enemiesOverlay = measuredOverlay({
   save: (position) => settings.set('enemies', { ...settings.get('enemies'), position }),
   clickThrough: true,
 })
-export const createEnemies = enemiesOverlay.create
-export const resizeEnemies = enemiesOverlay.resize
-export const moveEnemies = enemiesOverlay.move
-export const enemiesDragEnded = enemiesOverlay.dragEnded
 
 const trainingOverlay = measuredOverlay({
   route: 'training',
@@ -763,10 +744,6 @@ const trainingOverlay = measuredOverlay({
   },
   save: (position) => settings.set('dummy', { ...settings.get('dummy'), position }),
 })
-export const createTraining = trainingOverlay.create
-export const resizeTraining = trainingOverlay.resize
-export const moveTraining = trainingOverlay.move
-export const trainingDragEnded = trainingOverlay.dragEnded
 
 /** The packet log's pill (Alt+Shift+R): top left while it records, and a few seconds after. */
 const packetsOverlay = measuredOverlay({
@@ -779,10 +756,10 @@ const packetsOverlay = measuredOverlay({
   },
   save: () => {},
   clickThrough: true,
+  manual: true,
 })
 export const createPacketsHud = packetsOverlay.create
 export const closePacketsHud = packetsOverlay.close
-export const resizePacketsHud = packetsOverlay.resize
 
 /** Join requests: left of centre, a fifth of the way down (clickable: it has buttons). */
 const applicantsOverlay = measuredOverlay({
@@ -796,9 +773,6 @@ const applicantsOverlay = measuredOverlay({
   save: (position) => settings.set('applicants', { ...settings.get('applicants'), position }),
 })
 export const createApplicants = applicantsOverlay.create
-export const resizeApplicants = applicantsOverlay.resize
-export const moveApplicants = applicantsOverlay.move
-export const applicantsDragEnded = applicantsOverlay.dragEnded
 
 /** Party frames: at the left, a third of the way down (as the game's own). */
 const partyOverlay = measuredOverlay({
@@ -812,9 +786,6 @@ const partyOverlay = measuredOverlay({
   save: (position) => settings.set('party', { ...settings.get('party'), position }),
 })
 export const createParty = partyOverlay.create
-export const resizeParty = partyOverlay.resize
-export const moveParty = partyOverlay.move
-export const partyDragEnded = partyOverlay.dragEnded
 
 /** The flight timer: under the centre of the screen, where you look while flying (click-through). */
 const flightOverlay = measuredOverlay({
@@ -828,10 +799,6 @@ const flightOverlay = measuredOverlay({
   save: (position) => settings.set('flight', { ...settings.get('flight'), position }),
   clickThrough: true,
 })
-export const createFlight = flightOverlay.create
-export const resizeFlight = flightOverlay.resize
-export const moveFlight = flightOverlay.move
-export const flightDragEnded = flightOverlay.dragEnded
 
 /** The gathering outcome: a little above the middle of the screen, where you look (click-through). */
 const gatherOverlay = measuredOverlay({
@@ -845,10 +812,6 @@ const gatherOverlay = measuredOverlay({
   save: (position) => settings.set('gather', { ...settings.get('gather'), position }),
   clickThrough: true,
 })
-export const createGather = gatherOverlay.create
-export const resizeGather = gatherOverlay.resize
-export const moveGather = gatherOverlay.move
-export const gatherDragEnded = gatherOverlay.dragEnded
 
 /** Boss Runs: right of centre, a third of the way down. */
 const bossRunsOverlay = measuredOverlay({
@@ -861,10 +824,6 @@ const bossRunsOverlay = measuredOverlay({
   },
   save: (position) => settings.set('bossRuns', { ...settings.get('bossRuns'), position }),
 })
-export const createBossRuns = bossRunsOverlay.create
-export const resizeBossRuns = bossRunsOverlay.resize
-export const moveBossRuns = bossRunsOverlay.move
-export const bossRunsDragEnded = bossRunsOverlay.dragEnded
 
 /**
  * A guild event to answer: in the bottom right corner of the screen the game is on (the one the
@@ -882,10 +841,31 @@ const eventToastOverlay = measuredOverlay({
     return { x: area.x + area.width - EDGE, y: area.y + area.height - EDGE }
   },
 })
-export const createEventToast = eventToastOverlay.create
-export const resizeEventToast = eventToastOverlay.resize
 
-const MEASURED = [applicantsOverlay, partyOverlay, flightOverlay, gatherOverlay, skillsOverlay, miniMapOverlay, buffsOverlay, ccOverlay, enemiesOverlay, trainingOverlay, packetsOverlay, bossRunsOverlay, eventToastOverlay]
+/** Every overlay that sizes itself to its page, by its route (shared/ipc.ts `OverlayId`). */
+const OVERLAYS: Record<OverlayId, ReturnType<typeof measuredOverlay>> = {
+  applicants: applicantsOverlay,
+  party: partyOverlay,
+  flight: flightOverlay,
+  gather: gatherOverlay,
+  skills: skillsOverlay,
+  minimap: miniMapOverlay,
+  buffs: buffsOverlay,
+  cc: ccOverlay,
+  enemies: enemiesOverlay,
+  training: trainingOverlay,
+  packets: packetsOverlay,
+  bossruns: bossRunsOverlay,
+  eventtoast: eventToastOverlay,
+}
+const MEASURED = Object.values(OVERLAYS)
+/** Open every overlay that is on (as the game starts): each shows once its page has measured itself. */
+export function openOverlays(): void {
+  for (const m of MEASURED) if (!m.manual) m.create()
+}
+export const overlayMove = (id: OverlayId, to: Point): void => OVERLAYS[id].move(to)
+export const overlayDragEnded = (id: OverlayId): void => OVERLAYS[id].dragEnded()
+export const overlayResize = (id: OverlayId, size: { width: number; height: number }): void => OVERLAYS[id].resize(size)
 /** The measured overlays that are open. */
 const measuredWins = (): BrowserWindow[] => MEASURED.map((m) => m.win()).filter((w): w is BrowserWindow => w !== null)
 
@@ -1227,30 +1207,12 @@ export function startOnTopWatch(): void {
 export function applyWindowSettings(): void {
   const hidden = settings.get('hideFromCapture')
   for (const w of [bubble, panel, hud, merchant, meter, killFeed, timerBar, unified, details, ...measuredWins()]) if (alive(w)) w.setContentProtection(hidden)
-  if (!settings.get('minimap').enabled) closeMiniMap()
-  else if (alive(bubble)) createMiniMap()
-  if (!settings.get('skills').enabled) closeSkills()
-  else if (alive(bubble)) createSkills()
-  if (!settings.get('buffs').enabled) closeBuffs()
-  else if (alive(bubble)) createBuffs()
-  if (!settings.get('buffs').cc) ccOverlay.close()
-  else if (alive(bubble)) createCc()
-  if (!enemiesOn()) enemiesOverlay.close()
-  else if (alive(bubble)) createEnemies()
-  if (!settings.get('applicants').enabled) applicantsOverlay.close()
-  else if (alive(bubble)) createApplicants()
-  if (!settings.get('party').enabled) partyOverlay.close()
-  else if (alive(bubble)) createParty()
-  if (!settings.get('flight').enabled) flightOverlay.close()
-  else if (alive(bubble)) createFlight()
-  if (!settings.get('gather').enabled) gatherOverlay.close()
-  else if (alive(bubble)) createGather()
-  if (!bossRunsOn()) bossRunsOverlay.close()
-  else if (alive(bubble)) createBossRuns()
-  if (!eventToastEnabled()) eventToastOverlay.close()
-  else if (alive(bubble)) createEventToast()
-  if (!settings.get('dummy').overlay) trainingOverlay.close()
-  else if (alive(bubble)) createTraining()
+  // Each overlay sized to its page: closed when turned off, opened when turned on while the others are up.
+  for (const m of MEASURED) {
+    if (m.manual) continue
+    if (!m.enabled()) m.close()
+    else if (alive(bubble)) m.create()
+  }
   // Turned on: with the other overlays, while they are up (the bubble is, awake).
   if (!timerBarOn()) closeTimerBar()
   else if (alive(bubble)) createTimerBar()
@@ -1314,7 +1276,7 @@ export function rebuildWindow(win: BrowserWindow): string | null {
     showMerchant()
     return 'merchant'
   }
-  for (const [m, route] of [[applicantsOverlay, 'applicants'], [partyOverlay, 'party'], [flightOverlay, 'flight'], [gatherOverlay, 'gather'], [skillsOverlay, 'skills'], [miniMapOverlay, 'minimap'], [buffsOverlay, 'buffs'], [ccOverlay, 'cc'], [enemiesOverlay, 'enemies'], [trainingOverlay, 'training'], [packetsOverlay, 'packets'], [bossRunsOverlay, 'bossruns'], [eventToastOverlay, 'eventtoast']] as const) {
+  for (const [route, m] of Object.entries(OVERLAYS)) {
     if (win !== m.win()) continue
     m.close()
     m.create()

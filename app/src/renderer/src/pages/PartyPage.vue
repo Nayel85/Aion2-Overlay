@@ -106,7 +106,7 @@ const fill = (r: Row): string => (down(r.vitals) ? 'transparent' : afflicted(r) 
 const secondsLeft = (d: PartyDebuff): string => (d.endsAt === null ? '' : String(Math.max(0, Math.ceil((d.endsAt - now.value) / 1000))))
 
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('party', { ...cfg.value, ...patch })
-const drag = windowDrag({ move: 'party:moveTo', end: 'party:dragEnd' })
+const drag = windowDrag({ overlay: 'party' })
 
 let sent = ''
 function report(): void {
@@ -115,7 +115,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('party:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'party', { width: r.width, height: r.height })
 }
 watch([() => list.value.length, () => cfg.value.collapsed, () => cfg.value.header], () => void nextTick(report))
 

@@ -39,7 +39,7 @@ const colour = computed(() => (left.value === null ? '#6e8fb8' : left.value < 5 
 
 /** The ring's length (2πr, r 21). */
 const RING = 2 * Math.PI * 21
-const drag = windowDrag({ move: 'flight:moveTo', end: 'flight:dragEnd' })
+const drag = windowDrag({ overlay: 'flight' })
 
 let sent = ''
 function report(): void {
@@ -48,7 +48,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('flight:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'flight', { width: r.width, height: r.height })
 }
 watch(shown, () => void nextTick(report))
 

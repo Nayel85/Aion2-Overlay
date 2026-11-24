@@ -37,7 +37,7 @@ async function load(): Promise<void> {
   view.value = await api.invoke('skills:get')
 }
 
-const drag = windowDrag({ move: 'skills:moveTo', end: 'skills:dragEnd' })
+const drag = windowDrag({ overlay: 'skills' })
 /** Its X: off, like the toggle on the DPS meter. */
 const close = (): void => void store.set('skills', { ...store.settings.skills, enabled: false })
 
@@ -49,7 +49,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('skills:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'skills', { width: r.width, height: r.height })
 }
 watch(() => rows.value.length, () => void nextTick(report))
 

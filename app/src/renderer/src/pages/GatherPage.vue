@@ -144,7 +144,7 @@ watch(
   },
 )
 
-const drag = windowDrag({ move: 'gather:moveTo', end: 'gather:dragEnd' })
+const drag = windowDrag({ overlay: 'gather' })
 
 let sent = ''
 function report(): void {
@@ -153,7 +153,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('gather:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'gather', { width: r.width, height: r.height })
 }
 watch([shown, () => cfg.value.scale, () => cfg.value.style, () => shownGather.value && textOf(shownGather.value)], () => void nextTick(report))
 

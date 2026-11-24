@@ -77,7 +77,7 @@ const ago = (at: number): string => {
 
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('applicants', { ...cfg.value, ...patch })
 const dismiss = (a: Applicant): void => void api.invoke('applicants:dismiss', a.character)
-const drag = windowDrag({ move: 'applicants:moveTo', end: 'applicants:dragEnd' })
+const drag = windowDrag({ overlay: 'applicants' })
 
 let sent = ''
 function report(): void {
@@ -86,7 +86,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('applicants:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'applicants', { width: r.width, height: r.height })
 }
 watch([() => list.value.length, () => cfg.value.collapsed], () => void nextTick(report))
 

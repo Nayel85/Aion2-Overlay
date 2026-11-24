@@ -57,7 +57,7 @@ const shown = computed(
   () => !!active.value || store.panelVisible || (state.value.lastHitAt !== null && now.value - state.value.lastHitAt < SHOW_AFTER_HIT_MS),
 )
 
-const drag = windowDrag({ move: 'training:moveTo', end: 'training:dragEnd' })
+const drag = windowDrag({ overlay: 'training' })
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('dummy', { ...cfg.value, ...patch })
 
 /** Tell main how big the window is; nothing to show measures 0, and main keeps it hidden. */
@@ -68,7 +68,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('training:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'training', { width: r.width, height: r.height })
 }
 watch([shown, active, last, () => cfg.value.collapsed], () => void nextTick(report))
 

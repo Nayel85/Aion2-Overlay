@@ -44,7 +44,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('eventtoast:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'eventtoast', { width: r.width, height: r.height })
 }
 watch([() => event.value?.id, error], () => void nextTick(report))
 

@@ -44,7 +44,7 @@ const share = (b: Buff): number => Math.max(0, Math.min(1, left(b) / Math.max(1,
 const seconds = (b: Buff): string => `${(left(b) / 1000).toFixed(1)} seconds`
 const shown = computed(() => !!main.value || preview.value || debuffs.value.length > 0)
 
-const drag = windowDrag({ move: 'cc:moveTo', end: 'cc:dragEnd' })
+const drag = windowDrag({ overlay: 'cc' })
 
 /** Tell main how big the window is; nothing to show measures 0, and main keeps it hidden. */
 let sent = ''
@@ -54,7 +54,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('cc:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'cc', { width: r.width, height: r.height })
 }
 watch([shown, () => debuffs.value.length, () => controls.value.length], () => void nextTick(report))
 

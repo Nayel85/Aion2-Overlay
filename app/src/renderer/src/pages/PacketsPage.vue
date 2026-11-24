@@ -27,7 +27,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('packets:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'packets', { width: r.width, height: r.height })
 }
 watch([shown, () => log.value.on], () => void nextTick(report))
 

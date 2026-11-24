@@ -40,7 +40,7 @@ const left = (b: Buff): number | null => (b.endsAt === null ? null : b.endsAt - 
 const share = (b: Buff): number => (b.endsAt === null ? 1 : Math.max(0, Math.min(1, (b.endsAt - now.value) / Math.max(1, b.endsAt - b.startedAt))))
 const tip = (b: Buff): string => [buffName(b.id), b.stacks > 1 ? t('{n} stacks', { n: b.stacks }) : '', b.debuff ? 'debuff' : b.mine ? t('yours') : ''].filter(Boolean).join(' · ')
 
-const drag = windowDrag({ move: 'buffs:moveTo', end: 'buffs:dragEnd' })
+const drag = windowDrag({ overlay: 'buffs' })
 
 /** Tell main how big the window is; nothing on you measures 0, and main keeps it hidden. */
 let sent = ''
@@ -50,7 +50,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('buffs:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'buffs', { width: r.width, height: r.height })
 }
 watch(() => rows.value.map((r) => r.length).join(), () => void nextTick(report))
 

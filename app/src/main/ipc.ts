@@ -2,6 +2,7 @@
 import { app, ipcMain, shell } from 'electron'
 import { mkdir } from 'node:fs/promises'
 import { STORAGE_CLEARABLE, type StorageId } from '../shared/storage.ts'
+import { OVERLAY_IDS, type OverlayId } from '../shared/ipc.ts'
 import { dummy } from './dummy.ts'
 import { updater } from './updater.ts'
 import { meterState } from './meter.ts'
@@ -26,76 +27,49 @@ import { clearStorage, storageUsage } from './storage.ts'
 import { timers } from './timers.ts'
 import { logPath, tracker } from './tracker.ts'
 import {
-  bossRunsDragEnded,
-  resizeEventToast,
   bubbleDragEnded,
-  buffsDragEnded,
-  moveBossRuns,
-  resizeBossRuns,
-  ccDragEnded,
-  applicantsDragEnded,
-  moveParty,
-  moveFlight,
-  moveGather,
-  gatherDragEnded,
-  resizeGather,
-  flightDragEnded,
-  resizeFlight,
-  partyDragEnded,
-  resizeParty,
-  enemiesDragEnded,
-  moveTraining,
-  resizeTraining,
-  trainingDragEnded,
-  moveCc,
-  moveApplicants,
-  moveEnemies,
-  resizeCc,
-  resizePacketsHud,
-  resizeApplicants,
-  resizeEnemies,
-  moveBuffs,
-  resizeBuffs,
   closeDetails,
+  closeMerchant,
   detailsDragEnded,
   detailsSource,
-  closeMerchant,
   hidePanel,
   hudDragEnded,
   killFeedDragEnded,
   markQuitting,
   merchantDragEnded,
-  minimizePanel,
-  toggleMaximizePanel,
-  openDetails,
   meterDragEnded,
+  minimizePanel,
   moveBubble,
   moveDetails,
   moveHud,
   moveKillFeed,
   moveMerchant,
   moveMeter,
-  moveMiniMap,
-  miniMapDragEnded,
-  moveSkills,
   moveTimerBar,
+  moveUnified,
+  openDetails,
+  overlayDragEnded,
+  overlayMove,
+  overlayResize,
+  overlaysHidden,
   resizeHud,
   resizeKillFeed,
   resizeMerchant,
   resizeMeter,
-  resizeMiniMap,
-  resizeSkills,
   resizeTimerBar,
+  resizeUnified,
   setHudEditing,
   setKillFeedOpen,
-  skillsDragEnded,
+  showCharactersInPanel,
+  showPanel,
   showPetInPanel,
   showTimersInPanel,
-  showCharactersInPanel,
   timerBarDragEnded,
-  togglePanel,
+  toggleMaximizePanel,
   toggleOverlays,
-  overlaysHidden, moveUnified, resizeUnified, showPanel, unifiedDragEnded } from './windows.ts'
+  togglePanel,
+  unifiedDragEnded,
+} from './windows.ts'
 import type { InvokeArgs, InvokeChannel, InvokeResult } from '../shared/ipc.ts'
 import type { SettingKey } from '../shared/settings.ts'
 import { SETTINGS_DEFAULTS } from '../shared/settings.ts'
@@ -110,6 +84,7 @@ function handle<C extends InvokeChannel>(
 /** A saved fight's id: one file name, nothing that leaves the history folder. */
 const isPlainId = (id: unknown): id is string => typeof id === 'string' && /^[\w.-]{1,128}$/.test(id) && !id.includes('..')
 
+const isOverlay = (id: unknown): id is OverlayId => (OVERLAY_IDS as readonly unknown[]).includes(id)
 const isPoint = (p: unknown): p is { x: number; y: number } =>
   typeof p === 'object' && p !== null && Number.isFinite((p as { x: unknown }).x) && Number.isFinite((p as { y: unknown }).y)
 
@@ -185,40 +160,21 @@ export function registerIpc(): void {
   handle('guild:refresh', () => guild.refresh())
   handle('applicants:get', () => applicantStore.all())
   handle('party:get', () => partyStore.all())
+  handle('overlay:moveTo', (id, to) => {
+    if (isOverlay(id) && isPoint(to)) overlayMove(id, to)
+  })
+  handle('overlay:dragEnd', (id) => {
+    if (isOverlay(id)) overlayDragEnded(id)
+  })
+  handle('overlay:resize', (id, size) => {
+    if (isOverlay(id) && isPoint({ x: size?.width, y: size?.height })) overlayResize(id, size)
+  })
   handle('flight:get', () => flightStore.get())
   handle('gather:get', () => gatherStore.get())
-  handle('gather:moveTo', (to) => {
-    if (isPoint(to)) moveGather(to)
-  })
-  handle('gather:dragEnd', () => gatherDragEnded())
-  handle('gather:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeGather(size)
-  })
-  handle('flight:moveTo', (to) => {
-    if (isPoint(to)) moveFlight(to)
-  })
-  handle('flight:dragEnd', () => flightDragEnded())
-  handle('flight:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeFlight(size)
-  })
-  handle('party:moveTo', (to) => {
-    if (isPoint(to)) moveParty(to)
-  })
-  handle('party:dragEnd', () => partyDragEnded())
-  handle('party:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeParty(size)
-  })
   handle('applicants:dismiss', (character) => {
     if (Number.isInteger(character)) applicantStore.dismiss(character)
   })
   handle('applicants:clear', () => applicantStore.clear())
-  handle('applicants:moveTo', (to) => {
-    if (isPoint(to)) moveApplicants(to)
-  })
-  handle('applicants:dragEnd', () => applicantsDragEnded())
-  handle('applicants:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeApplicants(size)
-  })
   handle('characters:get', () => characterStore.all())
   handle('sessions:get', () => sessionStore.all())
   handle('inventory:get', () => inventoryStore.all())
@@ -272,21 +228,7 @@ export function registerIpc(): void {
 
   handle('meter:get', () => meterState.meter())
   handle('meter:reset', () => meterState.reset())
-  handle('minimap:moveTo', (to) => {
-    if (isPoint(to)) moveMiniMap(to)
-  })
-  handle('minimap:dragEnd', () => miniMapDragEnded())
-  handle('minimap:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeMiniMap(size)
-  })
   handle('skills:get', () => meterState.personal())
-  handle('skills:moveTo', (to) => {
-    if (isPoint(to)) moveSkills(to)
-  })
-  handle('skills:dragEnd', () => skillsDragEnded())
-  handle('skills:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeSkills(size)
-  })
   handle('update:get', () => updater.get())
   handle('update:peek', () => updater.peek())
   handle('update:check', () => updater.check())
@@ -295,13 +237,6 @@ export function registerIpc(): void {
   handle('dummy:get', () => dummy.get())
   handle('dummy:start', (name) => dummy.start(typeof name === 'string' ? name : undefined))
   handle('dummy:stop', (save) => dummy.stop(save === true))
-  handle('training:moveTo', (to) => {
-    if (isPoint(to)) moveTraining(to)
-  })
-  handle('training:dragEnd', () => trainingDragEnded())
-  handle('training:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeTraining(size)
-  })
   handle('dummy:newGroup', () => dummy.newGroup())
   handle('dummy:delete', (id) => {
     if (typeof id === 'string') dummy.remove(id)
@@ -328,18 +263,6 @@ export function registerIpc(): void {
   handle('overlays:toggle', () => toggleOverlays())
   handle('overlays:hidden', () => overlaysHidden())
   handle('buffs:get', () => meterState.buffs())
-  handle('cc:moveTo', (to) => {
-    if (isPoint(to)) moveCc(to)
-  })
-  handle('cc:dragEnd', () => ccDragEnded())
-  handle('enemies:moveTo', (to) => {
-    if (isPoint(to)) moveEnemies(to)
-  })
-  handle('enemies:dragEnd', () => enemiesDragEnded())
-  handle('bossruns:moveTo', (to) => {
-    if (isPoint(to)) moveBossRuns(to)
-  })
-  handle('bossruns:dragEnd', () => bossRunsDragEnded())
   handle('guildEvents:get', () => guildEvents.get())
   handle('guildEvents:refresh', () => guildEvents.refresh())
   handle('guildEvents:respond', (id, status) =>
@@ -348,28 +271,6 @@ export function registerIpc(): void {
   handle('guildEvents:detail', (id) => (Number.isInteger(id) ? guildEvents.detail(id) : Promise.resolve(null)))
   handle('guildEvents:dismiss', (id) => {
     if (Number.isInteger(id)) guildEvents.dismiss(id)
-  })
-  handle('eventtoast:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeEventToast(size)
-  })
-  handle('bossruns:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeBossRuns(size)
-  })
-  handle('enemies:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeEnemies(size)
-  })
-  handle('cc:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeCc(size)
-  })
-  handle('packets:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizePacketsHud(size)
-  })
-  handle('buffs:moveTo', (to) => {
-    if (isPoint(to)) moveBuffs(to)
-  })
-  handle('buffs:dragEnd', () => buffsDragEnded())
-  handle('buffs:resize', (size) => {
-    if (isPoint({ x: size?.width, y: size?.height })) resizeBuffs(size)
   })
   handle('details:open', (source) => {
     const ok = source?.kind === 'live' ? Number.isInteger(source.target) : (source?.kind === 'saved' || source?.kind === 'run' || source?.kind === 'pvp') && isPlainId(source.id)

@@ -17,7 +17,7 @@ import { game } from './game.ts'
 import { setGameMapAwake } from './gameMap.ts'
 import { settings } from './settings.ts'
 import { log, startTracker, stopTracker, tracker } from './tracker.ts'
-import { closeMeter, closeOverlays, createApplicants, createBossRuns, createBubble, createEventToast, createBuffs, createCc, createEnemies, createTraining, createHud, createKillFeed, createMeter, createMiniMap, createSkills, createTimerBar, createUnified, onPanelVisible, panelVisible } from './windows.ts'
+import { closeMeter, closeOverlays, createBubble, createHud, createKillFeed, createMeter, createTimerBar, createUnified, onPanelVisible, openOverlays, panelVisible } from './windows.ts'
 
 const EXIT_GRACE_MS = 20_000
 const LINGER_MS = 120_000
@@ -48,15 +48,7 @@ function wake(why: string): void {
   createKillFeed()
   createTimerBar()
   createUnified()
-  createSkills()
-  createBuffs()
-  createCc()
-  createEnemies()
-  createBossRuns()
-  createApplicants()
-  createEventToast()
-  createTraining()
-  createMiniMap()
+  openOverlays()
   setGameMapAwake(true)
   tracker.setCapture(true)
   applyMeter()

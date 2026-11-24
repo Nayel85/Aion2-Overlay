@@ -34,7 +34,7 @@ const list = computed(() => (store.enemies.length ? [...store.enemies].sort((a, 
 // An enemy coming into view sounds the alarm (lib/enemyAlarm.ts).
 useEnemyAlarm()
 
-const drag = windowDrag({ move: 'enemies:moveTo', end: 'enemies:dragEnd' })
+const drag = windowDrag({ overlay: 'enemies' })
 /** Minimized: the header only (how many). Clickable while the dashboard is up, as dragging is. */
 const toggleCollapsed = (): void => void store.set('enemies', { ...cfg.value, collapsed: !cfg.value.collapsed })
 
@@ -45,7 +45,7 @@ function report(): void {
   const key = `${Math.ceil(r.width)}x${Math.ceil(r.height)}`
   if (key === sent) return
   sent = key
-  void api.invoke('enemies:resize', { width: r.width, height: r.height })
+  void api.invoke('overlay:resize', 'enemies', { width: r.width, height: r.height })
 }
 watch([() => list.value.length, () => cfg.value.collapsed], () => void nextTick(report))
 

@@ -28,6 +28,10 @@ import type { FieldBosses, TimerAlert, TimerId } from './timers.ts'
 import type { Cube, Enemy, Nearby, TargetPlayer, Pet, PvpKill, PvpSummary, ShopStock, SoulToast, TrackerStatus } from './tracker.ts'
 
 /** Renderer → main, request/response. */
+/** The overlays that size themselves to their page, by their route. */
+export const OVERLAY_IDS = ['applicants', 'party', 'flight', 'gather', 'skills', 'minimap', 'buffs', 'cc', 'enemies', 'training', 'packets', 'bossruns', 'eventtoast'] as const
+export type OverlayId = (typeof OVERLAY_IDS)[number]
+
 export interface InvokeChannels {
   'app:info': { args: []; result: { version: string; settingsFile: string; logFile: string } }
   'app:quit': { args: []; result: void }
@@ -73,24 +77,16 @@ export interface InvokeChannels {
   'applicants:get': { args: []; result: Applicants }
   /** Your party and its members' HP (the party frames). */
   'party:get': { args: []; result: Party }
+  /** An overlay window that sizes itself to its page (main/windows.ts `OVERLAYS`): moved by its drag, its place kept as it ends, sized as its page measures itself. */
+  'overlay:moveTo': { args: [id: OverlayId, to: Point]; result: void }
+  'overlay:dragEnd': { args: [id: OverlayId]; result: void }
+  'overlay:resize': { args: [id: OverlayId, size: { width: number; height: number }]; result: void }
   /** Your flight power (the flight timer). */
   'flight:get': { args: []; result: FlightPower | null }
   /** A gathering's outcome, known as it starts (the CC banner). */
   'gather:get': { args: []; result: GatherForecast | null }
-  'gather:moveTo': { args: [to: Point]; result: void }
-  'gather:dragEnd': { args: []; result: void }
-  'gather:resize': { args: [size: { width: number; height: number }]; result: void }
-  'flight:moveTo': { args: [to: Point]; result: void }
-  'flight:dragEnd': { args: []; result: void }
-  'flight:resize': { args: [size: { width: number; height: number }]; result: void }
-  'party:moveTo': { args: [to: Point]; result: void }
-  'party:dragEnd': { args: []; result: void }
-  'party:resize': { args: [size: { width: number; height: number }]; result: void }
   'applicants:dismiss': { args: [character: number]; result: void }
   'applicants:clear': { args: []; result: void }
-  'applicants:moveTo': { args: [to: Point]; result: void }
-  'applicants:dragEnd': { args: []; result: void }
-  'applicants:resize': { args: [size: { width: number; height: number }]; result: void }
   /** Ask NCSoft for a character's combat power and portrait again. */
   'characters:refresh': { args: [id: string]; result: void }
   /** Stop tracking a character. */
@@ -151,15 +147,8 @@ export interface InvokeChannels {
   /** Start the fight over: no target, no damage. */
   'meter:reset': { args: []; result: void }
   /** One target's breakdown by skill (A2Tools DPS Meter's TargetDetailsResponse). */
-  /** The map overlay. */
-  'minimap:moveTo': { args: [to: Point]; result: void }
-  'minimap:dragEnd': { args: []; result: void }
-  'minimap:resize': { args: [size: { width: number; height: number }]; result: void }
   /** Your own skills on the meter's target (the skills window). */
   'skills:get': { args: []; result: PersonalView }
-  'skills:moveTo': { args: [to: Point]; result: void }
-  'skills:dragEnd': { args: []; result: void }
-  'skills:resize': { args: [size: { width: number; height: number }]; result: void }
   /** Every overlay off, or back on (Alt+Shift+E): true when off; and whether they are off now. */
   'overlays:toggle': { args: []; result: boolean }
   'overlays:hidden': { args: []; result: boolean }
@@ -194,33 +183,12 @@ export interface InvokeChannels {
   'dummy:delete': { args: [id: string]; result: void }
   /** Your buffs and debuffs (the buffs overlay). */
   'buffs:get': { args: []; result: Buff[] }
-  'buffs:moveTo': { args: [to: Point]; result: void }
-  'buffs:dragEnd': { args: []; result: void }
-  'buffs:resize': { args: [size: { width: number; height: number }]; result: void }
-  /** The Training overlay. */
-  'training:moveTo': { args: [to: Point]; result: void }
-  'training:dragEnd': { args: []; result: void }
-  'training:resize': { args: [size: { width: number; height: number }]; result: void }
-  /** The CC / Debuffs banner. */
-  'cc:moveTo': { args: [to: Point]; result: void }
-  /** The Boss Runs list. */
-  'bossruns:moveTo': { args: [to: Point]; result: void }
-  'bossruns:dragEnd': { args: []; result: void }
-  'bossruns:resize': { args: [size: { width: number; height: number }]; result: void }
   /** Guild events (main/guildEvents.ts): the list, asked again, answered (null, or why not), one with who comes, closed unanswered. */
   'guildEvents:get': { args: []; result: GuildEventsState }
   'guildEvents:refresh': { args: []; result: void }
   'guildEvents:respond': { args: [id: number, status: Rsvp]; result: string | null }
   'guildEvents:detail': { args: [id: number]; result: GuildEventDetail | null }
   'guildEvents:dismiss': { args: [id: number]; result: void }
-  'eventtoast:resize': { args: [size: { width: number; height: number }]; result: void }
-  'enemies:moveTo': { args: [to: Point]; result: void }
-  'enemies:dragEnd': { args: []; result: void }
-  'enemies:resize': { args: [size: { width: number; height: number }]; result: void }
-  'cc:dragEnd': { args: []; result: void }
-  'cc:resize': { args: [size: { width: number; height: number }]; result: void }
-  /** The packet log's pill over the game. */
-  'packets:resize': { args: [size: { width: number; height: number }]; result: void }
   /** Open the Details window on a fight (a meter row, a saved fight), or what it shows now. */
   'details:open': { args: [source: DetailsSource]; result: void }
   'details:get': { args: []; result: DetailsView | null }
@@ -348,9 +316,9 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'merchant:moveTo', 'merchant:dragEnd', 'merchant:resize', 'merchant:close', 'merchant:bought', 'panel:showPet', 'timers:get', 'timers:dismiss', 'timers:open',
   'lokthar:test', 'lokthar:sync', 'lokthar:last',
   'meter:get', 'meter:reset', 'meter:moveTo', 'meter:dragEnd', 'meter:resize',
-  'minimap:moveTo', 'minimap:dragEnd', 'minimap:resize',
-  'skills:get', 'skills:moveTo', 'skills:dragEnd', 'skills:resize',
-  'buffs:get', 'buffs:moveTo', 'buffs:dragEnd', 'buffs:resize', 'cc:moveTo', 'cc:dragEnd', 'cc:resize', 'enemies:moveTo', 'enemies:dragEnd', 'enemies:resize', 'guild:get', 'guild:refresh', 'applicants:get', 'gather:get', 'gather:moveTo', 'gather:dragEnd', 'gather:resize', 'flight:get', 'flight:moveTo', 'flight:dragEnd', 'flight:resize', 'party:get', 'party:moveTo', 'party:dragEnd', 'party:resize', 'applicants:dismiss', 'applicants:clear', 'applicants:moveTo', 'applicants:dragEnd', 'applicants:resize', 'bossruns:moveTo', 'bossruns:dragEnd', 'bossruns:resize', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'eventtoast:resize', 'training:moveTo', 'training:dragEnd', 'training:resize', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'packets:resize', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
+  
+  'skills:get', 
+  'buffs:get', 'guild:get', 'guild:refresh', 'applicants:get', 'gather:get', 'flight:get', 'party:get', 'overlay:moveTo', 'overlay:dragEnd', 'overlay:resize', 'applicants:dismiss', 'applicants:clear', 'guildEvents:get', 'guildEvents:refresh', 'guildEvents:respond', 'guildEvents:detail', 'guildEvents:dismiss', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
   'details:open', 'details:get', 'details:view', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:bests', 'history:delete',
 ]
 
