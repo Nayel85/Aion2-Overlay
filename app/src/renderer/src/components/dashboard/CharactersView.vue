@@ -6,7 +6,9 @@
 // game's refill times since: a character not logged in with the overlay yet shows greyed out.
 import { useNow } from '@/lib/now.ts'
 import { ago as timeAgo } from '@/lib/format.ts'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import CharacterExpeditions from '@/components/dashboard/CharacterExpeditions.vue'
+import type { Expeditions } from '@shared/expeditions.ts'
 import ClassIcon from '@/components/ClassIcon.vue'
 import Countdown from '@/components/ui/Countdown.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -16,6 +18,15 @@ import { useApp } from '@/stores/app.ts'
 import { ASCENSION, characterId, CORRIDORS, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
 import { formatKina } from '@shared/kina.ts'
 import { serverLabel } from '@shared/servers.ts'
+
+/** Each character's expeditions (main/expeditions.ts), kept up to date while the page is open. */
+const expeditions = ref<Expeditions>({})
+let offExpeditions: (() => void) | null = null
+onMounted(async () => {
+  offExpeditions = bridge().on('expeditions:changed', (e) => (expeditions.value = e))
+  expeditions.value = await bridge().invoke('expeditions:get')
+})
+onBeforeUnmount(() => offExpeditions?.())
 
 const store = useApp()
 const now = useNow(1000)
@@ -359,6 +370,9 @@ function corridorTitle(list: CorridorState[]): string {
           </tbody>
         </table>
       </div>
+
+      <!-- Expeditions: each character's cubes toward the guaranteed chests. -->
+      <CharacterExpeditions :characters="s.rows.map((r) => ({ id: r.id, name: r.c.name }))" :state="expeditions" />
     </section>
   </div>
 </template>

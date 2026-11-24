@@ -10,30 +10,49 @@ import { ZONES } from './zones.ts'
 export type Expeditions = Record<string, { name: string; at: number; cubes: Record<string, number> }>
 
 export type ExpeditionMode = 'exploration' | 'conquest' | 'advanced'
-export const EXPEDITION_MODES: { id: ExpeditionMode; label: string }[] = [
-  { id: 'exploration', label: 'Exploration' },
-  { id: 'conquest', label: 'Conquest' },
-  { id: 'advanced', label: 'Advanced' },
+export const EXPEDITION_MODES: { id: ExpeditionMode; label: string; short: string }[] = [
+  { id: 'exploration', label: 'Exploration', short: 'Exp' },
+  { id: 'conquest', label: 'Conquest', short: 'Conq' },
+  { id: 'advanced', label: 'Advanced', short: 'Adv' },
 ]
 const MODE_OF: Record<string, ExpeditionMode> = { easy: 'exploration', normal: 'conquest', advanced: 'advanced' }
 
-export interface ExpeditionRow {
-  name: string
-  /** By mode: its world, the cubes opened toward its chest, how many it takes, how many more. */
-  modes: Partial<Record<ExpeditionMode, { world: number; cubes: number; ceiling: number; left: number }>>
+/** The expeditions open in the game (the global client, 2026-11-24), in its order: the rest come with later updates. */
+export const OPEN_EXPEDITIONS = ['Krao Cave', 'Urugugu Canyon', 'Fire Temple', 'Draupnir', 'Vakron Sky Island', 'Ferocious Horn Den']
+
+/** Each expedition's modes, by name: the world of each (those with a guaranteed chest). */
+const WORLDS = new Map<string, Partial<Record<ExpeditionMode, number>>>()
+for (const w of Object.keys(EXPEDITION_CEILINGS)) {
+  const zone = ZONES[w]
+  const mode = zone && MODE_OF[zone[3] ?? '']
+  if (!zone || !mode) continue
+  WORLDS.set(zone[0], { ...WORLDS.get(zone[0]), [mode]: Number(w) })
 }
 
-/** A character's expeditions by dungeon, in the game's order (by world id), each mode the game listed. */
-export function expeditionRows(cubes: Record<string, number>): ExpeditionRow[] {
-  const rows = new Map<string, ExpeditionRow>()
-  for (const [w, n] of Object.entries(cubes).sort((a, b) => Number(a[0]) - Number(b[0]))) {
-    const ceiling = EXPEDITION_CEILINGS[w]
-    const zone = ZONES[w]
-    const mode = zone && MODE_OF[zone[3] ?? '']
-    if (!ceiling || !zone || !mode) continue
-    const row = rows.get(zone[0]) ?? { name: zone[0], modes: {} }
-    row.modes[mode] = { world: Number(w), cubes: n, ceiling, left: Math.max(0, ceiling - n) }
-    rows.set(zone[0], row)
-  }
-  return [...rows.values()]
+export interface ExpeditionCell {
+  /** Cubes opened toward its chest, or null: the game did not list it for this character. */
+  cubes: number | null
+  ceiling: number
+  /** Runs (cubes) still to go; 0: the chest is due. */
+  left: number | null
+}
+
+/** An expedition's mode for a character: its cubes of its ceiling, or null when it has no such mode. */
+export function expeditionCell(cubes: Record<string, number> | undefined, name: string, mode: ExpeditionMode): ExpeditionCell | null {
+  const world = WORLDS.get(name)?.[mode]
+  if (world === undefined) return null
+  const ceiling = EXPEDITION_CEILINGS[world]!
+  const n = cubes?.[world]
+  return n === undefined ? { cubes: null, ceiling, left: null } : { cubes: n, ceiling, left: Math.max(0, ceiling - n) }
+}
+
+/** The expeditions to show: the open ones, and any other a character's list has (a later update's). */
+export function shownExpeditions(all: Expeditions): string[] {
+  const listed = new Set(
+    Object.values(all)
+      .flatMap((c) => Object.keys(c.cubes))
+      .map((w) => ZONES[w]?.[0])
+      .filter((n): n is string => !!n && WORLDS.has(n)),
+  )
+  return [...OPEN_EXPEDITIONS, ...[...listed].filter((n) => !OPEN_EXPEDITIONS.includes(n))]
 }
