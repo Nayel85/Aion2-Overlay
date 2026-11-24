@@ -69,6 +69,9 @@ const iconPx = computed(() => {
  * the ones you still need). Its name on hover.
  */
 const PET_PX = { active: 26, other: 22 }
+/** The portrait clicked: its name shown over it, until a click elsewhere on the map. */
+const pickedPet = ref<string | null>(null)
+const pickPet = (key: string): void => void (pickedPet.value = pickedPet.value === key ? null : key)
 const petMarkers = computed(() => {
   const { w, h } = boxSize()
   const reach = 36 / (Math.min(w, h) / SIZE) / view.value.k
@@ -202,6 +205,7 @@ function onWheel(e: WheelEvent): void {
 
 function onPointerDown(e: PointerEvent): void {
   if (e.button !== 0) return
+  pickedPet.value = null
   const el = e.currentTarget as HTMLElement
   el.setPointerCapture(e.pointerId)
   const start = { ...view.value, px: e.clientX, py: e.clientY }
@@ -286,7 +290,13 @@ defineExpose({ fit, recentre })
         <defs>
           <clipPath id="pet-portrait" clipPathUnits="objectBoundingBox"><circle cx="0.5" cy="0.5" r="0.5" /></clipPath>
         </defs>
-        <g v-for="m in petMarkers" :key="`pet-${m.key}`" :transform="`translate(${m.at[0]} ${m.at[1]})`">
+        <g
+          v-for="m in petMarkers"
+          :key="`pet-${m.key}`"
+          :transform="`translate(${m.at[0]} ${m.at[1]})`"
+          class="cursor-pointer"
+          @pointerdown.stop="pickPet(m.key)"
+        >
           <title>{{ m.name }}</title>
           <circle :r="(m.active ? PET_PX.active : PET_PX.other) / 2 / view.k" fill="#09090b" :stroke="m.color" :stroke-width="2.5 / view.k" />
           <image
@@ -325,6 +335,22 @@ defineExpose({ fit, recentre })
         </g>
         <!-- Where you last died: a skull. -->
         <SkullMark v-if="deathXY" :at="deathXY" :size="22 / view.k"><title>{{ t('Where you last died') }}</title></SkullMark>
+        <!-- The clicked one's name, over everything. -->
+        <template v-for="m in petMarkers" :key="`pet-name-${m.key}`">
+          <text
+            v-if="pickedPet === m.key"
+            :x="m.at[0]"
+            :y="m.at[1] - (m.active ? PET_PX.active : PET_PX.other) / 2 / view.k - 5 / view.k"
+            text-anchor="middle"
+            :font-size="13 / view.k"
+            font-weight="600"
+            fill="#fff"
+            stroke="#09090b"
+            :stroke-width="3.5 / view.k"
+            paint-order="stroke"
+            class="pointer-events-none select-none"
+          >{{ m.name }}</text>
+        </template>
         <!-- You: a ring with a dot, drawn last so nothing covers it. -->
         <g v-if="youXY">
           <circle :cx="youXY[0]" :cy="youXY[1]" :r="11 / view.k" fill="none" stroke="#ffffff" :stroke-width="3 / view.k" />
