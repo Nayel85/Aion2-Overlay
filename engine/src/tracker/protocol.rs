@@ -51,6 +51,8 @@ pub const OP_DUNGEON_START: [u8; 2] = [0x01, 0x40];
 pub const OP_DUNGEON_CLEAR: [u8; 2] = [0x01, 0x61];
 pub const OP_NIGHTMARE_START: [u8; 2] = [0x35, 0xE2];
 pub const OP_LOOT: [u8; 2] = [0x15, 0x57];
+/// Each expedition's cubes toward its guaranteed chest, as you log in (`12 57`).
+pub const OP_EXPEDITIONS: [u8; 2] = [0x12, 0x57];
 pub const OP_GATHER: [u8; 2] = [0x33, 0x8D];
 /// A craft starting: its outcome already in it (`craft_start`); and done, its item next in the bags.
 pub const OP_CRAFT_START: [u8; 2] = [0x6F, 0x8D];
@@ -1502,6 +1504,11 @@ mod tests {
         let board = duty_board(&frame(OP_DUTY_BOARD, &hex(BOARD_HEX)));
         assert_eq!(board.iter().map(|m| (m.0, m.1, m.2.len())).collect::<Vec<_>>(), vec![(1302021, 395, 5), (1302148, 396, 5)]);
         assert_eq!(board[0].2[0], (930100001, 8000, 100_000_000));
+        // The owner's 2026-11-22 login: Draupnir (Conquest) at 3 cubes of its 14, Vakron Sky Island at 2.
+        let exp = expeditions(&frame(OP_EXPEDITIONS, &hex("06c12709000000cc2709000000df2709000001e02709000300072809000001082809000200"))).unwrap();
+        assert_eq!(exp.len(), 6);
+        assert_eq!(exp[3], (600_032, 3, 0));
+        assert_eq!(exp[5], (600_072, 2, 0));
         // All of it: the two taken and the 14 offered still, rerolled twice, replaced on 2026-11-23 at 08:00.
         let full = duty_board_full(&frame(OP_DUTY_BOARD, &hex(BOARD_HEX))).unwrap();
         assert_eq!((full.rerolls, full.expires_ms), (2, Some(1_795_417_200_000)));

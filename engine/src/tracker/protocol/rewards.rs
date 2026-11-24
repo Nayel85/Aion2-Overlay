@@ -3,6 +3,21 @@
 
 use super::*;
 
+/// Each expedition's cubes opened toward its guaranteed chest (`12 57 <count u8> (<world u32> <cubes u8>
+/// <u8>)*`), sent as you log in: the owner's 2026-11-22 login, Draupnir (600032, Conquest) at 3, which
+/// the game shows as 3 of 14. (world, cubes, the last byte: 1 on some Explorations, not yet understood).
+pub fn expeditions(frame: &[u8]) -> Option<Vec<(u32, u8, u8)>> {
+    let b = body(frame, OP_EXPEDITIONS)?;
+    let n = *b.first()? as usize;
+    (0..n)
+        .map(|i| {
+            let at = 1 + 6 * i;
+            let world = u32_at(b, at)?;
+            (600_000..700_000).contains(&world).then_some((world, *b.get(at + 4)?, *b.get(at + 5)?))
+        })
+        .collect()
+}
+
 /// What a reward cube gave as you open it (`15 57 00 00 <source u8> <count u8> (<item u32> <amount
 /// u32>)*`), the loot window's list: the owner's 2026-11-22 Vakron Sky Island cube, source 2, 26
 /// items from 600,000 Kina to an Amplify Stone Fragment (Unique). (source, items).

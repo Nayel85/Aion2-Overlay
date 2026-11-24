@@ -8,6 +8,7 @@ import type { Characters } from './characters.ts'
 import type { Sessions } from './sessions.ts'
 import type { Arrival, Inventories } from './inventory.ts'
 import type { DutyState } from './duty.ts'
+import type { Expeditions } from './expeditions.ts'
 import type { ItemDetails } from './equipment.ts'
 import type { Applicants } from './applicants.ts'
 import type { Party } from './party.ts'
@@ -69,6 +70,8 @@ export interface InvokeChannels {
   'inventory:get': { args: []; result: Inventories }
   /** The duty board: today's, every one seen, the rerolls' costs (shared/duty.ts). */
   'duty:get': { args: []; result: DutyState }
+  /** Each character's cubes toward each expedition's guaranteed chest. */
+  'expeditions:get': { args: []; result: Expeditions }
   /** What the Black Cloud Merchant has offered over time, by item. */
   'merchant:seen': { args: []; result: MerchantSeen }
   /** The duty board's window closed by its X (it opens again with the board). */
@@ -231,6 +234,7 @@ export interface EventChannels {
   'sessions:changed': Sessions
   'inventory:changed': Inventories
   'duty:changed': DutyState
+  'expeditions:changed': Expeditions
   'inventory:arrival': Arrival
   /** The join requests, whenever one comes, goes or the list clears. */
   'applicants:changed': Applicants
@@ -289,7 +293,7 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'inventory:arrivals',
   'app:info', 'app:quit', 'app:openPath',
   'settings:all', 'settings:set',
-  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'duty:get', 'merchant:seen', 'duty:close', 'items:details', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
+  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'duty:get', 'expeditions:get', 'merchant:seen', 'duty:close', 'items:details', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
   'killfeed:open', 'killfeed:close', 
   
   'panel:open', 'panel:characters',
@@ -306,4 +310,4 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
 
 export const EVENT_CHANNELS: readonly EventChannel[] = [
   'inventory:arrival',
-  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'party:changed', 'gather:changed', 'flight:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'duty:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'panel:showCharacters', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'meter:personalBest', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', ]
+  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'party:changed', 'gather:changed', 'flight:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'duty:changed', 'expeditions:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'panel:showCharacters', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'meter:personalBest', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', ]

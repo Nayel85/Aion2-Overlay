@@ -71,6 +71,7 @@
 //!                                                     the Hidden Cubes in view (within ~100 m), when they change
 //!   {"type": "dutyBoard", "opened", "rerolls", "expires": ms | null, "missions": [{"quest", "place", "rewards": [{"item", "amount", "chance"}]}]}
 //!                                                     the duty board (`1C 8D`), the offered missions too; `opened` right after you opened, rerolled or took from it
+//!   {"type": "expeditions", "entries": [{"world", "cubes", "flag"}]}   each expedition's cubes toward its guaranteed chest, at login (`12 57`)
 //!   {"type": "dutyTaken", "quest", "place"}           a duty mission taken (`11 8D`)
 //!   {"type": "cubeOpened", "id", "template", "position": [x, y]}   a Hidden Cube in view opened (`35 36` reason 04), by you or someone near
 //!   {"type": "dps", ...DpsData}                       the meter, when it changes (else every 5 s)

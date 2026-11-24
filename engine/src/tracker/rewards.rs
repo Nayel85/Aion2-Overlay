@@ -85,6 +85,16 @@ impl Tracker {
                     tracing::info!("box opened not read: {raw}");
                 }
             }
+            p::OP_EXPEDITIONS => {
+                if let Some(list) = p::expeditions(f) {
+                    let entries: Vec<Value> = list.into_iter().map(|(world, cubes, flag)| json!({ "world": world, "cubes": cubes, "flag": flag })).collect();
+                    tracing::info!("expeditions: {entries:?}");
+                    (self.emit)(json!({ "type": "expeditions", "ts": ts, "entries": entries }));
+                } else {
+                    let raw: String = f.iter().map(|b| format!("{b:02x}")).collect();
+                    tracing::info!("expeditions not read: {raw}");
+                }
+            }
             p::OP_LOOT => {
                 if let Some((source, items)) = p::loot(f) {
                     let items: Vec<Value> = items.into_iter().map(|(item, amount)| json!({ "item": item, "amount": amount })).collect();
