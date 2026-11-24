@@ -48,6 +48,10 @@ export type PartyAfflictedBy = (typeof PARTY_AFFLICTED_BY)[number]
 export const PARTY_DEFAULT_COLORS = { hp: '#c0392b', afflicted: '#2ea043' } as const
 
 /** The overlays the Unified HUD can have a button for (main/windows.ts OVERLAYS, the training dummy's). */
+/** The Kina icons the Unified HUD can show: the game's coins (bundled), a drawn one, the word. */
+export const KINA_ICONS = ['game', 'bound', 'gold', 'drawn', 'word'] as const
+export type KinaIcon = (typeof KINA_ICONS)[number]
+
 export const HUD_WIDGETS = ['party', 'buffs', 'cc', 'flight', 'gather', 'applicants', 'training'] as const
 export type HudWidget = (typeof HUD_WIDGETS)[number]
 
@@ -225,8 +229,10 @@ export interface Settings {
     targetMode: 'always' | 'players' | 'meter'
     /** Kina per hour and Abyss Points per hour (farming only: rewards are left out), always shown while on. */
     kina: boolean
-    /** The Kina of the session (a coin), every gain counted. */
+    /** The Kina of the session, every gain counted. */
     kinaSession: boolean
+    /** The Kina's icon: the game's coin (gold, bound), a drawn one, or the word. */
+    kinaIcon: KinaIcon
     abyssRate: boolean
     /** The Abyss Points of the season going on (coin icon): it ends after 15 minutes without any. */
     season: boolean
@@ -436,7 +442,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   merchantWindow: { x: 342, y: 859 },
   detailsWindow: { x: 449, y: 251 },
   timerBar: { enabled: true, position: { x: 859, y: 141 }, opacity: 0.92, layout: 'list' },
-  unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, clock: true, odyle: true, replace: false, kinaSession: true, widgets: ['party', 'buffs', 'cc', 'flight', 'gather', 'applicants'], applicants: true, bests: true, corridors: true },
+  unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, rift: true, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, clock: true, odyle: true, replace: false, kinaSession: true, kinaIcon: 'game', widgets: ['party', 'buffs', 'cc', 'flight', 'gather', 'applicants'], applicants: true, bests: true, corridors: true },
   muted: false,
   rates: { kinaDungeons: false, abyssDungeons: false },
   applicants: { enabled: true, position: null, opacity: 0.85, collapsed: false, hideAfter: 60 },
@@ -626,6 +632,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
           cubes: BOOL, death: BOOL, deathMinutes: whole(1, 60), enemies: BOOL, bosses: BOOL, clock: BOOL, odyle: BOOL,
           replace: BOOL, kinaSession: BOOL, applicants: BOOL, bests: BOOL, corridors: BOOL,
         }),
+        kinaIcon: (KINA_ICONS as readonly unknown[]).includes(v.kinaIcon) ? v.kinaIcon! : u.kinaIcon,
         widgets: Array.isArray(v.widgets) ? HUD_WIDGETS.filter((w) => v.widgets!.includes(w)) : [...u.widgets],
         targetStyle: v.targetStyle === 'strip' ? 'strip' : 'inline',
         targetMode: v.targetMode === 'players' || v.targetMode === 'meter' ? v.targetMode : 'always',

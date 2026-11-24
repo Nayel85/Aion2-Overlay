@@ -26,7 +26,7 @@ import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { riftOf } from '@shared/abyss.ts'
 import { characterId, CORRIDORS, corridorStates, counterNow, ENERGY, nextCorridorReset } from '@shared/characters.ts'
-import type { HudWidget } from '@shared/settings.ts'
+import type { HudWidget, KinaIcon } from '@shared/settings.ts'
 import { formatAmount, livePerHour } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
 import { CLASS_COLORS, meterRows, NO_METER, timeToKill, type MeterData, type NewBest } from '@shared/meter.ts'
@@ -177,6 +177,14 @@ const startsAt = (at: number): string => new Date(at).toLocaleTimeString(loc(), 
 
 // ---- Kina and Abyss Points, to the left while they come in --------------------------------------
 
+/** The Kina icon picked: the game's coins are bundled (items/loot). */
+const KINA_IMG: Record<KinaIcon, string | null> = {
+  game: 'items/loot/Icon_Currency_Coin_GoldNonbinding.webp',
+  bound: 'items/loot/Icon_Currency_Coin_GoldBinding.webp',
+  gold: 'items/loot/Icon_Currency_Coin_gold.webp',
+  drawn: null,
+  word: null,
+}
 // Farming only (rewards are taken off: main/sessions.ts), and shown all the time while on, 0 too.
 const kinaText = computed(() => (cfg.value.kina ? formatKina(store.kinaRate ?? 0) : null))
 /** Abyss Points per hour at the pace of the last 15 seconds (0 between pulls). */
@@ -371,25 +379,24 @@ onBeforeUnmount(() => {
       >
         <!-- The bar. -->
         <div class="flex h-9 cursor-move items-center gap-2.5 whitespace-nowrap px-2.5" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
-          <!-- Kina and Abyss Points per hour, while they come in. -->
+          <!-- Kina, then Abyss Points: each its icon, the session's total, and the farming's per hour. -->
           <template v-if="kinaText || sessionKina !== null || abyssText || rift || season">
-            <span v-if="sessionKina !== null" class="flex items-center gap-1 text-xs font-semibold tabular-nums text-yellow" :title="t('Kina earned since you logged in with this character (by source on the Session page)')">
-              <!-- A Kina coin. -->
-              <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6" /><path d="M8 4.5v7M6 6.2c.3-.7 1-1 2-1s1.9.5 1.9 1.3c0 1.8-3.8 1-3.8 2.9 0 .8.8 1.3 1.9 1.3s1.7-.3 2-1" stroke-linecap="round" /></svg>{{ formatKina(sessionKina) }}
+            <span v-if="kinaText || sessionKina !== null" class="flex items-center gap-1.5 text-xs font-semibold tabular-nums text-yellow">
+              <img v-if="KINA_IMG[cfg.kinaIcon]" :src="KINA_IMG[cfg.kinaIcon]!" alt="Kina" class="size-4" draggable="false" />
+              <svg v-else-if="cfg.kinaIcon === 'drawn'" viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6" /><path d="M8 4.5v7M6 6.2c.3-.7 1-1 2-1s1.9.5 1.9 1.3c0 1.8-3.8 1-3.8 2.9 0 .8.8 1.3 1.9 1.3s1.7-.3 2-1" stroke-linecap="round" /></svg>
+              <span v-else class="font-medium text-darker">Kina</span>
+              <span v-if="sessionKina !== null" :title="t('Kina earned since you logged in with this character (by source on the Session page)')">{{ formatKina(sessionKina) }}</span>
+              <span v-if="kinaText" class="font-medium" :title="t('Your farming\'s Kina per hour (rewards left out)')">{{ kinaText }}<span class="text-darker">/h</span></span>
             </span>
-            <span v-if="kinaText" class="text-xs font-semibold tabular-nums text-yellow" :title="t('This session\'s Kina per hour')">
-              {{ kinaText }} <span class="font-medium text-darker">Kina/h</span>
+            <span v-if="abyssText || season" class="flex items-center gap-1.5 text-xs font-semibold tabular-nums text-blue">
+              <img :src="'items/abyss-point.webp'" alt="AP" class="size-4" draggable="false" />
+              <span v-if="season" :title="t('Abyss Points earned since you logged in with this character (by source on the Session page)')">{{ formatAmount(season.points) }}</span>
+              <span v-if="abyssText" class="font-medium" :title="t('Your farming\'s Abyss Points per hour, at your pace of the last 15 seconds (rewards left out)')">{{ abyssText }}<span class="text-darker">/h</span></span>
             </span>
             <span v-if="rift" class="flex items-center gap-1 text-xs font-semibold tabular-nums text-blue" :title="t('Abyss Points earned in this Spacetime Rift')">
               <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="EVENT_ICONS.rift" /></svg>
               <span class="font-medium text-darker">{{ t('Rift') }} {{ startsAt(rift.start) }}</span>
-              +{{ formatAmount(rift.points) }} AP
-            </span>
-            <span v-if="abyssText" class="text-xs font-semibold tabular-nums text-blue" :title="t('Abyss Points per hour at your pace of the last 15 seconds')">
-              {{ abyssText }} <span class="font-medium text-darker">AP/h</span>
-            </span>
-            <span v-if="season" class="flex items-center gap-1 text-xs font-semibold tabular-nums text-blue" :title="t('Abyss Points earned since you logged in with this character (by source on the Session page)')">
-              <img :src="'items/abyss-point.webp'" alt="AP" class="size-4" draggable="false" />{{ formatAmount(season.points) }}
+              +{{ formatAmount(rift.points) }}
             </span>
             <span class="h-4 w-px bg-light" />
           </template>

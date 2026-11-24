@@ -13,7 +13,7 @@ import { t } from '@/lib/i18n.ts'
 import { panelStyle } from '@/lib/overlayLook.ts'
 import { EVENT_ICONS } from '@/lib/timerView.ts'
 import { useApp } from '@/stores/app.ts'
-import { HUD_WIDGETS, type HudWidget } from '@shared/settings.ts'
+import { HUD_WIDGETS, KINA_ICONS, type HudWidget, type KinaIcon } from '@shared/settings.ts'
 
 const store = useApp()
 const cfg = computed(() => store.settings.unified)
@@ -22,6 +22,14 @@ const pct = (v: number): string => `${Math.round(v * 100)}%`
 const minutes = (list: number[]) => list.map((m) => ({ id: m, label: t('{n} min', { n: m }) }))
 const COUNTDOWN = [5, 10, 15, 20, 30]
 const STAY = [2, 5, 10, 15, 30]
+const KINA_ICON_IMG: Record<KinaIcon, string | null> = {
+  game: 'items/loot/Icon_Currency_Coin_GoldNonbinding.webp',
+  bound: 'items/loot/Icon_Currency_Coin_GoldBinding.webp',
+  gold: 'items/loot/Icon_Currency_Coin_gold.webp',
+  drawn: null,
+  word: null,
+}
+const KINA_ICON_LABELS: Record<KinaIcon, string> = { game: "The game's Kina", bound: "The game's bound Kina", gold: 'Gold coin', drawn: 'Drawn coin', word: 'The word' }
 const WIDGET_LABELS: Record<HudWidget, string> = {
   party: 'Party frames', buffs: 'Buffs', cc: 'CC / Debuffs', flight: 'Flight timer', gather: 'Gathering outcome', applicants: 'Join requests', training: 'Training',
 }
@@ -55,9 +63,19 @@ const BUTTON_ICONS = [
     <!-- The bar as these settings make it. -->
     <div class="mb-6 flex flex-col items-center gap-2.5 rounded-xl border border-card bg-[#1b2224] px-4 py-5">
       <div class="flex h-9 items-center gap-2.5 whitespace-nowrap rounded-[14px] border px-2.5" :style="{ ...panelStyle(cfg.opacity), textShadow: cfg.opacity < 0.6 ? '0 1px 3px rgb(0 0 0 / 0.9)' : 'none', zoom: cfg.scale }">
-        <template v-if="cfg.kina || cfg.kinaSession || cfg.season">
-          <span v-if="cfg.kina" class="text-xs font-semibold tabular-nums text-yellow">1.72M <span class="font-medium text-darker">Kina/h</span></span>
-          <span v-if="cfg.season" class="flex items-center gap-1 text-xs font-semibold tabular-nums text-blue"><img :src="'items/abyss-point.webp'" alt="AP" class="size-4" draggable="false" />12.3k</span>
+        <template v-if="cfg.kina || cfg.kinaSession || cfg.season || cfg.abyssRate">
+          <span v-if="cfg.kina || cfg.kinaSession" class="flex items-center gap-1.5 text-xs font-semibold tabular-nums text-yellow">
+            <img v-if="KINA_ICON_IMG[cfg.kinaIcon]" :src="KINA_ICON_IMG[cfg.kinaIcon]!" alt="" class="size-4" draggable="false" />
+            <svg v-else-if="cfg.kinaIcon === 'drawn'" viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6" /><path d="M8 4.5v7M6 6.2c.3-.7 1-1 2-1s1.9.5 1.9 1.3c0 1.8-3.8 1-3.8 2.9 0 .8.8 1.3 1.9 1.3s1.7-.3 2-1" stroke-linecap="round" /></svg>
+            <span v-else class="font-medium text-darker">Kina</span>
+            <span v-if="cfg.kinaSession">2.4M</span>
+            <span v-if="cfg.kina" class="font-medium">1.72M<span class="text-darker">/h</span></span>
+          </span>
+          <span v-if="cfg.season || cfg.abyssRate" class="flex items-center gap-1.5 text-xs font-semibold tabular-nums text-blue">
+            <img :src="'items/abyss-point.webp'" alt="AP" class="size-4" draggable="false" />
+            <span v-if="cfg.season">12.3k</span>
+            <span v-if="cfg.abyssRate" class="font-medium">8.4k<span class="text-darker">/h</span></span>
+          </span>
           <span class="h-4 w-px bg-light" />
         </template>
         <img src="/icon.png" alt="" class="size-[18px]" draggable="false" />
@@ -121,6 +139,22 @@ const BUTTON_ICONS = [
         </SettingRow>
         <SettingRow label="Kina this session" hint="The Kina you earned since you logged in with this character, rewards included, with a coin, to the left of the bar.">
           <Toggle :model-value="cfg.kinaSession" @update:model-value="set({ kinaSession: $event })" />
+        </SettingRow>
+        <SettingRow label="Kina icon">
+          <div class="flex items-center gap-1">
+            <button
+              v-for="i in KINA_ICONS"
+              :key="i"
+              type="button"
+              :class="['flex h-8 min-w-8 items-center justify-center rounded-md border px-1.5 text-xs font-semibold text-yellow', cfg.kinaIcon === i ? 'border-accent bg-accent/15' : 'border-light hover:bg-dark']"
+              :title="t(KINA_ICON_LABELS[i])"
+              @click="set({ kinaIcon: i })"
+            >
+              <img v-if="KINA_ICON_IMG[i]" :src="KINA_ICON_IMG[i]!" alt="" class="size-5" draggable="false" />
+              <svg v-else-if="i === 'drawn'" viewBox="0 0 16 16" class="size-5" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6" /><path d="M8 4.5v7M6 6.2c.3-.7 1-1 2-1s1.9.5 1.9 1.3c0 1.8-3.8 1-3.8 2.9 0 .8.8 1.3 1.9 1.3s1.7-.3 2-1" stroke-linecap="round" /></svg>
+              <span v-else>Kina</span>
+            </button>
+          </div>
         </SettingRow>
         <SettingRow label="Kina per hour" hint="Your farming's Kina per hour, always shown while on: quests', supply requests' and duty missions' rewards are left out.">
           <Toggle :model-value="cfg.kina" @update:model-value="set({ kina: $event })" />
