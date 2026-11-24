@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { applySlots, fromList, placeItems, placeSlots, whereIs, type Inventories } from '../src/shared/inventory.ts'
+import { addChanges, applySlots, fromList, heldItems, placeItems, placeSlots, whereIs, type Inventories } from '../src/shared/inventory.ts'
 import { itemIcon, lesserEquipment, notableLoot } from '../src/shared/sessions.ts'
 
 test("a login's list into slots; items moving say their slots anew; an item found everywhere it is", () => {
@@ -42,4 +42,14 @@ test('the lesser equipment is listed for the inventory, never kept as loot; ever
   // A bundled icon by its name; one not bundled through the main process (main/icons.ts).
   assert.equal(itemIcon('Icon_Equip_AR_L_0028_T05_Pants'), 'items/loot/Icon_Equip_AR_L_0028_T05_Pants.webp')
   assert.equal(itemIcon('Item/Armor/Icon_GM_0111_T04_Helmet'), 'itemicon://icon/Item/Armor/Icon_GM_0111_T04_Helmet.webp')
+})
+
+test('an item moved between places, or through the account warehouse, is no arrival; a new one is', () => {
+  const bag = (slots: Record<string, { item: number; amount: number }>) => ({ name: 'Nayel', server: 1305, at: 0, slots })
+  const before: Inventories = { characters: { a: bag({ '1:3': { item: 512400017, amount: 1 }, '1:4': { item: 7, amount: 5 } }) }, account: null }
+  // The wings to the account warehouse, 2 more of item 7, a new item 9.
+  const after: Inventories = { characters: { a: bag({ '1:4': { item: 7, amount: 7 }, '1:8': { item: 9, amount: 1 } }) }, account: { at: 0, slots: { '2': { item: 512400017, amount: 1 } } } }
+  const changes: Record<string, number> = {}
+  addChanges(changes, heldItems(before, 'a', true), heldItems(after, 'a', true))
+  assert.deepEqual(changes, { '7': 2, '9': 1 })
 })

@@ -54,6 +54,46 @@ export interface Inventories {
 }
 export const NO_INVENTORIES: Inventories = { characters: {}, account: null }
 
+/**
+ * What a character holds, by item id: all their places, and the account's warehouse with them
+ * (`withAccount`), so that moving an item between places, or through the account's warehouse, leaves it as it is.
+ */
+export function heldItems(inv: Inventories, id: string, withAccount: boolean): Record<string, number> {
+  const out: Record<string, number> = {}
+  const slots = [...Object.values(inv.characters[id]?.slots ?? {}), ...(withAccount ? Object.values(inv.account?.slots ?? {}) : [])]
+  for (const s of slots) out[s.item] = (out[s.item] ?? 0) + s.amount
+  return out
+}
+/** Adds to `into` how many more of each item `after` holds than `before` (fewer: less than 0). */
+export function addChanges(into: Record<string, number>, before: Record<string, number>, after: Record<string, number>): void {
+  for (const id of new Set([...Object.keys(before), ...Object.keys(after)])) {
+    const d = (after[id] ?? 0) - (before[id] ?? 0)
+    if (d) into[id] = (into[id] ?? 0) + d
+  }
+}
+
+/** Where items that came in came from, when it is known: a Hidden Cube opened, a dungeon's cube, a box from your bags, a duty mission; or while the app was off. */
+export type ArrivalSource = 'hiddencube' | 'cube' | 'box' | 'duty' | 'away'
+export const ARRIVAL_SOURCES: Record<ArrivalSource, string> = {
+  hiddencube: 'Hidden Cube',
+  cube: "A dungeon's cube",
+  box: 'A box opened',
+  duty: 'Duty mission',
+  away: 'While the app was off',
+}
+/** Items that came into a character's hands together (`<userData>/inventory-log.jsonl`, one a line). */
+export interface Arrival {
+  at: number
+  /** The character's id (characters.ts characterId), and name. */
+  character: string
+  name: string
+  /** By item id, how many. */
+  items: Record<string, number>
+  source: ArrivalSource | null
+  /** Came while the app was off: some time after this (the last list before), by `at` (the login's). */
+  since?: number
+}
+
 /** An item where it lies, as the engine tells it. */
 export interface DepotItem {
   uid?: number

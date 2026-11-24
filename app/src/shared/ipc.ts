@@ -6,7 +6,7 @@
 import type { Buff } from './buffs.ts'
 import type { Characters } from './characters.ts'
 import type { Sessions } from './sessions.ts'
-import type { Inventories } from './inventory.ts'
+import type { Arrival, Inventories } from './inventory.ts'
 import type { ItemDetails } from './equipment.ts'
 import type { Applicants } from './applicants.ts'
 import type { Party } from './party.ts'
@@ -66,6 +66,8 @@ export interface InvokeChannels {
   'sessions:get': { args: []; result: Sessions }
   /** Your characters' items, as of each one's last login (shared/inventory.ts). */
   'inventory:get': { args: []; result: Inventories }
+  /** What came into your characters' hands, the oldest first (the latest 1000). */
+  'inventory:arrivals': { args: []; result: Arrival[] }
   /** An equipment's base stats and enchantment bonuses (questlog's, asked once: main/itemDetails.ts). */
   'items:details': { args: [item: number]; result: ItemDetails | null }
   /** Join requests to your party (the Applicants widget). */
@@ -219,6 +221,7 @@ export interface EventChannels {
   'characters:changed': Characters
   'sessions:changed': Sessions
   'inventory:changed': Inventories
+  'inventory:arrival': Arrival
   /** The join requests, whenever one comes, goes or the list clears. */
   'applicants:changed': Applicants
   'party:changed': Party
@@ -273,6 +276,7 @@ export interface Bridge {
 }
 
 export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
+  'inventory:arrivals',
   'app:info', 'app:quit', 'app:openPath',
   'settings:all', 'settings:set',
   'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'items:details', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
@@ -291,4 +295,5 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
 ]
 
 export const EVENT_CHANNELS: readonly EventChannel[] = [
+  'inventory:arrival',
   'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'party:changed', 'gather:changed', 'flight:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'panel:showCharacters', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'meter:personalBest', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', ]

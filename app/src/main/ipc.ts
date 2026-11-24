@@ -140,6 +140,7 @@ export function registerIpc(): void {
   handle('characters:get', () => characterStore.all())
   handle('sessions:get', () => sessionStore.all())
   handle('inventory:get', () => inventoryStore.all())
+  handle('inventory:arrivals', () => inventoryStore.arrivals())
   handle('items:details', (item: number) => itemDetails(item))
   handle('characters:refresh', (id) => characterStore.refresh(id))
   handle('characters:forget', (id) => characterStore.forget(id))

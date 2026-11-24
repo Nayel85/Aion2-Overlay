@@ -2,10 +2,11 @@
 // Your characters' items (shared/inventory.ts), kept slot by slot as they log in and as items move:
 // a character and a place picked (equipped, laid out as the game's window; bag; personal warehouse;
 // Arcana; the account's warehouse), their items as tiles, a hovered one's details beside it; or,
-// searched by name, where an item is across all of them. The character and place picked are
-// remembered (this window's storage).
+// searched by name, where an item is across all of them and when it last came. Under a character's
+// place, what came into their hands lately (the journal: main/inventory.ts), with where from when known.
+// The character and place picked are remembered (this window's storage).
 import { useStored } from '@/lib/now.ts'
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import ItemTile from '@/components/dashboard/ItemTile.vue'
 import { gradeClass, ICON } from '@/components/panel/sessionIcons.ts'
@@ -14,7 +15,7 @@ import Segmented from '@/components/ui/Segmented.vue'
 import { loc, plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
-import { PLACES, placeItems, placeSlots, whereIs, WORN_ARCANA, WORN_LAYOUT, type CharacterInventory, type Place, type SlotItem } from '@shared/inventory.ts'
+import { ARRIVAL_SOURCES, PLACES, placeItems, placeSlots, whereIs, WORN_ARCANA, WORN_LAYOUT, type Arrival, type CharacterInventory, type Place, type SlotItem } from '@shared/inventory.ts'
 import { itemIcon, itemInfo } from '@shared/sessions.ts'
 import { arcanaStatLine, baseLines, skillLine, soulLine, soulRate, stoneLine, theostoneOf, type ItemDetails } from '@shared/equipment.ts'
 import { bridge } from '@/lib/bridge.ts'
@@ -125,6 +126,36 @@ const placeLabel = (p: Place): string => t(PLACES.find((x) => x.id === p)!.label
 const when = (ms: number): string => new Date(ms).toLocaleString(loc(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 const amountText = (n: number): string => (n >= 10_000 ? n.toLocaleString('en-US') : `×${n}`)
 const itemCount = computed(() => Object.keys(placeItems(slots.value)).length)
+
+// ---- what came in -----------------------------------------------------------------------------
+
+const ARRIVALS_SHOWN = 40
+const arrivals = ref<Arrival[]>([])
+let off: (() => void) | null = null
+onMounted(async () => {
+  off = bridge().on('inventory:arrival', (a) => (arrivals.value = [...arrivals.value, a]))
+  arrivals.value = await bridge().invoke('inventory:arrivals')
+})
+onBeforeUnmount(() => off?.())
+/** The picked character's, the latest first, each item named. */
+const recent = computed(() =>
+  arrivals.value
+    .filter((a) => a.character === picked.value?.[0])
+    .slice(-ARRIVALS_SHOWN)
+    .reverse()
+    .map((a) => ({ ...a, list: Object.entries(a.items).map(([id, n]) => ({ id, n, info: itemInfo(id) })).sort((x, y) => (y.info?.grade ?? 0) - (x.info?.grade ?? 0)) })),
+)
+/** By item id, when it last came (whoever to). */
+const lastCame = computed(() => {
+  const by = new Map<string, Arrival>()
+  for (const a of arrivals.value) for (const id of Object.keys(a.items)) by.set(id, a)
+  return by
+})
+/** When an arrival came, and where from: "Tue 24 Nov, 21:40 · Hidden Cube"; one while the app was off, between its two times. */
+function cameText(a: Arrival): string {
+  const at = a.since !== undefined ? t('Between {from} and {to}', { from: when(a.since), to: when(a.at) }) : when(a.at)
+  return a.source ? `${at} · ${t(ARRIVAL_SOURCES[a.source])}` : at
+}
 </script>
 
 <template>
@@ -154,6 +185,7 @@ const itemCount = computed(() => Object.keys(placeItems(slots.value)).length)
           <svg v-else viewBox="0 0 16 16" :class="['size-7', gradeClass(f.grade)]" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><path :d="ICON.box" /></svg>
           <span :class="['font-medium', gradeClass(f.grade)]">{{ f.name }}</span>
           <span class="font-semibold tabular-nums">{{ amountText(f.total) }}</span>
+          <span v-if="lastCame.get(f.id)" class="text-xs text-darker">{{ t('Came to {name}: {when}', { name: lastCame.get(f.id)!.name, when: cameText(lastCame.get(f.id)!) }) }}</span>
           <span class="flex flex-wrap gap-1.5 text-xs">
             <span v-for="(w, i) in f.where" :key="i" class="rounded-full bg-dark px-2 py-0.5">
               {{ w[0] ?? t('Account') }} · {{ placeLabel(w[1]) }} <span class="font-semibold tabular-nums">{{ amountText(w[2]) }}</span>
@@ -203,6 +235,19 @@ const itemCount = computed(() => Object.keys(placeItems(slots.value)).length)
             <ItemTile v-for="x in tiles" :key="x.n" :slot-item="x.s" :size="48" @hover="hover" />
           </div>
           <div class="mt-2 text-xs text-darker">{{ plural(itemCount, '{n} item', '{n} items') }}</div>
+        </div>
+
+        <!-- What came into their hands lately. -->
+        <div class="mt-4 rounded-xl border border-card">
+          <div class="border-b border-card px-4 py-2 text-xs font-medium text-darker">{{ t('Came in lately') }}</div>
+          <p v-if="!recent.length" class="px-4 py-4 text-center text-xs text-darker">{{ t('Nothing yet: what comes in from now on shows here, with when and where from.') }}</p>
+          <div v-for="a in recent" :key="`${a.at}-${a.source}`" class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-card px-4 py-1.5 text-xs last:border-b-0">
+            <span class="tabular-nums text-darker">{{ cameText(a) }}</span>
+            <span v-for="x in a.list" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.info?.name">
+              <img v-if="itemIcon(x.info?.icon)" :src="itemIcon(x.info?.icon)!" alt="" class="size-4 rounded-sm" draggable="false" loading="lazy" />
+              <span :class="gradeClass(x.info?.grade ?? 11)">{{ (x.info?.name ?? `#${x.id}`).replace(' (Bound)', '') }}</span> ×{{ x.n }}
+            </span>
+          </div>
         </div>
       </template>
     </template>

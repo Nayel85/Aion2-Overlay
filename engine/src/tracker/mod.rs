@@ -930,8 +930,13 @@ impl Tracker {
                 // Opened (04) or out of range (01): either way not there for you any more.
                 if let Some((id, reason)) = p::object_removed(f) {
                     self.objects.remove(&id);
-                    if self.cubes.remove(&id).is_some() {
+                    if let Some(cube) = self.cubes.remove(&id) {
                         tracing::info!("hidden cube {id} gone (reason {reason})");
+                        // Opened (by you, or someone near): where, for what comes into your bags after.
+                        if reason == 4 {
+                            let position = [cube.x.round() as i64, (-cube.y).round() as i64];
+                            (self.emit)(json!({ "type": "cubeOpened", "ts": ts, "id": id, "template": cube.template, "position": position }));
+                        }
                         self.cubes_changed(ts);
                     }
                 }
@@ -2114,6 +2119,9 @@ mod tests {
         assert!(t.cubes().as_array().unwrap().is_empty());
         let reported = events.lock().unwrap().iter().filter(|e| e["type"] == "cubes").count();
         assert_eq!(reported, 2, "once in view, once opened");
+        let opened: Vec<Value> = events.lock().unwrap().iter().filter(|e| e["type"] == "cubeOpened").cloned().collect();
+        assert_eq!(opened.len(), 1);
+        assert_eq!(opened[0]["position"], json!([-50205, -126283]));
     }
 
     #[test]

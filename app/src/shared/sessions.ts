@@ -166,15 +166,19 @@ export function runGroups(runs: DungeonRun[]): DungeonRun[][] {
  */
 export function sessionDigest(s: PlaySession, tr: Translate = untranslated): string[] {
   const runs = (s.runs ?? []).filter(runCounts)
-  const parts = runGroups(runs.filter((r) => r.kind !== 'fieldboss')).map((g) => (g.length > 1 ? `${runName(g[0]!, tr)} ×${g.length}` : runName(g[0]!, tr)))
+  const parts = runGroups(runs.filter((r) => !runIsOneOff(r))).map((g) => (g.length > 1 ? `${runName(g[0]!, tr)} ×${g.length}` : runName(g[0]!, tr)))
   const bosses = [...new Set(runs.filter((r) => r.kind === 'fieldboss').map((r) => r.name))]
+  const cubes = runs.filter((r) => r.kind === 'hiddencube').length
+  if (cubes) bosses.push(tr(cubes === 1 ? '{n} Hidden Cube' : '{n} Hidden Cubes', { n: cubes }))
   const duties = s.duties?.length ? [tr(s.duties.length === 1 ? '{n} duty mission' : '{n} duty missions', { n: s.duties.length })] : []
   const supplies = s.supplies?.length ? [tr(s.supplies.length === 1 ? '{n} supply request' : '{n} supply requests', { n: s.supplies.length })] : []
   const crafts = s.crafts?.length ? [tr(s.crafts.length === 1 ? '{n} craft' : '{n} crafts', { n: s.crafts.length })] : []
   return [...parts, ...(bosses.length ? [bosses.join(', ')] : []), ...duties, ...supplies, ...crafts]
 }
-/** A field boss is killed, not cleared: no clear time, just when it fell. */
-export const runIsTimed = (run: DungeonRun): boolean => run.kind !== 'fieldboss'
+/** Done at once, with what it gave: a field boss's chest, a Hidden Cube opened. Not a dungeon. */
+export const runIsOneOff = (run: DungeonRun): boolean => run.kind === 'fieldboss' || run.kind === 'hiddencube'
+/** A field boss is killed, not cleared, a cube opened: no clear time, just when. */
+export const runIsTimed = (run: DungeonRun): boolean => !runIsOneOff(run)
 
 /** questlog's item grades: Unique (gold) and up are counted, to 61; 71 (Soul Codex, Silentium) is no colour. */
 export const UNIQUE_GRADE = 41

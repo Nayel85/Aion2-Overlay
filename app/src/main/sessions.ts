@@ -18,6 +18,7 @@ import { abyss } from './abyss.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { onCrafted, onGathered } from './gather.ts'
+import { onArrival } from './inventory.ts'
 import { RECIPES } from '../shared/recipes.ts'
 import { BOSS_RUNS } from '../shared/bossRuns.ts'
 import { AP_ITEM, apSource, GATHER_FAILED, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
@@ -250,6 +251,20 @@ export function startSessions(): void {
     const source = ev['source'] as number | undefined
     run.cubes = (run.cubes ?? 0) + (source === 1 || source === 2 ? source : 1)
     log(`session: ${run.name}'s cube gave ${JSON.stringify(loot)} (${run.cubes} cubes)`)
+    changed()
+  })
+  // A Hidden Cube opened: what came into your bags with it is a run of its own, done, in the history
+  // (before the run going on, if any, as a field boss's chest).
+  onArrival((a) => {
+    const s = sessions.current
+    if (a.source !== 'hiddencube' || !s) return
+    const loot = notableLoot(Object.entries(a.items).map(([item, amount]) => ({ item: Number(item), amount })))
+    const done: DungeonRun = { world: tracker.nearby().world ?? 0, name: 'Hidden Cube', kind: 'hiddencube', start: a.at, end: a.at, ap: 0, kina: 0, currencies: {}, loot }
+    const run = openRun()
+    const runs = s.runs ?? []
+    s.runs = run ? [...runs.slice(0, -1), done, run] : [...runs, done]
+    s.last = Date.now()
+    log(`session: a Hidden Cube gave ${JSON.stringify(loot)}`)
     changed()
   })
   // A field boss that fell in view: when it fell, for its loot chest opened after.

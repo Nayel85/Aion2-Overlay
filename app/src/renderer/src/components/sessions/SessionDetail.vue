@@ -14,7 +14,7 @@ import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
-import { countedRuns, CURRENCY_LABELS, gatheredByResource, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type GatheredResource, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
+import { countedRuns, CURRENCY_LABELS, gatheredByResource, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsOneOff, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type GatheredResource, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
 import { RECIPES } from '@shared/recipes.ts'
 
 const props = withDefaults(defineProps<{ session: PlaySession; live?: boolean; header?: boolean }>(), { live: false, header: true })
@@ -46,11 +46,12 @@ const currencies = computed(() => Object.entries(props.session.currencies ?? {})
 
 /** The dungeons (field bosses apart), by zone and mode, the last run first, each's runs the latest first; the field bosses, the latest first. */
 const groups = computed(() =>
-  runGroups((props.session.runs ?? []).filter((r) => r.kind !== 'fieldboss'))
+  runGroups((props.session.runs ?? []).filter((r) => !runIsOneOff(r)))
     .map((g) => [...g].reverse())
     .sort((a, b) => b[0]!.start - a[0]!.start),
 )
 const bosses = computed(() => (props.session.runs ?? []).filter((r) => r.kind === 'fieldboss').reverse())
+const hiddenCubes = computed(() => (props.session.runs ?? []).filter((r) => r.kind === 'hiddencube').reverse())
 /** A group's clears' mean time, or null. */
 function meanClear(g: DungeonRun[]): string | null {
   const cleared = g.filter((r) => r.cleared !== undefined)
@@ -231,6 +232,22 @@ function toggle(r: DungeonRun): void {
       <div v-for="r in bosses" :key="r.start" class="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 first:border-t-0">
         <span class="font-semibold">{{ r.name }}</span>
         <span class="tabular-nums text-darker">{{ clock(r.start) }}</span>
+        <span v-for="x in runRewards(r)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
+          <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+          <span :class="gradeClass(x.grade)">{{ x.name.replace(' (Bound)', '') }}</span> ×{{ x.amount }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Its Hidden Cubes: each with what it gave. -->
+    <div v-if="hiddenCubes.length" class="rounded-lg bg-card p-3 text-xs">
+      <div class="mb-1 flex items-center gap-1.5 font-medium text-darker">
+        <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M8 1.8l5.5 3.1v6.2L8 14.2l-5.5-3.1V4.9zM2.5 4.9L8 8l5.5-3.1M8 8v6.2" /></svg>{{ t('Hidden Cubes') }}
+        <span class="font-semibold tabular-nums text-default">{{ hiddenCubes.length }}</span>
+      </div>
+      <div v-for="r in hiddenCubes" :key="r.start" class="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 first:border-t-0">
+        <span class="tabular-nums text-darker">{{ clock(r.start) }}</span>
+        <span v-if="!runRewards(r).length" class="text-darker">{{ t('Nothing worth keeping') }}</span>
         <span v-for="x in runRewards(r)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
           <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
           <span :class="gradeClass(x.grade)">{{ x.name.replace(' (Bound)', '') }}</span> ×{{ x.amount }}
