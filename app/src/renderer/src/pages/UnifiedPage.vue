@@ -502,64 +502,62 @@ onBeforeUnmount(() => {
           </button>
 
           <!-- The overlays' buttons, the speaker and the cog. -->
-          <template>
-            <span class="unfold h-4 w-px bg-light" />
-            <div class="unfold flex items-center gap-0.5">
-              <button
-                v-for="p in PEEKS"
-                :key="p.id"
-                type="button"
-                :class="['relative flex h-7 w-[30px] items-center justify-center rounded-lg transition-colors hover:text-default', overlayOn(p.id) ? 'bg-accent/15 text-accent' : 'text-darker', shown === p.id && 'ring-1 ring-light']"
-                :aria-label="t(p.label)"
-                :title="peekTitle(p)"
-                @pointerdown.stop
-                @click="show(p.id)"
-              >
-                <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS[p.id]" /></svg>
-                <span v-if="overlayOn(p.id)" class="absolute bottom-0.5 left-[11px] h-0.5 w-2 rounded-full bg-accent" />
-              </button>
-              <button
-                v-for="w in cfg.widgets"
-                :key="w"
-                type="button"
-                :class="['relative flex h-7 w-[30px] items-center justify-center rounded-lg transition-colors hover:text-default', widgetOn(w) ? 'bg-accent/15 text-accent' : 'text-darker']"
-                :aria-label="t(WIDGET_LABELS[w])"
-                :title="widgetOn(w) ? t('{name}: click to close its overlay', { name: t(WIDGET_LABELS[w]) }) : t('{name}: click to open its overlay', { name: t(WIDGET_LABELS[w]) })"
-                @pointerdown.stop
-                @click="toggleWidget(w)"
-              >
-                <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="WIDGET_ICONS[w]" /></svg>
-                <span v-if="widgetOn(w)" class="absolute bottom-0.5 left-[11px] h-0.5 w-2 rounded-full bg-accent" />
-              </button>
-            </div>
-            <span class="h-4 w-px bg-light" />
-            <div class="unfold flex items-center gap-0.5">
-              <button
-                type="button"
-                :class="['flex h-7 w-[30px] items-center justify-center rounded-lg transition-colors hover:bg-light', store.settings.muted ? 'text-red' : 'text-darker hover:text-default']"
-                :aria-label="store.settings.muted ? t('Sounds are muted: turn them on') : t('Mute every sound')"
-                :title="store.settings.muted ? t('Sounds are muted: turn them on') : t('Mute every sound')"
-                @pointerdown.stop
-                @click="toggleMute"
-              >
-                <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                  <path :d="store.settings.muted ? 'M2.5 6v4h2.5l3.5 3V3L5 6zM11 6l3.5 4M14.5 6 11 10' : 'M2.5 6v4h2.5l3.5 3V3L5 6zM11 5.5a3.5 3.5 0 0 1 0 5M12.8 3.5a6 6 0 0 1 0 9'" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                class="flex h-7 w-[30px] items-center justify-center rounded-lg text-darker transition-colors hover:bg-light hover:text-default"
-                :aria-label="t('Open the app')"
-                :title="t('Open the app')"
-                @pointerdown.stop
-                @click="openApp"
-              >
-                <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
-                  <path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM13 8a5 5 0 0 0-.1-.9l1.4-1.1-1.4-2.4-1.7.6a5 5 0 0 0-1.5-.9L9.4 1.5H6.6l-.3 1.8a5 5 0 0 0-1.5.9l-1.7-.6-1.4 2.4 1.4 1.1a5 5 0 0 0 0 1.8l-1.4 1.1 1.4 2.4 1.7-.6a5 5 0 0 0 1.5.9l.3 1.8h2.8l.3-1.8a5 5 0 0 0 1.5-.9l1.7.6 1.4-2.4-1.4-1.1c.1-.3.1-.6.1-.9Z" />
-                </svg>
-              </button>
-            </div>
-          </template>
+          <span class="unfold h-4 w-px bg-light" />
+          <div class="unfold flex items-center gap-0.5">
+            <button
+              v-for="p in PEEKS"
+              :key="p.id"
+              type="button"
+              :class="['relative flex h-7 w-[30px] items-center justify-center rounded-lg transition-colors hover:text-default', overlayOn(p.id) ? 'bg-accent/15 text-accent' : 'text-darker', shown === p.id && 'ring-1 ring-light']"
+              :aria-label="t(p.label)"
+              :title="peekTitle(p)"
+              @pointerdown.stop
+              @click="show(p.id)"
+            >
+              <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICONS[p.id]" /></svg>
+              <span v-if="overlayOn(p.id)" class="absolute bottom-0.5 left-[11px] h-0.5 w-2 rounded-full bg-accent" />
+            </button>
+            <button
+              v-for="w in cfg.widgets"
+              :key="w"
+              type="button"
+              :class="['relative flex h-7 w-[30px] items-center justify-center rounded-lg transition-colors hover:text-default', widgetOn(w) ? 'bg-accent/15 text-accent' : 'text-darker']"
+              :aria-label="t(WIDGET_LABELS[w])"
+              :title="widgetOn(w) ? t('{name}: click to close its overlay', { name: t(WIDGET_LABELS[w]) }) : t('{name}: click to open its overlay', { name: t(WIDGET_LABELS[w]) })"
+              @pointerdown.stop
+              @click="toggleWidget(w)"
+            >
+              <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="WIDGET_ICONS[w]" /></svg>
+              <span v-if="widgetOn(w)" class="absolute bottom-0.5 left-[11px] h-0.5 w-2 rounded-full bg-accent" />
+            </button>
+          </div>
+          <span class="h-4 w-px bg-light" />
+          <div class="unfold flex items-center gap-0.5">
+            <button
+              type="button"
+              :class="['flex h-7 w-[30px] items-center justify-center rounded-lg transition-colors hover:bg-light', store.settings.muted ? 'text-red' : 'text-darker hover:text-default']"
+              :aria-label="store.settings.muted ? t('Sounds are muted: turn them on') : t('Mute every sound')"
+              :title="store.settings.muted ? t('Sounds are muted: turn them on') : t('Mute every sound')"
+              @pointerdown.stop
+              @click="toggleMute"
+            >
+              <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path :d="store.settings.muted ? 'M2.5 6v4h2.5l3.5 3V3L5 6zM11 6l3.5 4M14.5 6 11 10' : 'M2.5 6v4h2.5l3.5 3V3L5 6zM11 5.5a3.5 3.5 0 0 1 0 5M12.8 3.5a6 6 0 0 1 0 9'" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              class="flex h-7 w-[30px] items-center justify-center rounded-lg text-darker transition-colors hover:bg-light hover:text-default"
+              :aria-label="t('Open the app')"
+              :title="t('Open the app')"
+              @pointerdown.stop
+              @click="openApp"
+            >
+              <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round">
+                <path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM13 8a5 5 0 0 0-.1-.9l1.4-1.1-1.4-2.4-1.7.6a5 5 0 0 0-1.5-.9L9.4 1.5H6.6l-.3 1.8a5 5 0 0 0-1.5.9l-1.7-.6-1.4 2.4 1.4 1.1a5 5 0 0 0 0 1.8l-1.4 1.1 1.4 2.4 1.7-.6a5 5 0 0 0 1.5.9l.3 1.8h2.8l.3-1.8a5 5 0 0 0 1.5-.9l1.7.6 1.4-2.4-1.4-1.1c.1-.3.1-.6.1-.9Z" />
+              </svg>
+            </button>
+          </div>
 
           <!-- Your target, inline: one short segment, so nothing under the bar is covered. -->
                     <button

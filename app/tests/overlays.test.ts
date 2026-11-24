@@ -43,3 +43,10 @@ test("every overlay's settings page has the common window rows (opacity, size, i
   // The packet log's pill is the only overlay with no settings of its own.
   for (const id of OVERLAY_IDS.filter((i) => i !== 'packets')) assert.match(all, new RegExp(`<OverlayWindowSettings[^>]*overlay="${id}"`), `${id}: no window rows`)
 })
+
+test('no bare <template> inside a template: Vue renders it as an HTML <template>, its content never shown', () => {
+  const root = new URL('../src/renderer/src/', import.meta.url)
+  const files = readdirSync(root, { recursive: true }).map(String).filter((f) => f.endsWith('.vue'))
+  const bare = files.filter((f) => /^[ \t]+<template>\s*$/m.test(readFileSync(new URL(f.replace(/\\/g, '/'), root), 'utf8')))
+  assert.deepEqual(bare, [])
+})

@@ -90,10 +90,8 @@ const BUTTON_ICONS = [
           </span>
           <svg viewBox="0 0 16 16" class="size-[15px] text-darker" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="EVENT_ICONS.rift" /></svg>
         </template>
-        <template>
-          <span class="h-4 w-px bg-light" />
-          <svg v-for="d in BUTTON_ICONS" :key="d" viewBox="0 0 16 16" class="mx-1 size-4 text-darker" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="d" /></svg>
-        </template>
+        <span class="h-4 w-px bg-light" />
+        <svg v-for="d in BUTTON_ICONS" :key="d" viewBox="0 0 16 16" class="mx-1 size-4 text-darker" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="d" /></svg>
         <span v-if="cfg.ping" class="flex items-center gap-1.5 text-xs font-medium tabular-nums text-dark"><span class="size-1.5 rounded-full bg-green" />42 ms</span>
       </div>
       <span class="text-xs text-[#c4d0d3]">{{ t('A sample: at rest, with Kina coming in and an event 8 minutes away. Drag the real one in game to place it.') }}</span>
