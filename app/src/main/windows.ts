@@ -427,8 +427,8 @@ export function refreshHud(): void {
   if (!alive(hud)) return
   const cfg = settings.get('hud')
   const status = tracker.status()
-  const wanted =
-    hudEditing || (cfg.enabled && hudSize.height > 0 && (!cfg.hideWithoutGame || status.gameActive || status.replay))
+  // Turned off, it is hidden, move mode or not; on, move mode shows it to place it.
+  const wanted = cfg.enabled && (hudEditing || (hudSize.height > 0 && (!cfg.hideWithoutGame || status.gameActive || status.replay)))
   if (hudSize.width > 0 && hudSize.height > 0) {
     const p = hudPosition()
     const next = clampToDisplay({ x: p.x, y: p.y, width: hudSize.width, height: hudSize.height })
