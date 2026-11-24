@@ -7,7 +7,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
 import { gatherLayers, useGatherables } from '@/lib/gatherables.ts'
-import { currentWorld, mapImage, nearbyPets, project, useSpawns } from '@/lib/spawns.ts'
+import { currentWorld, mapImage, nearbyPets, PET_COLORS, project, useSpawns } from '@/lib/spawns.ts'
 import { useApp } from '@/stores/app.ts'
 import MapVision from '@/workers/mapVision.ts?worker'
 import { detailGroupAt, type GameMapState } from '@shared/gameMap.ts'
@@ -33,7 +33,6 @@ const PICTURE_PX = 720
 const WAIT_MS = 5_000
 /** A match older than this (or than three pictures take, on a slow computer): the map is gone (closed, or the game hidden). */
 const STALE_MS = 900
-const PALETTE = ['#f76b15', '#30a46c', '#0090ff', '#e54666', '#12a594', '#ab4aba', '#8e8c99', '#ffffff']
 
 const store = useApp()
 const api = bridge()
@@ -442,7 +441,7 @@ const pets = computed(() => {
   const ids = [...new Set([...store.settings.hud.pinned, ...nearbyPets(store.nearby, data).map((n) => n.pet)])].filter((id) => !store.hiddenPet(id))
   return ids
     .map((id, i) => ({
-      color: PALETTE[i % PALETTE.length]!,
+      color: PET_COLORS[i % PET_COLORS.length]!,
       points: (data.pets[id] ?? []).flatMap((d) => d.worlds.filter((w) => w.world === worldId.value).flatMap((w) => w.points)),
     }))
     .filter((p) => p.points.length)

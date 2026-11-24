@@ -2,6 +2,7 @@
 // The in-game overlay. Click-through, and exactly as big as what it shows: it measures itself and
 // main sizes the window to fit (an empty HUD is a hidden window). In edit mode it takes the mouse
 // so it can be dragged; Escape or Done ends that.
+import { useNow } from '@/lib/now.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { HUD_PINNED_ROWS } from '@shared/settings.ts'
@@ -111,8 +112,7 @@ watch(
   },
 )
 // "spawned 3 min ago", kept current.
-const clock = ref(Date.now())
-const clockTimer = setInterval(() => (clock.value = Date.now()), 5000)
+const clock = useNow(5000)
 function since(at: number): string {
   const min = Math.floor((clock.value - at) / 60_000)
   return min < 1 ? t('just now') : min < 60 ? t('{n} min ago', { n: min }) : t('{n} h ago', { n: Math.floor(min / 60) })
@@ -147,7 +147,6 @@ onMounted(() => {
   report()
 })
 onBeforeUnmount(() => {
-  clearInterval(clockTimer)
   window.removeEventListener('keydown', onKey)
 })
 </script>

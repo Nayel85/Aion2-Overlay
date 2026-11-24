@@ -2,6 +2,7 @@
 // Pets: every pet with its souls and level, as a table. Search, filter and sort; click a pet for
 // where its souls drop, a name or a soul count to correct it; the pin puts a pet on the HUD (in
 // pinned mode) and on the maps.
+import { useNow } from '@/lib/now.ts'
 import PetsHudSettings from '@/components/PetsHudSettings.vue'
 import { computed, nextTick, onBeforeUnmount, ref, toRefs } from 'vue'
 import GenusPill, { GENUS_PILL } from '@/components/GenusPill.vue'
@@ -90,9 +91,7 @@ const here = computed(() =>
   store.nearby.world !== null && store.nearby.position ? { world: store.nearby.world, at: store.nearby.position } : null,
 )
 // How old the position is, said the way people do; ticks so it ages while the panel is open.
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 15_000)
-onBeforeUnmount(() => clearInterval(ticker))
+const now = useNow(15_000)
 const positionAge = computed(() => {
   const at = store.nearby.positionAt
   if (!at) return t('as last seen')

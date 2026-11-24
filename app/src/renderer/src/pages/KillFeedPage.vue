@@ -7,7 +7,7 @@
 // soul lines do. Its skull opens a small map of where you last died.
 import { ago as timeAgo } from '@/lib/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
-import { useIdle } from '@/lib/now.ts'
+import { useIdle, useNow } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, toRaw, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
@@ -62,9 +62,7 @@ const shownLines = computed(() => (!lines.value.length && placing.value ? SAMPLE
  * The game says nothing when you let go of one, so it stays TARGET_MS, unless another replaces it.
  */
 const TARGET_MS = 120_000
-const clock = ref(Date.now())
-const ticker = setInterval(() => (clock.value = Date.now()), 5000)
-onBeforeUnmount(() => clearInterval(ticker))
+const clock = useNow(5000)
 const target = computed(() => {
   const tp = store.target
   return cfg.value.target && tp && clock.value - tp.at < TARGET_MS ? tp : null

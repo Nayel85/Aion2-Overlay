@@ -5,6 +5,7 @@
 // hides it until the next one. Moved by its header; minimized it is the header with the count.
 // While the dashboard is up with nobody applying, it shows a sample to place it by. Nothing to
 // show measures 0, and main keeps the window hidden.
+import { useNow } from '@/lib/now.ts'
 import { classIconUrl } from '@/lib/format.ts'
 import { compact } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
@@ -26,8 +27,7 @@ const api = bridge()
 const { root, report } = useOverlay('applicants', () => list.value.length > 0)
 const cfg = computed(() => store.settings.applicants)
 
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 1000)
+const now = useNow(1000)
 
 const icon = classIconUrl
 /** A class's bar: its colour, fading out to the right (the DPS meter's rows). */
@@ -77,9 +77,6 @@ watch([() => list.value.length, () => cfg.value.collapsed], () => void nextTick(
 
 onMounted(() => {
   report()
-})
-onBeforeUnmount(() => {
-  clearInterval(ticker)
 })
 </script>
 

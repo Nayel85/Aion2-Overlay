@@ -8,6 +8,7 @@
 // total during a Spacetime Rift), a Hidden Cube in view, enemies who can attack you, a field boss
 // alive, and where you last died. Moved by dragging the bar; it grows around its top centre, sized to
 // what it shows (main sizes the window to it).
+import { useNow } from '@/lib/now.ts'
 import { ago as timeAgo } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
@@ -47,8 +48,7 @@ const api = bridge()
 const { root, report } = useOverlay('unified')
 const cfg = computed(() => store.settings.unified)
 
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 1000)
+const now = useNow(1000)
 
 // ---- what is open under the bar: by click, closed by a second one ---------------------------------
 
@@ -339,7 +339,6 @@ onMounted(async () => {
   void nextTick(() => (meterLoaded = true))
 })
 onBeforeUnmount(() => {
-  clearInterval(ticker)
   for (const off of offs) off()
 })
 </script>

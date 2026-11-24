@@ -3,6 +3,7 @@
 // off, and how early). The bar above: the server region, the chime and its volume, the bubble's
 // shake, and the countdown bar over the game. A click on the bubble during an alert opens this page
 // with that event highlighted.
+import { useNow } from '@/lib/now.ts'
 import Section from '@/components/ui/Section.vue'
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
@@ -22,9 +23,7 @@ import { leadChoices, REGIONS, TIMERS, type TimerDef, type TimerId } from '@shar
 
 const store = useApp()
 const cfg = computed(() => store.settings.timers)
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 1000)
-onBeforeUnmount(() => clearInterval(ticker))
+const now = useNow(1000)
 
 const EVENT_IMAGES: Partial<Record<TimerId, string>> = { shugo: 'events/shugo.webp', rift: 'events/rift.webp' }
 const alerting = computed(() => new Set(store.alerting.map((a) => a.id)))

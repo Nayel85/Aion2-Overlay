@@ -2,6 +2,7 @@
 // The dashboard the bubble opens: a window of its own, with its title bar (dragged to move, and the
 // window's buttons), a sidebar of pages in sections (questlog.gg's layout: Home, In game, Records,
 // Settings at the bottom), and the page. Each page says what it is, and holds its overlay's settings.
+import { useNow } from '@/lib/now.ts'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BossesView from '@/components/dashboard/BossesView.vue'
 import ApplicantsView from '@/components/dashboard/ApplicantsView.vue'
@@ -140,8 +141,7 @@ const who = computed(() => {
 })
 
 // The sidebar's badges: the next event with an alert on, how long until it; the bosses alive.
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 30_000)
+const now = useNow(30_000)
 const nextAlert = computed(() => {
   const t = store.settings.timers
   const at = TIMERS.filter((d) => t.enabled[d.id] && t.shown[d.id] && d.schedule.kind !== 'boss').map((d) => timerNext(d, now.value))
@@ -203,7 +203,6 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey)
-  clearInterval(ticker)
   for (const off of offs) off()
 })
 </script>

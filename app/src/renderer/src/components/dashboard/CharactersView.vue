@@ -4,6 +4,7 @@
 // Odyle energy, entry counts, Kina and Abyss corridors at a glance, and what a server's characters share
 // (Daily Dungeon, Shugo and invasion keys). Counters are read at each login and worked out from the
 // game's refill times since: a character not logged in with the overlay yet shows greyed out.
+import { useNow } from '@/lib/now.ts'
 import { ago as timeAgo } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, ref } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -17,9 +18,7 @@ import { formatKina } from '@shared/kina.ts'
 import { serverLabel } from '@shared/servers.ts'
 
 const store = useApp()
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 1000)
-onBeforeUnmount(() => clearInterval(ticker))
+const now = useNow(1000)
 
 /** The game's item icons (questlog.gg's copies, in public/items): energy, and the boss entry ticket. */
 const ICONS = { energy: 'items/odyle-energy.webp', ticket: 'items/boss-ticket.webp' }

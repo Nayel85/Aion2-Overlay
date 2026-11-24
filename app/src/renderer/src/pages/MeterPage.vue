@@ -7,6 +7,7 @@
 // corner resizes it (a double-click there goes back to the default size); with "hide while idle" on
 // it hides after that long with nothing new on it, and comes back with the next hit.
 // The numbers are the engine's (A2Tools DPS Meter's parser); the class icons and colours are its too.
+import { useNow } from '@/lib/now.ts'
 import { classIconUrl } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
@@ -143,8 +144,7 @@ const onGrip = cornerResize({
 const resetSize = (): void => set({ width: 340, height: null })
 
 // Hide while idle: the time the numbers last moved (a hit, a heal, a reset).
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 1000)
+const now = useNow(1000)
 const lastActive = ref(0)
 watch([total, () => meter.value.target?.id], () => (lastActive.value = Date.now()))
 // Never while the overlays are being placed: shown whole to place it, as every overlay.
@@ -175,7 +175,6 @@ onMounted(async () => {
   report()
 })
 onBeforeUnmount(() => {
-  clearInterval(ticker)
   for (const off of offs) off()
 })
 </script>

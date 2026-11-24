@@ -5,6 +5,7 @@
 // short name. Moved by dragging; sized to what it shows, and hidden with nothing to show. Hovering
 // one names it right away, in a label under the bar (the window grows to it: a title's tooltip
 // waits a second or so). As a list instead, a timer a line: its icon, its name and its countdown.
+import { useNow } from '@/lib/now.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -22,8 +23,7 @@ const store = useApp()
 const { root, report } = useOverlay('timerbar', () => items.value.length > 0)
 const cfg = computed(() => store.settings.timers)
 
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 1000)
+const now = useNow(1000)
 
 const ICONS: Partial<Record<TimerId, string>> = {
   shugo: 'events/shugo.webp',
@@ -106,9 +106,6 @@ watch([() => items.value.length, () => store.ready, list], () => void nextTick(r
 
 onMounted(() => {
   report()
-})
-onBeforeUnmount(() => {
-  clearInterval(ticker)
 })
 </script>
 

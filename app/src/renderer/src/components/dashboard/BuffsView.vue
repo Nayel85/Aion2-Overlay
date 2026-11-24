@@ -2,6 +2,7 @@
 // Buffs: what is on your character now, as the buffs overlay shows it, in a list with names; and
 // the overlay's settings. From A2Tools DPS Meter's buff timeline (the game's buff records). A
 // fight's buffs, each player's and the target's, are in the Details window's Buffs tab.
+import { useNow } from '@/lib/now.ts'
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import IdleHideRow from '@/components/IdleHideRow.vue'
@@ -19,9 +20,7 @@ import type { Buff } from '@shared/buffs.ts'
 
 const store = useApp()
 const cfg = computed(() => store.settings.buffs)
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 250)
-onBeforeUnmount(() => clearInterval(ticker))
+const now = useNow(250)
 
 const current = computed(() => store.buffs.filter((b) => b.endsAt === null || b.endsAt > now.value - 500))
 /** What the game shows you; the rest (internal effects) only counted, unless asked for. */

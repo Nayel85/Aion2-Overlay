@@ -210,3 +210,6 @@ export function formatDistance(units: number): string {
   const m = units / 100
   return m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1)} km`
 }
+
+/** The tracked pets' colours on every map (Map, the map overlay, Map V2), in their order: the same pet, the same colour. */
+export const PET_COLORS = ['#f76b15', '#30a46c', '#0090ff', '#e54666', '#12a594', '#ab4aba', '#8e8c99', '#ffffff']

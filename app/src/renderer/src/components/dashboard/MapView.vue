@@ -19,13 +19,12 @@ import Section from '@/components/ui/Section.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { gatherLayers, useGatherables } from '@/lib/gatherables.ts'
 import { displayName } from '@/lib/petDb.ts'
-import { currentWorld, nearbyPets, useSpawns } from '@/lib/spawns.ts'
+import { currentWorld, nearbyPets, PET_COLORS, useSpawns } from '@/lib/spawns.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { blankPet, MAX_LEVEL } from '@shared/tracker.ts'
 import { SETTINGS_DEFAULTS } from '@shared/settings.ts'
 
-const PALETTE = ['#f76b15', '#30a46c', '#0090ff', '#e54666', '#12a594', '#ab4aba', '#ffc53d', '#ffffff']
 const NEEDED = '#a1a1aa'
 
 const store = useApp()
@@ -69,8 +68,8 @@ const tracked = computed(() => {
   if (!spawns.value) return []
   const near = inZone.value ? nearbyPets(store.nearby, spawns.value).map((n) => n.pet) : []
   return withSpawns([...new Set([...store.settings.hud.pinned, ...near])].filter((id) => !store.hiddenPet(id)))
-    .slice(0, PALETTE.length)
-    .map((id, i) => ({ id, color: PALETTE[i]!, pinned: store.settings.hud.pinned.includes(id) }))
+    .slice(0, PET_COLORS.length)
+    .map((id, i) => ({ id, color: PET_COLORS[i % PET_COLORS.length]!, pinned: store.settings.hud.pinned.includes(id) }))
 })
 /** Tracked pets whose spawns are hidden here (clicked off in the list). */
 const hidden = computed(() => new Set(page.value.hiddenPets))

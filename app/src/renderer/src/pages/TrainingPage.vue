@@ -7,7 +7,7 @@
 // page turns it on again). The last run's Details opens its breakdown.
 import { compact, duration } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
-import { useIdle } from '@/lib/now.ts'
+import { useIdle, useNow } from '@/lib/now.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CollapseButton from '@/components/CollapseButton.vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -26,7 +26,7 @@ const cfg = computed(() => store.settings.dummy)
 // Hidden while idle, if set.
 const idle = useIdle(() => store.settings.dummy)
 const state = ref<DummyState>(structuredClone(NO_DUMMY))
-const now = ref(Date.now())
+const now = useNow(250)
 
 /** A countdown: its seconds rounded up. */
 const clock = (ms: number): string => duration(ms, true)
@@ -60,16 +60,13 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('dummy', 
 /** Tell main how big the window is; nothing to show measures 0, and main keeps it hidden. */
 watch([shown, active, last, () => cfg.value.collapsed], () => void nextTick(report))
 
-let timer: ReturnType<typeof setInterval> | null = null
 let off: (() => void) | null = null
 onMounted(async () => {
   off = api.on('dummy:state', (s) => (state.value = s))
   state.value = await api.invoke('dummy:get')
-  timer = setInterval(() => (now.value = Date.now()), 250)
   report()
 })
 onBeforeUnmount(() => {
-  if (timer) clearInterval(timer)
   off?.()
 })
 </script>

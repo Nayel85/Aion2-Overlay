@@ -2,6 +2,7 @@
 // The packet log's pill over the game (Alt+Shift+R): while it records, how long and how many marks;
 // once it stops, the file it went to, for the few seconds main keeps the window (packets.ts).
 // Clicks go through to the game.
+import { useNow } from '@/lib/now.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -12,7 +13,7 @@ const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
 const { root, report } = useOverlay('packets', () => shown.value)
 const log = ref<PacketLog>({ ...NO_PACKET_LOG })
-const now = ref(Date.now())
+const now = useNow(500)
 
 const elapsed = computed(() => {
   const s = log.value.startedAt ? Math.max(0, Math.floor((now.value - log.value.startedAt) / 1000)) : 0
@@ -25,16 +26,13 @@ const shown = computed(() => log.value.on || !!log.value.path)
 watch([shown, () => log.value.on], () => void nextTick(report))
 
 let off: (() => void) | null = null
-let timer: ReturnType<typeof setInterval> | null = null
 onMounted(async () => {
   off = api.on('packets:state', (s) => (log.value = s))
   log.value = await api.invoke('packets:get')
-  timer = setInterval(() => (now.value = Date.now()), 500)
   report()
 })
 onBeforeUnmount(() => {
   off?.()
-  if (timer) clearInterval(timer)
 })
 </script>
 

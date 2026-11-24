@@ -3,6 +3,7 @@
 // of the shop is opened, it moves by its header, and the X closes it until the next time. Each pet
 // says what buying does and where its soul monsters spawn: one away from your side's continent, or
 // with no known spawn at all (bosses, events), is the hard one to farm, so it is marked.
+import { useNow } from '@/lib/now.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import GenusPill from '@/components/GenusPill.vue'
@@ -23,8 +24,7 @@ const { root, report } = useOverlay('merchant', () => shownOffers.value.length >
 const spawns = useSpawns()
 
 // Ticks so the restock countdown, and offers past it, keep up while the window stays open.
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 30_000)
+const now = useNow(30_000)
 
 const offers = computed(() =>
   merchantOffers(store.shop, (id) => store.pets.find((p) => p.id === id)?.level ?? null, now.value, petItems),
@@ -84,9 +84,6 @@ watch([shownOffers, continents, () => store.ready], () => void nextTick(report),
 
 onMounted(() => {
   report()
-})
-onBeforeUnmount(() => {
-  clearInterval(ticker)
 })
 </script>
 

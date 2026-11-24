@@ -20,7 +20,7 @@ import { clampTo, cornerResize } from '@/lib/cornerResize.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { gatherLayers, useGatherables } from '@/lib/gatherables.ts'
 import { displayName } from '@/lib/petDb.ts'
-import { currentWorld, nearbyPets, useSpawns } from '@/lib/spawns.ts'
+import { currentWorld, nearbyPets, PET_COLORS, useSpawns } from '@/lib/spawns.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { MINIMAP_HEIGHT, MINIMAP_WIDTH, SETTINGS_DEFAULTS, type Settings } from '@shared/settings.ts'
@@ -28,7 +28,6 @@ import { blankPet, canAttack } from '@shared/tracker.ts'
 
 /** The map overlay follows you rather than fitting anything. */
 const NO_FOCUS: [number, number][] = []
-const PALETTE = ['#f76b15', '#30a46c', '#0090ff', '#e54666', '#12a594', '#ab4aba', '#8e8c99', '#ffffff']
 
 const store = useApp()
 const api = bridge()
@@ -67,7 +66,7 @@ const tracked = computed(() => {
   const ids = [...store.settings.hud.pinned, ...nearbyPets(store.nearby, data).map((n) => n.pet)]
   return [...new Set(ids)]
     .filter((id) => !store.hiddenPet(id) && here(id))
-    .map((id, i) => ({ id, color: PALETTE[i % PALETTE.length]! }))
+    .map((id, i) => ({ id, color: PET_COLORS[i % PET_COLORS.length]! }))
 })
 
 const layers = computed<MapLayer[]>(() =>

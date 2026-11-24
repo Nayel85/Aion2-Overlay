@@ -3,6 +3,7 @@
 // respawns), when that was, and its alert. The list comes from the game when you open the map; the
 // Lokthar sync can fill in what others' maps saw. Verteron's bosses, Altgard's (the Asmodians', from
 // its map) and the Abyss's (read as you enter the Abyss, by any of your characters) are known so far.
+import { useNow } from '@/lib/now.ts'
 import { ago as timeAgo } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
@@ -20,9 +21,7 @@ import { bossPortrait, bossState, FIELD_BOSSES, leadChoices, TIMERS, type BossZo
 
 const store = useApp()
 const cfg = computed(() => store.settings.timers)
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 1000)
-onBeforeUnmount(() => clearInterval(ticker))
+const now = useNow(1000)
 
 const ZONES: { id: BossZone; label: string }[] = [
   { id: 'verteron', label: 'Verteron' },

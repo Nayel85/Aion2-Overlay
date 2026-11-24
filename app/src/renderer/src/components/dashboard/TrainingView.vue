@@ -5,6 +5,7 @@
 // Each run is saved with its skills; open one for its skills' DPS, or its Details for the whole
 // breakdown (hits, rotation, buffs...), or tick two to compare them (DPS, damage, crits, hits, and
 // skill by skill). Runs are kept in groups: "New group" starts the next.
+import { useNow } from '@/lib/now.ts'
 import Section from '@/components/ui/Section.vue'
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { dateTime } from '@/lib/format.ts'
@@ -42,9 +43,7 @@ const skillRows = (r: DummyRun) =>
   }))
 const openDetails = (r: DummyRun): void => void api.invoke('details:open', { kind: 'run', id: r.id })
 // The clock, between the run's updates.
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 250)
-onBeforeUnmount(() => clearInterval(ticker))
+const now = useNow(250)
 
 
 const inGroup = computed(() => state.value.runs.filter((r) => r.group === state.value.group).length)

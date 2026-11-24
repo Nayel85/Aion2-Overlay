@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Home: who is playing and whether the game is being read, every overlay with its switch (the
 // overlays' own settings are on their pages), and a card per page with what it has now.
+import { useNow } from '@/lib/now.ts'
 import HomeCard from '@/components/HomeCard.vue'
 import { compact } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -25,8 +26,7 @@ const store = useApp()
 const api = bridge()
 const spawns = useSpawns()
 
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 1000)
+const now = useNow(1000)
 const meter = ref<MeterData>(NO_METER)
 const fights = ref<number | null>(null)
 /** Bosses with a personal best of yours. */
@@ -45,7 +45,6 @@ onMounted(async () => {
   void loadBests()
 })
 onBeforeUnmount(() => {
-  clearInterval(ticker)
   for (const off of offs) off()
 })
 

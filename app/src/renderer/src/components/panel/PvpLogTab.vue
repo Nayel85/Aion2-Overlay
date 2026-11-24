@@ -6,6 +6,7 @@
 // servers carry their server's tag ([LUM]).
 // Lokthar: the rift farms on top (shared/abyss.ts), each the Abyss Points one character earned in a
 // Spacetime Rift's window, with your kills, deaths and assists in it; picking one lists those.
+import { useNow } from '@/lib/now.ts'
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed, onBeforeUnmount, ref, shallowRef, triggerRef } from 'vue'
@@ -115,9 +116,7 @@ const counts = computed(() => ({
 }))
 
 // "2 min ago": redrawn every 15 s.
-const now = ref(Date.now())
-const ticker = setInterval(() => (now.value = Date.now()), 15_000)
-onBeforeUnmount(() => clearInterval(ticker))
+const now = useNow(15_000)
 const time = (ms: number): string => new Date(ms).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
 function ago(ms: number): string {
   const s = Math.max(0, Math.round((now.value - ms) / 1000))
