@@ -40,7 +40,7 @@ import { join } from 'node:path'
 import { broadcast, registerWindowRoute, send } from './broadcast.ts'
 import { DISPLAY_NAME } from '../shared/app.ts'
 import { settings } from './settings.ts'
-import { tracker } from './tracker.ts'
+import { log, tracker } from './tracker.ts'
 import type { EventChannels, OverlayId } from '../shared/ipc.ts'
 import type { DetailsSource } from '../shared/meter.ts'
 import type { Point } from '../shared/settings.ts'
@@ -126,6 +126,11 @@ function overlayWindow(options: Electron.BrowserWindowConstructorOptions): Brows
     const dev = process.env['ELECTRON_RENDERER_URL']
     if (!(url.startsWith('file://') || (dev && url.startsWith(dev)))) event.preventDefault()
   })
+  // A window's errors in the app's log, with its page: one that fails shows nothing, and says so here.
+  win.webContents.on('console-message', (e) => {
+    if (e.level === 'error' || e.level === 'warning') log(`window ${win.webContents.getURL().split('#')[1] ?? '?'}: ${e.level} ${e.message} (${e.sourceId.split('/').pop()}:${e.lineNumber})`)
+  })
+  win.webContents.on('render-process-gone', (_e, d) => log(`window ${win.webContents.getURL().split('#')[1] ?? '?'}: gone (${d.reason})`))
   return win
 }
 
@@ -366,6 +371,7 @@ function syncArranging(): void {
   const on = arrangingNow()
   if (on === arranging) return
   arranging = on
+  log(`overlays: ${on ? 'being placed (the dashboard in front)' : 'placed'}`)
   broadcast('panel:visible', on)
   // The HUD shows (even when empty) and takes the mouse; otherwise back to click-through, so it
   // never catches a click meant for the game.
@@ -427,7 +433,10 @@ export function refreshHud(): void {
     const now = hud.getBounds()
     if (next.x !== now.x || next.y !== now.y || next.width !== now.width || next.height !== now.height) hud.setBounds(next)
   }
-  if (wanted && !hud.isVisible()) reveal(hud)
+  if (wanted && !hud.isVisible()) {
+    reveal(hud)
+    log(`pets HUD: ${hud.isVisible() ? 'shown' : 'held hidden'}`)
+  }
   if (!wanted && hud.isVisible()) hud.hide()
 }
 
@@ -624,9 +633,13 @@ function measuredOverlay(o: {
     if (size.width > 0 && size.height > 0) {
       const p = position()
       win.setBounds(clampToDisplay({ x: p.x, y: p.y, ...size }))
-      if (!win.isVisible()) reveal(win)
+      if (!win.isVisible()) {
+        reveal(win)
+        log(`overlay ${o.route}: ${win.isVisible() ? 'shown' : `held hidden (${gameAway ? 'game not in front' : 'overlays hidden by hand'})`} at ${p.x},${p.y} ${size.width}x${size.height}`)
+      }
     } else if (win.isVisible()) {
       win.hide()
+      log(`overlay ${o.route}: nothing to show, hidden`)
     }
   }
   return {
@@ -642,6 +655,7 @@ function measuredOverlay(o: {
       else if (o.clickThrough) w.setFocusable(true)
       win = w
       size = { width: 0, height: 0 }
+      log(`overlay ${o.route}: opened${arranging ? ' (being placed)' : ''}`)
       w.on('closed', () => {
         if (win === w) win = null
       })
