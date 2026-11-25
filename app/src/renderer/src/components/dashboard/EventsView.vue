@@ -5,7 +5,6 @@
 // with that event highlighted.
 import { useNow } from '@/lib/now.ts'
 import Section from '@/components/ui/Section.vue'
-import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import Button from '@/components/Button.vue'
@@ -13,7 +12,6 @@ import Slider from '@/components/Slider.vue'
 import Toggle from '@/components/Toggle.vue'
 import Countdown from '@/components/ui/Countdown.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
-import Segmented from '@/components/ui/Segmented.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { playChime } from '@/lib/chime.ts'
 import { CLOCK_ICON, EVENT_ICONS, leadLabel, setAlert, setLead, timerNext } from '@/lib/timerView.ts'
@@ -100,15 +98,8 @@ onBeforeUnmount(() => flashTimer && clearTimeout(flashTimer))
       <span class="h-6 w-px bg-light" />
       <label class="flex items-center gap-2" :title="t('The timers with an alert on, starting within 13 hours, over the game. Drag it to move it.')">
         <Toggle :model-value="bar.enabled" @update:model-value="store.set('timerBar', { ...bar, enabled: $event })" />
-        <span>{{ t('Countdown bar over the game') }}</span>
+        <span>{{ t('Event Bar over the game') }}</span>
       </label>
-      <Segmented
-        v-if="bar.enabled"
-        size="sm"
-        :model-value="bar.layout"
-        :options="[{ id: 'bar', label: 'Bar' }, { id: 'list', label: 'List' }] as const"
-        @update:model-value="store.set('timerBar', { ...bar, layout: $event })"
-      />
     </div>
 
     <div ref="list" class="overflow-hidden rounded-xl border border-card">
@@ -171,9 +162,5 @@ onBeforeUnmount(() => flashTimer && clearTimeout(flashTimer))
       </table>
     </div>
     <p class="mt-3 text-xs text-darkest">{{ t("Weekly events (the siege) are at your region's own time; the region follows your server when you enter the world.") }}</p>
-
-    <Section v-if="bar.enabled" title="Countdown bar" class="mt-6">
-      <OverlayWindowSettings overlay="timerbar" setting="timerBar" />
-    </Section>
   </div>
 </template>

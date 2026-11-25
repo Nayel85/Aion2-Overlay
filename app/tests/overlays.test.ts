@@ -35,7 +35,7 @@ test("every overlay's page measures itself with the common tool, and has its sam
 })
 
 test("every overlay's settings page has the common window rows (opacity, size, idle, its place)", () => {
-  const files = ['components/dashboard', 'components/panel', 'components'].flatMap((dir) => {
+  const files = ['components/dashboard', 'components/panel', 'components/overlays', 'components'].flatMap((dir) => {
     const path = new URL(`../src/renderer/src/${dir}/`, import.meta.url)
     return readdirSync(path).filter((f) => f.endsWith('.vue')).map((f) => readFileSync(new URL(f, path), 'utf8'))
   })

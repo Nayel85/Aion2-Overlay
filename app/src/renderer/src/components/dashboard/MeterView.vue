@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Combat Meter: the fight as the meter overlay sees it, larger, from A2Tools DPS Meter's parser.
+// The DPS Meter: the fight as the meter overlay sees it, larger, from A2Tools DPS Meter's parser.
 // Which targets and players it counts and what it ranks by (shared with the overlay), each player's
 // numbers (a click opens their details), the meter and My skills overlays' settings, and recordings
 // of the game's traffic.
@@ -72,7 +72,6 @@ const empty = computed(() => {
 const rec = ref<Recordings>(NO_RECORDINGS)
 const size = (b: number): string => (b > 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`)
 const setMeter = (patch: Partial<typeof cfg.value>): void => void store.set('meter', { ...cfg.value, ...patch })
-const setSkills = (patch: Partial<typeof skills.value>): void => void store.set('skills', { ...skills.value, ...patch })
 function details(actor: number): void {
   const target = meter.value.target?.id
   if (target) void api.invoke('details:open', { kind: 'live', target, actor })
@@ -90,7 +89,7 @@ onBeforeUnmount(() => offs.forEach((off) => off()))
 
 <template>
   <div>
-    <PageHeader title="Combat Meter" about="Damage of you and your party, decoded live from the game's network traffic by A2Tools DPS Meter's parser. Nothing is read from or written to the game itself.">
+    <PageHeader title="DPS Meter" about="Damage of you and your party, decoded live from the game's network traffic by A2Tools DPS Meter's parser. Nothing is read from or written to the game itself.">
       <Button @click="api.invoke('meter:reset')">
         <svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 8a5 5 0 1 1-1.6-3.7M13 3v3h-3" /></svg>
         {{ t('Reset') }}
@@ -212,16 +211,6 @@ onBeforeUnmount(() => offs.forEach((off) => off()))
         <span class="w-32 text-right text-xs text-darker">{{ dateTime(f.modified) }}</span>
       </div>
       <p v-if="!rec.files.length" class="py-3 text-sm text-darkest">{{ t('No recordings yet.') }}</p>
-    </Section>
-
-    <Section title="My skills overlay" icon="M8 1.5 9.8 6l4.7.4-3.6 3 1.1 4.6L8 11.6 4 14l1.1-4.6-3.6-3L6.2 6z">
-      <SettingRow label="Show my skills over the game" hint="Your own damage on the meter's target, skill by skill: DPS, share and damage of each.">
-        <Toggle :model-value="skills.enabled" @update:model-value="setSkills({ enabled: $event })" />
-      </SettingRow>
-      <SettingRow v-if="skills.enabled" label="Skills listed">
-        <Slider :model-value="skills.rows" :min="1" :max="20" :step="1" @update:model-value="setSkills({ rows: $event })" />
-      </SettingRow>
-      <OverlayWindowSettings v-if="skills.enabled" overlay="skills" setting="skills" idle />
     </Section>
   </div>
 </template>

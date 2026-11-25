@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// Map V2: markers on the game's own map overlay (main/gameMap.ts). How to set it up first (the
+// Game Map Markers: markers on the game's own map overlay (main/gameMap.ts). How to set it up first (the
 // game's map overlay on, then the part of the screen it is in picked here), then whether the map is
 // being followed and on which map, what to draw on it, and a restart for when it stops following.
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -86,7 +86,7 @@ const STEPS = [
 
 <template>
   <div>
-    <PageHeader title="Map V2" about="Markers drawn right on the game's own map: gatherables, your tracked pets' spawns, Hidden Cubes and enemies.">
+    <PageHeader title="Game Map Markers" about="Markers drawn right on the game's own map: gatherables, your tracked pets' spawns, Hidden Cubes and enemies.">
       <span
         v-if="ready"
         :class="['flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium', state.status === 'found' ? 'bg-green/10 text-green' : 'bg-dark text-darker']"

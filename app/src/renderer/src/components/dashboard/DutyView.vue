@@ -5,9 +5,6 @@
 // kind of reward is worth to you (settings.duty), which ranks them, and the board's window over the game.
 import { computed } from 'vue'
 import DutyAdvice from '@/components/DutyAdvice.vue'
-import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
-import SettingRow from '@/components/SettingRow.vue'
-import Toggle from '@/components/Toggle.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'
 import { gradeClass } from '@/components/panel/sessionIcons.ts'
@@ -109,14 +106,6 @@ const costs = computed(() => Object.entries(state.value.rerollCosts).sort((a, b)
       <p class="mt-3 text-xs text-darker">
         {{ plural(state.history.length, '{n} board seen', '{n} boards seen') }}<template v-if="costs.length"> · {{ t('Rerolls paid:') }} {{ costs.map(([n, c]) => `${n}: ${kina(c)}`).join(', ') }}</template>
       </p>
-    </Section>
-
-    <!-- Its window over the game. -->
-    <Section title="Window over the game" class="mt-6">
-      <SettingRow label="Show as you open the board" hint="As you open the duty board in game, reroll it or take a mission, its advice shows over the game; it closes as you move, fight or close the board, or with its X.">
-        <Toggle :model-value="cfg.overlay" @update:model-value="set({ overlay: $event })" />
-      </SettingRow>
-      <OverlayWindowSettings v-if="cfg.overlay" overlay="duty" setting="duty" />
     </Section>
   </div>
 </template>

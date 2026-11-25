@@ -15,7 +15,7 @@ const busy = ref<StorageId | 'all' | null>(null)
 const sure = ref<StorageId | null>(null)
 
 const ROWS: { id: StorageId; label: string; about: string }[] = [
-  { id: 'tiles', label: 'Map tiles', about: 'The detailed map pieces Map V2 downloads. They are downloaded again the next time you need them.' },
+  { id: 'tiles', label: 'Map tiles', about: 'The detailed map pieces the Game Map Markers download. They are downloaded again the next time you need them.' },
   { id: 'browser', label: 'Interface cache', about: 'What the app\'s windows keep to open faster. It is rebuilt as you use the app.' },
   { id: 'logs', label: 'Error logs', about: 'What the engine and the map matching wrote down, for finding problems.' },
   { id: 'updates', label: 'Update downloads', about: 'Installers of updates left in the temporary folder.' },

@@ -4,7 +4,7 @@
 // pinned mode) and on the maps.
 import PetSourceTag from '@/components/PetSourceTag.vue'
 import { useNow } from '@/lib/now.ts'
-import PetsHudSettings from '@/components/PetsHudSettings.vue'
+import PetsListSettings from '@/components/PetsListSettings.vue'
 import { computed, nextTick, onBeforeUnmount, ref, toRefs } from 'vue'
 import GenusPill, { GENUS_PILL } from '@/components/GenusPill.vue'
 import LevelBadge from '@/components/LevelBadge.vue'
@@ -397,6 +397,6 @@ const syncedAgo = computed(() => {
       </span>
     </p>
 
-    <PetsHudSettings class="mt-8" />
+    <PetsListSettings class="mt-8" />
   </div>
 </template>

@@ -3,10 +3,9 @@
 // of the pets you care about: pinned ones and those around you each in their own colour, and,
 // optionally, every pet you still need in grey, and the gatherables (the ones pinned on the
 // Gatherables page, or all). Any zone can be picked; it opens on yours. Its switches are kept as they
-// were left (settings `mapPage`). The map overlay's settings are below it; markers on the game's own
-// map are Map V2's.
+// were left (settings `mapPage`), and the Hidden Cubes' settings. The Minimap's and the Game Map
+// Markers' settings are on the Overlays page.
 import { BOSS_NPCS } from '@/lib/petSources.ts'
-import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { percent } from '@shared/format.ts'
 import { computed, ref, watch } from 'vue'
 import Button from '@/components/Button.vue'
@@ -25,13 +24,11 @@ import { currentWorld, nearbyPets, PET_COLORS, useSpawns } from '@/lib/spawns.ts
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { blankPet, MAX_LEVEL } from '@shared/tracker.ts'
-import { SETTINGS_DEFAULTS } from '@shared/settings.ts'
 
 const NEEDED = '#a1a1aa'
 
 const store = useApp()
 const spawns = useSpawns()
-const mini = computed(() => store.settings.minimap)
 
 const here = computed(() => (spawns.value ? currentWorld(store.nearby, spawns.value) : null))
 const picked = ref<number | null>(null)
@@ -109,7 +106,6 @@ function findMe(): void {
 }
 watch(worldId, () => (focus.value = []))
 
-const setMini = (patch: Partial<typeof mini.value>): void => void store.set('minimap', { ...mini.value, ...patch })
 </script>
 
 <template>
@@ -179,26 +175,7 @@ const setMini = (patch: Partial<typeof mini.value>): void => void store.set('min
       <SettingRow label="On this map" hint="The cubes in view, as golden cubes (also the switch beside the map).">
         <Toggle v-model="showCubes" />
       </SettingRow>
-      <SettingRow label="In the pets HUD" hint="At the top of the pets HUD, with how far and which way.">
-        <Toggle :model-value="store.settings.hud.cubes" @update:model-value="store.setHud({ cubes: $event })" />
-      </SettingRow>
-      <p class="text-xs text-darker">{{ t('The map overlay always shows them; the Unified HUD and Map V2 each have their own switch on their page.') }}</p>
-    </Section>
-
-    <Section title="Map overlay" icon="M1.5 4l4.5-2 4 2 4.5-2v10l-4.5 2-4-2-4.5 2zM6 2v10M10 4v10">
-      <SettingRow label="Show the map overlay" hint="A small map over the game that follows you, with your tracked pets' spawns and the Hidden Cubes. Scroll or use + and − to zoom.">
-        <Toggle :model-value="mini.enabled" @update:model-value="setMini({ enabled: $event })" />
-      </SettingRow>
-      <SettingRow v-if="mini.enabled" label="Size" hint="Drag the map's bottom-right corner to resize it; a double-click there resets it.">
-        <div class="flex items-center gap-3">
-          <span class="text-sm tabular-nums text-dark">{{ mini.size }} × {{ mini.height ?? mini.size }}</span>
-          <Button size="sm" :disabled="mini.size === SETTINGS_DEFAULTS.minimap.size && mini.height === null" @click="setMini({ size: SETTINGS_DEFAULTS.minimap.size, height: null })">{{ t('Reset') }}</Button>
-        </div>
-      </SettingRow>
-      <OverlayWindowSettings v-if="mini.enabled" overlay="minimap" setting="minimap" />
-      <SettingRow v-if="mini.enabled" label="Gatherables" hint="Ores, gemstones, logs and plants around you, as their icons: the ones pinned on the Gatherables page, or all of them while none is.">
-        <Toggle :model-value="mini.gatherables" @update:model-value="setMini({ gatherables: $event })" />
-      </SettingRow>
+      <p class="text-xs text-darker">{{ t('The Minimap always shows them; the Unified HUD and the Game Map Markers each have their own switch on the Overlays page.') }}</p>
     </Section>
   </div>
 </template>

@@ -30,7 +30,7 @@ import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { riftOf } from '@shared/abyss.ts'
 import { characterId, CORRIDORS, corridorStates, counterNow, ENERGY, nextCorridorReset } from '@shared/characters.ts'
-import type { HudWidget, KinaIcon } from '@shared/settings.ts'
+import { WIDGET_LABELS, type HudWidget, type KinaIcon } from '@shared/settings.ts'
 import { formatAmount, livePerHour } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
 import { CLASS_COLORS, meterRows, NO_METER, timeToKill, type MeterData, type NewBest } from '@shared/meter.ts'
@@ -99,9 +99,6 @@ const WIDGET_ICONS: Record<HudWidget, string> = {
   gather: 'M3 13c0-6 4-10 10-10 0 6-4 10-10 10ZM3 13l5-5',
   applicants: 'M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M12 4.5v4M10 6.5h4',
   training: 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8 8h.01',
-}
-const WIDGET_LABELS: Record<HudWidget, string> = {
-  party: 'Party frames', buffs: 'Buffs', cc: 'CC / Debuffs', flight: 'Flight timer', gather: 'Gathering outcome', applicants: 'Join requests', training: 'Training',
 }
 function widgetOn(w: HudWidget): boolean {
   const s = store.settings

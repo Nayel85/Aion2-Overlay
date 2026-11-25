@@ -7,15 +7,9 @@
 // Lokthar: the rift farms on top (shared/abyss.ts), each the Abyss Points one character earned in a
 // Spacetime Rift's window, with your kills, deaths and assists in it; picking one lists those.
 import { useNow } from '@/lib/now.ts'
-import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
-import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed, onBeforeUnmount, ref, shallowRef, triggerRef } from 'vue'
 import Button from '@/components/Button.vue'
 import ClassIcon from '@/components/ClassIcon.vue'
-import SettingRow from '@/components/SettingRow.vue'
-import Slider from '@/components/Slider.vue'
-import SoundPicker from '@/components/SoundPicker.vue'
-import Toggle from '@/components/Toggle.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { loc, plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
@@ -139,10 +133,6 @@ const hudOpen = computed(() => store.settings.killFeed.open)
 const toggleHud = (): void => void bridge().invoke(hudOpen.value ? 'killfeed:close' : 'killfeed:open')
 
 // The overlays over the game, set up here: the kill feed's look, and Enemies nearby.
-const setKillFeed = (patch: Partial<Settings['killFeed']>): void => void store.set('killFeed', { ...store.settings.killFeed, ...patch })
-const setEnemies = (patch: Partial<Settings['enemies']>): void => void store.set('enemies', { ...store.settings.enemies, ...patch })
-const background = (v: number): string => (v === 0 ? t('None') : `${Math.round(v * 100)}%`)
-const BACKGROUND_HINT = 'At None the text keeps a dark glow, readable on the game.'
 </script>
 
 <template>
@@ -264,44 +254,6 @@ const BACKGROUND_HINT = 'At None the text keeps a dark glow, readable on the gam
       {{ rift ? t('No kills, deaths or assists of yours in this rift.') : t(filters.find((f) => f.id === filter)?.empty ?? 'No player kills seen yet.') }}
     </p>
 
-    <section class="rounded-lg border border-card bg-card px-3">
-      <h3 class="pt-2.5 text-[11px] font-semibold uppercase tracking-wide text-darker">{{ t('Overlays over the game') }}</h3>
-      <div class="divide-y divide-[color:var(--line)]">
-        <SettingRow label="Kill feed" hint="This session's kills and deaths, and each player kill around you as it happens.">
-          <Toggle :model-value="hudOpen" @update:model-value="toggleHud" />
-        </SettingRow>
-        <template v-if="hudOpen">
-          <SettingRow label="Your target" hint="Under the kills and deaths: the player you last targeted, with level, server, class and combat power (enemies in red). For 2 minutes, or until you target another.">
-            <Toggle :model-value="store.settings.killFeed.target" @update:model-value="setKillFeed({ target: $event })" />
-          </SettingRow>
-          <OverlayWindowSettings overlay="killfeed" setting="killFeed" :opacity-min="0" opacity-label="Kill feed background" :opacity-hint="BACKGROUND_HINT" idle />
-        </template>
-        <SettingRow label="Enemies nearby" hint="Players of the other faction your game has loaded around you, with server, combat power and legion. Hidden while there are none; drag it while this window is open.">
-          <Toggle :model-value="store.settings.enemies.enabled" @update:model-value="setEnemies({ enabled: $event })" />
-        </SettingRow>
-        <template v-if="store.settings.enemies.enabled">
-          <SettingRow label="Enemies on the map" hint="A pin on the map overlay where each enemy was last seen: as they come into view, then as effects and skills land on them. Red when they can attack you (PvP on, or anyone in the Abyss), grey with their PvP off.">
-            <Toggle :model-value="store.settings.enemies.mapPins" @update:model-value="setEnemies({ mapPins: $event })" />
-          </SettingRow>
-          <SettingRow label="Their item level" hint="Each one's gear score (ilvl), once the game has sent their card: as you target them, or in a fight.">
-            <Toggle :model-value="store.settings.enemies.gearScore" @update:model-value="setEnemies({ gearScore: $event })" />
-          </SettingRow>
-          <SettingRow label="Their combat power" hint="Each one's CP, once the game has sent it.">
-            <Toggle :model-value="store.settings.enemies.combatPower" @update:model-value="setEnemies({ combatPower: $event })" />
-          </SettingRow>
-          <OverlayWindowSettings overlay="enemies" setting="enemies" :opacity-min="0" opacity-label="Enemies background" :opacity-hint="BACKGROUND_HINT" />
-          <SettingRow label="Sound for an enemy" hint="When one comes into view (the same player at most once a minute).">
-            <Toggle :model-value="store.settings.enemies.sound" @update:model-value="setEnemies({ sound: $event })" />
-          </SettingRow>
-          <template v-if="store.settings.enemies.sound">
-            <SettingRow label="Only enemies with PvP on" hint="The sound only for those who can attack you: with their PvP on, or anyone in the Abyss. The list shows them all, PvP on first, with a PvP mark.">
-              <Toggle :model-value="store.settings.enemies.pvpOnly" @update:model-value="setEnemies({ pvpOnly: $event })" />
-            </SettingRow>
-            <SoundPicker kind="enemy" label="Enemy sound" />
-          </template>
-        </template>
-      </div>
-    </section>
 
     <p class="text-[11px] text-darkest">
       {{ t('Player kills around you, as the game credits them: the killing blow only, so an assist is not a kill here. Kept until you clear them, across restarts.') }}

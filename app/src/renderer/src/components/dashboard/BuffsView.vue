@@ -94,17 +94,6 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('buffs', 
       </div>
     </Section>
 
-    <Section title="CC / Debuffs" icon="M8 1.5v3M3.5 3.5l2 2M12.5 3.5l-2 2M5 9.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0z">
-      <SettingRow label="Show when I lose control" hint="A banner mid-screen while you are stunned, knocked down, rooted, feared, silenced... with the seconds left. Clicks pass through it; while this window is open it shows a preview you can drag into place.">
-        <Toggle :model-value="cfg.cc" @update:model-value="set({ cc: $event })" />
-      </SettingRow>
-      <SettingRow v-if="cfg.cc" label="Monsters' other debuffs" hint="Under the banner: the other debuffs monsters put on you (poisons, slows...), with their time left.">
-        <Toggle :model-value="cfg.ccDebuffs" @update:model-value="set({ ccDebuffs: $event })" />
-      </SettingRow>
-      <OverlayWindowSettings v-if="cfg.cc" overlay="cc" setting="buffs" :opacity-min="null" />
-
-    </Section>
-
     <Section title="Buffs overlay" icon="M2.5 2.5h4.5v4.5H2.5zM9 2.5h4.5v4.5H9zM2.5 9h4.5v4.5H2.5zM9 9h4.5v4.5H9z">
       <SettingRow label="Show my buffs over the game" hint="Each buff's icon with its stacks and time left; drag it to move it. It hides while nothing is on you.">
         <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />

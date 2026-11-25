@@ -407,7 +407,6 @@
  ],
  "hud": [
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -423,7 +422,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -439,7 +437,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -455,7 +452,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -471,7 +467,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -487,7 +482,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -506,7 +500,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -522,7 +515,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 600,
@@ -541,7 +533,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 0,
@@ -560,7 +551,6 @@
    "toasts": true
   },
   {
-   "cubes": true,
    "enabled": true,
    "hideWithoutGame": false,
    "idleHideSeconds": 45,
@@ -579,7 +569,6 @@
    "toasts": false
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -595,7 +584,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -611,7 +599,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -627,7 +614,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -643,7 +629,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -659,7 +644,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -675,7 +659,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -691,7 +674,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -707,7 +689,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -723,7 +704,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -739,7 +719,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -755,7 +734,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -771,7 +749,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -787,7 +764,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -803,7 +779,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -819,7 +794,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -835,7 +809,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -851,7 +824,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -867,7 +839,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -883,7 +854,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -899,7 +869,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -915,7 +884,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -931,7 +899,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -947,7 +914,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -963,7 +929,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -979,7 +944,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -995,7 +959,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,
@@ -1014,7 +977,6 @@
    "toasts": true
   },
   {
-   "cubes": false,
    "enabled": false,
    "hideWithoutGame": true,
    "idleHideSeconds": 45,

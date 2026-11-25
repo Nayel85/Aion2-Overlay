@@ -120,10 +120,10 @@ const FIT_CLASS = { good: 'text-green', low: 'text-red', high: 'text-yellow' }
           <span v-if="monsterName(pet)" class="truncate">· {{ t('farmed from {name}', { name: monsterName(pet)! }) }}</span>
         </div>
       </div>
-      <!-- Pinned: on the HUD's pinned list and the map overlay, as from the Pets page. -->
+      <!-- Pinned: on the Soul Tracker's pinned list and the Minimap, as from the Pets page. -->
       <button
         type="button"
-        :title="pinned ? t('Unpin from the HUD and the map overlay') : pinsFull ? t('{n} pets pinned already: unpin one first', { n: MAX_PINNED }) : t('Pin to the HUD and the map overlay')"
+        :title="pinned ? t('Unpin from the Soul Tracker and the Minimap') : pinsFull ? t('{n} pets pinned already: unpin one first', { n: MAX_PINNED }) : t('Pin to the Soul Tracker and the Minimap')"
         :disabled="!pinned && pinsFull"
         :class="[
           'inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border px-2.5 text-xs transition disabled:cursor-not-allowed disabled:opacity-50',

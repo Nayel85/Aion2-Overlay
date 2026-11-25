@@ -2,6 +2,7 @@
 // Settings: the app's own only (language, you and the game, this window, sound, what the per hour
 // figures count, shortcuts, the Lokthar sync, the engine). Each overlay is set on its own page, listed
 // under Overlays. Every change applies at once.
+import { useOverlayList } from '@/lib/overlayList.ts'
 import { timeOfDay } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
@@ -86,22 +87,8 @@ function addMark(): void {
   void bridge().invoke('packets:mark', markText.value.trim())
   markText.value = ''
 }
-/** Every overlay over the game, each set on its own page. */
-const OVERLAY_PAGES = [
-  { page: 'unified', name: 'Unified HUD', where: 'Unified HUD' },
-  { page: 'meter', name: 'Damage meter and My skills', where: 'Combat Meter' },
-  { page: 'buffs', name: 'Buffs and CC', where: 'Buffs' },
-  { page: 'party', name: 'Party frames', where: 'Party frames' },
-  { page: 'flight', name: 'Flight timer', where: 'Flight timer' },
-  { page: 'gather', name: 'Gathering outcome', where: 'Gathering outcome' },
-  { page: 'applicants', name: 'Join requests', where: 'Join requests' },
-  { page: 'pvp', name: 'Kill feed and Enemies nearby', where: 'PvP' },
-  { page: 'map', name: 'Map', where: 'Map' },
-  { page: 'mapv2', name: 'Markers on the game\'s map', where: 'Map V2' },
-  { page: 'pets', name: 'Pets HUD', where: 'Pets' },
-  { page: 'events', name: 'Countdown bar', where: 'Event Alerts' },
-  { page: 'training', name: 'Training', where: 'Training Dummy' },
-]
+/** Every overlay over the game: each set on the Overlays page. */
+const overlays = useOverlayList()
 
 const lastPacket = computed(() => {
   const ago = store.status?.lastPacketAgo
@@ -165,9 +152,9 @@ const lastPacket = computed(() => {
     </Section>
 
     <Section title="Overlays" icon="M8 1.5 14.5 5 8 8.5 1.5 5zM1.5 8 8 11.5 14.5 8M1.5 11 8 14.5 14.5 11">
-      <button v-for="o in OVERLAY_PAGES" :key="o.page" type="button" class="flex w-full items-center justify-between gap-4 py-3 text-left hover:text-accent" @click="emit('go', o.page)">
-        <span class="text-sm">{{ t(o.name) }}</span>
-        <span class="flex items-center gap-1 text-xs text-darker">{{ t('on the {page} page', { page: t(o.where) }) }}
+      <button v-for="o in overlays" :key="o.id" type="button" class="flex w-full items-center justify-between gap-4 py-3 text-left hover:text-accent" @click="emit('go', `overlays:${o.id}`)">
+        <span class="text-sm">{{ o.name }}</span>
+        <span class="flex items-center gap-1 text-xs text-darker">{{ t('on the {page} page', { page: t('Overlays') }) }}
           <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="m6 4 4 4-4 4" /></svg>
         </span>
       </button>

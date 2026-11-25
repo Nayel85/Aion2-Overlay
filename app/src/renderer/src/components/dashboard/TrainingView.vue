@@ -7,7 +7,6 @@
 // skill by skill). Runs are kept in groups: "New group" starts the next.
 import { useNow } from '@/lib/now.ts'
 import Section from '@/components/ui/Section.vue'
-import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { dateTime } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -288,9 +287,5 @@ onBeforeUnmount(() => off?.())
         </table>
       </div>
     </section>
-
-    <Section v-if="cfg.overlay" title="Training overlay over the game" class="mt-6">
-      <OverlayWindowSettings overlay="training" setting="dummy" :opacity-min="null" idle />
-    </Section>
   </div>
 </template>

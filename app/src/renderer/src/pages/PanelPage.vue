@@ -5,15 +5,9 @@
 import { useNow } from '@/lib/now.ts'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BossesView from '@/components/dashboard/BossesView.vue'
-import ApplicantsView from '@/components/dashboard/ApplicantsView.vue'
-import PartyView from '@/components/dashboard/PartyView.vue'
-import FlightView from '@/components/dashboard/FlightView.vue'
-import GatherView from '@/components/dashboard/GatherView.vue'
 import ChangelogView from '@/components/dashboard/ChangelogView.vue'
 import CharactersView from '@/components/dashboard/CharactersView.vue'
-import UnifiedView from '@/components/dashboard/UnifiedView.vue'
 import UpdatesView from '@/components/dashboard/UpdatesView.vue'
-import BuffsView from '@/components/dashboard/BuffsView.vue'
 import EventsView from '@/components/dashboard/EventsView.vue'
 import GatherablesView from '@/components/dashboard/GatherablesView.vue'
 import HistoryView from '@/components/dashboard/HistoryView.vue'
@@ -21,13 +15,13 @@ import BestsView from '@/components/dashboard/BestsView.vue'
 import StatsView from '@/components/dashboard/StatsView.vue'
 import SessionsView from '@/components/dashboard/SessionsView.vue'
 import InventoryView from '@/components/dashboard/InventoryView.vue'
+import OverlaysView from '@/components/dashboard/OverlaysView.vue'
+import { OVERLAY_PAGES, type OverlayEntryId } from '@/lib/overlayList.ts'
 import DutyView from '@/components/dashboard/DutyView.vue'
 import DetailsPage from '@/pages/DetailsPage.vue'
 import StorageView from '@/components/dashboard/StorageView.vue'
 import HomeView from '@/components/dashboard/HomeView.vue'
 import MapView from '@/components/dashboard/MapView.vue'
-import MapV2View from '@/components/dashboard/MapV2View.vue'
-import MeterView from '@/components/dashboard/MeterView.vue'
 import PetsView from '@/components/dashboard/PetsView.vue'
 import SettingsView from '@/components/dashboard/SettingsView.vue'
 import TrainingView from '@/components/dashboard/TrainingView.vue'
@@ -46,7 +40,7 @@ import { serverName } from '@shared/servers.ts'
 import { TIMERS, type TimerId } from '@shared/timers.ts'
 import type { UpdateState } from '@shared/update.ts'
 
-type PageId = 'home' | 'characters' | 'unified' | 'meter' | 'training' | 'map' | 'mapv2' | 'pets' | 'gatherables' | 'pvp' | 'buffs' | 'events' | 'bosses' | 'applicants' | 'party' | 'flight' | 'gather' | 'duty' | 'history' | 'bests' | 'session' | 'sessions' | 'stats' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
+type PageId = 'home' | 'characters' | 'overlays' | 'training' | 'map' | 'pets' | 'gatherables' | 'pvp' | 'events' | 'bosses' | 'duty' | 'history' | 'bests' | 'session' | 'sessions' | 'stats' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
 interface Page {
   id: PageId
   label: string
@@ -58,22 +52,15 @@ interface Page {
 
 const PAGES: Record<PageId, Page> = {
   home: { id: 'home', label: 'Home', icon: 'M2.5 7 8 2.5 13.5 7v6.5h-3.5v-4H6v4H2.5z' },
+  overlays: { id: 'overlays', label: 'Overlays', icon: 'M2.5 3.5h11v9h-11zM5 6.5h6M5 9.5h3' },
   characters: { id: 'characters', label: 'Characters', icon: 'M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M11 7a2 2 0 1 0 0-4M12.5 9.7c1.2.6 2 1.9 2 3.3' },
-  unified: { id: 'unified', label: 'Unified HUD', icon: 'M2 5.5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2zM5 6h.01M8 6h3M4.5 11h7M6 13.5h4' },
-  meter: { id: 'meter', label: 'Combat Meter', icon: 'M2.5 13.5h11M4.5 11V8M8 11V4.5M11.5 11V6.5' },
   training: { id: 'training', label: 'Training Dummy', icon: 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM8 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8 8h.01' },
   map: { id: 'map', label: 'Map', icon: 'M1.5 4l4.5-2 4 2 4.5-2v10l-4.5 2-4-2-4.5 2zM6 2v10M10 4v10' },
-  mapv2: { id: 'mapv2', label: 'Map V2', icon: 'M2 2.5h12v11H2zM5 6.5l2 2 4-4M2 10.5h12' },
   pets: { id: 'pets', label: 'Pets', icon: 'M5 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM11 6.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM3 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM13 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM8 9c-2 0-3.5 2-3.5 3.3 0 1 1 1.2 2.2 1.2.6 0 .9-.3 1.3-.3s.7.3 1.3.3c1.2 0 2.2-.2 2.2-1.2C11.5 11 10 9 8 9Z' },
   gatherables: { id: 'gatherables', label: 'Gatherables', icon: 'M3 13.5c1-4 3.5-7 9-10.5-1 4.5-3.5 8-9 10.5zM3 13.5 8 8.5' },
   pvp: { id: 'pvp', label: 'PvP', icon: 'M3 13 13 3M9.5 3H13v3.5M3 3l4 4M13 13l-3-3' },
-  buffs: { id: 'buffs', label: 'Buffs', icon: 'M8 1.5 9.8 6l4.7.4-3.6 3 1.1 4.6L8 11.6 4 14l1.1-4.6-3.6-3L6.2 6z' },
   events: { id: 'events', label: 'Event Alerts', icon: 'M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11zM6.5 14h3' },
   bosses: { id: 'bosses', label: 'Field Bosses', icon: 'M8 2a5 5 0 0 0-3.5 8.5V13h7v-2.5A5 5 0 0 0 8 2zM6 8.5h.01M10 8.5h.01M7 13v-1.5M9 13v-1.5' },
-  gather: { id: 'gather', label: 'Gathering outcome', icon: 'M3 13c0-6 4-10 10-10 0 6-4 10-10 10ZM3 13l5-5' },
-  flight: { id: 'flight', label: 'Flight timer', icon: 'M7.5 12C5.5 12 2.5 10.5 1 4.5c1.5 1 3 1.5 4.5 1.5C6.5 7 7 8 7.5 9.5ZM8.5 12c2 0 5-1.5 6.5-7.5-1.5 1-3 1.5-4.5 1.5C9.5 7 9 8 8.5 9.5Z' },
-  party: { id: 'party', label: 'Party frames', icon: 'M2.5 3.5h11v3h-11zM2.5 9.5h11v3h-11zM4 5h5M4 11h3' },
-  applicants: { id: 'applicants', label: 'Join requests', icon: 'M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M12 4.5v4M10 6.5h4' },
   duty: { id: 'duty', label: 'Duty board', icon: 'M3.5 2.5h9v11h-9zM5.5 5.5h5M5.5 8h5M5.5 10.5h3' },
   history: { id: 'history', label: 'Combat history', icon: 'M2 8a6 6 0 1 0 1.8-4.3M2 2.5v3h3M8 5v3l2 1.5', emoji: '💪' },
   bests: { id: 'bests', label: 'Personal bests', icon: 'M5 2.5h6v3a3 3 0 0 1-6 0zM5 3.5H3v1a2 2 0 0 0 2 2M11 3.5h2v1a2 2 0 0 1-2 2M8 8.5v3M5.5 13.5h5' },
@@ -87,8 +74,8 @@ const PAGES: Record<PageId, Page> = {
   settings: { id: 'settings', label: 'Settings', icon: 'M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM13 8a5 5 0 0 0-.1-.9l1.4-1.1-1.4-2.4-1.7.6a5 5 0 0 0-1.5-.9L9.4 1.5H6.6l-.3 1.8a5 5 0 0 0-1.5.9l-1.7-.6-1.4 2.4 1.4 1.1a5 5 0 0 0 0 1.8l-1.4 1.1 1.4 2.4 1.7-.6a5 5 0 0 0 1.5.9l.3 1.8h2.8l.3-1.8a5 5 0 0 0 1.5-.9l1.7.6 1.4-2.4-1.4-1.1c.1-.3.1-.6.1-.9Z' },
 }
 const SECTIONS: { title: string | null; pages: PageId[] }[] = [
-  { title: null, pages: ['home', 'characters'] },
-  { title: 'In game', pages: ['unified', 'meter', 'training', 'map', 'mapv2', 'pets', 'gatherables', 'pvp', 'buffs', 'events', 'bosses', 'party', 'flight', 'gather', 'applicants', 'duty'] },
+  { title: null, pages: ['home', 'characters', 'overlays'] },
+  { title: 'In game', pages: ['map', 'pets', 'gatherables', 'duty', 'events', 'bosses', 'pvp', 'training'] },
   { title: 'Records', pages: ['history', 'bests', 'session', 'sessions', 'stats', 'inventory', 'cache'] },
   { title: 'App', pages: ['updates', 'changes'] },
 ]
@@ -102,8 +89,19 @@ const api = bridge()
 
 /** The page shown: Home each time the app starts, then where you left it while it runs. */
 const page = ref<PageId>('home')
+/** The overlay picked on the Overlays page. */
+const overlay = ref<OverlayEntryId>('unified')
+/** A page by its id; `overlays:<id>` opens the Overlays page on that one, as do the overlays' former pages. */
 function go(p: string): void {
-  const id = (p in PAGES ? p : 'home') as PageId
+  const [head, sub] = p.split(':') as [string, string | undefined]
+  const was = OVERLAY_PAGES[head]
+  if (head === 'overlays' || was) {
+    overlay.value = (sub ?? was ?? overlay.value) as OverlayEntryId
+    page.value = 'overlays'
+    store.openPet(null)
+    return
+  }
+  const id = (head in PAGES ? head : 'home') as PageId
   if (id !== 'pets') store.openPet(null)
   page.value = id
 }
@@ -118,7 +116,7 @@ const main = ref<HTMLElement | null>(null)
 watch(page, () => main.value?.scrollTo({ top: 0 }))
 
 /** A page's "New" tag in the sidebar stays for the version that brought it: until the changelog has a newer one. */
-const NEW_IN: Partial<Record<PageId, string>> = { unified: '0.3.13' }
+const NEW_IN: Partial<Record<PageId, string>> = { overlays: '0.3.18' }
 const isNew = (id: PageId): boolean => NEW_IN[id] !== undefined && CHANGELOG[0]?.version === NEW_IN[id]
 
 /** The PvP fight open in the PvP page (its id), if any. */
@@ -158,7 +156,7 @@ const badge = computed<Partial<Record<PageId, string>>>(() => {
   return {
     events: nextAlert.value ?? undefined,
     bosses: up ? String(up) : undefined,
-    unified: isNew('unified') ? t('New') : undefined,
+    overlays: isNew('overlays') ? t('New') : undefined,
     pets: store.sessionSouls ? `+${store.sessionSouls}` : undefined,
     updates:
       update.value?.status === 'downloading' ? `${update.value.percent}%` : update.value && ['available', 'ready'].includes(update.value.status) ? t('New') : undefined,
@@ -299,7 +297,7 @@ onBeforeUnmount(() => {
               v-if="badge[id]"
               :class="[
                 'shrink-0 rounded-full px-1.5 text-[10px] font-semibold tabular-nums',
-                id === 'updates' && newer ? 'bg-yellow/20 text-yellow' : id === 'unified' ? 'bg-accent text-[#0b1220]' : page === id ? 'bg-accent/20 text-accent' : 'bg-dark text-darker',
+                id === 'updates' && newer ? 'bg-yellow/20 text-yellow' : id === 'overlays' ? 'bg-accent text-[#0b1220]' : page === id ? 'bg-accent/20 text-accent' : 'bg-dark text-darker',
               ]"
             >{{ badge[id] }}</span>
           </button>
@@ -336,28 +334,21 @@ onBeforeUnmount(() => {
           <div v-if="!store.ready" class="py-6 text-center text-sm text-darker">{{ t('Loading…') }}</div>
           <HomeView v-else-if="page === 'home'" @go="go" />
           <CharactersView v-else-if="page === 'characters'" />
-          <UnifiedView v-else-if="page === 'unified'" />
-          <MeterView v-else-if="page === 'meter'" />
           <TrainingView v-else-if="page === 'training'" />
           <MapView v-else-if="page === 'map'" />
-          <MapV2View v-else-if="page === 'mapv2'" />
           <template v-else-if="page === 'pets'">
             <PetDetail v-if="store.openPetId !== null" :id="store.openPetId" class="-mx-3 h-[calc(100vh-7rem)]" />
             <PetsView v-else />
           </template>
           <GatherablesView v-else-if="page === 'gatherables'" />
-          <BuffsView v-else-if="page === 'buffs'" />
           <EventsView v-else-if="page === 'events'" />
           <BossesView v-else-if="page === 'bosses'" />
-          <ApplicantsView v-else-if="page === 'applicants'" />
-          <PartyView v-else-if="page === 'party'" />
-          <FlightView v-else-if="page === 'flight'" />
-          <GatherView v-else-if="page === 'gather'" />
           <HistoryView v-else-if="page === 'history'" />
           <BestsView v-else-if="page === 'bests'" />
           <StatsView v-else-if="page === 'stats'" />
           <SessionsView v-else-if="page === 'sessions'" />
           <InventoryView v-else-if="page === 'inventory'" />
+          <OverlaysView v-else-if="page === 'overlays'" v-model="overlay" />
           <DutyView v-else-if="page === 'duty'" />
           <StorageView v-else-if="page === 'cache'" />
           <SettingsView v-else-if="page === 'settings'" @go="go" />

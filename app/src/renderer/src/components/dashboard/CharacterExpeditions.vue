@@ -27,8 +27,8 @@ function title(name: string, mode: string, cell: { cubes: number | null; ceiling
       <thead class="text-darker">
         <tr class="border-b border-card">
           <th class="py-2 pl-4 text-left font-medium">{{ t('Expedition') }}</th>
-          <th v-for="c in known" :key="c.id" class="px-3 text-left font-medium">
-            <span class="flex items-center gap-1.5"><ClassIcon :class-name="c.className" :size="16" />{{ c.name }}</span>
+          <th v-for="c in known" :key="c.id" class="px-3 text-center font-medium">
+            <span class="inline-flex items-center gap-1.5"><ClassIcon :class-name="c.className" :size="16" />{{ c.name }}</span>
           </th>
         </tr>
       </thead>
@@ -36,7 +36,7 @@ function title(name: string, mode: string, cell: { cubes: number | null; ceiling
         <tr v-for="name in names" :key="name" class="border-b border-card last:border-b-0">
           <td class="py-2 pl-4 align-top font-medium text-default">{{ name }}</td>
           <td v-for="c in known" :key="c.id" class="px-3 py-1.5">
-            <div class="space-y-0.5">
+            <div class="mx-auto w-fit space-y-0.5">
               <template v-for="m in EXPEDITION_MODES" :key="m.id">
                 <div v-if="expeditionCell(state[c.id]?.cubes, name, m.id)" class="flex items-center gap-1.5 tabular-nums" :title="title(name, m.label, expeditionCell(state[c.id]?.cubes, name, m.id)!)">
                   <span class="w-10 shrink-0 text-[10px] text-darkest">{{ t(m.short) }}</span>

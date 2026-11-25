@@ -2,18 +2,15 @@
 // The in-game overlay. Click-through, and exactly as big as what it shows: it measures itself and
 // main sizes the window to fit (an empty HUD is a hidden window). In edit mode it takes the mouse
 // so it can be dragged; Escape or Done ends that.
-import { useNow } from '@/lib/now.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { HUD_PINNED_ROWS } from '@shared/settings.ts'
-import CubeIcon from '@/components/CubeIcon.vue'
 import GenusPill from '@/components/GenusPill.vue'
 import LevelBadge from '@/components/LevelBadge.vue'
 import LevelBar from '@/components/LevelBar.vue'
 import PetIcon from '@/components/PetIcon.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
-import { cubeBearings, meters } from '@/lib/cubes.ts'
 import { displayName, GENUS_LABEL, petInfo } from '@/lib/petDb.ts'
 import { nearbyPets, useSpawns, type NearbyPet } from '@/lib/spawns.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
@@ -82,24 +79,16 @@ const crystalLabel = (pet: number): string => {
   const genus = petInfo(pet)?.genus
   return genus ? t('{genus} crystal', { genus: GENUS_LABEL[genus] }) : t('crystal')
 }
-/** The Hidden Cubes in view, nearest first, with how far and which way. */
-const cubeRows = computed(() => (hud.value.cubes ? cubeBearings(store.cubes, store.nearby.position) : []))
-// "spawned 3 min ago", kept current.
-const clock = useNow(5000)
-function since(at: number): string {
-  const min = Math.floor((clock.value - at) / 60_000)
-  return min < 1 ? t('just now') : min < 60 ? t('{n} min ago', { n: min }) : t('{n} h ago', { n: Math.floor(min / 60) })
-}
 
-/** Between fights (idle timeout): nothing to show, so the HUD hides; pinned pets included. A cube in view shows all the same. */
+/** Between fights (idle timeout): nothing to show, so the HUD hides; pinned pets included. */
 const resting = computed(() => !!hud.value.idleHideSeconds && !store.fighting)
 /** No game traffic for a while, with "Hide without game traffic" on: nothing shown (main hides it at 0 × 0). */
 const noGame = computed(() => hud.value.hideWithoutGame && !(store.status?.gameActive || store.status?.replay))
 const empty = computed(
   () =>
     noGame.value ||
-    (cubeRows.value.length === 0 &&
-      (resting.value || (nearRows.value.length === 0 && rows.value.length === 0 && toasts.value.length === 0))),
+    resting.value ||
+    (nearRows.value.length === 0 && rows.value.length === 0 && toasts.value.length === 0),
 )
 
 const drag = windowDrag({ overlay: 'hud' })
@@ -113,7 +102,7 @@ const onKey = (e: KeyboardEvent): void => {
 // A hidden window does not run ResizeObserver (Chromium pauses rendering there), and the HUD is
 // hidden exactly while it is empty: the first soul would never show it. So it also measures
 // itself after every change to what it shows, which works hidden or not.
-watch([cubeRows, nearRows, rows, toasts, resting, noGame, () => store.hudEditing, () => hud.value.scale, () => store.nearby], () => void nextTick(report), { deep: true })
+watch([nearRows, rows, toasts, resting, noGame, () => store.hudEditing, () => hud.value.scale, () => store.nearby], () => void nextTick(report), { deep: true })
 
 onMounted(() => {
   window.addEventListener('keydown', onKey)
@@ -148,27 +137,6 @@ onBeforeUnmount(() => {
           </button>
         </div>
 
-        <section v-if="cubeRows.length" :class="['rounded-md border border-yellow/40 bg-yellow/10 px-2 py-1.5', (nearRows.length || rows.length) && 'mb-2.5']">
-          <div class="mb-1 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-yellow">
-            <span class="size-1.5 animate-pulse rounded-full bg-yellow" />
-            {{ cubeRows.length > 1 ? t('Hidden Cubes · {n} nearby', { n: cubeRows.length }) : t('Hidden Cube nearby') }}
-          </div>
-          <div class="space-y-1.5">
-            <div v-for="c in cubeRows" :key="c.cube.id" class="flex items-center gap-2">
-              <CubeIcon :size="26" />
-              <div class="min-w-0 flex-1">
-                <div class="flex items-center justify-between gap-2 text-[13px]">
-                  <span class="font-medium text-dark">Hidden Cube</span>
-                  <span v-if="c.distance !== null" class="shrink-0 font-semibold tabular-nums text-yellow">{{ meters(c.distance) }} {{ c.direction ? t(c.direction) : '' }}</span>
-                  <span v-else class="shrink-0 text-xs text-darker">{{ t('within ~100 m') }}</span>
-                </div>
-                <div class="text-[11px] text-darker">
-                  {{ c.cube.createdAt ? t('spawned {when}', { when: since(c.cube.createdAt) }) : t('seen {when}', { when: since(c.cube.seenAt) }) }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
 
         <div v-if="nearRows.length" class="mb-1.5 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide">
           <span class="size-1.5 rounded-full bg-green" /><span class="text-green">{{ t('Nearby') }}</span>

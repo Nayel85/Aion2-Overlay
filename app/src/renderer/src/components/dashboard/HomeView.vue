@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Home: who is playing and whether the game is being read, every overlay with its switch (the
 // overlays' own settings are on their pages), and a card per page with what it has now.
+import { useOverlayList } from '@/lib/overlayList.ts'
 import { useNow } from '@/lib/now.ts'
 import HomeCard from '@/components/HomeCard.vue'
 import { compact } from '@shared/format.ts'
@@ -16,7 +17,6 @@ import { timerNext } from '@/lib/timerView.ts'
 import { useApp } from '@/stores/app.ts'
 import { formatKina } from '@shared/kina.ts'
 import { NO_METER, type MeterData } from '@shared/meter.ts'
-import type { Settings } from '@shared/settings.ts'
 import { serverName } from '@shared/servers.ts'
 import { LANGS } from '@shared/i18n.ts'
 import { bossZone, TIMERS } from '@shared/timers.ts'
@@ -77,39 +77,7 @@ const npcapMissing = computed(() => store.status?.npcapMissing === true)
 const error = computed(() => (store.status?.state === 'error' && !npcapMissing.value ? (store.status.detail ?? t('The engine stopped with an error.')) : null))
 
 // ---- the overlays -----------------------------------------------------------------------------
-type Overlay = { id: string; name: string; about: string; page: string; on: boolean; set: (on: boolean) => void }
-function flip<K extends keyof Settings>(key: K, field: string): (on: boolean) => void {
-  return (on) => void store.set(key, { ...(store.settings[key] as object), [field]: on } as unknown as Settings[K])
-}
-const overlays = computed<Overlay[]>(() => {
-  const s = store.settings
-  return [
-    { id: 'unified', name: t('Unified HUD'), about: t('One small bar at the top of the game'), page: 'unified', on: s.unified.enabled, set: flip('unified', 'enabled') },
-    { id: 'hud', name: t('Pets HUD'), about: t('Souls, nearby soul monsters, Hidden Cubes'), page: 'pets', on: s.hud.enabled, set: flip('hud', 'enabled') },
-    { id: 'meter', name: t('Damage meter'), about: t('You and your party, live'), page: 'meter', on: s.meter.enabled, set: flip('meter', 'enabled') },
-    { id: 'skills', name: t('My skills'), about: t('Your damage, skill by skill'), page: 'meter', on: s.skills.enabled, set: flip('skills', 'enabled') },
-    { id: 'buffs', name: 'Buffs', about: t('What is on you, and for how long'), page: 'buffs', on: s.buffs.enabled, set: flip('buffs', 'enabled') },
-    { id: 'cc', name: t('CC / Debuffs'), about: t('When you are stunned, rooted, feared…'), page: 'buffs', on: s.buffs.cc, set: flip('buffs', 'cc') },
-    { id: 'training', name: t('Training'), about: t('Training dummy runs: clock and DPS'), page: 'training', on: s.dummy.overlay, set: flip('dummy', 'overlay') },
-    { id: 'minimap', name: t('Map'), about: t('Your zone, tracked pets, cubes'), page: 'map', on: s.minimap.enabled, set: flip('minimap', 'enabled') },
-    { id: 'gather', name: t('Gathering outcome'), about: t('Fail, rank up or x2, as it starts'), page: 'gather', on: s.gather.enabled, set: flip('gather', 'enabled') },
-    { id: 'flight', name: t('Flight timer'), about: t('Seconds of flight left'), page: 'flight', on: s.flight.enabled, set: flip('flight', 'enabled') },
-    { id: 'party', name: t('Party frames'), about: t('Your party members and their HP'), page: 'party', on: s.party.enabled, set: flip('party', 'enabled') },
-    { id: 'applicants', name: t('Join requests'), about: t('Everyone who asks to join your party'), page: 'applicants', on: s.applicants.enabled, set: flip('applicants', 'enabled') },
-    { id: 'timerBar', name: t('Countdown bar'), about: t('Events with an alert on'), page: 'events', on: s.timerBar.enabled, set: flip('timerBar', 'enabled') },
-    {
-      id: 'killFeed',
-      name: t('Kill feed'),
-      about: t('Player kills around you'),
-      page: 'pvp',
-      on: s.killFeed.open,
-      set: (on) => void api.invoke(on ? 'killfeed:open' : 'killfeed:close'),
-    },
-    { id: 'enemies', name: t('Enemies nearby'), about: t('Enemy players around you'), page: 'pvp', on: s.enemies.enabled, set: flip('enemies', 'enabled') },
-    { id: 'merchant', name: t('Merchant pets'), about: t('When you open the Black Cloud shop'), page: 'pets', on: s.hud.merchant, set: flip('hud', 'merchant') },
-    { id: 'duty', name: t('Duty board'), about: t('When you open the duty board: the missions to take'), page: 'duty', on: s.duty.overlay, set: flip('duty', 'overlay') },
-  ]
-})
+const overlays = useOverlayList()
 const overlaysOn = computed(() => overlays.value.filter((o) => o.on).length)
 async function toggleAll(): Promise<void> {
   overlaysOff.value = await api.invoke('overlays:toggle')
@@ -220,7 +188,7 @@ const ICONS: Record<string, string> = {
           :key="o.id"
           :class="['flex items-center gap-3 rounded-xl border px-3.5 py-3 transition', o.on ? 'border-accent/40 bg-accent-soft/30' : 'border-card bg-card']"
         >
-          <button type="button" class="min-w-0 flex-1 text-left" :title="t('{name}: its settings', { name: o.name })" @click="emit('go', o.page)">
+          <button type="button" class="min-w-0 flex-1 text-left" :title="t('{name}: its settings', { name: o.name })" @click="emit('go', `overlays:${o.id}`)">
             <div class="truncate text-sm font-medium">{{ o.name }}</div>
             <div class="truncate text-xs text-darker">{{ o.about }}</div>
           </button>
@@ -233,7 +201,7 @@ const ICONS: Record<string, string> = {
       <h2 class="mb-2 text-xs font-semibold uppercase tracking-wider text-darker">{{ t('In game') }}</h2>
       <div class="grid grid-cols-2 gap-3">
         <HomeCard v-for="card in [
-          { page: 'meter', title: t('Combat Meter'), line: meter.target ? `${meter.target.name}: ${myDps ? t('you {dps}/s', { dps: compact(myDps.dps) }) : plural(meter.rows.length, '{n} player', '{n} players')}` : t('No fight right now.') },
+          { page: 'meter', title: t('DPS Meter'), line: meter.target ? `${meter.target.name}: ${myDps ? t('you {dps}/s', { dps: compact(myDps.dps) }) : plural(meter.rows.length, '{n} player', '{n} players')}` : t('No fight right now.') },
           { page: 'map', title: t('Map'), line: zone ? `${zone}${store.cubes.length ? ` · ${plural(store.cubes.length, '{n} Hidden Cube nearby', '{n} Hidden Cubes nearby')}` : ''}` : t('Where you are shows once you enter a zone.') },
           { page: 'pets', title: 'Pets', line: `${plural(store.sessionSouls, '{n} soul this session', '{n} souls this session')} · ${plural(nearbyCount, '{n} pet around you', '{n} pets around you')}` },
           { page: 'buffs', title: 'Buffs', line: store.settings.buffs.enabled ? t('{n} on you now', { n: store.buffs.length }) : t('The buffs overlay is off.') },

@@ -55,7 +55,7 @@ const setPage = (on: boolean): void => void store.set('mapPage', { ...store.sett
     <div class="mb-6 grid grid-cols-2 gap-3">
       <label
         v-for="o in [
-          { on: onOverlay, set: setOverlay, name: t('On the map overlay'), about: t('Around you, over the game.') },
+          { on: onOverlay, set: setOverlay, name: t('On the Minimap'), about: t('Around you, over the game.') },
           { on: onPage, set: setPage, name: t('On the Map page'), about: t('Any zone, in this window.') },
         ]"
         :key="o.name"

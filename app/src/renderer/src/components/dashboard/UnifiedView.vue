@@ -15,7 +15,7 @@ import { t } from '@/lib/i18n.ts'
 import { panelStyle } from '@/lib/overlayLook.ts'
 import { EVENT_ICONS } from '@/lib/timerView.ts'
 import { useApp } from '@/stores/app.ts'
-import { HUD_WIDGETS, KINA_ICONS, type HudWidget, type KinaIcon } from '@shared/settings.ts'
+import { HUD_WIDGETS, KINA_ICONS, WIDGET_LABELS, type HudWidget, type KinaIcon } from '@shared/settings.ts'
 
 const store = useApp()
 const cfg = computed(() => store.settings.unified)
@@ -31,9 +31,6 @@ const KINA_ICON_IMG: Record<KinaIcon, string | null> = {
   word: null,
 }
 const KINA_ICON_LABELS: Record<KinaIcon, string> = { game: "The game's Kina", bound: "The game's bound Kina", gold: 'Gold coin', drawn: 'Drawn coin', word: 'The word' }
-const WIDGET_LABELS: Record<HudWidget, string> = {
-  party: 'Party frames', buffs: 'Buffs', cc: 'CC / Debuffs', flight: 'Flight timer', gather: 'Gathering outcome', applicants: 'Join requests', training: 'Training',
-}
 const SECONDS = [5, 8, 12, 20, 30]
 const TARGET_STYLES = [
   { id: 'inline' as const, label: 'In the bar' },
