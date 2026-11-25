@@ -149,10 +149,30 @@ const byDifficulty = (world: number) => {
   const z = ZONES[world]
   return z ? { row: z[0], col: z[4] !== null ? `s${z[4]}` : (z[3] ?? '') } : null
 }
+/**
+ * Each expedition's bosses: its two sub-bosses (the ones with a drop of their own, fextralife's) and its
+ * final boss, in the run's order. shared/dungeons.ts has more for some (Silver Blade Rotan, a guard on the
+ * way; Afflicted Bakarma, Cradle of Nihility's): those are no bests' rows.
+ */
+const EXPEDITION_BOSSES: Record<string, string[]> = {
+  ...DUNGEONS.expedition,
+  'Urugugu Canyon': ['Judge Urahum', 'Guardian Captain Raur', 'Divine Auldor'],
+  'Fire Temple': ['Red Spark Ignus', 'Black Smoke Murute', "Kromede's Desire"],
+  Draupnir: ['Phantasmal Lakshmi', 'Predator Saraswati', 'Transcendent Bakarma'],
+  'Ferocious Horn Den': ['Watchdog Kwapo', 'Necromancer Duanka', 'Ferocious Horn Nuakum'],
+  "Dying Dramata's Nest": ['Broodkeeper Nayatman', 'Manager Nasium', 'Decaying Durvati'],
+}
 /** The Ascension Trials: a zone per difficulty, named in it ("Tyrant's Hideout (Hard)"). */
 const TRIAL_COLS = ['Easy', 'Normal', 'Hard', 'Challenge', 'Insane', 'Hell', 'Doom']
 const GRIDS: Record<string, GridDef> = {
-  party: { head: 'Expedition', cols: MODES, rows: OPEN_EXPEDITIONS, bosses: DUNGEONS.expedition, place: byDifficulty },
+  // Every expedition, the open ones first (the game's order), those to come after.
+  party: {
+    head: 'Expedition',
+    cols: MODES,
+    rows: [...new Set([...OPEN_EXPEDITIONS, ...Object.keys(DUNGEONS.expedition)])],
+    bosses: EXPEDITION_BOSSES,
+    place: byDifficulty,
+  },
   transcendence: {
     head: 'Dungeon',
     cols: [{ id: 'easy', label: 'Exploration' }, ...[1, 2, 3, 4].map((n) => ({ id: `s${n}`, label: 'Stage {n}', n }))],
@@ -216,7 +236,7 @@ const fixed = computed(() => {
   const extra = [...met.keys(), ...[...runs.keys()].map((k) => k.split('|')[0]!)].filter((n) => !def.rows.includes(n))
   return [...new Set([...def.rows, ...extra])].map((name) => {
     const known = def.bosses[name] ?? []
-    const bosses = [...known, ...[...(met.get(name) ?? [])].filter((b) => !known.includes(b))]
+    const bosses = known.length ? known : [...(met.get(name) ?? [])]
     return {
       name,
       fast: Object.fromEntries(def.cols.map((c) => [c.id, runs.get(`${name}|${c.id}`) ?? []])),

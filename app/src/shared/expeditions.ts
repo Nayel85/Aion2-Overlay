@@ -18,8 +18,8 @@ export const EXPEDITION_MODES: { id: ExpeditionMode; label: string; short: strin
 ]
 const MODE_OF: Record<string, ExpeditionMode> = { easy: 'exploration', normal: 'conquest', advanced: 'advanced' }
 
-/** The expeditions open in the game (the global client, 2026-11-24), in its order: the rest come with later updates. */
-export const OPEN_EXPEDITIONS = ['Krao Cave', 'Urugugu Canyon', 'Fire Temple', 'Draupnir', 'Vakron Sky Island', 'Ferocious Horn Den']
+/** The expeditions open in the game (the global client, 2026-11-24), in its order (its tiers): the rest come with later updates. */
+export const OPEN_EXPEDITIONS = ['Krao Cave', 'Draupnir', 'Urugugu Canyon', 'Vakron Sky Island', 'Fire Temple', 'Ferocious Horn Den']
 
 /** Each expedition's modes, by name: the world of each (those with a guaranteed chest). */
 const WORLDS = new Map<string, Partial<Record<ExpeditionMode, number>>>()

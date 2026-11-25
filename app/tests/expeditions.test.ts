@@ -11,6 +11,6 @@ test("an expedition's cubes of its guaranteed chest, by mode, as the game shows 
   assert.equal(expeditionCell(cubes, 'Draupnir', 'conquest')!.left, 11)
   assert.equal(expeditionCell(cubes, 'Vakron Sky Island', 'conquest')!.left, 0)
   // The six open ones, in the game's order, and one a later update brings once a character has it.
-  assert.deepEqual(shownExpeditions({}), ['Krao Cave', 'Urugugu Canyon', 'Fire Temple', 'Draupnir', 'Vakron Sky Island', 'Ferocious Horn Den'])
+  assert.deepEqual(shownExpeditions({}), ['Krao Cave', 'Draupnir', 'Urugugu Canyon', 'Vakron Sky Island', 'Fire Temple', 'Ferocious Horn Den'])
   assert.equal(shownExpeditions({ a: { name: 'A', at: 0, cubes: { 600122: 2 } } }).at(-1), 'Cradle of Nihility')
 })
