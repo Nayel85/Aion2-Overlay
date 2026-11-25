@@ -79,6 +79,32 @@ const WORLDS = {
 }
 const IMAGE_WORLDS = new Set(['World_L_Starter', 'World_L_A', 'World_L_B', 'World_D_Starter', 'World_D_A', 'World_D_B', 'Abyss_Reshanta_A'])
 
+/**
+ * The instances (expeditions, Transcendences, raids): one frame for all of an instance's modes
+ * (questlog.gg's map client, 2026-11-26: its `St` table). Their spawns are kept, drawn on no image
+ * (`map: false`): the tiles questlog serves for them (SharedMap/) are a decorated background whose
+ * tiles do not even join (Draupnir's four), not the dungeon's layout, and would mislead.
+ */
+const SHARED = [
+  ['Krao Cave', 'KraoCave', [600001, 600002, 600004], [-76466.96, -34473.18, 1, 1, 102000]],
+  ['Urugugu Canyon', 'Urugugu_Canyon', [600012, 600011, 600013], [-67061.36, -119427.5, 1, 1, 204000]],
+  ['Fire Temple', 'Fire_Temple', [600022, 600021, 600023], [-51000, -51000, 1, 1, 102000]],
+  ['Draupnir', 'Draupnir', [600032, 600031, 600033], [-100000, -100000, 2, 2, 102000]],
+  ["Dying Dramata's Nest", 'DeadDramataNest', [600042, 600041, 610044], [-115830.56, -85314.98, 1, 1, 204000]],
+  ['Deus Research Base', 'DeusCenter', [600051, 600053, 600055, 600058, 610052], [-77150.62, -100824.72, 1, 1, 204000]],
+  ['Shattered Arkanis', 'Arkanis', [600061, 600063, 600065, 600068, 610062], [-56099.64, -55050.7, 1, 1, 102000]],
+  ['Vakron Sky Island', 'BakronIsland', [600072, 600071, 600073], [-102000, -93500, 1, 1, 204000]],
+  ['Ferocious Horn Den', 'HornCave', [600092, 600091, 600093], [-39859.63, -59695.63, 1, 1, 102000]],
+  ['Cradle of Nihility', 'CradleNihility', [600122, 600121, 600123], [-90430, -109790, 1, 1, 204000]],
+  ['Azure Breath Island', 'BlueBreathIsle', [600142, 600141, 600143], [-102000, -102000, 1, 1, 204000]],
+  ['Submerged Life Temple', 'SunkenTemple', [610010, 610011, 610012, 610013], [-46610.58, -57164.8, 1, 1, 102000]],
+  ['Mirror of Scarlet Desire', 'MirrorHeart', [610020, 610021, 610022, 610023], [-45617.97, -55834.13, 1, 1, 102000]],
+  ['Corroded Decontamination Facility', 'ErosionPurifier', [620011], [-115019.12, -98163.49, 1, 1, 204000]],
+  ['Chalice of Muspel', 'MusphelHolyGrail', [620021, 620022], [-32440.87, -60088.44, 1, 1, 102000]],
+]
+const SHARED_KEYS = new Set(SHARED.map(([, key]) => key))
+for (const [name, key, maps, sectors] of SHARED) for (const w of maps) WORLDS[w] = [name, 'instances', key, sectors]
+
 async function trpc(proc, input) {
   const url = `${API}/${proc}?input=${encodeURIComponent(JSON.stringify(input))}`
   const res = await fetch(url, { headers: HEADERS })
@@ -210,6 +236,10 @@ for (const w of [...usedWorlds].sort((a, b) => a - b)) {
   const [name, group, key, sectors] = WORLDS[w]
   const [, , nx, ny] = sectors
   const image = IMAGE_WORLDS.has(key)
+  if (SHARED_KEYS.has(key)) {
+    outWorlds[w] = { name, group, key, sectors, image: false, map: false }
+    continue
+  }
   outWorlds[w] = { name, group, key, sectors, image }
   console.log(`map ${name} (${key})…`)
   if (image) {

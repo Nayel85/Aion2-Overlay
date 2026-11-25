@@ -22,9 +22,18 @@ MAPS = Path(__file__).resolve().parents[1] / "src" / "renderer" / "public" / "ma
 
 def main() -> None:
     spawns = json.loads((MAPS / "spawns.json").read_text(encoding="utf-8"))
+    done = set()
     for wid, w in spawns["worlds"].items():
         key = w["key"]
         out = MAPS / f"{key}.webp"
+        # An instance: drawn on no image (fetch-spawns.mjs).
+        if w.get("map") is False:
+            continue
+        # A map several zones share: made once, from its tiles (gone after it).
+        if key in done:
+            w["image"] = True
+            continue
+        done.add(key)
         if w["image"]:
             img = Image.open(out)
         else:

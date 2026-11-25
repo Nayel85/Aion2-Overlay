@@ -12,6 +12,8 @@ export interface World {
   key: string
   /** [x0, y0, nx, ny, size]: the zone spans x0..x0+nx*size and y0..y0+ny*size. */
   sectors: [number, number, number, number, number]
+  /** false: no map image (an instance's: its spawns on a plain frame). */
+  map?: boolean
 }
 
 export interface DropperWorld {
