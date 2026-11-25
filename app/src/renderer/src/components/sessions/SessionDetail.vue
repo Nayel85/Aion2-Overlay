@@ -4,6 +4,8 @@
 // its dungeons by zone and mode (their runs in a table, what they gave in all as a row of icons; a
 // run's own loot a click away), its field bosses, and its gathering; the latest first. `header`
 // false: without who and when (the page above says it).
+import { compact } from '@shared/format.ts'
+import { fightDps, runFight, useFights } from '@/lib/fights.ts'
 import { computed, ref } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import GatherStats from '@/components/panel/GatherStats.vue'
@@ -18,6 +20,9 @@ import { countedRuns, CURRENCY_LABELS, gatheredByResource, itemIcon, itemInfo, L
 import { RECIPES } from '@shared/recipes.ts'
 
 const props = withDefaults(defineProps<{ session: PlaySession; live?: boolean; header?: boolean }>(), { live: false, header: true })
+/** The saved fights: each run's best (your DPS on a boss in it, a Nightmare's boss). */
+const fights = useFights()
+const runBest = (r: DungeonRun) => runFight(r, fights.value)
 const store = useApp()
 
 const clock = (ms: number): string => new Date(ms).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
@@ -205,6 +210,9 @@ function toggle(r: DungeonRun): void {
                 <span v-else :class="r.cleared !== undefined ? 'text-green' : 'text-darker'">{{ mmss(runMs(r)) }}</span>
                 <span v-if="abandoned(r)" class="ml-1 text-darker">{{ t('abandoned') }}</span>
               </td>
+              <td class="py-1">
+                <span v-if="runBest(r)" class="font-semibold text-yellow" :title="t('Your DPS on {boss}', { boss: runBest(r)!.bossName })">{{ compact(fightDps(runBest(r)!)) }} DPS</span>
+              </td>
               <td class="py-1" :title="t('Your deaths')">
                 <span class="flex items-center gap-0.5"><svg viewBox="0 0 16 16" class="size-3 text-red" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.skull" /></svg><span :class="r.deaths ? 'font-semibold text-red' : 'text-darker'">{{ r.deaths ?? '-' }}</span></span>
               </td>
@@ -217,7 +225,7 @@ function toggle(r: DungeonRun): void {
               </td>
             </tr>
             <tr v-if="open.has(r.start)">
-              <td colspan="9" class="pb-1.5"><RunLoot :run="r" /></td>
+              <td colspan="10" class="pb-1.5"><RunLoot :run="r" /></td>
             </tr>
           </template>
         </tbody>

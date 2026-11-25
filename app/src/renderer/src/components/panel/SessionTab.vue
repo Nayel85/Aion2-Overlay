@@ -4,6 +4,7 @@
 // of it as the Past sessions page shows a session (SessionDetail, the latest first), and beside it its
 // souls by pet (their total in the box's title) and a way to the past sessions. The rates per hour are
 // the Unified HUD's; the engine's state is in Settings.
+import CharName from '@/components/CharName.vue'
 import { useNow } from '@/lib/now.ts'
 import { computed, ref } from 'vue'
 import GenusPill from '@/components/GenusPill.vue'
@@ -52,7 +53,7 @@ const lasted = computed(() => {
   <div class="space-y-3 p-3">
     <div class="flex items-center justify-between text-xs">
       <span class="font-medium text-darker">
-        {{ t('This session') }}<template v-if="current"> · <span class="text-dark">{{ current.name }}</span>, {{ t('since {time}', { time: clock(current.start) }) }} · {{ lasted }}</template>
+        {{ t('This session') }}<template v-if="current"> · <CharName :name="current.name" class="text-dark" />, {{ t('since {time}', { time: clock(current.start) }) }} · {{ lasted }}</template>
       </span>
       <button
         type="button"
