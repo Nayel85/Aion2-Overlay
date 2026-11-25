@@ -19,7 +19,7 @@ import { GATHERABLES } from './gatherables.ts'
 import { itemIcon, type ItemTuple } from './itemRef.ts'
 import { RECIPES } from './recipes.ts'
 import { ZONES } from './zones.ts'
-import { instanceAt } from './instances.ts'
+import { instanceAt, NIGHTMARE_BOSSES } from './instances.ts'
 
 export { ABYSS_WORLDS }
 
@@ -333,38 +333,7 @@ export const runIsNoise = (run: DungeonRun): boolean => !runCounts(run) && run.e
 /** A session's runs that count: done, or that gave something. */
 export const countedRuns = (s: PlaySession): DungeonRun[] => (s.runs ?? []).filter(runCounts)
 
-/**
- * The Nightmares' bosses by id (`35 E2`), all in one zone (200003): aion2hub.com's table (their
- * `BossChallenge_<id>` keys), which put 2001 and 2002 where the owner's runs did.
- */
-export const NIGHTMARE_BOSSES: Record<number, string> = {
-  1001: 'Gatekeeper Pinopi',
-  1002: 'Furious Feruk',
-  1003: "Fafnir's Poison Blood",
-  1004: 'Wraith Giselle',
-  1005: 'Mutated Ulgorn',
-  1006: 'Soulreaper Rathman',
-  1007: 'Sharp Aulak',
-  1008: 'Sealed Sura',
-  1009: 'Sanctum Guardian Gauss',
-  1010: 'Ritualist Aulisa',
-  1011: 'Root Mythical Bird Aultross',
-  1012: 'Oathbreaker Gartua',
-  1013: 'Lieutenant Hebran',
-  1014: "Kromede's Desire",
-  2001: 'Fortress Guardian Notun',
-  2002: 'Mutated Gerod',
-  2003: 'Enraged Reda',
-  2004: 'Warden Santras',
-  2005: 'Incarnated Warding Feather',
-  2006: 'Modified Bargott',
-  2007: 'Culminant Paton',
-  2008: 'Scout Captain Ked',
-  3001: "Zikel's Apparition",
-  3002: "Kaisinel's Illusion",
-  3003: 'Tyrant Tassin',
-  3004: 'Ascended Atheron',
-}
+export { NIGHTMARE_BOSSES }
 
 /** A zone's mode beside its name (the catalogue's, shared/instances.ts): Conquest's and a raid's Normal or Hard, a Transcendence's stage; none for an Exploration (its name alone) or a trial (in its name). */
 type Translate = (text: string, params?: Record<string, string | number>) => string

@@ -21,8 +21,8 @@ import { loc, t } from '@/lib/i18n.ts'
 import { useStored } from '@/lib/now.ts'
 import { useApp } from '@/stores/app.ts'
 import type { Best, Encounter, FightSummary, FightYou } from '@shared/meter.ts'
-import { NIGHTMARE_BOSSES, runKindLabel, zoneMode } from '@shared/sessions.ts'
-import { CONTENT, INSTANCES, NIGHTMARE_SEASON, instanceAt, instanceIlvl, nightmareIlvl, type ContentKind, type NightmareGrade } from '@shared/instances.ts'
+import { runKindLabel, zoneMode } from '@shared/sessions.ts'
+import { CONTENT, INSTANCES, NIGHTMARES, instanceAt, instanceIlvl, nightmareIlvl, type ContentKind, type NightmareGrade } from '@shared/instances.ts'
 import { ZONES } from '@shared/zones.ts'
 
 const store = useApp()
@@ -187,12 +187,16 @@ const grid = computed(() => {
     if (better) row.set(f.level, f)
     rows.set(f.bossName, row)
   }
-  const all = [...new Set([...NIGHTMARE_SEASON.map((s) => s.boss), ...Object.values(NIGHTMARE_BOSSES), ...rows.keys()])]
-  return all.map((boss) => ({ boss, grade: NIGHTMARE_SEASON.find((s) => s.boss === boss)?.grade ?? null, cells: rows.get(boss) ?? new Map() }))
+  // Every Nightmare of the catalogue (the season's first), and any other a fight names.
+  const extra = [...rows.keys()].filter((b) => !NIGHTMARES.some((n) => n.boss === b))
+  return [...NIGHTMARES.map((n) => ({ boss: n.boss, grade: n.grade as NightmareGrade | null, season: n.season })), ...extra.map((boss) => ({ boss, grade: null, season: false }))].map((r) => ({
+    ...r,
+    cells: rows.get(r.boss) ?? new Map(),
+  }))
 })
-/** A Nightmare boss's colour, by its grade: the rares (Notun, Gerod) green, the legend (Zikel) blue, the commons grey; a later season's dim. */
+/** A Nightmare boss's colour, by its grade: the rares (Notun, Gerod) green, the legend (Zikel) blue, the commons grey. */
 const GRADE_TONE: Record<NightmareGrade, string> = { common: 'text-dark', rare: 'text-green', legend: 'text-blue' }
-const bossTone = (grade: NightmareGrade | null): string => (grade ? GRADE_TONE[grade] : 'text-darkest')
+const bossTone = (grade: NightmareGrade | null): string => (grade ? GRADE_TONE[grade] : 'text-darker')
 /** Delete asks once: the first click arms it for 3 seconds, the second deletes. */
 const arming = ref<string | null>(null)
 let armTimer: ReturnType<typeof setTimeout> | null = null
@@ -295,7 +299,7 @@ onHistory(load)
             </tr>
           </thead>
           <tbody>
-            <tr v-for="r in grid" :key="r.boss" class="border-t border-card">
+            <tr v-for="(r, i) in grid" :key="r.boss" :class="['border-t', i && grid[i - 1]!.season && !r.season ? 'border-light' : 'border-card']" :title="r.season ? undefined : t('From a later season')">
               <td :class="['py-1.5 pl-4 font-medium', bossTone(r.grade)]">
                 {{ r.boss }}
                 <div v-if="r.grade" class="text-[10px] font-normal text-darkest">ilvl {{ nightmareIlvl(r.grade, 1) }}–{{ nightmareIlvl(r.grade, 10) }}</div>
@@ -337,7 +341,7 @@ onHistory(load)
               </tr>
             </thead>
             <tbody v-for="x in fixed" :key="x.name" class="border-t border-light">
-              <tr class="bg-card/50">
+              <tr class="bg-card/50 align-top">
                 <td class="py-1.5 pl-4 font-semibold">{{ x.name }}</td>
                 <td v-for="m in gridDef.modes" :key="m.id" class="px-3 py-1.5">
                   <div v-if="instanceIlvl(x.instance, m.id)" class="text-[10px] text-darker" :title="t('Item level asked to enter')">ilvl {{ instanceIlvl(x.instance, m.id) }}</div>

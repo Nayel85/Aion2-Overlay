@@ -1750,4 +1750,5 @@ export const FR: Record<string, string> = {
   'Doom': 'Apocalypse',
   'Suggested item level: {n}': 'Item level conseillé : {n}',
   'Item level asked to enter': 'Item level requis pour entrer',
+  'From a later season': "D'une saison à venir",
 }

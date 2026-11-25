@@ -161,19 +161,58 @@ export const instanceCeiling = (instance: Instance, mode: string): number | unde
 export type NightmareGrade = keyof typeof NIGHTMARE_ILVL
 
 /**
- * The Nightmares of the season (the global client's first, 2026-09-30 to 12-16), in the game's order,
- * with their grade: four common, two rare (each unlocked by two commons at level 10), the legend last
- * (by the two rares). Fextralife's Nightmare Dungeons.
+ * The Nightmares' bosses by id (`35 E2`), all in one zone (200003): aion2hub.com's table (their
+ * `BossChallenge_<id>` keys), which put 2001 and 2002 where the owner's runs did.
  */
-export const NIGHTMARE_SEASON: { boss: string; grade: NightmareGrade }[] = [
-  { boss: 'Gatekeeper Pinopi', grade: 'common' },
-  { boss: 'Furious Feruk', grade: 'common' },
-  { boss: "Fafnir's Poison Blood", grade: 'common' },
-  { boss: 'Wraith Giselle', grade: 'common' },
-  { boss: 'Fortress Guardian Notun', grade: 'rare' },
-  { boss: 'Mutated Gerod', grade: 'rare' },
-  { boss: "Zikel's Apparition", grade: 'legend' },
-]
+export const NIGHTMARE_BOSSES: Record<number, string> = {
+  1001: 'Gatekeeper Pinopi',
+  1002: 'Furious Feruk',
+  1003: "Fafnir's Poison Blood",
+  1004: 'Wraith Giselle',
+  1005: 'Mutated Ulgorn',
+  1006: 'Soulreaper Rathman',
+  1007: 'Sharp Aulak',
+  1008: 'Sealed Sura',
+  1009: 'Sanctum Guardian Gauss',
+  1010: 'Ritualist Aulisa',
+  1011: 'Root Mythical Bird Aultross',
+  1012: 'Oathbreaker Gartua',
+  1013: 'Lieutenant Hebran',
+  1014: "Kromede's Desire",
+  2001: 'Fortress Guardian Notun',
+  2002: 'Mutated Gerod',
+  2003: 'Enraged Reda',
+  2004: 'Warden Santras',
+  2005: 'Incarnated Warding Feather',
+  2006: 'Modified Bargott',
+  2007: 'Culminant Paton',
+  2008: 'Scout Captain Ked',
+  3001: "Zikel's Apparition",
+  3002: "Kaisinel's Illusion",
+  3003: 'Tyrant Tassin',
+  3004: 'Ascended Atheron',
+}
+
+/** The season's (the global client's first, 2026-09-30 to 12-16), in the game's order: four common, two rare (each unlocked by two commons at level 10), the legend (by the two rares). Fextralife's Nightmare Dungeons. */
+const SEASON = [1001, 1002, 1003, 1004, 2001, 2002, 3001]
+/** A boss's grade, its id's first digit: 1 common, 2 rare, 3 legend (Giselle 1004, Notun 2001, Zikel 3001). */
+const GRADES: Record<number, NightmareGrade> = { 1: 'common', 2: 'rare', 3: 'legend' }
+
+export interface Nightmare {
+  id: number
+  boss: string
+  grade: NightmareGrade
+  /** Of the season on now. */
+  season: boolean
+}
+
+/** Every Nightmare: the season's first, in the game's order, then the later ones by id. */
+export const NIGHTMARES: Nightmare[] = [...SEASON, ...Object.keys(NIGHTMARE_BOSSES).map(Number).filter((id) => !SEASON.includes(id))].map((id) => ({
+  id,
+  boss: NIGHTMARE_BOSSES[id]!,
+  grade: GRADES[Math.floor(id / 1000)] ?? 'common',
+  season: SEASON.includes(id),
+}))
 
 /** A Nightmare level's suggested item level for a boss of a grade. */
 export const nightmareIlvl = (grade: NightmareGrade | null, level: number): number | undefined => (grade ? NIGHTMARE_ILVL[grade][level - 1] : undefined)
