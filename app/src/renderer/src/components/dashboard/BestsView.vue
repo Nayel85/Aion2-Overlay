@@ -136,6 +136,8 @@ function headIlvl(mode: string): number | undefined {
 }
 /** A character's fastest run among a cell's. */
 const fastOf = <R extends { character: string }>(runs: R[], who: string): R | undefined => runs.find((r) => r.character === who)
+/** A character's best DPS among a cell's. */
+const bestOf = (bests: Encounter[], who: string): Encounter | undefined => bests.find((e) => e.character === who)
 
 /**
  * The tab's grid: every instance and boss of it (the game's order, the final boss last), the cells with a
@@ -307,11 +309,13 @@ onHistory(load)
             <table class="w-full table-fixed text-sm tabular-nums">
               <colgroup>
                 <col class="w-56" />
+                <col v-if="picked === null" class="w-28" />
                 <col v-for="l in LEVELS" :key="l" />
               </colgroup>
               <thead class="bg-card text-xs text-darker">
                 <tr>
                   <th class="py-2 pl-4 text-left font-medium">{{ t('Boss') }}</th>
+                  <th v-if="picked === null" class="px-2 text-left font-medium">{{ t('Character') }}</th>
                   <th v-for="l in LEVELS" :key="l" class="px-1 text-center font-medium">
                     <span class="group/level inline-flex items-center gap-1">
                       {{ t('Lv {n}', { n: l }) }}
@@ -329,11 +333,16 @@ onHistory(load)
               <tbody>
                 <tr v-for="r in season.rows" :key="r.boss" class="border-t border-card">
                   <td :class="['py-1.5 pl-4 align-middle font-medium', bossTone(r.grade)]">{{ r.boss }}</td>
+                  <td v-if="picked === null" class="px-2 py-1.5 align-top text-xs">
+                    <div class="h-4" />
+                    <div v-for="who in lines" :key="who" class="flex h-5 items-center"><CharName :name="who" class="text-dark" /></div>
+                  </td>
                   <td v-for="l in LEVELS" :key="l" class="px-1 py-1.5 align-top text-center text-xs">
-                    <div v-if="nightmareIlvl(r.grade, l)" class="text-[10px] text-darker" :title="t('Suggested item level: {n}', { n: nightmareIlvl(r.grade, l)! })">ilvl {{ nightmareIlvl(r.grade, l) }}</div>
+                    <div class="h-4 text-[10px] leading-4 text-darker" :title="nightmareIlvl(r.grade, l) ? t('Suggested item level: {n}', { n: nightmareIlvl(r.grade, l)! }) : undefined">
+                      <template v-if="nightmareIlvl(r.grade, l)">ilvl {{ nightmareIlvl(r.grade, l) }}</template>
+                    </div>
                     <div v-for="who in lines" :key="who" class="flex h-5 items-center justify-center gap-1">
                       <template v-if="r.cells.get(l)?.get(who)">
-                        <CharName v-if="picked === null" :name="who" icon-only />
                         <span class="group/cell inline-flex items-center gap-0.5">
                           <button
                             type="button"
@@ -380,12 +389,11 @@ onHistory(load)
               <tr class="bg-card/50">
                 <td class="truncate py-1.5 pl-4 align-middle font-semibold" :title="x.name">{{ x.name }}</td>
                 <td v-for="m in gridDef.modes" :key="m.id" class="px-3 py-1.5 align-top">
-                  <span v-if="x.instance.worlds[m.id] === undefined" class="text-xs text-darkest" :title="t('No such mode')">·</span>
-                  <template v-else>
+                  <template v-if="x.instance.worlds[m.id] !== undefined">
                     <div v-if="!headIlvl(m.id) && instanceIlvl(x.instance, m.id)" class="text-[10px] text-darker" :title="t('Item level asked to enter')">ilvl {{ instanceIlvl(x.instance, m.id) }}</div>
                     <template v-if="by === 'fast'">
-                      <div v-for="who in lines" :key="who" class="flex h-5 items-center gap-1.5 text-xs">
-                        <CharName v-if="picked === null" :name="who" class="text-dark" />
+                      <div v-for="who in lines" :key="who" class="flex h-5 items-center gap-2 text-xs">
+                        <CharName v-if="picked === null" :name="who" class="w-24 shrink-0 text-dark" />
                         <span v-if="fastOf(x.fast[m.id]!, who)" class="font-semibold text-yellow" :title="day(fastOf(x.fast[m.id]!, who)!.start)">{{ mmss(clearMs(fastOf(x.fast[m.id]!, who)!)) }}</span>
                         <span v-else class="text-darkest">–</span>
                       </div>
@@ -400,15 +408,20 @@ onHistory(load)
                       <span :class="['size-1.5 shrink-0 rounded-full', b.final ? 'bg-red' : 'bg-darkest']" />{{ b.name }}
                     </span>
                   </td>
-                  <td v-for="m in gridDef.modes" :key="m.id" class="px-3 py-1 text-xs">
-                    <span v-if="x.instance.worlds[m.id] === undefined" class="text-darkest">·</span>
-                    <span v-else-if="b.bests[m.id]!.length" class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                      <span v-for="e in b.bests[m.id]" :key="e.character" class="flex items-center gap-1">
-                        <CharName v-if="picked === null" :name="e.character" class="text-dark" />
-                        <button type="button" class="font-semibold text-yellow hover:underline" :title="[day(e.myDps!.atMs), gear(e.myDps!.fightId)].filter(Boolean).join(' · ')" @click="open(e.myDps)">{{ compact(e.myDps!.value) }}</button>
-                      </span>
-                    </span>
-                    <span v-else class="text-darkest">–</span>
+                  <td v-for="m in gridDef.modes" :key="m.id" class="px-3 py-1 align-top text-xs">
+                    <template v-if="x.instance.worlds[m.id] !== undefined">
+                      <div v-for="who in lines" :key="who" class="flex h-5 items-center gap-2">
+                        <CharName v-if="picked === null" :name="who" class="w-24 shrink-0 text-dark" />
+                        <button
+                          v-if="bestOf(b.bests[m.id]!, who)"
+                          type="button"
+                          class="font-semibold text-yellow hover:underline"
+                          :title="[day(bestOf(b.bests[m.id]!, who)!.myDps!.atMs), gear(bestOf(b.bests[m.id]!, who)!.myDps!.fightId)].filter(Boolean).join(' · ')"
+                          @click="open(bestOf(b.bests[m.id]!, who)!.myDps)"
+                        >{{ compact(bestOf(b.bests[m.id]!, who)!.myDps!.value) }}</button>
+                        <span v-else class="text-darkest">–</span>
+                      </div>
+                    </template>
                   </td>
                 </tr>
               </template>

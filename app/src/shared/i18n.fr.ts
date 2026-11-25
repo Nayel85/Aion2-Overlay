@@ -1754,5 +1754,4 @@ export const FR: Record<string, string> = {
   'Current season': 'Saison en cours',
   'Later seasons': 'Saisons à venir',
   'Sanctuaries': 'Sanctuaires',
-  'No such mode': 'Ce mode n\'existe pas ici',
 }

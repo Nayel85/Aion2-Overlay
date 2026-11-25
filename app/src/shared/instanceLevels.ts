@@ -8,7 +8,8 @@
  * aion2builds.com and expcarry.com's dungeon lists, which agree where they overlap. The later
  * expeditions' and raids' come from the client's data (not out on the global client yet). Conquest Hard
  * of Urugugu Canyon and Vakron Sky Island: expcarry's alone. The trials' Insane and Hell: aion2builds'
- * six tiers.
+ * six tiers; Doom (Forgotten Repository's and Chamber of the Dead's alone): NCSOFT's 4000, as gamers.wiki and
+ * metabot.gg give it.
  */
 export const REQUIRED_ILVL: Record<string, Record<string, number>> = {
   'Krao Cave': { easy: 200, normal: 700, advanced: 2600 },
@@ -35,7 +36,7 @@ export const REQUIRED_ILVL: Record<string, Record<string, number>> = {
 }
 
 /** The Ascension Trials', by difficulty (as the zones name it: "Tyrant's Hideout (Hard)"). */
-export const TRIAL_ILVL: Record<string, number> = { Easy: 1000, Normal: 1500, Hard: 2000, Challenge: 2500, Insane: 3000, Hell: 3500 }
+export const TRIAL_ILVL: Record<string, number> = { Easy: 1000, Normal: 1500, Hard: 2000, Challenge: 2500, Insane: 3000, Hell: 3500, Doom: 4000 }
 
 /**
  * The Nightmares' suggested item level (not asked: the game warns, then lets you in), by the boss's grade,
