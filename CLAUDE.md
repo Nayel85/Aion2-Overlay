@@ -32,3 +32,16 @@
 - No unused import or variable (`noUnusedLocals`): what a change leaves behind goes with it.
 - Before writing a piece of UI or a format, look for the existing one (components/, lib/, shared/format.ts)
   and extend it with a parameter rather than writing another.
+
+## Main and the engine
+
+- A store's JSON file is kept through `main/dataFile.ts` (`main/jsonFile.ts`): read once, saved whole (at
+  once or after a delay), written beside then renamed, every pending save written as the app quits.
+  `app/tests/dataFiles.test.ts` checks no module of main does it its own way.
+- The engine's events are described once, `main/engineEvents.ts`; handlers read their fields as typed
+  (`tracker.onEvent('loot', (ev) => ev.items)`), never `ev['x'] as T`. A new event or field goes there first.
+- A table the engine and the app both need is one file in `app/src/shared` (the buffs, the field bosses'
+  monster codes, the pets, the spawns), the engine reading it with `include_str!`; questlog's dungeon data
+  comes from one script, `app/scripts/fetch-loot.mjs` (drops, cube bosses, guaranteed chests).
+- The engine's packet readers share `tracker/protocol.rs`'s helpers (`u16_at`, `u32_at`, `varint`...).
+  The files copied from A2Tools DPS Meter stay as copied, to follow upstream.

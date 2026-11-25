@@ -52,7 +52,7 @@ pub fn craft_start(frame: &[u8]) -> Option<(u32, u8, u32)> {
     let steps = *b.get(at)? as usize;
     let mut ms = 0;
     for i in 0..steps {
-        let kind = u16::from_le_bytes([*b.get(at + 1 + 10 * i)?, *b.get(at + 2 + 10 * i)?]);
+        let kind = u16_at(b, at + 1 + 10 * i)?;
         ms += if kind == 4 || kind == 6 { 1600 } else { 2000 };
     }
     if outcome == 13 {
@@ -91,7 +91,7 @@ pub struct GatherRoll {
 /// none, a roll as it fell. The `00` comes before the actions' count on some later rolls. The owner's
 /// gatherings filled their gauge to 360 (Odyle) or 630 with them.
 pub fn gather_rolls(b: &[u8]) -> Vec<GatherRoll> {
-    let u = |at: usize| b.get(at..at + 4).map(|x| u32::from_le_bytes([x[0], x[1], x[2], x[3]]));
+    let u = |at: usize| u32_at(b, at);
     let count = b.get(11).copied().unwrap_or(0);
     let mut rolls = Vec::new();
     let mut p = 12;
