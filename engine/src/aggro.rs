@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 /// A monster that has not hit you for this long has left you (or stands there, out of reach).
-pub const AGGRO_MS: i64 = 10_000;
+pub const AGGRO_MS: i64 = 6_000;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 struct Hold {
@@ -59,6 +59,11 @@ impl Aggro {
                 self.holds.insert(monster, Hold { target: you, since: at, last: at, damage: 0 });
             }
         }
+    }
+
+    /// A monster let go (its target none, `35 38`): on no one.
+    pub fn released(&mut self, monster: i32) {
+        self.holds.remove(&monster);
     }
 
     /// A monster died (or anyone did): no longer on anyone.
@@ -176,7 +181,9 @@ mod replay {
                 }
             }
             if let Some((entity, target)) = crate::tracker::protocol::selection_target(f) {
-                if entity as i32 != you {
+                if entity as i32 != you && target == 0 {
+                    aggro.released(entity as i32);
+                } else if entity as i32 != you {
                     aggro.hit(entity as i32, target as i32, 0, *ms);
                 }
             }

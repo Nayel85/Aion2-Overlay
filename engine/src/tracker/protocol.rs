@@ -396,7 +396,7 @@ pub fn cast_on(frame: &[u8]) -> Option<(u32, u32, u32)> {
 }
 
 /// `35 38 <entity> 00 <its target | 00>`: the target of an entity you look at (your target's target,
-/// sent as it changes): a monster's is who it is on. None when it has none.
+/// sent as it changes): a monster's is who it is on; 0, no one (it let go).
 pub fn selection_target(frame: &[u8]) -> Option<(u32, u32)> {
     let b = body(frame, OP_SELECTION)?;
     let (entity, n) = varint(b, 0)?;
@@ -404,7 +404,7 @@ pub fn selection_target(frame: &[u8]) -> Option<(u32, u32)> {
         return None;
     }
     let (target, _) = varint(b, n + 1)?;
-    (entity > 0 && target > 0).then_some((entity, target))
+    (entity > 0).then_some((entity, target))
 }
 
 /// Epoch ms, 2020 to 2128: how the time in an effect record is found. Effects
@@ -1378,7 +1378,7 @@ mod tests {
         let yours = frame(OP_CASTS[0], &hex("b71b0090eed5001502b7e101a9eaf740a9ff4fc8bb156c4800ac1b46bc5e0100"));
         assert_eq!(cast_on(&yours), Some((3_511, 28_855, 14_020_240)));
         assert_eq!(selection_target(&frame(OP_SELECTION, &hex("b7e10100b71b"))), Some((28_855, 3_511)));
-        assert_eq!(selection_target(&frame(OP_SELECTION, &hex("b7e1010000"))), None);
+        assert_eq!(selection_target(&frame(OP_SELECTION, &hex("b7e1010000"))), Some((28_855, 0)));
     }
 
     #[test]
