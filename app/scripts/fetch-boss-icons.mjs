@@ -5,7 +5,7 @@
  *
  * Each boss of FIELD_BOSSES (src/shared/timers.ts) is found by name among questlog.gg's `named`
  * map markers of its zone, which gives its monster id; the monster's record gives its portrait.
- * Writes src/renderer/src/data/fieldBossNpcs.json (list id -> monster id) for reference. Images
+ * Writes src/shared/fieldBossNpcs.json (list id -> monster id), the one table of them (bossRuns.ts, the engine's). Images
  * already present are kept unless --force. Re-run when bosses are added.
  *
  * Source: questlog.gg's Aion 2 database and map (global client, `en`), used with credit. questlog
@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url'
 const APP = join(dirname(fileURLToPath(import.meta.url)), '..')
 const TIMERS = join(APP, 'src', 'shared', 'timers.ts')
 const OUT = join(APP, 'src', 'renderer', 'public', 'bosses')
-const NPCS = join(APP, 'src', 'renderer', 'src', 'data', 'fieldBossNpcs.json')
+const NPCS = join(APP, 'src', 'shared', 'fieldBossNpcs.json')
 const API = 'https://questlog.gg/aion-2/api/trpc'
 const CDN = 'https://cdn.questlog.gg/aion-2'
 const HEADERS = { 'user-agent': 'aion2-drop-tracker (personal pet collection tracker)', accept: 'application/json' }

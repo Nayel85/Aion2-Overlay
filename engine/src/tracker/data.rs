@@ -7,6 +7,7 @@ use std::sync::OnceLock;
 
 const PETS: &str = include_str!("../../../app/src/renderer/src/data/pets.json");
 const SPAWNS: &str = include_str!("../../../app/src/renderer/public/maps/spawns.json");
+const FIELD_BOSS_NPCS: &str = include_str!("../../../app/src/shared/fieldBossNpcs.json");
 
 pub struct PetData {
     /// pet -> genus ("fera", "cogni", "natura", "varian", "special")
@@ -45,6 +46,17 @@ pub fn pets() -> &'static PetData {
     })
 }
 
+
+/// The field bosses' monster codes (the app's fieldBossNpcs.json, by their id in the map's list):
+/// one dying in view is told at once (`bossKilled`), for the Boss Runs list.
+pub fn field_boss_npcs() -> &'static std::collections::HashSet<u32> {
+    static DATA: OnceLock<std::collections::HashSet<u32>> = OnceLock::new();
+    DATA.get_or_init(|| {
+        let table: serde_json::Value = serde_json::from_str(FIELD_BOSS_NPCS).unwrap_or_default();
+        table["npcs"].as_object().into_iter().flatten().filter_map(|(_, npc)| u32::try_from(npc.as_u64()?).ok()).collect()
+    })
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -54,5 +66,13 @@ mod tests {
         assert!(data.is_pet(1006) && !data.is_pet(77298));
         // Krall Armed Soldier drops Pet 1002's souls.
         assert_eq!(data.droppers.get(&2100075), Some(&1002));
+    }
+
+    #[test]
+    fn the_field_bosses_are_the_apps_table() {
+        let npcs = super::field_boss_npcs();
+        // Verteron's 24, Altgard's 24, the Abyss's 8.
+        assert_eq!(npcs.len(), 56);
+        assert!(npcs.contains(&2_100_003) && npcs.contains(&2_400_017) && npcs.contains(&2_600_068));
     }
 }

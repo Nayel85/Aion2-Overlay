@@ -52,17 +52,6 @@ const CAST_RANGE: f32 = 2500.0;
 /// not you (5,400/s mounted or dashing, in Nyerk's captures).
 const MAX_SPEED: f32 = 10_000.0;
 const MAX_JUMP_MS: i64 = 2000;
-/// The field bosses' monster codes (the app's src/shared/bossRuns.ts names them, by their id in
-/// the map's list; questlog.gg's monster ids, which the game's spawns carry): Verteron's 24, Altgard's
-/// 24, then the Abyss's 8. One dying in view is told at once (`bossKilled`), for the Boss Runs list.
-const FIELD_BOSS_NPCS: [u32; 56] = [
-    2_100_003, 2_100_040, 2_100_050, 2_100_076, 2_100_077, 2_100_079, 2_100_141, 2_100_177, 2_100_178, 2_100_582, 2_100_617, 2_100_661,
-    2_100_708, 2_100_718, 2_100_876, 2_100_877, 2_100_988, 2_100_989, 2_100_991, 2_101_016, 2_101_074, 2_101_120, 2_101_122, 2_101_131,
-    2_400_017, 2_400_074, 2_400_140, 2_400_141, 2_400_212, 2_400_223, 2_400_274, 2_400_335, 2_400_353, 2_400_358, 2_400_419, 2_400_424,
-    2_400_425, 2_400_474, 2_400_504, 2_400_593, 2_400_607, 2_400_608, 2_400_659, 2_400_709, 2_400_800, 2_400_853, 2_400_854, 2_400_855,
-    2_600_068, 2_600_089, 2_600_084, 2_600_093, 2_600_094, 2_600_096, 2_600_097, 2_600_098,
-];
-
 /// The object templates that are Hidden Cubes, with the game's asset name of
 /// each, from benhighlanderr/Aion2-Hidden-Cube-Radar (`HIDDEN_CUBE_IDS` in
 /// aion2_radar.py). 1200039 and 1200041 (Verteron) were also seen opened in
@@ -958,7 +947,7 @@ impl Tracker {
                     if flag == p::DEATH_FLAG_COMBAT && self.mob_code.contains_key(&entity) {
                         self.push_recent(ts, entity);
                         let code = self.mob_code[&entity];
-                        if FIELD_BOSS_NPCS.contains(&code) {
+                        if data::field_boss_npcs().contains(&code) {
                             tracing::info!("field boss {code} killed in view");
                             (self.emit)(json!({ "type": "bossKilled", "ts": ts, "npc": code }));
                         }

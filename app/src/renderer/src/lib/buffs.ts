@@ -6,7 +6,7 @@
 import table from '@shared/abnormals.json'
 import { skillIcon } from './skillIcons.ts'
 
-const ABNORMALS = (table as unknown as { abnormals: Record<string, [string | null, string | null]> }).abnormals
+const ABNORMALS = (table as unknown as { abnormals: Record<string, [name: string | null, icon: string | null, stacks?: number]> }).abnormals
 
 export function buffName(id: number): string {
   return ABNORMALS[String(id)]?.[0] ?? `Buff ${id}`

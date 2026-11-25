@@ -4,8 +4,8 @@
  * (each one's world, the item level it asks, its guaranteed chest), their bosses (the final one last), and
  * the Nightmares' season. Only data under it to update:
  * - zones.ts (scripts/fetch-zones.mjs): the worlds, their names and modes;
- * - dungeonBosses.ts (scripts/fetch-dungeon-bosses.mjs): the bosses the end cube counts;
- * - expeditionCeilings.ts (scripts/fetch-expeditions.mjs): the guaranteed chests;
+ * - dungeonBosses.ts (scripts/fetch-loot.mjs): the bosses the end cube counts;
+ * - expeditionCeilings.ts (scripts/fetch-loot.mjs): the guaranteed chests;
  * - dungeons.ts: the bosses' order in a run (and the Ascension Trials', questlog has none);
  * - instanceLevels.ts: the item levels;
  * - the lists below: which are open, the game's order, the Nightmares' season.

@@ -5,7 +5,7 @@
  *   node scripts/fetch-buff-icons.mjs [--force]
  *
  * Which icon each buff has is A2Tools DPS Meter's table (src/data/abnormals.json, merged with the
- * names into src/shared/abnormals.json: id -> [name, icon file]). The images are the game's own,
+ * names into src/shared/abnormals.json: id -> [name, icon file, stacks]). The images are the game's own,
  * from its asset CDN; they are bundled so the app makes no requests. A buff icon named after a
  * skill's with "_Buff" added is often not on the CDN: the skill's own is fetched under the buff's
  * name instead, as upstream falls back (public/src/js/skillIcons.js, getAbnormalIconCandidates).

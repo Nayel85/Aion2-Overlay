@@ -19,7 +19,21 @@ use crate::history::FightHistoryManager;
 const NPCS: &str = include_str!("../data/npcs_en.json");
 const SKILLS: &str = include_str!("../data/skills_en.json");
 const DOT_SKILL_IDS: &str = include_str!("../data/dot_skill_ids.json");
-const ABNORMALS: &str = include_str!("../data/abnormals.json");
+/// The buffs' table, the app's (one table for both: id -> [name, icon, stacks where above 1]).
+const ABNORMALS: &str = include_str!("../../app/src/shared/abnormals.json");
+
+/// The buffs' stack limits as the parser reads them (`{"abnormals": {id: {"stacks": n}}}`), from the
+/// app's table.
+fn stack_limits() -> std::collections::HashMap<u32, u32> {
+    let table: serde_json::Value = serde_json::from_str(ABNORMALS).unwrap_or_default();
+    let stacks: serde_json::Map<String, serde_json::Value> = table["abnormals"]
+        .as_object()
+        .into_iter()
+        .flatten()
+        .filter_map(|(id, a)| Some((id.clone(), serde_json::json!({ "stacks": a.get(2)?.as_u64()? }))))
+        .collect();
+    abnormal::stack_limits(&serde_json::json!({ "abnormals": stacks }).to_string())
+}
 
 /// Now, in the ms the parser stamps its records with (its deaths' times).
 pub fn now_ms() -> i64 {
@@ -79,7 +93,7 @@ impl Meter {
         npcs.load_from_json(&npc_table());
         let (skills, npcs) = (Arc::new(skills), Arc::new(npcs));
         let storage = Arc::new(DataStorage::new());
-        storage.set_abnormal_stack_limits(abnormal::stack_limits(ABNORMALS));
+        storage.set_abnormal_stack_limits(stack_limits());
         let ping = Arc::new(PingTracker::new());
         let calculator = DpsCalculator::new(storage.clone(), skills.clone(), npcs.clone(), ping.clone());
         let dot_skill_ids = serde_json::from_str::<Vec<i32>>(DOT_SKILL_IDS).unwrap_or_default().into_iter().collect();
@@ -397,6 +411,14 @@ fn thin_timeline(times: &mut Vec<i64>) -> Option<Vec<i64>> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn the_buffs_stack_limits_come_from_the_apps_table() {
+        let limits = super::stack_limits();
+        // The game's table: 226 buffs stacking above once (103, a mana drain, 3 times).
+        assert_eq!(limits.len(), 226);
+        assert_eq!(limits.get(&103), Some(&3));
+    }
+
     use super::*;
 
     #[test]

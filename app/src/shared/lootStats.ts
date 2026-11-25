@@ -8,7 +8,8 @@
  * gave, what the game's rates (DROPS: each item's chance a cube, and how many) make of their cubes:
  * your luck is what you got against that.
  */
-import { DROPS, DUNGEON_BOSSES } from './drops.ts'
+import { DROPS } from './drops.ts'
+import { DUNGEON_BOSSES } from './dungeonBosses.ts'
 import { goldKind, itemInfo, runCounts, runKindLabel, runName, type DungeonRun, type GoldKind, type LootCounts, type PlaySession } from './sessions.ts'
 
 /** Runs whose loot is not a dungeon's cubes. */
@@ -74,7 +75,7 @@ export function expectedOf(run: DungeonRun, id: string): number {
   const d = DROPS[run.world]?.[id]
   if (!d) return 0
   const [chance, fewest, most] = d
-  const bosses = DUNGEON_BOSSES[run.world] ?? 1
+  const bosses = DUNGEON_BOSSES[run.world]?.length || 1
   const perCube = chance >= 1 ? (fewest + most) / 2 : bosses * (1 - (1 - chance) ** (1 / bosses)) * fewest
   return perCube * runCubes(run)
 }
