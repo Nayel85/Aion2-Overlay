@@ -1748,4 +1748,6 @@ export const FR: Record<string, string> = {
   'Insane': 'Démentiel',
   'Hell': 'Enfer',
   'Doom': 'Apocalypse',
+  'Suggested item level: {n}': 'Item level conseillé : {n}',
+  'Item level asked to enter': 'Item level requis pour entrer',
 }

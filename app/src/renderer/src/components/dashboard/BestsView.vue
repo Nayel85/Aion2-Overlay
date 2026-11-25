@@ -21,7 +21,9 @@ import { loc, t } from '@/lib/i18n.ts'
 import { useStored } from '@/lib/now.ts'
 import { useApp } from '@/stores/app.ts'
 import type { Best, Encounter, FightSummary, FightYou } from '@shared/meter.ts'
-import { NIGHTMARE_BOSSES, runKindLabel, zoneMode } from '@shared/sessions.ts'
+import { NIGHTMARE_BOSSES, NIGHTMARE_SEASON, runKindLabel, zoneMode } from '@shared/sessions.ts'
+import { DUNGEON_BOSSES } from '@shared/dungeonBosses.ts'
+import { NIGHTMARE_ILVL, REQUIRED_ILVL, TRIAL_ILVL } from '@shared/instanceLevels.ts'
 import { ZONES } from '@shared/zones.ts'
 import { DUNGEONS } from '@shared/dungeons.ts'
 import { OPEN_EXPEDITIONS } from '@shared/expeditions.ts'
@@ -139,7 +141,12 @@ interface GridDef {
   bosses: Record<string, string[]>
   /** A zone's row and column, or null: not one of the grid's. */
   place: (world: number) => { row: string; col: string } | null
+  /** The item level an instance's mode asks (shared/instanceLevels.ts), when known. */
+  ilvl: (row: string, col: string) => number | undefined
 }
+const asked = (row: string, col: string): number | undefined => REQUIRED_ILVL[row]?.[col]
+const EXPEDITION_ROWS = [...new Set([...OPEN_EXPEDITIONS, ...Object.keys(DUNGEONS.expedition)])]
+const TRIAL_ROWS = ['Nightmare Altar', "Tyrant's Hideout", 'Sanctum of Loathing', 'Depository of Fates', 'Forgotten Repository', 'Chamber of the Dead']
 const MODES = [
   { id: 'easy', label: 'Exploration' },
   { id: 'normal', label: 'Conquest Normal' },
@@ -150,18 +157,29 @@ const byDifficulty = (world: number) => {
   return z ? { row: z[0], col: z[4] !== null ? `s${z[4]}` : (z[3] ?? '') } : null
 }
 /**
- * Each expedition's bosses: its two sub-bosses (the ones with a drop of their own, fextralife's) and its
- * final boss, in the run's order. shared/dungeons.ts has more for some (Silver Blade Rotan, a guard on the
- * way; Afflicted Bakarma, Cradle of Nihility's): those are no bests' rows.
+ * An instance's bosses: those its end cube counts (the sub-bosses that unlock its rewards, and the final
+ * one; questlog's, shared/dungeonBosses.ts), the ones of every mode of it (Draupnir's Conquest has
+ * Afflicted Bakarma too); in the run's order (shared/dungeons.ts), the final one last. Without questlog's
+ * (the Ascension Trials), shared/dungeons.ts's.
  */
-const EXPEDITION_BOSSES: Record<string, string[]> = {
+const RUN_ORDER: Record<string, string[]> = {
   ...DUNGEONS.expedition,
+  ...DUNGEONS.transcendence,
+  ...DUNGEONS.sanctuary,
   'Urugugu Canyon': ['Judge Urahum', 'Guardian Captain Raur', 'Divine Auldor'],
-  'Fire Temple': ['Red Spark Ignus', 'Black Smoke Murute', "Kromede's Desire"],
-  Draupnir: ['Phantasmal Lakshmi', 'Predator Saraswati', 'Transcendent Bakarma'],
-  'Ferocious Horn Den': ['Watchdog Kwapo', 'Necromancer Duanka', 'Ferocious Horn Nuakum'],
-  "Dying Dramata's Nest": ['Broodkeeper Nayatman', 'Manager Nasium', 'Decaying Durvati'],
 }
+function bossesOf(name: string, fallback: Record<string, string[]>): string[] {
+  const lists = Object.entries(DUNGEON_BOSSES)
+    .filter(([w]) => ZONES[w]?.[0] === name)
+    .map(([, l]) => l)
+  if (!lists.length) return fallback[name] ?? []
+  const all = lists.reduce((a, b) => a.filter((x) => b.includes(x)))
+  const order = RUN_ORDER[name] ?? []
+  const at = (b: string): number => (order.includes(b) ? order.indexOf(b) : 99)
+  return [...new Set(all)].sort((a, b) => at(a) - at(b))
+}
+const bossLists = (fallback: Record<string, string[]>, rows: string[]): Record<string, string[]> =>
+  Object.fromEntries(rows.map((r) => [r, bossesOf(r, fallback)]))
 /** The Ascension Trials: a zone per difficulty, named in it ("Tyrant's Hideout (Hard)"). */
 const TRIAL_COLS = ['Easy', 'Normal', 'Hard', 'Challenge', 'Insane', 'Hell', 'Doom']
 const GRIDS: Record<string, GridDef> = {
@@ -169,22 +187,25 @@ const GRIDS: Record<string, GridDef> = {
   party: {
     head: 'Expedition',
     cols: MODES,
-    rows: [...new Set([...OPEN_EXPEDITIONS, ...Object.keys(DUNGEONS.expedition)])],
-    bosses: EXPEDITION_BOSSES,
+    rows: EXPEDITION_ROWS,
+    bosses: bossLists(DUNGEONS.expedition, EXPEDITION_ROWS),
     place: byDifficulty,
+    ilvl: asked,
   },
   transcendence: {
     head: 'Dungeon',
     cols: [{ id: 'easy', label: 'Exploration' }, ...[1, 2, 3, 4].map((n) => ({ id: `s${n}`, label: 'Stage {n}', n }))],
     rows: Object.keys(DUNGEONS.transcendence),
-    bosses: DUNGEONS.transcendence,
+    bosses: bossLists(DUNGEONS.transcendence, Object.keys(DUNGEONS.transcendence)),
     place: byDifficulty,
+    ilvl: asked,
   },
   awaken: {
     head: 'Trial',
     cols: TRIAL_COLS.map((d) => ({ id: d, label: d })),
-    rows: ['Nightmare Altar', "Tyrant's Hideout", 'Sanctum of Loathing', 'Depository of Fates', 'Forgotten Repository', 'Chamber of the Dead'],
-    bosses: DUNGEONS.awakening,
+    rows: TRIAL_ROWS,
+    bosses: bossLists(DUNGEONS.awakening, TRIAL_ROWS),
+    ilvl: (_row, col) => TRIAL_ILVL[col],
     place: (world) => {
       const m = /^(.*) \((\w+)\)$/.exec(ZONES[world]?.[0] ?? '')
       return m ? { row: m[1]!, col: m[2]! } : null
@@ -198,8 +219,9 @@ const GRIDS: Record<string, GridDef> = {
       { id: 'advanced', label: 'Hard' },
     ],
     rows: Object.keys(DUNGEONS.sanctuary),
-    bosses: DUNGEONS.sanctuary,
+    bosses: bossLists(DUNGEONS.sanctuary, Object.keys(DUNGEONS.sanctuary)),
     place: byDifficulty,
+    ilvl: asked,
   },
 }
 const gridDef = computed(() => GRIDS[kind.value] ?? null)
@@ -263,11 +285,14 @@ const grid = computed(() => {
     if (better) row.set(f.level, f)
     rows.set(f.bossName, row)
   }
-  const all = [...new Set([...Object.values(NIGHTMARE_BOSSES), ...rows.keys()])]
-  return all.map((boss) => ({ boss, cells: rows.get(boss) ?? new Map() }))
+  const all = [...new Set([...NIGHTMARE_SEASON.map((s) => s.boss), ...Object.values(NIGHTMARE_BOSSES), ...rows.keys()])]
+  return all.map((boss) => ({ boss, grade: NIGHTMARE_SEASON.find((s) => s.boss === boss)?.grade ?? null, cells: rows.get(boss) ?? new Map() }))
 })
-/** A Nightmare boss's colour, as the game's tiers: Notun and Gerod green, Zikel blue, the others grey. */
-const bossTone = (boss: string): string => (/Notun|Gerod/.test(boss) ? 'text-green' : /Zikel/.test(boss) ? 'text-blue' : 'text-darker')
+/** A Nightmare boss's colour, by its grade: the rares (Notun, Gerod) green, the legend (Zikel) blue, the commons grey; a later season's dim. */
+const GRADE_TONE = { common: 'text-dark', rare: 'text-green', legend: 'text-blue' }
+const bossTone = (grade: keyof typeof GRADE_TONE | null): string => (grade ? GRADE_TONE[grade] : 'text-darkest')
+/** A Nightmare level's suggested item level for a boss of that grade. */
+const nightmareIlvl = (grade: keyof typeof NIGHTMARE_ILVL | null, level: number): number | undefined => (grade ? NIGHTMARE_ILVL[grade][level - 1] : undefined)
 /** Delete asks once: the first click arms it for 3 seconds, the second deletes. */
 const arming = ref<string | null>(null)
 let armTimer: ReturnType<typeof setTimeout> | null = null
@@ -371,8 +396,11 @@ onHistory(load)
           </thead>
           <tbody>
             <tr v-for="r in grid" :key="r.boss" class="border-t border-card">
-              <td :class="['py-1.5 pl-4 font-medium', bossTone(r.boss)]">{{ r.boss }}</td>
-              <td v-for="l in LEVELS" :key="l" class="px-2 py-1.5 text-center">
+              <td :class="['py-1.5 pl-4 font-medium', bossTone(r.grade)]">
+                {{ r.boss }}
+                <div v-if="r.grade" class="text-[10px] font-normal text-darkest">ilvl {{ nightmareIlvl(r.grade, 1) }}–{{ nightmareIlvl(r.grade, 10) }}</div>
+              </td>
+              <td v-for="l in LEVELS" :key="l" class="px-2 py-1.5 text-center" :title="nightmareIlvl(r.grade, l) ? t('Suggested item level: {n}', { n: nightmareIlvl(r.grade, l)! }) : undefined">
                 <span v-if="r.cells.get(l)" class="group/cell relative inline-flex items-center gap-1">
                   <button
                     type="button"
@@ -412,6 +440,7 @@ onHistory(load)
               <tr class="bg-card/50">
                 <td class="py-1.5 pl-4 font-semibold">{{ x.name }}</td>
                 <td v-for="m in gridDef.cols" :key="m.id" class="px-3 py-1.5">
+                  <div v-if="gridDef.ilvl(x.name, m.id)" class="text-[10px] text-darker" :title="t('Item level asked to enter')">ilvl {{ gridDef.ilvl(x.name, m.id) }}</div>
                   <div v-if="by === 'fast' && x.fast[m.id]!.length" class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
                     <span v-for="r in x.fast[m.id]" :key="r.character" class="flex items-center gap-1" :title="day(r.start)">
                       <CharName v-if="picked === null" :name="r.character" class="text-dark" />

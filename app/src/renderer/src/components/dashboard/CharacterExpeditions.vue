@@ -7,6 +7,12 @@ import { computed } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import { plural, t } from '@/lib/i18n.ts'
 import { EXPEDITION_MODES, expeditionCell, shownExpeditions, type Expeditions } from '@shared/expeditions.ts'
+import { REQUIRED_ILVL } from '@shared/instanceLevels.ts'
+
+/** Each mode's item level asked to enter (shared/instanceLevels.ts: `easy`, `normal`, `advanced`). */
+const ILVL_KEY = { exploration: 'easy', conquest: 'normal', advanced: 'advanced' } as const
+const ilvls = (name: string) =>
+  EXPEDITION_MODES.map((m) => ({ ...m, ilvl: REQUIRED_ILVL[name]?.[ILVL_KEY[m.id]] })).filter((m) => m.ilvl && expeditionCell(undefined, name, m.id))
 
 const props = defineProps<{ characters: { id: string; name: string; className: string | null }[]; state: Expeditions }>()
 const names = computed(() => shownExpeditions(props.state))
@@ -34,7 +40,12 @@ function title(name: string, mode: string, cell: { cubes: number | null; ceiling
       </thead>
       <tbody>
         <tr v-for="name in names" :key="name" class="border-b border-card last:border-b-0">
-          <td class="py-2 pl-4 align-top font-medium text-default">{{ name }}</td>
+          <td class="py-2 pl-4 align-top">
+            <div class="font-medium text-default">{{ name }}</div>
+            <div class="mt-0.5 flex flex-wrap gap-x-2 text-[10px] text-darker" :title="t('Item level asked to enter')">
+              <span v-for="m in ilvls(name)" :key="m.id">{{ t(m.short) }} {{ m.ilvl }}</span>
+            </div>
+          </td>
           <td v-for="c in known" :key="c.id" class="px-3 py-1.5">
             <div class="mx-auto w-fit space-y-0.5">
               <template v-for="m in EXPEDITION_MODES" :key="m.id">

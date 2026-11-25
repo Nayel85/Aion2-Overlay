@@ -365,6 +365,21 @@ export const NIGHTMARE_BOSSES: Record<number, string> = {
   3004: 'Ascended Atheron',
 }
 
+/**
+ * The Nightmares of the season (the global client's first, 2026-09-30 to 12-16), in the game's order,
+ * with their grade: four common, two rare (each unlocked by two commons at level 10), the legend last
+ * (by the two rares). Fextralife's Nightmare Dungeons. The other bosses of NIGHTMARE_BOSSES come later.
+ */
+export const NIGHTMARE_SEASON: { boss: string; grade: 'common' | 'rare' | 'legend' }[] = [
+  { boss: 'Gatekeeper Pinopi', grade: 'common' },
+  { boss: 'Furious Feruk', grade: 'common' },
+  { boss: "Fafnir's Poison Blood", grade: 'common' },
+  { boss: 'Wraith Giselle', grade: 'common' },
+  { boss: 'Fortress Guardian Notun', grade: 'rare' },
+  { boss: 'Mutated Gerod', grade: 'rare' },
+  { boss: "Zikel's Apparition", grade: 'legend' },
+]
+
 /** A zone's mode beside its name (questlog's difficulty): Conquest's and a raid's Normal or Hard, a Transcendence's stage. */
 const DIFFICULTY_LABELS: Record<string, string> = { easy: 'Easy', normal: 'Normal', advanced: 'Hard' }
 type Translate = (text: string, params?: Record<string, string | number>) => string
