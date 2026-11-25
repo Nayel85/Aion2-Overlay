@@ -288,6 +288,7 @@ pub fn run(opts: Options) -> Result<(), String> {
     sidecar.publish();
     sidecar.heartbeat();
     sidecar.flight();
+    sidecar.aggro();
     crate::focus::watch(opts.app_pid);
 
     // Commands, until stdin closes (the app quit) or says quit.
@@ -509,6 +510,21 @@ impl Sidecar {
                 if now != told {
                     told = now;
                     emit(&event("flight", json!({ "fp": now })));
+                }
+            }
+        });
+    }
+
+    /// Twice a second while capturing: the monsters on you (the tracker's, aggro.rs), told as the list
+    /// changes (one leaving you for long enough is seen here, between frames).
+    fn aggro(self: &Arc<Self>) {
+        let me = self.clone();
+        self.runtime.spawn(async move {
+            let mut tick = tokio::time::interval(Duration::from_millis(500));
+            loop {
+                tick.tick().await;
+                if me.capturing.load(Ordering::SeqCst) {
+                    me.tracker.lock().aggro_tick(clock::now_ms());
                 }
             }
         });

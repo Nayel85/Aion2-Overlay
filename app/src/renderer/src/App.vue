@@ -14,6 +14,7 @@ const PAGES: Record<string, () => Promise<{ default: Component }>> = {
   buffs: () => import('./pages/BuffsPage.vue'),
   cc: () => import('./pages/CcPage.vue'),
   enemies: () => import('./pages/EnemiesPage.vue'),
+  aggro: () => import('./pages/AggroPage.vue'),
   training: () => import('./pages/TrainingPage.vue'),
   details: () => import('./pages/DetailsPage.vue'),
   gamemap: () => import('./pages/GameMapPage.vue'),

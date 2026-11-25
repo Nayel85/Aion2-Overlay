@@ -12,6 +12,7 @@
 //!
 //! Logs go to stderr.
 
+mod aggro;
 mod bests;
 mod capture;
 mod focus;

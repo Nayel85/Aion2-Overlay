@@ -69,6 +69,19 @@ export const canAttack = (e: Enemy, abyss = false): boolean => abyss || !!e.pvp 
 /** A pet the collection has no record of yet (seen nearby, or opened from the map). */
 export const blankPet = (id: number): Pet => ({ id, name: null, souls: 0, level: 0, levelEstimated: true, crystals: 0, session: 0 })
 
+/**
+ * A monster on you (the engine's aggro.rs): its last hit was on you lately, or you hit it and it is on no
+ * one else; gone when it dies or leaves you. `since`: when it turned on you; `lastHit`: its last hit.
+ */
+export interface AggroMob {
+  entity: number
+  code: number | null
+  name: string
+  boss: boolean
+  since: number
+  lastHit: number
+}
+
 /** A player of the other faction in view (the engine's list: in when they load, out when gone). */
 export interface Enemy {
   entity: number

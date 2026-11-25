@@ -91,7 +91,7 @@ export function registerIpc(): void {
     settings.set(key as SettingKey, value)
   })
 
-  handle('tracker:get', (fullPvp = true) => ({ status: tracker.status(), pets: tracker.pets(), nearby: tracker.nearby(), shop: tracker.shop(), kina: tracker.kina(), abyss: tracker.abyss(), rifts: tracker.rifts(), fieldBosses: tracker.fieldBosses(), pvp: fullPvp ? tracker.pvp() : [], pvpSummary: pvpLog.summary(), cubes: tracker.cubes(), enemies: tracker.enemies(), target: tracker.target() }))
+  handle('tracker:get', (fullPvp = true) => ({ status: tracker.status(), pets: tracker.pets(), nearby: tracker.nearby(), shop: tracker.shop(), kina: tracker.kina(), abyss: tracker.abyss(), rifts: tracker.rifts(), fieldBosses: tracker.fieldBosses(), pvp: fullPvp ? tracker.pvp() : [], pvpSummary: pvpLog.summary(), cubes: tracker.cubes(), enemies: tracker.enemies(), aggro: tracker.aggro(), target: tracker.target() }))
   handle('tracker:clearPvp', () => tracker.clearPvp())
   handle('panel:open', () => showPanel())
   handle('panel:characters', () => showCharactersInPanel())

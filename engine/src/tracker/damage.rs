@@ -336,3 +336,24 @@ mod tests {
         assert_eq!((h.target, h.actor), (30_001, 1395));
     }
 }
+
+/// The first record of a `04 38` when a monster's (a 7-digit skill, which `hits` leaves out, as the
+/// meter's parser keeps none): its target and the monster, a miss too (it is on its target all the
+/// same). For the monsters on you (aggro.rs).
+pub fn monster_hit(packet: &[u8]) -> Option<(u32, u32)> {
+    let length_info = read_varint(packet, 0);
+    if length_info.length < 0 {
+        return None;
+    }
+    let mut offset = length_info.length as usize;
+    if packet.get(offset..offset + 2)? != OP_DAMAGE {
+        return None;
+    }
+    offset += 2;
+    let target = try_read_varint(packet, &mut offset)?;
+    try_read_varint(packet, &mut offset)?; // the hit's kind
+    try_read_varint(packet, &mut offset)?; // unused
+    let actor = try_read_varint(packet, &mut offset)?;
+    let skill = u32::from_le_bytes(packet.get(offset..offset + 4)?.try_into().ok()?);
+    ((1_000_000..=9_999_999).contains(&skill) && actor != target).then_some((u32::try_from(target).ok()?, u32::try_from(actor).ok()?))
+}

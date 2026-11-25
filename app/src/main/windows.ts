@@ -592,6 +592,19 @@ const ccOverlay = measuredOverlay({
   clickThrough: true,
 })
 
+/** Aggro: the monsters on you, left of centre, below the middle (where your eyes are in a fight). */
+const aggroOverlay = measuredOverlay({
+  route: 'aggro',
+  enabled: () => settings.get('aggro').enabled,
+  saved: () => settings.get('aggro').position,
+  fallback: () => {
+    const area = screen.getPrimaryDisplay().workArea
+    return { x: Math.round(area.x + area.width * 0.3), y: Math.round(area.y + area.height * 0.55) }
+  },
+  save: (position) => settings.set('aggro', { ...settings.get('aggro'), position }),
+  clickThrough: true,
+})
+
 /** Enemies nearby: top centre, under where the CC banner sits. */
 const enemiesOverlay = measuredOverlay({
   route: 'enemies',
@@ -783,6 +796,7 @@ const killFeedOverlay = measuredOverlay({
 
 /** Every overlay, by its route (shared/ipc.ts `OverlayId`): each opened, shown, placed and closed the same way. */
 const OVERLAYS: Record<OverlayId, ReturnType<typeof measuredOverlay>> = {
+  aggro: aggroOverlay,
   applicants: applicantsOverlay,
   party: partyOverlay,
   flight: flightOverlay,

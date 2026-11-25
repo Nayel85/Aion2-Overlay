@@ -30,7 +30,7 @@ import { pvpLog } from './pvpLog.ts'
 import { abyss } from './abyss.ts'
 import type { AbyssSession, RiftFarm } from '../shared/abyss.ts'
 import { serverFaction, serverRegion } from '../shared/servers.ts'
-import { GAME_ACTIVE_S, NO_NEARBY, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type PvpKill, type ShopStock, type SoulToast, type TrackerStatus } from '../shared/tracker.ts'
+import { GAME_ACTIVE_S, NO_NEARBY, type AggroMob, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type PvpKill, type ShopStock, type SoulToast, type TrackerStatus } from '../shared/tracker.ts'
 import { tr } from './i18n.ts'
 import { pveInstance } from '../shared/sessions.ts'
 
@@ -50,6 +50,8 @@ let nearby: Nearby = NO_NEARBY
 let cubes: Cube[] = []
 /** Players of the other faction in view, as the engine last listed them. */
 let enemies: Enemy[] = []
+/** The monsters on you (the engine's `aggro`). */
+let aggro: AggroMob[] = []
 /** The player you last targeted. */
 let target: TargetPlayer | null = null
 /** The Black Cloud Merchant's stock: the latest of each tab opened, kept until its restock or another character. */
@@ -300,6 +302,8 @@ function handleLine(line: string): void {
       // A (re)started engine knows no one in view yet.
       enemies = []
       broadcast('tracker:enemies', enemies)
+      aggro = []
+      broadcast('tracker:aggro', aggro)
       replacePets(msg.pets)
       setStatus({
         character: msg.character?.name ?? null,
@@ -396,6 +400,10 @@ function handleLine(line: string): void {
       broadcast('tracker:cubes', cubes)
       break
     }
+    case 'aggro':
+      aggro = msg.mobs
+      broadcast('tracker:aggro', aggro)
+      break
     case 'enemies': {
       const before = new Set(enemies.map((e) => e.entity))
       // In a PvE instance the other servers' players are your party: no enemies there.
@@ -547,6 +555,7 @@ export const tracker = {
   nearby: (): Nearby => nearby,
   cubes: (): Cube[] => cubes,
   enemies: (): Enemy[] => enemies,
+  aggro: (): AggroMob[] => aggro,
   target: (): TargetPlayer | null => target,
   shop: (): ShopStock[] => currentShop(),
   kina: (): KinaSession => kina,

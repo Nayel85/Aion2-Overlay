@@ -201,6 +201,9 @@ pub struct Tracker {
     gathering: Option<u32>,
     /// The last player a boss hit, and when it was told: the one it is on, for the party frames.
     boss_target: Option<(u32, u32, i64)>,
+    /// The monsters on you (aggro.rs), and the list last told.
+    aggro: crate::aggro::Aggro,
+    aggro_told: Vec<(i32, i64)>,
 }
 
 /// An item where it lies, as the app keeps it (shared/inventory.ts).
@@ -291,6 +294,8 @@ impl Tracker {
             craft_done: None,
             gathering: None,
             boss_target: None,
+            aggro: crate::aggro::Aggro::default(),
+            aggro_told: Vec::new(),
         }
     }
 
@@ -565,16 +570,46 @@ impl Tracker {
         }));
     }
 
+    /// The monsters on you now (aggro.rs), told when the list changes: `{"type": "aggro", "mobs": [...]}`.
+    pub fn aggro_tick(&mut self, now: i64) {
+        let Some(you) = self.me() else { return };
+        let (codes, npcs, storage) = (&self.mob_code, &self.npcs, &self.storage);
+        let mobs = self.aggro.on(you as i32, now, |entity| {
+            let code = *codes.get(&(entity as u32))?;
+            let name = npcs.get_npc_name(code as i32);
+            let boss = storage.is_boss(entity) || npcs.is_boss(code as i32);
+            Some((Some(code as i32), if name.is_empty() { format!("#{code}") } else { name }, boss))
+        });
+        let told: Vec<(i32, i64)> = mobs.iter().map(|m| (m.entity, m.since)).collect();
+        if told != self.aggro_told {
+            self.aggro_told = told;
+            (self.emit)(json!({ "type": "aggro", "ts": now, "mobs": mobs }));
+        }
+    }
+
     /// The hits in a `04 38`: a player's skill says their class, and those between you and another
     /// player are kept (`pvp`).
     fn damage(&mut self, ts: i64, frame: &[u8]) {
+        let me = self.me();
+        // A monster's hit on anyone: who it is on (aggro.rs); a monster known by its spawn.
+        if let Some((target, monster)) = damage::monster_hit(frame) {
+            if self.mob_code.contains_key(&monster) {
+                self.aggro.hit(monster as i32, target as i32, 0, ts);
+            }
+        }
         // Nobody in view: no player's hit to read.
-        if self.players.is_empty() {
+        if self.players.is_empty() && me.is_none() {
             return;
         }
-        let me = self.me();
         let storage = self.storage.clone();
         for h in damage::hits(frame, |v| storage.is_plausible_entity_id(v)) {
+            // You on a monster: it turns on you (unless it is on someone else already).
+            if Some(h.actor) == me && self.mob_code.contains_key(&h.target) {
+                self.aggro.engaged(h.target as i32, h.actor as i32, ts);
+            }
+            if self.players.is_empty() {
+                continue;
+            }
             // A boss hitting a player: the one it is on (told on a change, or again after 3 s).
             if h.actor != h.target && (Some(h.target) == me || self.players.contains_key(&h.target)) && storage.is_boss(h.actor as i32) {
                 let changed = self.boss_target.is_none_or(|(boss, target, at)| boss != h.actor || target != h.target || ts - at > 3_000);
@@ -944,6 +979,7 @@ impl Tracker {
                     if self.enemies.remove(&entity).is_some() {
                         self.enemies_changed(ts);
                     }
+                    self.aggro.died(entity as i32);
                     if flag == p::DEATH_FLAG_COMBAT && self.mob_code.contains_key(&entity) {
                         self.push_recent(ts, entity);
                         let code = self.mob_code[&entity];

@@ -5,7 +5,7 @@
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, toRaw } from 'vue'
 import { SETTINGS_DEFAULTS, type SettingKey, type Settings } from '@shared/settings.ts'
-import { MAX_LEVEL, pvpSummary, NO_NEARBY, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type ShopStock, type SoulToast, type TrackerStatus } from '@shared/tracker.ts'
+import { MAX_LEVEL, pvpSummary, NO_NEARBY, type AggroMob, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type ShopStock, type SoulToast, type TrackerStatus } from '@shared/tracker.ts'
 import { kinaPerHour, kinaSeries, NO_KINA, type KinaSession } from '@shared/kina.ts'
 import { NO_ABYSS, type AbyssSession, type RiftFarm } from '@shared/abyss.ts'
 import { perHour, series } from '@shared/earnings.ts'
@@ -66,6 +66,7 @@ export const useApp = defineStore('app', () => {
   const pvpStats = ref(pvpSummary([]))
   const cubes = ref<Cube[]>([])
   const enemies = ref<Enemy[]>([])
+  const aggro = ref<AggroMob[]>([])
   const target = ref<TargetPlayer | null>(null)
   /** What is on your character (while the buffs overlay is on). */
   const buffs = ref<Buff[]>([])
@@ -181,6 +182,7 @@ export const useApp = defineStore('app', () => {
     api.on('tracker:pvpSummary', (s) => (pvpStats.value = s))
     api.on('tracker:cubes', (c) => (cubes.value = c))
     api.on('tracker:enemies', (e) => (enemies.value = e))
+    api.on('tracker:aggro', (a) => (aggro.value = a))
     api.on('tracker:target', (t) => (target.value = t))
     api.on('buffs:list', (b) => (buffs.value = b))
     api.on('tracker:kina', (k) => {
@@ -205,6 +207,7 @@ export const useApp = defineStore('app', () => {
     pvpStats.value = t.pvpSummary ?? pvpSummary(t.pvp)
     cubes.value = t.cubes
     enemies.value = t.enemies
+    aggro.value = t.aggro
     target.value = t.target
     petMap.value = new Map(t.pets.map((p) => [p.id, p]))
     nearby.value = t.nearby
@@ -251,7 +254,7 @@ export const useApp = defineStore('app', () => {
   }
 
   return {
-    settings, applicants, combatAt, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, inventories, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
+    aggro, settings, applicants, combatAt, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, inventories, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
     init, set, setHud, togglePin, openPet, hiddenPet,
   }
 })

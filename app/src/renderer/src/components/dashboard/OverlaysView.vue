@@ -17,6 +17,7 @@ import UnifiedView from '@/components/dashboard/UnifiedView.vue'
 import CcSettings from '@/components/overlays/CcSettings.vue'
 import DutySettings from '@/components/overlays/DutySettings.vue'
 import EnemiesSettings from '@/components/overlays/EnemiesSettings.vue'
+import AggroSettings from '@/components/overlays/AggroSettings.vue'
 import EventBarSettings from '@/components/overlays/EventBarSettings.vue'
 import KillFeedSettings from '@/components/overlays/KillFeedSettings.vue'
 import MerchantSettings from '@/components/overlays/MerchantSettings.vue'
@@ -45,6 +46,7 @@ const SETTINGS: Record<OverlayEntryId, { component: Component; own?: boolean }> 
   timerbar: { component: EventBarSettings },
   killfeed: { component: KillFeedSettings },
   enemies: { component: EnemiesSettings },
+  aggro: { component: AggroSettings },
   training: { component: TrainingSettings },
   merchant: { component: MerchantSettings },
   duty: { component: DutySettings },

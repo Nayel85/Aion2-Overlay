@@ -1754,4 +1754,11 @@ export const FR: Record<string, string> = {
   'Current season': 'Saison en cours',
   'Later seasons': 'Saisons à venir',
   'Sanctuaries': 'Sanctuaires',
+  'Show the monsters on me': 'Afficher les monstres sur moi',
+  'While monsters are on you: each one, the bosses first, with how long it has been on you. One is on you when its last hit was on you, or when you hit it and it is on no one else; it leaves the list when it dies or has not hit you for 10 seconds. Clicks pass through it; while this window is open it shows a preview you can drag into place.': 'Tant que des monstres sont sur toi : chacun, les boss d\'abord, avec depuis combien de temps il est sur toi. Un monstre est sur toi quand son dernier coup était sur toi, ou quand tu le frappes et qu\'il n\'est sur personne d\'autre ; il quitte la liste à sa mort ou s\'il ne t\'a pas frappé depuis 10 secondes. Les clics passent à travers ; tant que cette fenêtre est ouverte, un aperçu s\'affiche pour le placer.',
+  'A boss': 'Un boss',
+  'On you · {n}': 'Sur toi · {n}',
+  'On you for': 'Sur toi depuis',
+  'Aggro': 'Aggro',
+  'The monsters on you': 'Les monstres sur toi',
 }

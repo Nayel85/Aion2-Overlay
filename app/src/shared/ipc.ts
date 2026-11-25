@@ -25,11 +25,11 @@ import type { SyncResult } from './lokthar.ts'
 import type { CustomSoundResult, SoundSlot } from './sounds.ts'
 import type { Point, Rect, SettingKey, Settings } from './settings.ts'
 import type { FieldBosses, TimerAlert, TimerId } from './timers.ts'
-import type { Cube, Enemy, Nearby, TargetPlayer, Pet, PvpKill, PvpSummary, ShopStock, SoulToast, TrackerStatus, MerchantSeen } from './tracker.ts'
+import type { Cube, Enemy, Nearby, TargetPlayer, Pet, PvpKill, PvpSummary, ShopStock, SoulToast, TrackerStatus, MerchantSeen, AggroMob } from './tracker.ts'
 
 /** Renderer → main, request/response. */
 /** The overlays that size themselves to their page, by their route. */
-export const OVERLAY_IDS = ['applicants', 'party', 'flight', 'gather', 'skills', 'minimap', 'buffs', 'cc', 'enemies', 'training', 'packets', 'hud', 'merchant', 'meter', 'timerbar', 'unified', 'killfeed', 'duty'] as const
+export const OVERLAY_IDS = ['aggro', 'applicants', 'party', 'flight', 'gather', 'skills', 'minimap', 'buffs', 'cc', 'enemies', 'training', 'packets', 'hud', 'merchant', 'meter', 'timerbar', 'unified', 'killfeed', 'duty'] as const
 export type OverlayId = (typeof OVERLAY_IDS)[number]
 
 export interface InvokeChannels {
@@ -40,7 +40,7 @@ export interface InvokeChannels {
   'settings:all': { args: []; result: Settings }
   'settings:set': { args: [key: SettingKey, value: unknown]; result: void }
 
-  'tracker:get': { args: [fullPvp?: boolean]; result: { status: TrackerStatus; pets: Pet[]; nearby: Nearby; shop: ShopStock[]; kina: KinaSession; abyss: AbyssSession; rifts: RiftFarm[]; fieldBosses: FieldBosses; pvp: PvpKill[]; pvpSummary?: PvpSummary; cubes: Cube[]; enemies: Enemy[]; target: TargetPlayer | null } }
+  'tracker:get': { args: [fullPvp?: boolean]; result: { status: TrackerStatus; pets: Pet[]; nearby: Nearby; shop: ShopStock[]; kina: KinaSession; abyss: AbyssSession; rifts: RiftFarm[]; fieldBosses: FieldBosses; pvp: PvpKill[]; pvpSummary?: PvpSummary; cubes: Cube[]; enemies: Enemy[]; aggro: AggroMob[]; target: TargetPlayer | null } }
   /** Markers on the game's map: drag a box around it (opens the picker). */
   'gamemap:pick': { args: []; result: void }
   /** From the picker: the box dragged, in its own coordinates; null when cancelled. */
@@ -211,6 +211,7 @@ export interface EventChannels {
   /** The Hidden Cubes in view, whenever they change. */
   'tracker:cubes': Cube[]
   'tracker:enemies': Enemy[]
+  'tracker:aggro': AggroMob[]
   'tracker:target': TargetPlayer | null
   /** You killed something (at most every 5 s): keeps the HUD up between souls. */
   'tracker:combat': number
@@ -312,4 +313,4 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
 
 export const EVENT_CHANNELS: readonly EventChannel[] = [
   'inventory:arrival',
-  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'applicants:changed', 'party:changed', 'gather:changed', 'flight:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'duty:changed', 'expeditions:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'panel:showCharacters', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'meter:personalBest', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', ]
+  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'tracker:aggro', 'applicants:changed', 'party:changed', 'gather:changed', 'flight:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'duty:changed', 'expeditions:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'panel:showCharacters', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'meter:personalBest', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', ]

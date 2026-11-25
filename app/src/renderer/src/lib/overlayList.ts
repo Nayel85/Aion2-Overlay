@@ -10,7 +10,7 @@ import type { Settings } from '@shared/settings.ts'
 /** Its id on the Overlays page (`overlays:<id>` opens it there). */
 export type OverlayEntryId =
   | 'unified' | 'meter' | 'skills' | 'party' | 'buffs' | 'cc' | 'flight' | 'gather' | 'applicants'
-  | 'hud' | 'minimap' | 'gameMap' | 'timerbar' | 'killfeed' | 'enemies' | 'training' | 'merchant' | 'duty'
+  | 'hud' | 'minimap' | 'gameMap' | 'timerbar' | 'killfeed' | 'enemies' | 'aggro' | 'training' | 'merchant' | 'duty'
 export interface OverlayEntry {
   id: OverlayEntryId
   name: string
@@ -44,6 +44,7 @@ export function useOverlayList(): ComputedRef<OverlayEntry[]> {
       { id: 'gameMap', name: t('Game Map Markers'), about: t("Pets, gatherables and cubes on the game's own map"), on: s.gameMap.enabled && !!s.gameMap.region, set: flip('gameMap', 'enabled') },
       { id: 'timerbar', name: t('Event Bar'), about: t('Events with an alert on'), on: s.timerBar.enabled, set: flip('timerBar', 'enabled') },
       { id: 'killfeed', name: t('Kill Feed'), about: t('Player kills around you'), on: s.killFeed.open, set: (on) => void bridge().invoke(on ? 'killfeed:open' : 'killfeed:close') },
+      { id: 'aggro', name: t('Aggro'), about: t('The monsters on you'), on: s.aggro.enabled, set: flip('aggro', 'enabled') },
       { id: 'enemies', name: t('Nearby Enemies'), about: t('Enemy players around you'), on: s.enemies.enabled, set: flip('enemies', 'enabled') },
       { id: 'training', name: t('Training'), about: t('Training dummy runs: clock and DPS'), on: s.dummy.overlay, set: flip('dummy', 'overlay') },
       { id: 'merchant', name: t('Black Cloud Merchant'), about: t('When you open the Black Cloud shop'), on: s.hud.merchant, set: flip('hud', 'merchant') },

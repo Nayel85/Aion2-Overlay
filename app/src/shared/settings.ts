@@ -152,6 +152,8 @@ export interface Settings {
 
   /** Join requests to your party: a widget that comes up when someone applies. */
   applicants: { enabled: boolean; position: Point | null; opacity: number; collapsed: boolean; /** Seconds it stays after the last application. */ hideAfter: number }
+  /** Aggro: the monsters on you, while there are any. */
+  aggro: { enabled: boolean; position: Point | null; opacity: number; collapsed: boolean }
   /**
    * Party frames: a bar per member over the game, while in a party. `self`: you among them; `header`: a
    * title bar; `hpText` on the bar's right; `afflictedColor` while a monster's debuff (`afflictedBy`:
@@ -459,6 +461,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   rates: { kinaDungeons: false, abyssDungeons: false },
   duty: { values: DEFAULT_DUTY_VALUES, overlay: true, position: null, opacity: 0.95 },
   applicants: { enabled: true, position: { x: 872, y: 220 }, opacity: 0.85, collapsed: false, hideAfter: 60 },
+  aggro: { enabled: true, position: null, opacity: 0.8, collapsed: false },
   party: {
     enabled: true, position: { x: 1709, y: 165 }, opacity: 0.85, collapsed: false, self: false, header: false, icon: true, hpText: 'none', debuffIcons: false, shields: true, bossTarget: true,
     width: 180, barHeight: 22, gap: 2, fontSize: 12, hpColor: PARTY_DEFAULT_COLORS.hp, afflictedColor: PARTY_DEFAULT_COLORS.afflicted, afflictedBy: 'any',
@@ -667,6 +670,10 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         targetStyle: v.targetStyle === 'strip' ? 'strip' : 'inline',
         targetMode: v.targetMode === 'players' || v.targetMode === 'meter' ? v.targetMode : 'always',
       } as Settings[K]
+    }
+    case 'aggro': {
+      const v = (value ?? {}) as Partial<Settings['aggro']>
+      return fields(v, d.aggro, { enabled: BOOL, position: POINT, opacity: range(0, 1), collapsed: BOOL }) as Settings[K]
     }
     case 'applicants': {
       const v = (value ?? {}) as Partial<Settings['applicants']>

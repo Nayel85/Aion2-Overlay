@@ -9,7 +9,7 @@ import type { FlightPower } from '../shared/flight.ts'
 import type { GatherRoll } from '../shared/gather.ts'
 import type { DepotItem } from '../shared/inventory.ts'
 import type { PartyDebuff, PartyMember } from '../shared/party.ts'
-import type { Cube, Enemy, Nearby, Pet, PvpKill, ShopItem, TrackerStatus } from '../shared/tracker.ts'
+import type { AggroMob, Cube, Enemy, Nearby, Pet, PvpKill, ShopItem, TrackerStatus } from '../shared/tracker.ts'
 
 type ItemAmount = { item: number; amount: number }
 /** Whose a login's or a balance's figures are: null while a login waits for its character. */
@@ -77,6 +77,7 @@ export type EngineEvents = {
   counter: Login & { id: string; values: number[] }
   me: { ts?: number; server: number; name: string; classId?: number; className: string | null; level?: number; gearScore?: number }
   enemies: { players?: Enemy[] }
+  aggro: { ts?: number; mobs: AggroMob[] }
   target: { name: string; server: number | null; level: number | null; gearScore: number | null; pvp?: boolean; openPvp?: boolean; combatPower: number | null; className: string | null; legion: string | null; enemy?: boolean }
   targetClear: Record<string, never>
   applicant: { character: number; name: string; server: number | null; className: string | null; level: number | null; gearScore: number | null; combatPower: number | null }
