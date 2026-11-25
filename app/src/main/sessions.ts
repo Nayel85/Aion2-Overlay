@@ -112,6 +112,19 @@ function begin(name: string, server: number | null, at: number): PlaySession {
   return current
 }
 
+/**
+ * The Session page's Reset: the session going on goes to the past ones (if it did anything), and a new
+ * one starts for the same character, now; with the souls, Kina and Abyss Points per hour (the tracker's).
+ */
+export function restartSession(): void {
+  const s = sessions.current
+  tracker.resetSession()
+  if (!s) return
+  begin(s.name, s.server, Date.now())
+  log(`session: ${s.name}'s restarted by hand`)
+  changed()
+}
+
 /** A session's run going on, over at `at`; one left straight away with nothing is not kept. */
 function closeRun(s: PlaySession, at: number): void {
   const run = s.runs?.at(-1)

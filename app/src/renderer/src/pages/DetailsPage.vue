@@ -51,9 +51,13 @@ const pct = (n: number, of: number): string => (of > 0 ? `${((n / of) * 100).toF
 
 const live = computed(() => view.value?.source.kind === 'live')
 const seconds = computed(() => Math.max(1, (view.value?.battleTime ?? 0) / 1000))
-/** Everyone who took part: who dealt damage or healing, and who only took it (a PvP death: you may have hit nothing). */
+/**
+ * Everyone who took part: who dealt damage or healing, and who only took it (a PvP death: you may have
+ * hit nothing). In a fight you are alone in (a Nightmare), only who hit its target: the heals of the
+ * players around, fighting their own, are not part of it.
+ */
 const ranked = computed(() =>
-  (view.value?.actors ?? []).filter((a) => a.damage > 0 || a.heal > 0 || a.you || (view.value?.defense?.[a.id]?.taken ?? 0) > 0),
+  (view.value?.actors ?? []).filter((a) => a.damage > 0 || a.you || (!view.value?.solo && (a.heal > 0 || (view.value?.defense?.[a.id]?.taken ?? 0) > 0))),
 )
 const pvp = computed(() => view.value?.source.kind === 'pvp')
 /** A PvP fight's players in two sides, to pick either one's log; a boss fight's in one list. */

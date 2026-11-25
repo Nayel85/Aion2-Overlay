@@ -301,6 +301,11 @@ export interface DetailsView {
   heals: DetailsSkill[]
   /** Each player's defense, by id; null where not recorded. */
   defense: Record<number, DetailsDefense> | null
+  /**
+   * A fight you are alone in (a Nightmare, its instance shared with players fighting their own): only
+   * who hit its target counts; the others' heals around you are not part of it.
+   */
+  solo?: boolean
 }
 
 /** A2Tools DPS Meter's `TargetDetailsResponse`, the fields shown. */
@@ -343,6 +348,8 @@ export interface FightRecord {
   buffs?: BuffTrack[]
   startTimeMs: number
   durationMs: number
+  /** The instance it was fought in (0: the open world). */
+  dungeonId?: number
   details: TargetDetails
   actors: { actorId: number; nickname: string; job: string; damageReceived?: number; hitsReceived?: number; partyHeal?: number }[]
 }

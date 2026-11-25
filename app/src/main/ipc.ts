@@ -11,7 +11,7 @@ import { partyStore } from './party.ts'
 import { flightStore } from './flight.ts'
 import { gatherStore } from './gather.ts'
 import { characterStore } from './characters.ts'
-import { sessionStore } from './sessions.ts'
+import { restartSession, sessionStore } from './sessions.ts'
 import { inventoryStore } from './inventory.ts'
 import { dutyStore } from './duty.ts'
 import { expeditionsStore } from './expeditions.ts'
@@ -154,7 +154,7 @@ export function registerIpc(): void {
   handle('lokthar:test', () => lokthar.test())
   handle('lokthar:sync', () => lokthar.syncNow())
   handle('lokthar:last', () => lokthar.last())
-  handle('tracker:resetSession', () => tracker.resetSession())
+  handle('tracker:resetSession', () => restartSession())
 
   handle('bubble:moveTo', (to) => {
     if (isPoint(to)) moveBubble(to)

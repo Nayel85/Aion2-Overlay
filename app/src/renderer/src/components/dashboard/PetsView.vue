@@ -2,9 +2,9 @@
 // Pets: every pet with its souls and level, as a table. Search, filter and sort; click a pet for
 // where its souls drop, a name or a soul count to correct it; the pin puts a pet on the HUD (in
 // pinned mode) and on the maps.
+import Toggle from '@/components/Toggle.vue'
 import PetSourceTag from '@/components/PetSourceTag.vue'
 import { useNow } from '@/lib/now.ts'
-import PetsListSettings from '@/components/PetsListSettings.vue'
 import { computed, nextTick, onBeforeUnmount, ref, toRefs } from 'vue'
 import GenusPill, { GENUS_PILL } from '@/components/GenusPill.vue'
 import LevelBadge from '@/components/LevelBadge.vue'
@@ -202,7 +202,12 @@ const syncedAgo = computed(() => {
 
 <template>
   <div>
-    <PageHeader title="Pets" about="Every pet with its level and souls. Click one for where its souls drop; pin the ones you are farming to see them on the HUD and the maps." />
+    <PageHeader title="Pets" about="Every pet with its level and souls. Click one for where its souls drop; pin the ones you are farming to see them on the Soul Tracker and the maps.">
+      <label class="flex items-center gap-2 text-sm" :title="t('They earn no more souls: left out of the Pets page, Nearby and the Soul Tracker.')">
+        <Toggle :model-value="store.settings.hideMaxed" @update:model-value="store.set('hideMaxed', $event)" />
+        {{ t('Hide maxed (Lv3) pets') }}
+      </label>
+    </PageHeader>
 
     <div
       v-if="!store.status?.synced && store.pets.every((p) => p.levelEstimated)"
@@ -377,7 +382,7 @@ const syncedAgo = computed(() => {
           </tr>
           <tr v-if="hiddenCount">
             <td colspan="4" class="px-4 py-2 text-center text-xs text-darkest">
-              {{ plural(hiddenCount, '{n} maxed (Lv3) pet hidden: search finds them, or turn this off in Settings.', '{n} maxed (Lv3) pets hidden: search finds them, or turn this off in Settings.') }}
+              {{ plural(hiddenCount, '{n} maxed (Lv3) pet hidden: search finds them, or turn this off at the top.', '{n} maxed (Lv3) pets hidden: search finds them, or turn this off at the top.') }}
             </td>
           </tr>
           <tr v-if="!list.length">
@@ -397,6 +402,5 @@ const syncedAgo = computed(() => {
       </span>
     </p>
 
-    <PetsListSettings class="mt-8" />
   </div>
 </template>

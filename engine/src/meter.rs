@@ -136,6 +136,11 @@ impl Meter {
         // it uploads). This app keeps the fights on this machine only, so they keep the names.
         let names = self.storage.get_nicknames();
         for record in &mut records {
+            // Only who took part: the players around who only healed (themselves, fighting their own
+            // boss in a Nightmare's shared instance) are not part of it.
+            let keep = self.involved(record.details.skills.iter().filter(|s| s.dmg > 0).map(|s| s.actor_id));
+            record.details.heal_skills.retain(|h| keep.contains(&h.actor_id));
+            record.actors.retain(|a| keep.contains(&a.actor_id));
             for actor in &mut record.actors {
                 if let Some(name) = names.get(&actor.actor_id).filter(|n| !n.is_empty()) {
                     actor.nickname = name.clone();
@@ -143,6 +148,17 @@ impl Meter {
             }
         }
         records.iter().filter(|r| history.save_fight(r).map_err(|e| tracing::warn!("fight not saved: {e}")).is_ok()).count()
+    }
+
+    /// Who took part in a fight on a target: who hit it, you, and your party. The others around only
+    /// healed (themselves, fighting their own boss: a Nightmare's instance is shared) or got hit near it.
+    fn involved(&self, hitters: impl Iterator<Item = i32>) -> HashSet<i32> {
+        let mut ids: HashSet<i32> = hitters.collect();
+        if let Some(me) = self.storage.local_player_id().and_then(|id| i32::try_from(id).ok()) {
+            ids.insert(me);
+        }
+        ids.extend(self.storage.get_party_members().into_keys().filter_map(|name| self.storage.find_id_by_nickname(&name)));
+        ids
     }
 
     /// A dispatcher feeding this meter's parser.
@@ -248,6 +264,9 @@ impl Meter {
     /// with each player's `defense` on it: damage and hits taken, and healing.
     pub fn details(&self, target: i32, actors: Option<&[i32]>, display: bool) -> serde_json::Value {
         let mut details = self.calculator.lock().get_target_details(target, actors);
+        // As a saved fight: only who took part (`involved`).
+        let keep = self.involved(details.skills.iter().filter(|s| s.dmg > 0).map(|s| s.actor_id));
+        details.heal_skills.retain(|h| keep.contains(&h.actor_id));
         let mut openings = Vec::new();
         if display {
             for skill in &mut details.skills {
@@ -267,6 +286,7 @@ impl Meter {
             let defense: serde_json::Map<String, serde_json::Value> = fight
                 .actors
                 .iter()
+                .filter(|(id, _)| keep.contains(id))
                 .map(|(id, a)| (id.to_string(), serde_json::json!({ "taken": a.damage_received, "hitsTaken": a.hits_received, "heal": a.party_heal })))
                 .collect();
             out["defense"] = serde_json::Value::Object(defense);

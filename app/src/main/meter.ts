@@ -10,6 +10,7 @@ import { settings } from './settings.ts'
 import { command, tracker } from './tracker.ts'
 import type { Buff, BuffTrack, FightBuffs } from '../shared/buffs.ts'
 import { pveInstance } from '../shared/sessions.ts'
+import { ZONES } from '../shared/zones.ts'
 import { CLASS_NAMES, detailsView, meterData, NO_METER, unmaskName, type DetailsActor, type DetailsDefense, type DetailsSkill, type DetailsSource, type DetailsView, type DpsEvent, type FightRecord, type FightSummary, type MeterData, type PersonalView, type TargetDetails, NO_PERSONAL, NO_RECORDINGS, type Recordings, type TargetMode, type Encounter, type NewBest, listedFight } from '../shared/meter.ts'
 
 const ASK_TIMEOUT_MS = 5000
@@ -212,13 +213,15 @@ export const meterState = {
   },
   /** A fight's breakdown by player and skill: the live target's, or a saved fight's. */
   async details(source: DetailsSource, display = false): Promise<DetailsView | null> {
+    /** A Nightmare (questlog's `bosschallenge`): fought alone, in an instance others share. */
+    const soloZone = (world: number | null | undefined): boolean => world != null && ZONES[world]?.[2] === 'bosschallenge'
     if (source.kind === 'live') {
       const ev = await ask({ cmd: 'details', target: source.target, display }, 'details', (e) => e['target'] === source.target)
       if (!ev) return null
       const title = meter.target?.id === source.target ? meter.target.name : 'Target'
       const live = ev['fightBuffs'] as { durationMs: number; buffs: BuffTrack[] } | null | undefined
       const fightBuffs: FightBuffs | null = live ? { targetId: source.target, durationMs: live.durationMs, tracks: live.buffs } : null
-      return { ...detailsView(source, title || 'Target', ev as unknown as TargetDetails, liveNames()), buffs: fightBuffs }
+      return { ...detailsView(source, title || 'Target', ev as unknown as TargetDetails, liveNames()), buffs: fightBuffs, solo: soloZone(tracker.nearby().world) }
     }
     if (source.kind === 'pvp') return pvpDetails(source)
     if (source.kind !== 'saved') return null
@@ -230,7 +233,7 @@ export const meterState = {
       fight.actors.map((a) => [a.actorId, { taken: a.damageReceived ?? 0, hitsTaken: a.hitsReceived ?? 0, heal: a.partyHeal ?? 0 }]),
     )
     const fightBuffs: FightBuffs | null = fight.buffs ? { targetId: fight.targetId, durationMs: fight.durationMs, tracks: fight.buffs } : null
-    return { ...detailsView(source, fight.bossName, fight.details, names), startedAt: fight.startTimeMs, buffs: fightBuffs, defense }
+    return { ...detailsView(source, fight.bossName, fight.details, names), startedAt: fight.startTimeMs, buffs: fightBuffs, defense, solo: soloZone(fight.dungeonId) }
   },
   /** Your own damage on the meter's target, skill by skill (the skills window). */
   async personal(): Promise<PersonalView> {

@@ -1,16 +1,16 @@
 <script setup lang="ts">
-// The character playing's session, since their login: on top its rates (Kina and Abyss Points an
-// hour, with their timelines), its souls and its runs; under it, all of it as the Past sessions page
-// shows a session (SessionDetail, the latest first), and beside it the souls per pet, a way to the
-// past sessions, and what the tracker sees of the game.
+// The character playing's session, since their login (or the last Reset): who, since when and for how
+// long; its totals in one line (Kina and Abyss Points earned, runs and their gold loot); under it, all
+// of it as the Past sessions page shows a session (SessionDetail, the latest first), and beside it its
+// souls by pet (their total in the box's title) and a way to the past sessions. The rates per hour are
+// the Unified HUD's; the engine's state is in Settings.
+import { useNow } from '@/lib/now.ts'
 import { computed, ref } from 'vue'
 import GenusPill from '@/components/GenusPill.vue'
 import LevelBadge from '@/components/LevelBadge.vue'
 import PetIcon from '@/components/PetIcon.vue'
 import { ICON, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
 import SessionDetail from '@/components/sessions/SessionDetail.vue'
-import Sparkline from '@/components/Sparkline.vue'
-import StatusDot, { statusText } from '@/components/StatusDot.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { loc, plural, t } from '@/lib/i18n.ts'
 import { displayName } from '@/lib/petDb.ts'
@@ -35,35 +35,24 @@ function resetSession(): void {
   confirming.value = false
   void bridge().invoke('tracker:resetSession')
 }
-/** "14:32 · 48.2k/h": a point of the timeline, on hover. */
-const kinaPointLabel = (i: number): string => {
-  const p = store.kinaTimeline[i]
-  if (!p) return ''
-  const at = new Date(p.at).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
-  return `${at} · ${formatKina(p.perHour)}/h`
-}
-const abyssPointLabel = (i: number): string => {
-  const p = store.abyssTimeline[i]
-  if (!p) return ''
-  const at = new Date(p.at).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
-  return `${at} · ${formatAmount(p.perHour)}/h`
-}
 const current = computed(() => store.sessions.current)
 const runs = computed(() => (current.value ? countedRuns(current.value) : []))
 const counts = computed(() => lootCounts(runs.value))
 const clock = (ms: number): string => new Date(ms).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
-
-const lastPacket = computed(() => {
-  const ago = store.status?.lastPacketAgo
-  return ago === null || ago === undefined ? t('never') : ago < 5 ? t('just now') : t('{n} s ago', { n: Math.round(ago) })
+/** How long it has gone on, kept current: "1 h 24 min". */
+const now = useNow(30_000)
+const lasted = computed(() => {
+  const min = current.value ? Math.max(0, Math.floor((now.value - current.value.start) / 60_000)) : 0
+  return min < 60 ? t('{n} min', { n: min }) : t('{h} h {m} min', { h: Math.floor(min / 60), m: min % 60 })
 })
+
 </script>
 
 <template>
   <div class="space-y-3 p-3">
     <div class="flex items-center justify-between text-xs">
       <span class="font-medium text-darker">
-        {{ t('This session') }}<template v-if="current"> · <span class="text-dark">{{ current.name }}</span>, {{ t('since {time}', { time: clock(current.start) }) }}</template>
+        {{ t('This session') }}<template v-if="current"> · <span class="text-dark">{{ current.name }}</span>, {{ t('since {time}', { time: clock(current.start) }) }} · {{ lasted }}</template>
       </span>
       <button
         type="button"
@@ -71,58 +60,30 @@ const lastPacket = computed(() => {
           'rounded-md border px-2 py-0.5 transition',
           confirming ? 'border-danger/50 bg-danger/10 text-danger' : 'border-light text-darker hover:text-dark',
         ]"
-        :title="t('Start the session\'s souls, Kina and Abyss Points again (your collection is not changed)')"
+        :title="t('This session goes to the past ones and a new one starts now (your collection is not changed)')"
         @click="resetSession"
       >
         {{ confirming ? t('Click again to reset') : t('Reset session') }}
       </button>
     </div>
 
-    <!-- Its rates, souls and runs. -->
-    <div class="grid grid-cols-2 gap-2 lg:grid-cols-4">
-      <div class="rounded-lg bg-card p-3 text-center">
-        <div
-          v-if="store.kinaRate !== null"
-          :title="t('Kina earned per hour of farming: gains only (spending is not taken off), and a break of more than 5 minutes counts as 5.')"
-          class="text-3xl font-semibold tabular-nums text-yellow">{{ formatKina(store.kinaRate) }}</div>
-        <!-- Kina is coming in, but under a minute of it: no rate yet. -->
-        <div v-else-if="store.kina.earned" class="flex h-9 items-center justify-center text-lg font-semibold text-yellow">{{ t('measuring…') }}</div>
-        <div v-else class="text-3xl font-semibold text-yellow">—</div>
-        <div class="text-xs text-darker">
-          <template v-if="store.kina.earned">{{ t('Kina per hour, {kina} earned', { kina: formatKina(store.kina.earned) }) }}</template>
-          <template v-else>{{ t('Kina per hour, from your first loot') }}</template>
-        </div>
-        <Sparkline v-if="store.kinaTimeline.length" :values="store.kinaTimeline.map((p) => p.perHour)" :label="kinaPointLabel" class="mt-2 h-8 text-yellow" />
-      </div>
-      <div class="rounded-lg bg-card p-3 text-center">
-        <div
-          v-if="store.abyssRate !== null"
-          :title="t('Abyss Points earned per hour: a break of more than 5 minutes counts as 5.')"
-          class="text-3xl font-semibold tabular-nums text-blue">{{ formatAmount(store.abyssRate) }}</div>
-        <div v-else-if="store.abyss.earned" class="flex h-9 items-center justify-center text-lg font-semibold text-blue">{{ t('measuring…') }}</div>
-        <div v-else class="text-3xl font-semibold text-blue">—</div>
-        <div class="text-xs text-darker">
-          <template v-if="store.abyss.earned">{{ t('Abyss Points per hour, {n} earned', { n: formatAmount(store.abyss.earned) }) }}</template>
-          <template v-else>{{ t('Abyss Points per hour, from your first gain') }}</template>
-          <template v-if="store.abyss.points !== null && store.abyss.limit">
-            · {{ t('{points} of {limit} this week', { points: formatAmount(store.abyss.points), limit: formatAmount(store.abyss.limit) }) }}
-          </template>
-        </div>
-        <Sparkline v-if="store.abyssTimeline.length" :values="store.abyssTimeline.map((p) => p.perHour)" :label="abyssPointLabel" class="mt-2 h-8 text-blue" />
-      </div>
-      <div class="rounded-lg bg-card p-3 text-center">
-        <div class="text-3xl font-semibold tabular-nums text-accent">{{ store.sessionSouls }}</div>
-        <div class="text-xs text-darker">{{ plural(gained.length, 'souls this session, across {n} pet', 'souls this session, across {n} pets') }}</div>
-      </div>
-      <div class="rounded-lg bg-card p-3 text-center">
-        <div class="text-3xl font-semibold tabular-nums">{{ runs.length }}</div>
-        <div class="text-xs text-darker">{{ plural(runs.length, 'run this session', 'runs this session') }}</div>
-        <div class="mt-2 flex flex-wrap justify-center gap-x-3 gap-y-1 text-xs tabular-nums">
-          <template v-for="k in LOOT_KINDS" :key="k.key">
-            <span v-if="counts[k.key]" :class="['flex items-center gap-1 font-semibold', LOOT_KIND_STYLE[k.key]!.class]" :title="t(k.label)"><svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="LOOT_KIND_STYLE[k.key]!.icon" /></svg>{{ counts[k.key] }}</span>
-          </template>
-        </div>
-      </div>
+    <!-- Its totals. -->
+    <div class="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg bg-card px-4 py-3 text-sm tabular-nums">
+      <span :title="t('Every Kina this session gave: farming, rewards, dungeons')">
+        <span class="text-lg font-semibold text-yellow">{{ formatKina(store.kina.earned) }}</span> <span class="text-xs text-darker">Kina</span>
+      </span>
+      <span :title="t('Every Abyss Point this session gave')">
+        <span class="text-lg font-semibold text-blue">{{ formatAmount(store.abyss.earned) }}</span> <span class="text-xs text-darker">AP</span>
+        <span v-if="store.abyss.points !== null && store.abyss.limit" class="ml-1 text-xs text-darker">· {{ t('{points} of {limit} this week', { points: formatAmount(store.abyss.points), limit: formatAmount(store.abyss.limit) }) }}</span>
+      </span>
+      <span>
+        <span class="text-lg font-semibold">{{ runs.length }}</span> <span class="text-xs text-darker">{{ plural(runs.length, 'run', 'runs') }}</span>
+      </span>
+      <span class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        <template v-for="k in LOOT_KINDS" :key="k.key">
+          <span v-if="counts[k.key]" :class="['flex items-center gap-1 font-semibold', LOOT_KIND_STYLE[k.key]!.class]" :title="t(k.label)"><svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="LOOT_KIND_STYLE[k.key]!.icon" /></svg>{{ counts[k.key] }}</span>
+        </template>
+      </span>
     </div>
 
     <div class="grid items-start gap-3 lg:grid-cols-[3fr_2fr]">
@@ -133,7 +94,13 @@ const lastPacket = computed(() => {
       </div>
 
       <div class="space-y-3">
-        <ul v-if="gained.length" class="divide-y divide-[color:var(--line)] rounded-lg border border-card bg-card">
+        <div class="rounded-lg border border-card bg-card">
+        <div class="flex items-baseline gap-2 border-b border-card px-3 py-2 text-xs">
+          <span class="font-medium text-darker">{{ t('Souls') }}</span>
+          <span class="text-lg font-semibold tabular-nums text-accent">{{ store.sessionSouls }}</span>
+          <span v-if="gained.length" class="text-darker">{{ plural(gained.length, 'on {n} pet', 'on {n} pets') }}</span>
+        </div>
+        <ul v-if="gained.length" class="divide-y divide-[color:var(--line)]">
           <li
             v-for="pet in gained"
             :key="pet.id"
@@ -151,7 +118,8 @@ const lastPacket = computed(() => {
             <LevelBadge :pet="pet" />
           </li>
         </ul>
-        <p v-else class="rounded-lg border border-card py-4 text-center text-sm text-darker">{{ t('No souls yet this session.') }}</p>
+        <p v-else class="py-4 text-center text-sm text-darker">{{ t('No souls yet this session.') }}</p>
+        </div>
 
         <!-- The past sessions have their own page. -->
         <button v-if="store.sessions.history.length" type="button" class="flex w-full items-center gap-2 rounded-lg border border-card px-3 py-2 text-left text-xs hover:bg-card" @click="emit('history')">
@@ -160,15 +128,6 @@ const lastPacket = computed(() => {
           <span class="text-darker">· {{ plural(store.sessions.history.length, '{n} session', '{n} sessions') }}</span>
           <svg viewBox="0 0 16 16" class="ml-auto size-3 text-darker" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.chevron" /></svg>
         </button>
-
-        <div class="space-y-1.5 rounded-lg border border-card p-3 text-xs">
-          <div class="flex items-center gap-2 font-medium">
-            <StatusDot :status="store.status" /> {{ statusText(store.status) }}
-          </div>
-          <div v-if="store.status?.detail" class="break-words text-darker">{{ store.status.detail }}</div>
-          <div class="text-darker">{{ t('Last game packet: {when}', { when: lastPacket }) }}</div>
-          <div v-if="store.status?.replay" class="text-yellow">{{ t('Replaying a saved capture (A2T_REPLAY): counts are not saved.') }}</div>
-        </div>
       </div>
     </div>
   </div>
