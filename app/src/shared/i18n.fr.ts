@@ -1761,4 +1761,8 @@ export const FR: Record<string, string> = {
   'On you for': 'Sur toi depuis',
   'Aggro': 'Aggro',
   'The monsters on you': 'Les monstres sur toi',
+  'Stop the packet log': 'Arrêter le journal de paquets',
+  'Start a packet log (the game messages, to a file in recordings)': 'Démarrer un journal de paquets (les messages du jeu, dans un fichier de recordings)',
+  'Stop log': 'Arrêter',
+  'Log': 'Log',
 }

@@ -2,6 +2,8 @@
 // The dashboard the bubble opens: a window of its own, with its title bar (dragged to move, and the
 // window's buttons), a sidebar of pages in sections (questlog.gg's layout: Home, In game, Records,
 // Settings at the bottom), and the page. Each page says what it is, and holds its overlay's settings.
+import type { PacketLog } from '@shared/meter.ts'
+import { duration } from '@shared/format.ts'
 import { useNow } from '@/lib/now.ts'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BossesView from '@/components/dashboard/BossesView.vue'
@@ -83,6 +85,12 @@ const ABOUT: Partial<Record<PageId, string>> = {
 }
 const store = useApp()
 const api = bridge()
+/** TEMPORARY: the packet log's switch in the title bar (main/packets.ts), to record a moment for a fix. */
+const packetLog = ref<PacketLog>({ on: false, path: null, count: 0, startedAt: null, marks: 0 })
+void api.invoke('packets:get').then((l) => (packetLog.value = l))
+api.on('packets:state', (l) => (packetLog.value = l))
+const logClock = useNow(1000)
+const toggleLog = (): void => void api.invoke('packets:set', !packetLog.value.on)
 
 /** The page shown: Home each time the app starts, then where you left it while it runs. */
 const page = ref<PageId>('home')
@@ -276,6 +284,17 @@ onBeforeUnmount(() => {
         <span v-if="store.sessionSouls" class="rounded-full border border-card bg-dark px-2.5 py-0.5 text-xs text-green">{{ t('+{n} souls this session', { n: store.sessionSouls }) }}</span>
       </div>
       <div class="no-drag flex h-full">
+        <!-- TEMPORARY: start/stop a packet log (to record a moment for a fix). -->
+        <button
+          type="button"
+          :class="['flex items-center gap-1.5 px-3 text-xs', packetLog.on ? 'bg-red/15 text-red' : 'text-darker hover:bg-dark hover:text-default']"
+          :title="packetLog.on ? t('Stop the packet log') : t('Start a packet log (the game messages, to a file in recordings)')"
+          @click="toggleLog"
+        >
+          <span :class="['size-2 rounded-full', packetLog.on ? 'animate-pulse bg-red' : 'bg-darker']" />
+          <template v-if="packetLog.on">{{ t('Stop log') }} · {{ duration(packetLog.startedAt ? logClock - packetLog.startedAt : 0) }}</template>
+          <template v-else>{{ t('Log') }}</template>
+        </button>
         <!-- Placing the overlays, when it does not come with this window. -->
         <button
           v-if="!store.settings.arrangeWithPanel"
