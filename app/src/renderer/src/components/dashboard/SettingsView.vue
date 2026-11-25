@@ -2,6 +2,7 @@
 // Settings: the app's own only (language, you and the game, this window, sound, what the per hour
 // figures count, shortcuts, the Lokthar sync, the engine). Each overlay is set on its own page, listed
 // under Overlays. Every change applies at once.
+import StorageView from '@/components/dashboard/StorageView.vue'
 import { useOverlayList } from '@/lib/overlayList.ts'
 import { timeOfDay } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -187,6 +188,10 @@ const lastPacket = computed(() => {
           <Button size="sm" :disabled="syncing || !token.trim()" :title="t('Send the field bosses as your map last listed them')" @click="syncNow">{{ syncing ? t('Syncing…') : t('Sync now') }}</Button>
         </div>
       </div>
+    </Section>
+
+    <Section title="Cache" icon="M2.5 4.5C2.5 3.4 5 2.5 8 2.5s5.5.9 5.5 2S11 6.5 8 6.5 2.5 5.6 2.5 4.5ZM2.5 4.5v7c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-7M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2">
+      <StorageView />
     </Section>
 
     <Section title="Engine and diagnostics" icon="M5.5 1.5v2M10.5 1.5v2M5.5 12.5v2M10.5 12.5v2M1.5 5.5h2M1.5 10.5h2M12.5 5.5h2M12.5 10.5h2M3.5 3.5h9v9h-9zM6 6h4v4H6z">

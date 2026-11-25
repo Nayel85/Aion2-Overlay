@@ -189,8 +189,8 @@ onBeforeUnmount(() => offs.forEach((off) => off()))
       <SettingRow v-if="cfg.enabled && cfg.height === null" label="Players listed" hint="With a height of its own, the meter lists every player it fits.">
         <Slider :model-value="cfg.rows" :min="1" :max="24" :step="1" @update:model-value="setMeter({ rows: $event })" />
       </SettingRow>
-      <OverlayWindowSettings v-if="cfg.enabled" overlay="meter" setting="meter" />
-      <MeterSizeSettings v-if="cfg.enabled" />
+      <OverlayWindowSettings overlay="meter" setting="meter" />
+      <MeterSizeSettings />
     </Section>
 
     <Section title="Recordings" icon="M8 13.5a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11zM8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4z">

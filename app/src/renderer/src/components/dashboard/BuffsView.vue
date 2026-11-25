@@ -98,24 +98,22 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('buffs', 
       <SettingRow label="Show my buffs over the game" hint="Each buff's icon with its stacks and time left; drag it to move it. It hides while nothing is on you.">
         <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />
       </SettingRow>
-      <template v-if="cfg.enabled">
-        <SettingRow label="Debuffs on their own row" hint="What monsters put on you, on a row above your buffs, edged in red.">
-          <Toggle :model-value="cfg.debuffs" @update:model-value="set({ debuffs: $event })" />
-        </SettingRow>
-        <SettingRow label="Passives and toggles" hint="Your class passives and toggles, without a timer: always on, so hidden unless you want them.">
-          <Toggle :model-value="cfg.passives" @update:model-value="set({ passives: $event })" />
-        </SettingRow>
-        <SettingRow label="Scrolls, food and drinks" hint="The long buffs from items you used. Off, they stay out of the overlay (they are still listed above).">
-          <Toggle :model-value="cfg.consumables" @update:model-value="set({ consumables: $event })" />
-        </SettingRow>
-        <SettingRow label="Icon size">
-          <Slider :model-value="cfg.size" :min="22" :max="56" :step="2" :format="(v: number) => `${v}px`" @update:model-value="set({ size: $event })" />
-        </SettingRow>
-        <SettingRow label="Icons per row">
-          <Slider :model-value="cfg.perRow" :min="4" :max="20" :step="1" @update:model-value="set({ perRow: $event })" />
-        </SettingRow>
-        <OverlayWindowSettings overlay="buffs" setting="buffs" idle />
-      </template>
+      <SettingRow label="Debuffs on their own row" hint="What monsters put on you, on a row above your buffs, edged in red.">
+        <Toggle :model-value="cfg.debuffs" @update:model-value="set({ debuffs: $event })" />
+      </SettingRow>
+      <SettingRow label="Passives and toggles" hint="Your class passives and toggles, without a timer: always on, so hidden unless you want them.">
+        <Toggle :model-value="cfg.passives" @update:model-value="set({ passives: $event })" />
+      </SettingRow>
+      <SettingRow label="Scrolls, food and drinks" hint="The long buffs from items you used. Off, they stay out of the overlay (they are still listed above).">
+        <Toggle :model-value="cfg.consumables" @update:model-value="set({ consumables: $event })" />
+      </SettingRow>
+      <SettingRow label="Icon size">
+        <Slider :model-value="cfg.size" :min="22" :max="56" :step="2" :format="(v: number) => `${v}px`" @update:model-value="set({ size: $event })" />
+      </SettingRow>
+      <SettingRow label="Icons per row">
+        <Slider :model-value="cfg.perRow" :min="4" :max="20" :step="1" @update:model-value="set({ perRow: $event })" />
+      </SettingRow>
+      <OverlayWindowSettings overlay="buffs" setting="buffs" idle />
     </Section>
   </div>
 </template>

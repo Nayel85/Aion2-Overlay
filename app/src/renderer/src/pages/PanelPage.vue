@@ -5,7 +5,6 @@
 import { useNow } from '@/lib/now.ts'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BossesView from '@/components/dashboard/BossesView.vue'
-import ChangelogView from '@/components/dashboard/ChangelogView.vue'
 import CharactersView from '@/components/dashboard/CharactersView.vue'
 import UpdatesView from '@/components/dashboard/UpdatesView.vue'
 import EventsView from '@/components/dashboard/EventsView.vue'
@@ -19,7 +18,6 @@ import OverlaysView from '@/components/dashboard/OverlaysView.vue'
 import { OVERLAY_PAGES, type OverlayEntryId } from '@/lib/overlayList.ts'
 import DutyView from '@/components/dashboard/DutyView.vue'
 import DetailsPage from '@/pages/DetailsPage.vue'
-import StorageView from '@/components/dashboard/StorageView.vue'
 import HomeView from '@/components/dashboard/HomeView.vue'
 import MapView from '@/components/dashboard/MapView.vue'
 import PetsView from '@/components/dashboard/PetsView.vue'
@@ -40,7 +38,7 @@ import { serverName } from '@shared/servers.ts'
 import { TIMERS, type TimerId } from '@shared/timers.ts'
 import type { UpdateState } from '@shared/update.ts'
 
-type PageId = 'home' | 'characters' | 'overlays' | 'training' | 'map' | 'pets' | 'gatherables' | 'pvp' | 'events' | 'bosses' | 'duty' | 'history' | 'bests' | 'session' | 'sessions' | 'stats' | 'inventory' | 'cache' | 'settings' | 'updates' | 'changes'
+type PageId = 'home' | 'characters' | 'overlays' | 'training' | 'map' | 'pets' | 'gatherables' | 'pvp' | 'events' | 'bosses' | 'duty' | 'history' | 'bests' | 'session' | 'sessions' | 'stats' | 'inventory' | 'settings' | 'updates'
 interface Page {
   id: PageId
   label: string
@@ -64,20 +62,18 @@ const PAGES: Record<PageId, Page> = {
   duty: { id: 'duty', label: 'Duty board', icon: 'M3.5 2.5h9v11h-9zM5.5 5.5h5M5.5 8h5M5.5 10.5h3' },
   history: { id: 'history', label: 'Combat history', icon: 'M2 8a6 6 0 1 0 1.8-4.3M2 2.5v3h3M8 5v3l2 1.5', emoji: '💪' },
   bests: { id: 'bests', label: 'Personal bests', icon: 'M5 2.5h6v3a3 3 0 0 1-6 0zM5 3.5H3v1a2 2 0 0 0 2 2M11 3.5h2v1a2 2 0 0 1-2 2M8 8.5v3M5.5 13.5h5' },
-  cache: { id: 'cache', label: 'Cache', icon: 'M2.5 4.5C2.5 3.4 5 2.5 8 2.5s5.5.9 5.5 2S11 6.5 8 6.5 2.5 5.6 2.5 4.5ZM2.5 4.5v7c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2v-7M2.5 8c0 1.1 2.5 2 5.5 2s5.5-.9 5.5-2' },
   sessions: { id: 'sessions', label: 'Past sessions', icon: 'M2.5 3.5h11M2.5 8h11M2.5 12.5h7M12 11l1.5 1.5L16 10' },
   inventory: { id: 'inventory', label: 'Inventory', icon: 'M3 5.5h10v8H3zM5.5 5.5V4a2.5 2.5 0 0 1 5 0v1.5M3 9h10' },
   stats: { id: 'stats', label: 'Stats', icon: 'M2.5 13.5h11M4 11V7M7 11V4M10 11V8M13 11V5.5' },
   session: { id: 'session', label: 'Session', icon: 'M2.5 11.5 6 8l2.5 2.5 5-5M10 5.5h3.5V9' },
   updates: { id: 'updates', label: 'Updates', icon: 'M8 2v8M4.5 6.5 8 10l3.5-3.5M2.5 13.5h11' },
-  changes: { id: 'changes', label: "What's new", icon: 'M8 1.5 9.8 6l4.7.4-3.6 3 1.1 4.6L8 11.6 4 14l1.1-4.6-3.6-3L6.2 6z' },
   settings: { id: 'settings', label: 'Settings', icon: 'M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM13 8a5 5 0 0 0-.1-.9l1.4-1.1-1.4-2.4-1.7.6a5 5 0 0 0-1.5-.9L9.4 1.5H6.6l-.3 1.8a5 5 0 0 0-1.5.9l-1.7-.6-1.4 2.4 1.4 1.1a5 5 0 0 0 0 1.8l-1.4 1.1 1.4 2.4 1.7-.6a5 5 0 0 0 1.5.9l.3 1.8h2.8l.3-1.8a5 5 0 0 0 1.5-.9l1.7.6 1.4-2.4-1.4-1.1c.1-.3.1-.6.1-.9Z' },
 }
 const SECTIONS: { title: string | null; pages: PageId[] }[] = [
   { title: null, pages: ['home', 'characters', 'overlays'] },
   { title: 'In game', pages: ['map', 'pets', 'gatherables', 'duty', 'events', 'bosses', 'pvp', 'training'] },
-  { title: 'Records', pages: ['history', 'bests', 'session', 'sessions', 'stats', 'inventory', 'cache'] },
-  { title: 'App', pages: ['updates', 'changes'] },
+  { title: 'Records', pages: ['history', 'bests', 'session', 'sessions', 'stats', 'inventory'] },
+  { title: 'App', pages: ['updates'] },
 ]
 /** The pages kept as they were (their old tabs), with the title and text above them. */
 const ABOUT: Partial<Record<PageId, string>> = {
@@ -101,7 +97,9 @@ function go(p: string): void {
     store.openPet(null)
     return
   }
-  const id = (head in PAGES ? head : 'home') as PageId
+  // Pages that went into others: the Cache into Settings, What's new into Updates.
+  const into: Record<string, PageId> = { cache: 'settings', changes: 'updates' }
+  const id = (into[head] ?? (head in PAGES ? head : 'home')) as PageId
   if (id !== 'pets') store.openPet(null)
   page.value = id
 }
@@ -330,7 +328,7 @@ onBeforeUnmount(() => {
       </nav>
 
       <main ref="main" class="min-w-0 flex-1 overflow-y-auto">
-        <div :class="['mx-auto px-8 py-7', ['settings', 'updates', 'changes'].includes(page) ? 'max-w-4xl' : page === 'history' || page === 'bests' || (page === 'pvp' && pvpFight) ? 'max-w-[1700px]' : 'max-w-6xl']">
+        <div :class="['mx-auto px-8 py-7', ['settings', 'updates'].includes(page) ? 'max-w-4xl' : page === 'history' || page === 'bests' || (page === 'pvp' && pvpFight) ? 'max-w-[1700px]' : 'max-w-6xl']">
           <div v-if="!store.ready" class="py-6 text-center text-sm text-darker">{{ t('Loading…') }}</div>
           <HomeView v-else-if="page === 'home'" @go="go" />
           <CharactersView v-else-if="page === 'characters'" />
@@ -350,10 +348,8 @@ onBeforeUnmount(() => {
           <InventoryView v-else-if="page === 'inventory'" />
           <OverlaysView v-else-if="page === 'overlays'" v-model="overlay" />
           <DutyView v-else-if="page === 'duty'" />
-          <StorageView v-else-if="page === 'cache'" />
           <SettingsView v-else-if="page === 'settings'" @go="go" />
           <UpdatesView v-else-if="page === 'updates'" @go="go" />
-          <ChangelogView v-else-if="page === 'changes'" :version="version" />
           <template v-else>
             <!-- A PvP fight opens in place of the list, like a saved fight in Combat history. -->
             <DetailsPage v-if="page === 'pvp' && pvpFight" :key="pvpFight" :source="{ kind: 'pvp', id: pvpFight }" @back="pvpFight = null" />

@@ -22,36 +22,34 @@ const HUD_MODES = [
     <SettingRow label="Show the Soul Tracker" hint="Souls as they drop, the soul monsters around you and your pets' progress, over the game (borderless or windowed mode).">
       <Toggle :model-value="store.settings.hud.enabled" @update:model-value="store.setHud({ enabled: $event })" />
     </SettingRow>
-    <template v-if="store.settings.hud.enabled">
-      <SettingRow label="Nearby section" hint="At the top: the soul monsters around you, with the pet each drops.">
-        <Toggle :model-value="store.settings.hud.nearby" @update:model-value="store.setHud({ nearby: $event })" />
-      </SettingRow>
-      <SettingRow v-if="store.settings.hud.nearby" label="How many nearby">
-        <Slider :model-value="store.settings.hud.nearbyCount" :min="1" :max="8" :step="1" @update:model-value="store.setHud({ nearbyCount: $event })" />
-      </SettingRow>
-      <SettingRow label="Below it" :hint="({ pinned: 'Pin pets on the Pets page.', recent: 'Pets you gained souls for, latest first.' })[store.settings.hud.mode]">
-        <SelectBox :model-value="store.settings.hud.mode" :options="HUD_MODES" @update:model-value="store.setHud({ mode: $event })" />
-      </SettingRow>
-      <SettingRow v-if="store.settings.hud.mode !== 'pinned'" label="How many this session">
-        <Slider :model-value="store.settings.hud.recentCount" :min="1" :max="8" :step="1" @update:model-value="store.setHud({ recentCount: $event })" />
-      </SettingRow>
-      <SettingRow label="Soul pop-ups" hint="A line for each soul as it drops.">
-        <Toggle :model-value="store.settings.hud.toasts" @update:model-value="store.setHud({ toasts: $event })" />
-      </SettingRow>
-      <SettingRow label="Hide without game traffic" hint="When the game has sent nothing for 15 seconds.">
-        <Toggle :model-value="store.settings.hud.hideWithoutGame" @update:model-value="store.setHud({ hideWithoutGame: $event })" />
-      </SettingRow>
-      <SettingRow label="Clear between fights" hint="After this long with no kills or drops the HUD clears and hides until the next fight.">
-        <Slider
-          :model-value="store.settings.hud.idleHideSeconds"
-          :min="0"
-          :max="300"
-          :step="15"
-          :format="(v: number) => (v ? `${v}s` : t('Off'))"
-          @update:model-value="store.setHud({ idleHideSeconds: $event })"
-        />
-      </SettingRow>
-      <OverlayWindowSettings overlay="hud" setting="hud" :scale="[0.75, 1.75]" />
-    </template>
+    <SettingRow label="Nearby section" hint="At the top: the soul monsters around you, with the pet each drops.">
+      <Toggle :model-value="store.settings.hud.nearby" @update:model-value="store.setHud({ nearby: $event })" />
+    </SettingRow>
+    <SettingRow v-if="store.settings.hud.nearby" label="How many nearby">
+      <Slider :model-value="store.settings.hud.nearbyCount" :min="1" :max="8" :step="1" @update:model-value="store.setHud({ nearbyCount: $event })" />
+    </SettingRow>
+    <SettingRow label="Below it" :hint="({ pinned: 'Pin pets on the Pets page.', recent: 'Pets you gained souls for, latest first.' })[store.settings.hud.mode]">
+      <SelectBox :model-value="store.settings.hud.mode" :options="HUD_MODES" @update:model-value="store.setHud({ mode: $event })" />
+    </SettingRow>
+    <SettingRow v-if="store.settings.hud.mode !== 'pinned'" label="How many this session">
+      <Slider :model-value="store.settings.hud.recentCount" :min="1" :max="8" :step="1" @update:model-value="store.setHud({ recentCount: $event })" />
+    </SettingRow>
+    <SettingRow label="Soul pop-ups" hint="A line for each soul as it drops.">
+      <Toggle :model-value="store.settings.hud.toasts" @update:model-value="store.setHud({ toasts: $event })" />
+    </SettingRow>
+    <SettingRow label="Hide without game traffic" hint="When the game has sent nothing for 15 seconds.">
+      <Toggle :model-value="store.settings.hud.hideWithoutGame" @update:model-value="store.setHud({ hideWithoutGame: $event })" />
+    </SettingRow>
+    <SettingRow label="Clear between fights" hint="After this long with no kills or drops the HUD clears and hides until the next fight.">
+      <Slider
+        :model-value="store.settings.hud.idleHideSeconds"
+        :min="0"
+        :max="300"
+        :step="15"
+        :format="(v: number) => (v ? `${v}s` : t('Off'))"
+        @update:model-value="store.setHud({ idleHideSeconds: $event })"
+      />
+    </SettingRow>
+    <OverlayWindowSettings overlay="hud" setting="hud" :scale="[0.75, 1.75]" />
   </Section>
 </template>

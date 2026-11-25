@@ -38,18 +38,16 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
       <SettingRow label="Gathering outcome" hint="A pill as each gathering starts, gone with its result. Clicks go through it; while the dashboard is open it shows a sample you can drag into place.">
         <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />
       </SettingRow>
-      <template v-if="cfg.enabled">
-        <SettingRow label="Look" hint="A ring as the flight timer's: the item inside, the outcome's colour around it running down to the result, x2 when it doubles. The game's gauges: success and failure filling roll by roll, Lady Luck and the x2 as they come (a craft shows as the ring). Or a pill that says it in words.">
-          <Segmented size="sm" :model-value="cfg.style" :options="STYLES" @update:model-value="set({ style: $event })" />
-        </SettingRow>
-        <SettingRow label="Item icon" hint="What it will give. Each spot's kind is learnt from its first gathering (Odyle is known already).">
-          <Toggle :model-value="cfg.icon" @update:model-value="set({ icon: $event })" />
-        </SettingRow>
-        <OverlayWindowSettings overlay="gather" setting="gather" :opacity-min="0.2" :scale="[0.6, 2]" />
-      </template>
+      <SettingRow label="Look" hint="A ring as the flight timer's: the item inside, the outcome's colour around it running down to the result, x2 when it doubles. The game's gauges: success and failure filling roll by roll, Lady Luck and the x2 as they come (a craft shows as the ring). Or a pill that says it in words.">
+        <Segmented size="sm" :model-value="cfg.style" :options="STYLES" @update:model-value="set({ style: $event })" />
+      </SettingRow>
+      <SettingRow label="Item icon" hint="What it will give. Each spot's kind is learnt from its first gathering (Odyle is known already).">
+        <Toggle :model-value="cfg.icon" @update:model-value="set({ icon: $event })" />
+      </SettingRow>
+      <OverlayWindowSettings overlay="gather" setting="gather" :opacity-min="0.2" :scale="[0.6, 2]" />
     </Section>
 
-    <Section v-if="cfg.enabled" title="What to show">
+    <Section title="What to show">
       <SettingRow label="Will fail" hint="In red.">
         <Toggle :model-value="cfg.fail" @update:model-value="set({ fail: $event })" />
       </SettingRow>
@@ -64,7 +62,7 @@ const sounds = SOUNDS.filter((s) => s.id !== 'custom').map((s) => ({ id: s.id, l
       </SettingRow>
     </Section>
 
-    <Section v-if="cfg.enabled" title="Sound">
+    <Section title="Sound">
       <SettingRow label="When it will fail">
         <Toggle :model-value="cfg.soundFail" @update:model-value="set({ soundFail: $event })" />
       </SettingRow>

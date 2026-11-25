@@ -18,9 +18,9 @@ const set = (patch: Partial<typeof skills.value>): void => void store.set('skill
     <SettingRow label="Show my skills over the game" hint="Your own damage on the meter's target, skill by skill: DPS, share and damage of each.">
       <Toggle :model-value="skills.enabled" @update:model-value="set({ enabled: $event })" />
     </SettingRow>
-    <SettingRow v-if="skills.enabled" label="Skills listed">
+    <SettingRow label="Skills listed">
       <Slider :model-value="skills.rows" :min="1" :max="20" :step="1" @update:model-value="set({ rows: $event })" />
     </SettingRow>
-    <OverlayWindowSettings v-if="skills.enabled" overlay="skills" setting="skills" idle />
+    <OverlayWindowSettings overlay="skills" setting="skills" idle />
   </Section>
 </template>

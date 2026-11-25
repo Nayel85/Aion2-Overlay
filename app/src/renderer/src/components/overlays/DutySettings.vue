@@ -18,6 +18,6 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('duty', {
     <SettingRow label="Show as you open the board" hint="As you open the duty board in game, reroll it or take a mission, its advice shows over the game; it closes as you move, fight or close the board, or with its X.">
       <Toggle :model-value="cfg.overlay" @update:model-value="set({ overlay: $event })" />
     </SettingRow>
-    <OverlayWindowSettings v-if="cfg.overlay" overlay="duty" setting="duty" />
+    <OverlayWindowSettings overlay="duty" setting="duty" />
   </Section>
 </template>

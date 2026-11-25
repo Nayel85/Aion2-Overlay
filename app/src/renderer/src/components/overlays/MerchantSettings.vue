@@ -15,6 +15,6 @@ const store = useApp()
     <SettingRow label="Show as you open the shop" hint="When you open one of its tabs, a window lists the pets it sells that you have not maxed: prices, where they come from, and where they spawn.">
       <Toggle :model-value="store.settings.hud.merchant" @update:model-value="store.setHud({ merchant: $event })" />
     </SettingRow>
-    <OverlayWindowSettings v-if="store.settings.hud.merchant" overlay="merchant" setting="hud" :opacity-min="null" />
+    <OverlayWindowSettings overlay="merchant" setting="hud" :opacity-min="null" />
   </Section>
 </template>

@@ -18,6 +18,6 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('dummy', 
     <SettingRow label="Show the Training overlay" hint="A small panel over the game while you train: the clock, your DPS, start and stop.">
       <Toggle :model-value="cfg.overlay" @update:model-value="set({ overlay: $event })" />
     </SettingRow>
-    <OverlayWindowSettings v-if="cfg.overlay" overlay="training" setting="dummy" :opacity-min="null" idle />
+    <OverlayWindowSettings overlay="training" setting="dummy" :opacity-min="null" idle />
   </Section>
 </template>

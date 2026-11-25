@@ -2,6 +2,7 @@
 // Updates: this copy's version and Check for updates, which downloads a newer release, puts it in
 // and restarts the app (main/updater.ts), the installed and the portable copy alike. What's new
 // lists what each version changed.
+import ChangelogView from '@/components/dashboard/ChangelogView.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import SettingRow from '@/components/SettingRow.vue'
@@ -9,7 +10,6 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { loc, t } from '@/lib/i18n.ts'
-import { CHANGELOG } from '@shared/changelog.ts'
 import { releaseFile, releasePage, type UpdateState } from '@shared/update.ts'
 
 const emit = defineEmits<{ go: [page: string] }>()
@@ -70,7 +70,6 @@ const manual = computed(() => {
 })
 
 /** This version's lines from the changelog, if it has them. */
-const thisVersion = computed(() => CHANGELOG.find((e) => e.version === (update.value?.current ?? info.value?.version)) ?? null)
 </script>
 
 <template>
@@ -111,17 +110,8 @@ const thisVersion = computed(() => CHANGELOG.find((e) => e.version === (update.v
       </SettingRow>
     </Section>
 
-    <Section title="In this version" icon="M8 1.5 9.8 6l4.7.4-3.6 3 1.1 4.6L8 11.6 4 14l1.1-4.6-3.6-3L6.2 6z">
-      <ul v-if="thisVersion" class="space-y-1 py-3 text-sm text-dark">
-        <li v-for="item in thisVersion.items" :key="item" class="flex gap-2">
-          <span class="mt-[7px] size-1 shrink-0 rounded-full bg-darker" />
-          <span>{{ t(item) }}</span>
-        </li>
-      </ul>
-      <p v-else class="py-3 text-sm text-darker">{{ t('No notes for this version.') }}</p>
-      <div class="pb-3">
-        <Button size="sm" @click="emit('go', 'changes')">{{ t("Every version in What's new") }}</Button>
-      </div>
+    <Section title="What's new" icon="M8 1.5 9.8 6l4.7.4-3.6 3 1.1 4.6L8 11.6 4 14l1.1-4.6-3.6-3L6.2 6z">
+      <ChangelogView :version="info?.version ?? null" class="py-3" />
     </Section>
   </div>
 </template>

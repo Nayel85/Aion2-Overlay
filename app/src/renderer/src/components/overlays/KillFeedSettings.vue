@@ -20,11 +20,9 @@ const set = (patch: Partial<Settings['killFeed']>): void => void store.set('kill
     <SettingRow label="Show the Kill Feed" hint="This session's kills and deaths, and each player kill around you as it happens.">
       <Toggle :model-value="open" @update:model-value="toggle" />
     </SettingRow>
-    <template v-if="open">
-      <SettingRow label="Your target" hint="Under the kills and deaths: the player you last targeted, with level, server, class and combat power (enemies in red). For 2 minutes, or until you target another.">
-        <Toggle :model-value="store.settings.killFeed.target" @update:model-value="set({ target: $event })" />
-      </SettingRow>
-      <OverlayWindowSettings overlay="killfeed" setting="killFeed" :opacity-min="0" opacity-label="Kill feed background" opacity-hint="At None the text keeps a dark glow, readable on the game." idle />
-    </template>
+    <SettingRow label="Your target" hint="Under the kills and deaths: the player you last targeted, with level, server, class and combat power (enemies in red). For 2 minutes, or until you target another.">
+      <Toggle :model-value="store.settings.killFeed.target" @update:model-value="set({ target: $event })" />
+    </SettingRow>
+    <OverlayWindowSettings overlay="killfeed" setting="killFeed" :opacity-min="0" opacity-label="Kill feed background" opacity-hint="At None the text keeps a dark glow, readable on the game." idle />
   </Section>
 </template>

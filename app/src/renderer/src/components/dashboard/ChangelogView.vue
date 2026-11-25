@@ -1,9 +1,7 @@
 <script setup lang="ts">
-// What's new: each version's changes, one line each (shared/changelog.ts), newest first. In the
-// sidebar's App group, under Updates. A version past the one running is the next
-// update, still to come.
+// What's new: each version's changes, one line each (shared/changelog.ts), newest first, on the
+// Updates page under the update itself. A version past the one running is the next update, still to come.
 import { computed } from 'vue'
-import PageHeader from '@/components/ui/PageHeader.vue'
 import { t } from '@/lib/i18n.ts'
 import { CHANGELOG } from '@shared/changelog.ts'
 
@@ -23,7 +21,6 @@ const entries = computed(() =>
 
 <template>
   <div>
-    <PageHeader title="What's new" about="The changes in each version, newest first." />
     <div class="space-y-4">
       <section v-for="e in entries" :key="e.version" class="rounded-xl border border-card bg-card px-4 py-3">
         <h3 class="mb-2 flex items-center gap-2 text-sm font-semibold">

@@ -17,9 +17,9 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('buffs', 
     <SettingRow label="Show when I lose control" hint="A banner mid-screen while you are stunned, knocked down, rooted, feared, silenced... with the seconds left. Clicks pass through it; while this window is open it shows a preview you can drag into place.">
       <Toggle :model-value="cfg.cc" @update:model-value="set({ cc: $event })" />
     </SettingRow>
-    <SettingRow v-if="cfg.cc" label="Monsters' other debuffs" hint="Under the banner: the other debuffs monsters put on you (poisons, slows...), with their time left.">
+    <SettingRow label="Monsters' other debuffs" hint="Under the banner: the other debuffs monsters put on you (poisons, slows...), with their time left.">
       <Toggle :model-value="cfg.ccDebuffs" @update:model-value="set({ ccDebuffs: $event })" />
     </SettingRow>
-    <OverlayWindowSettings v-if="cfg.cc" overlay="cc" setting="buffs" :opacity-min="null" />
+    <OverlayWindowSettings overlay="cc" setting="buffs" :opacity-min="null" />
   </Section>
 </template>

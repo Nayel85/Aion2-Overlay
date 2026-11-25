@@ -1,9 +1,9 @@
 <script setup lang="ts">
 // Cache: what the app keeps on disk, kind by kind with its size, and a button to clear what can be
 // cleared (main/storage.ts). Settings, the saved fights and the characters are never touched here.
+// A section of the Settings page.
 import { computed, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
-import PageHeader from '@/components/ui/PageHeader.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
 import { formatBytes, type StorageId, type StorageUsage } from '@shared/storage.ts'
@@ -58,11 +58,12 @@ onMounted(() => void load())
 
 <template>
   <div>
-    <PageHeader title="Cache" about="What the app keeps on your disk, and what can be cleared safely. Your settings, characters and saved fights are never cleared from here.">
+    <div class="mb-3 flex items-start gap-4">
+      <p class="flex-1 text-xs text-darker">{{ t('What the app keeps on your disk, and what can be cleared safely. Your settings, characters and saved fights are never cleared from here.') }}</p>
       <Button intent="primary" :loading="busy === 'all'" :disabled="!usage || cacheBytes === 0 || busy !== null" @click="clearCaches">
         {{ t('Clear the cache') }}<template v-if="usage"> ({{ formatBytes(cacheBytes) }})</template>
       </Button>
-    </PageHeader>
+    </div>
 
     <p v-if="!usage" class="text-sm text-darker">{{ t('Loading…') }}</p>
     <template v-else>

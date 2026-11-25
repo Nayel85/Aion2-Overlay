@@ -19,11 +19,9 @@ const set = (patch: Partial<typeof bar.value>): void => void store.set('timerBar
     <SettingRow label="Show the Event Bar" hint="The events with an alert on (set on the Events page), starting within 13 hours, over the game.">
       <Toggle :model-value="bar.enabled" @update:model-value="set({ enabled: $event })" />
     </SettingRow>
-    <template v-if="bar.enabled">
-      <SettingRow label="Layout">
-        <Segmented size="sm" :model-value="bar.layout" :options="[{ id: 'bar', label: 'Bar' }, { id: 'list', label: 'List' }] as const" @update:model-value="set({ layout: $event })" />
-      </SettingRow>
-      <OverlayWindowSettings overlay="timerbar" setting="timerBar" />
-    </template>
+    <SettingRow label="Layout">
+      <Segmented size="sm" :model-value="bar.layout" :options="[{ id: 'bar', label: 'Bar' }, { id: 'list', label: 'List' }] as const" @update:model-value="set({ layout: $event })" />
+    </SettingRow>
+    <OverlayWindowSettings overlay="timerbar" setting="timerBar" />
   </Section>
 </template>

@@ -34,12 +34,10 @@ const choices = computed(() => [...new Set([...HIDE, cfg.value.hideAfter])].sort
       <SettingRow label="Join requests list" hint="Comes up by itself when someone applies to your party. Move it by its header; its dash minimizes it and its X hides it until the next request. The X on a row takes that person off the list.">
         <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />
       </SettingRow>
-      <template v-if="cfg.enabled">
-        <SettingRow label="Hides after" hint="With no new request for this long, the list goes away. A new request brings it back, and starts the time over.">
-          <SelectBox size="sm" :model-value="cfg.hideAfter" :options="choices" @update:model-value="set({ hideAfter: $event })" />
-        </SettingRow>
-        <OverlayWindowSettings overlay="applicants" setting="applicants" :opacity-min="0" />
-      </template>
+      <SettingRow label="Hides after" hint="With no new request for this long, the list goes away. A new request brings it back, and starts the time over.">
+        <SelectBox size="sm" :model-value="cfg.hideAfter" :options="choices" @update:model-value="set({ hideAfter: $event })" />
+      </SettingRow>
+      <OverlayWindowSettings overlay="applicants" setting="applicants" :opacity-min="0" />
     </Section>
 
     <Section title="Good to know">

@@ -25,7 +25,7 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('flight',
       <SettingRow label="Flight timer" hint="Up while flying or refilling, gone at full. Clicks go through it; while the dashboard is open, drag it into place.">
         <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />
       </SettingRow>
-      <OverlayWindowSettings v-if="cfg.enabled" overlay="flight" setting="flight" :opacity-min="0.2" />
+      <OverlayWindowSettings overlay="flight" setting="flight" :opacity-min="0.2" />
     </Section>
 
     <Section title="Good to know">

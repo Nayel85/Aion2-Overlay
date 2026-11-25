@@ -39,18 +39,16 @@ const AFFLICTED_BY = [
       <SettingRow label="Party frames" hint="Comes up by itself in a party. Drag it to move it.">
         <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />
       </SettingRow>
-      <template v-if="cfg.enabled">
-        <SettingRow label="Show yourself" hint="Your own bar among the others.">
-          <Toggle :model-value="cfg.self" @update:model-value="set({ self: $event })" />
-        </SettingRow>
-        <SettingRow label="Title bar" hint="A header with a button to minimize it and one to hide it until the next party.">
-          <Toggle :model-value="cfg.header" @update:model-value="set({ header: $event })" />
-        </SettingRow>
-        <OverlayWindowSettings overlay="party" setting="party" :opacity-min="0.2" idle />
-      </template>
+      <SettingRow label="Show yourself" hint="Your own bar among the others.">
+        <Toggle :model-value="cfg.self" @update:model-value="set({ self: $event })" />
+      </SettingRow>
+      <SettingRow label="Title bar" hint="A header with a button to minimize it and one to hide it until the next party.">
+        <Toggle :model-value="cfg.header" @update:model-value="set({ header: $event })" />
+      </SettingRow>
+      <OverlayWindowSettings overlay="party" setting="party" :opacity-min="0.2" idle />
     </Section>
 
-    <Section v-if="cfg.enabled" title="Each bar">
+    <Section title="Each bar">
       <SettingRow label="Class icon">
         <Toggle :model-value="cfg.icon" @update:model-value="set({ icon: $event })" />
       </SettingRow>
@@ -80,7 +78,7 @@ const AFFLICTED_BY = [
       </SettingRow>
     </Section>
 
-    <Section v-if="cfg.enabled" title="Colours">
+    <Section title="Colours">
       <SettingRow label="HP" hint="The bar as it is.">
         <span class="flex items-center gap-2">
           <button v-if="cfg.hpColor !== PARTY_DEFAULT_COLORS.hp" type="button" class="text-xs text-darker hover:text-default" @click="set({ hpColor: PARTY_DEFAULT_COLORS.hp })">{{ t('Reset') }}</button>
