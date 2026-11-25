@@ -95,3 +95,9 @@
 .unfold {
   animation: unfold 0.16s ease-out;
 }
+
+/* A setting the search led to: lit up a moment (lib/settingsSearch.ts). */
+.setting-found {
+  background: rgb(59 130 246 / 0.18);
+  box-shadow: 0 0 0 6px rgb(59 130 246 / 0.18);
+}

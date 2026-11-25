@@ -15,7 +15,8 @@ import StatsView from '@/components/dashboard/StatsView.vue'
 import SessionsView from '@/components/dashboard/SessionsView.vue'
 import InventoryView from '@/components/dashboard/InventoryView.vue'
 import OverlaysView from '@/components/dashboard/OverlaysView.vue'
-import { OVERLAY_PAGES, type OverlayEntryId } from '@/lib/overlayList.ts'
+import { OVERLAY_PAGES, useOverlayList, type OverlayEntryId } from '@/lib/overlayList.ts'
+import { searchSettings, showSetting, type SettingEntry } from '@/lib/settingsSearch.ts'
 import DutyView from '@/components/dashboard/DutyView.vue'
 import DetailsPage from '@/pages/DetailsPage.vue'
 import HomeView from '@/components/dashboard/HomeView.vue'
@@ -164,12 +165,44 @@ const badge = computed<Partial<Record<PageId, string>>>(() => {
 // Escape backs out of a pet's map, else puts the dashboard away (back to the game). In a text box
 // it leaves the box first.
 const onKey = (e: KeyboardEvent): void => {
+  // Ctrl+F: the settings search.
+  if (e.ctrlKey && e.key.toLowerCase() === 'f') {
+    e.preventDefault()
+    searchBox.value?.focus()
+    searchBox.value?.select()
+    return
+  }
   if (e.key !== 'Escape' || e.defaultPrevented) return
   const t = e.target
   if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t instanceof HTMLSelectElement) return t.blur()
   if (store.openPetId !== null) return store.openPet(null)
   hide()
 }
+// ---- the settings search ------------------------------------------------------------------------------
+const query = ref('')
+const searchBox = ref<HTMLInputElement | null>(null)
+/** The results' list, under the box (over the page: the sidebar would cut it). */
+const dropAt = computed(() => {
+  void query.value
+  const r = searchBox.value?.getBoundingClientRect()
+  return r ? { left: `${r.left}px`, top: `${r.bottom + 4}px` } : {}
+})
+const overlayList = useOverlayList()
+/** What matches: the settings, and the overlays by name. */
+const results = computed(() => searchSettings(query.value, overlayList.value.map((o) => ({ label: o.name, hint: o.about, go: `overlays:${o.id}` }))).slice(0, 10))
+/** Where a setting is: a page, or an overlay on the Overlays page. */
+function where(to: string): string {
+  const [head, sub] = to.split(':')
+  if (head === 'overlays') return `${t('Overlays')} › ${overlayList.value.find((o) => o.id === sub)?.name ?? ''}`
+  return t(PAGES[head as PageId]?.label ?? head!)
+}
+function pick(r: SettingEntry): void {
+  go(r.go)
+  query.value = ''
+  searchBox.value?.blur()
+  showSetting(r.label)
+}
+
 const offs: (() => void)[] = []
 onMounted(() => {
   window.addEventListener('keydown', onKey)
@@ -269,6 +302,25 @@ onBeforeUnmount(() => {
 
     <div class="flex min-h-0 flex-1">
       <nav class="flex w-60 shrink-0 flex-col overflow-y-auto border-r border-card px-2.5 py-3">
+        <!-- The settings search. -->
+        <div class="relative mb-4">
+          <input
+            ref="searchBox"
+            v-model="query"
+            type="search"
+            :placeholder="t('Search settings (Ctrl+F)')"
+            class="h-8 w-full rounded-md border border-light bg-default px-2.5 text-sm placeholder:text-darkest focus:border-accent"
+            @keydown.enter="results[0] && pick(results[0])"
+          />
+          <div v-if="query.trim()" class="fixed z-40 max-h-[70vh] w-[24rem] overflow-y-auto rounded-lg border border-light bg-default shadow-xl" :style="dropAt">
+            <button v-for="(r, i) in results" :key="i" type="button" class="block w-full border-b border-card px-3 py-2 text-left last:border-b-0 hover:bg-card" @click="pick(r)">
+              <div class="text-sm">{{ t(r.label) }}</div>
+              <div class="text-[11px] text-accent">{{ where(r.go) }}</div>
+              <div v-if="r.hint" class="line-clamp-2 text-[11px] text-darker">{{ t(r.hint) }}</div>
+            </button>
+            <p v-if="!results.length" class="px-3 py-3 text-xs text-darker">{{ t('No setting matches.') }}</p>
+          </div>
+        </div>
         <div v-for="(s, n) in SECTIONS" :key="s.title ?? ''" :class="n > 0 && 'mt-5'">
           <div v-if="s.title" class="mb-1 px-2.5 text-[11px] font-medium uppercase tracking-wider text-darkest">{{ t(s.title) }}</div>
           <button

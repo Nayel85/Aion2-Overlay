@@ -1738,4 +1738,6 @@ export const FR: Record<string, string> = {
   'Your bests on each kind of content, each character: the best DPS on each boss or the fastest run, and for the Nightmares each level\'s. Click one for its fight.': 'Tes records sur chaque type de contenu, par personnage : le meilleur DPS sur chaque boss ou le run le plus rapide, et pour les Nightmare ceux de chaque niveau. Clique sur l\'un pour voir son combat.',
   'Best DPS': 'Meilleur DPS',
   'Fastest run': 'Run le plus rapide',
+  'Search settings (Ctrl+F)': 'Chercher un réglage (Ctrl+F)',
+  'No setting matches.': 'Aucun réglage ne correspond.',
 }
