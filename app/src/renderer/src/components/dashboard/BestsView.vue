@@ -9,6 +9,9 @@
 //   fight without its level is left out), the best DPS or the fastest kill at each, from the fights
 //   kept. A cell's fight can be deleted, or a whole level's (the low ones, once only level 10 is done).
 // A best opens its fight in this page.
+import EmptyState from '@/components/ui/EmptyState.vue'
+import { useArmed } from '@/lib/confirm.ts'
+import CharacterChips from '@/components/CharacterChips.vue'
 import { shortDate } from '@/lib/format.ts'
 import { provideFightOpener, runClearFight } from '@/lib/fights.ts'
 import FightLink from '@/components/FightLink.vue'
@@ -20,7 +23,7 @@ import DetailsPage from '@/pages/DetailsPage.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import { bridge } from '@/lib/bridge.ts'
-import { loc, t } from '@/lib/i18n.ts'
+import { t } from '@/lib/i18n.ts'
 import { useStored } from '@/lib/now.ts'
 import { useApp } from '@/stores/app.ts'
 import type { Best, Encounter, FightSummary, FightYou } from '@shared/meter.ts'
@@ -223,19 +226,8 @@ const seasons = computed(() =>
 /** A Nightmare boss's colour, by its grade: the rares (Notun, Gerod) green, the legend (Zikel) blue, the commons grey. */
 const GRADE_TONE: Record<NightmareGrade, string> = { common: 'text-dark', rare: 'text-green', legend: 'text-blue' }
 const bossTone = (grade: NightmareGrade | null): string => (grade ? GRADE_TONE[grade] : 'text-darker')
-/** Delete asks once: the first click arms it for 3 seconds, the second deletes. */
-const arming = ref<string | null>(null)
-let armTimer: ReturnType<typeof setTimeout> | null = null
-function confirmThen(key: string, act: () => void): void {
-  if (armTimer) clearTimeout(armTimer)
-  if (arming.value !== key) {
-    arming.value = key
-    armTimer = setTimeout(() => (arming.value = null), 3000)
-    return
-  }
-  arming.value = null
-  act()
-}
+/** Delete asks once (lib/confirm.ts). */
+const { armed: arming, confirmThen } = useArmed()
 const deleteFight = (id: string): void => confirmThen(id, () => void api.invoke('history:delete', id))
 /** Every fight of a level (the characters shown), not only the best kept in the grid. */
 const deleteLevel = (level: number): void =>
@@ -274,34 +266,14 @@ onHistory(load)
     <PageHeader title="Personal bests" about="Your bests on each kind of content, each character: the best DPS on each boss or the fastest run, and for the Nightmares each level's. Click one for its fight." />
 
     <p v-if="bests === null" class="text-sm text-darker">{{ t('Loading…') }}</p>
-    <div v-else-if="!kinds.length" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
-      <div class="text-sm font-medium">{{ t('No personal best yet.') }}</div>
-      <div class="mt-1 text-xs text-darker">{{ t('Each dungeon boss you kill sets one.') }}</div>
-    </div>
+    <EmptyState v-else-if="!kinds.length" title="No personal best yet." hint="Each dungeon boss you kill sets one." />
     <template v-else>
       <!-- What, whose, by what. -->
       <div class="mb-3 flex flex-wrap items-center gap-3">
         <Segmented v-model="tab" :options="tabs" size="sm" />
         <Segmented v-if="!FAST_ONLY.includes(kind)" v-model="metric" :options="METRICS" size="sm" />
       </div>
-      <div class="mb-3 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          :class="['rounded-full border px-2.5 py-1 text-xs', picked === null ? 'border-accent bg-accent/15 text-default' : 'border-light text-darker hover:text-default']"
-          @click="who = null"
-        >
-          {{ t('All characters') }}
-        </button>
-        <button
-          v-for="c in characters"
-          :key="c"
-          type="button"
-          :class="['rounded-full border px-2.5 py-1 text-xs', picked === c ? 'border-accent bg-accent/15 text-default' : 'border-light text-darker hover:text-default']"
-          @click="who = c"
-        >
-          <CharName :name="c" />
-        </button>
-      </div>
+      <CharacterChips v-model="who" class="mb-3" :characters="characters" />
 
       <!-- Nightmares: a table per season, a row per boss, a column per level, a line per character. -->
       <div v-if="kind === NIGHTMARE" class="space-y-4">

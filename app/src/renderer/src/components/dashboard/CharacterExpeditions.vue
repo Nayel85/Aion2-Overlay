@@ -3,8 +3,8 @@
 // column per character, and in each cell its three modes (Exploration, Conquest Normal and Hard) as the
 // cubes opened of the guaranteed chest's ceiling, a bar each; a chest due stands out in green. As the
 // game said at each one's last login, counted on with each cube since.
+import CharName from '@/components/CharName.vue'
 import { computed } from 'vue'
-import ClassIcon from '@/components/ClassIcon.vue'
 import { plural, t } from '@/lib/i18n.ts'
 import { EXPEDITION_MODES, expeditionCell, shownExpeditions, type Expeditions } from '@shared/expeditions.ts'
 import { INSTANCES, instanceIlvl } from '@shared/instances.ts'
@@ -35,7 +35,7 @@ function title(name: string, mode: string, cell: { cubes: number | null; ceiling
         <tr class="border-b border-card">
           <th class="py-2 pl-4 text-left font-medium">{{ t('Expedition') }}</th>
           <th v-for="c in known" :key="c.id" class="px-3 text-center font-medium">
-            <span class="inline-flex items-center gap-1.5"><ClassIcon :class-name="c.className" :size="16" />{{ c.name }}</span>
+            <CharName :name="c.name" :class-name="c.className" :size="16" />
           </th>
         </tr>
       </thead>

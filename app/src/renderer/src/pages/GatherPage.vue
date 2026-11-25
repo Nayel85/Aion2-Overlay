@@ -8,8 +8,7 @@
 // and can be dragged into place. Nothing to show measures 0, and main keeps the window hidden.
 import { useOverlay } from '@/lib/overlay.ts'
 import { useNow } from '@/lib/now.ts'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { bridge } from '@/lib/bridge.ts'
+import { computed, nextTick, onMounted, watch } from 'vue'
 import { t } from '@/lib/i18n.ts'
 import { playSound } from '@/lib/sound.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
@@ -18,9 +17,8 @@ import type { GatherForecast } from '@shared/gather.ts'
 import { itemIcon } from '@shared/itemRef.ts'
 
 const store = useApp()
-const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('gather', () => shown.value)
+const { report } = useOverlay('gather', () => shown.value)
 const cfg = computed(() => store.settings.gather)
 
 /** While the dashboard is up and nothing is being gathered: a sample to place it by. */

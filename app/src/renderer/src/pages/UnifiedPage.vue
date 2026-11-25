@@ -8,6 +8,7 @@
 // total during a Spacetime Rift), a Hidden Cube in view, enemies who can attack you, a field boss
 // alive, and where you last died. Moved by dragging the bar; it grows around its top centre, sized to
 // what it shows (main sizes the window to it).
+import CharName from '@/components/CharName.vue'
 import { useNow } from '@/lib/now.ts'
 import { ago as timeAgo, timeOfDay, numericDate, countdown, weekdayTime } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
@@ -21,7 +22,7 @@ import WorldMap from '@/components/WorldMap.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { cubeBearings, meters } from '@/lib/cubes.ts'
 import { useEnemyAlarm } from '@/lib/enemyAlarm.ts'
-import { loc, plural, t } from '@/lib/i18n.ts'
+import { plural, t } from '@/lib/i18n.ts'
 import { panelStyle } from '@/lib/overlayLook.ts'
 import { displayName } from '@/lib/petDb.ts'
 import { currentWorld, nearbyPets, useSpawns } from '@/lib/spawns.ts'
@@ -45,7 +46,7 @@ type Peek = 'meter' | 'map' | 'pvp' | 'pets'
 const store = useApp()
 const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('unified')
+const { report } = useOverlay('unified')
 const cfg = computed(() => store.settings.unified)
 
 const now = useNow(1000)
@@ -87,7 +88,6 @@ const peekHint = computed(() => {
   return overlayOn(id) ? t('Close its overlay') : t('Open it as its own overlay')
 })
 
-const set = (patch: Partial<typeof cfg.value>): void => void store.set('unified', { ...cfg.value, ...patch })
 
 // ---- the other overlays' buttons: a click turns the overlay on or off ----------------------------
 
@@ -623,9 +623,7 @@ onBeforeUnmount(() => {
             <div class="text-[13px] font-semibold">{{ t('Join requests') }}</div>
             <div class="mt-1.5 space-y-0.5">
               <div v-for="a in applicants" :key="a.character" class="flex items-center gap-1.5 whitespace-nowrap text-[13px]">
-                <ClassIcon :class-name="a.className" :size="16" />
-                <span class="max-w-[150px] truncate font-medium">{{ a.name }}</span>
-                <span v-if="a.server" class="text-[11px] tabular-nums text-darker">[{{ serverTag(a.server) }}]</span>
+                <CharName :name="a.name" :class-name="a.className" :size="16" name-class="max-w-[150px] font-medium" :server="a.server || null" server-class="text-[11px] text-darker" />
                 <span v-if="a.combatPower" class="text-[11px] font-semibold tabular-nums text-yellow">{{ a.combatPower.toLocaleString('en-US') }}</span>
                 <span v-if="a.gearScore" class="text-[11px] tabular-nums text-dark">ilvl {{ a.gearScore }}</span>
                 <button type="button" class="ml-auto flex size-5 items-center justify-center rounded text-darker hover:bg-light hover:text-default" :title="t('Remove from the list')" @pointerdown.stop @click="dismiss(a.character)">
@@ -643,8 +641,7 @@ onBeforeUnmount(() => {
             </div>
             <div class="mt-1.5 space-y-1">
               <div v-for="r in corridorRows" :key="r.c.name + r.c.server" class="flex items-center gap-2 whitespace-nowrap text-xs">
-                <ClassIcon :class-name="r.c.className" :size="14" />
-                <span class="w-24 truncate font-medium">{{ r.c.name }}</span>
+                <CharName :name="r.c.name" :class-name="r.c.className" name-class="w-24 font-medium" />
                 <span
                   v-for="(st, i) in r.states"
                   :key="i"
@@ -678,9 +675,7 @@ onBeforeUnmount(() => {
             </div>
             <div class="mt-1.5 space-y-0.5">
               <div v-for="e in threats.slice(0, ENEMY_ROWS)" :key="e.entity" class="flex items-baseline gap-1.5 whitespace-nowrap text-[13px]">
-                <ClassIcon class="self-center" :class-name="e.className" :size="16" />
-                <span class="max-w-[150px] truncate font-medium">{{ e.name }}</span>
-                <span v-if="e.server" class="text-[11px] tabular-nums text-red">[{{ serverTag(e.server) }}]</span>
+                <CharName class="self-center" :name="e.name" :class-name="e.className" :size="16" name-class="max-w-[150px] font-medium" :server="e.server || null" server-class="text-[11px] text-red" />
                 <span v-if="e.combatPower" class="text-[11px] font-semibold tabular-nums text-yellow">[{{ e.combatPower.toLocaleString('en-US') }}]</span>
                 <span v-if="e.legion" class="ml-auto min-w-0 truncate pl-3 text-[11px] text-darker">&lt;{{ e.legion }}&gt;</span>
               </div>
@@ -749,8 +744,7 @@ onBeforeUnmount(() => {
               <div v-for="r in meterTop" :key="r.id" class="relative h-6 overflow-hidden rounded-md bg-dark">
                 <div class="absolute inset-y-0 left-0 opacity-35" :style="{ width: `${(r.value / meterMax) * 100}%`, background: (r.className && CLASS_COLORS[r.className]) || '#52525b' }" />
                 <div class="relative flex h-6 items-center gap-1.5 px-2 text-xs">
-                  <ClassIcon :class-name="r.className" :size="14" />
-                  <span class="truncate font-semibold">{{ r.name }}</span>
+                  <CharName :name="r.name" :class-name="r.className" name-class="font-semibold" />
                   <span class="ml-auto font-semibold tabular-nums">{{ compact(r.perSecond) }}</span>
                   <span class="w-11 text-right tabular-nums text-dark">{{ r.part.toFixed(1) }}%</span>
                 </div>

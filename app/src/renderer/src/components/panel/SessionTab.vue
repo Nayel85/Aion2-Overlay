@@ -4,17 +4,18 @@
 // of it as the Past sessions page shows a session (SessionDetail, the latest first), and beside it its
 // souls by pet (their total in the box's title) and a way to the past sessions. The rates per hour are
 // the Unified HUD's; the engine's state is in Settings.
+import { useArmed } from '@/lib/confirm.ts'
 import { timeOfDay } from '@/lib/format.ts'
 import CharName from '@/components/CharName.vue'
 import { useNow } from '@/lib/now.ts'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import GenusPill from '@/components/GenusPill.vue'
 import LevelBadge from '@/components/LevelBadge.vue'
 import PetIcon from '@/components/PetIcon.vue'
 import { ICON, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
 import SessionDetail from '@/components/sessions/SessionDetail.vue'
 import { bridge } from '@/lib/bridge.ts'
-import { loc, plural, t } from '@/lib/i18n.ts'
+import { plural, t } from '@/lib/i18n.ts'
 import { displayName } from '@/lib/petDb.ts'
 import { formatKina } from '@shared/kina.ts'
 import { formatAmount } from '@shared/earnings.ts'
@@ -24,19 +25,10 @@ import { useApp } from '@/stores/app.ts'
 const store = useApp()
 const emit = defineEmits<{ history: [] }>()
 const gained = computed(() => store.pets.filter((p) => p.session > 0).sort((a, b) => b.session - a.session))
-/** Reset asks once: the first click arms it for 3 seconds, the second resets. */
-const confirming = ref(false)
-let confirmTimer: ReturnType<typeof setTimeout> | null = null
-function resetSession(): void {
-  if (confirmTimer) clearTimeout(confirmTimer)
-  if (!confirming.value) {
-    confirming.value = true
-    confirmTimer = setTimeout(() => (confirming.value = false), 3000)
-    return
-  }
-  confirming.value = false
-  void bridge().invoke('tracker:resetSession')
-}
+/** Reset asks once (lib/confirm.ts). */
+const { armed, confirmThen } = useArmed()
+const confirming = computed(() => armed.value === 'reset')
+const resetSession = (): void => confirmThen('reset', () => void bridge().invoke('tracker:resetSession'))
 const current = computed(() => store.sessions.current)
 const runs = computed(() => (current.value ? countedRuns(current.value) : []))
 const counts = computed(() => lootCounts(runs.value))

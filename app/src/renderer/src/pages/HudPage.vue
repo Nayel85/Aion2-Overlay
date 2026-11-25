@@ -3,7 +3,7 @@
 // main sizes the window to fit (an empty HUD is a hidden window). In edit mode it takes the mouse
 // so it can be dragged; Escape or Done ends that.
 import { useOverlay } from '@/lib/overlay.ts'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, watch } from 'vue'
 import { HUD_PINNED_ROWS } from '@shared/settings.ts'
 import GenusPill from '@/components/GenusPill.vue'
 import LevelBadge from '@/components/LevelBadge.vue'
@@ -19,7 +19,7 @@ import { blankPet, nextLevelSouls, type Pet } from '@shared/tracker.ts'
 
 const store = useApp()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('hud')
+const { report } = useOverlay('hud')
 const hud = computed(() => store.settings.hud)
 
 const spawns = useSpawns()

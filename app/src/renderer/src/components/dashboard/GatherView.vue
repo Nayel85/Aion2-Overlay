@@ -20,7 +20,6 @@ import { SOUNDS } from '@shared/sounds.ts'
 const store = useApp()
 const cfg = computed(() => store.settings.gather)
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('gather', { ...cfg.value, ...patch })
-const times = (v: number): string => `×${v.toFixed(1)}`
 const STYLES = [
   { id: 'ring', label: 'Ring' },
   { id: 'gauges', label: 'Gauges' },

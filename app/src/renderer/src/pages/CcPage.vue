@@ -6,9 +6,8 @@
 // the dashboard is up it shows a preview, and can be dragged into place.
 import { useOverlay } from '@/lib/overlay.ts'
 import { useNow } from '@/lib/now.ts'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, watch } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
-import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
 import { buffName, CC_LABEL, ccKind, remaining, type CcKind } from '@/lib/buffs.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
@@ -16,9 +15,8 @@ import { useApp } from '@/stores/app.ts'
 import type { Buff } from '@shared/buffs.ts'
 
 const store = useApp()
-const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('cc', () => shown.value)
+const { report } = useOverlay('cc', () => shown.value)
 const cfg = computed(() => store.settings.buffs)
 // Ticking while there are effects on you (or the preview).
 const now = useNow(100, () => store.buffs.length > 0 || store.panelVisible)

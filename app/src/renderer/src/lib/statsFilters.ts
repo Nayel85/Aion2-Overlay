@@ -2,8 +2,8 @@
  * What the stats views (Loot, Crafts, Gathering, Past sessions) share: the sessions kept, the period
  * picked and since when it counts, and the characters picked (none picked: all of them).
  */
-import { computed, type ComputedRef, type Ref } from 'vue'
-import { ASCENSION, characterId } from '@shared/characters.ts'
+import { computed, type ComputedRef } from 'vue'
+import { ASCENSION } from '@shared/characters.ts'
 import type { PlaySession } from '@shared/sessions.ts'
 import { useApp } from '@/stores/app.ts'
 
@@ -29,19 +29,3 @@ export function useSessions(): ComputedRef<PlaySession[]> {
   return computed(() => (store.sessions.current ? [store.sessions.current, ...store.sessions.history] : store.sessions.history))
 }
 
-/** The characters picked in `names` (none: all), out of `characters`; all of them picked is none picked. */
-export function namePicker(names: Ref<string[]>, characters: Ref<string[]>): { toggleName: (name: string) => void; picked: (name: string) => boolean } {
-  return {
-    toggleName(name) {
-      const next = names.value.includes(name) ? names.value.filter((n) => n !== name) : [...names.value, name]
-      names.value = next.length === characters.value.length ? [] : next
-    },
-    picked: (name) => !names.value.length || names.value.includes(name),
-  }
-}
-
-/** A character's class, from the server its sessions name it on. */
-export function classOf(sessions: PlaySession[], name: string): string | null {
-  const s = sessions.find((x) => x.name === name)
-  return s?.server != null ? (useApp().characters[characterId(s.server, name)]?.className ?? null) : null
-}

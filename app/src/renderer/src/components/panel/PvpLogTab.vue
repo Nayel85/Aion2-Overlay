@@ -6,16 +6,15 @@
 // servers carry their server's tag ([LUM]).
 // Lokthar: the rift farms on top (shared/abyss.ts), each the Abyss Points one character earned in a
 // Spacetime Rift's window, with your kills, deaths and assists in it; picking one lists those.
+import CharName from '@/components/CharName.vue'
+import Chip from '@/components/ui/Chip.vue'
 import { numericDate, timeOfDay } from '@/lib/format.ts'
 import { useNow } from '@/lib/now.ts'
 import { computed, onBeforeUnmount, ref, shallowRef, triggerRef } from 'vue'
 import Button from '@/components/Button.vue'
-import ClassIcon from '@/components/ClassIcon.vue'
 import { bridge } from '@/lib/bridge.ts'
-import { loc, plural, t } from '@/lib/i18n.ts'
+import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { serverTag } from '@shared/servers.ts'
-import type { Settings } from '@shared/settings.ts'
 import { PVP_LIMIT, type PvpKill } from '@shared/tracker.ts'
 import { attributeGains, RIFT_MIN_POINTS as RIFT_MIN, RIFT_MS, type RiftFarm } from '@shared/abyss.ts'
 import { formatAmount } from '@shared/earnings.ts'
@@ -32,10 +31,8 @@ const offKill = api.on('tracker:pvpKill', (kill) => {
 void api.invoke('tracker:get', true).then((s) => (history.value = s.pvp))
 onBeforeUnmount(() => { offHistory(); offKill() })
 
-const myServer = computed(() => store.status?.server ?? null)
 /** Combat power as the game rounds it: 115485 → 115.4K. */
 const cp = (v: number): string => `${(Math.floor(v / 100) / 10).toFixed(1)}K`
-const tag = (server: number | null): string | null => (server === null || server === myServer.value ? null : serverTag(server))
 // One filter at a time; clicking the active one shows everything again.
 type Filter = 'mine' | 'legion'
 const filters: { id: Filter; label: string; title: string; empty: string }[] = [
@@ -192,16 +189,7 @@ const toggleHud = (): void => void bridge().invoke(hudOpen.value ? 'killfeed:clo
       >
         {{ riftName(rift) }} ×
       </button>
-      <button
-        v-for="f in filters"
-        :key="f.id"
-        type="button"
-        :title="t(f.title)"
-        :class="['rounded-full border px-2.5 py-0.5', filter === f.id ? 'border-accent bg-accent/15 text-default' : 'border-light text-darker hover:text-dark']"
-        @click="pick(f.id)"
-      >
-        {{ t(f.label) }}
-      </button>
+      <Chip v-for="f in filters" :key="f.id" size="sm" :on="filter === f.id" :title="t(f.title)" @click="pick(f.id)">{{ t(f.label) }}</Chip>
       <!-- How many kills the list below holds (with the filter). -->
       <span class="ml-auto rounded-full bg-card px-2 py-0.5 tabular-nums text-dark" :title="plural(total, '{n} kill in the list', '{n} kills in the list')">{{ total }}</span>
     </div>
@@ -221,16 +209,12 @@ const toggleHud = (): void => void bridge().invoke(hudOpen.value ? 'killfeed:clo
       >
         <div class="min-w-0 flex-1">
           <div class="flex min-w-0 items-center gap-1.5">
-            <ClassIcon :class-name="k.killer.className" :size="16" />
-            <span class="truncate font-medium" :class="k.mine && 'text-green'">{{ k.killer.name }}</span>
-            <span v-if="tag(k.killer.server)" class="shrink-0 text-[11px] text-yellow">[{{ tag(k.killer.server) }}]</span>
+            <CharName :name="k.killer.name" :class-name="k.killer.className" :size="16" :name-class="['font-medium', k.mine && 'text-green']" :server="k.killer.server" hide-own-server />
             <span v-if="k.killer.combatPower" class="shrink-0 text-[11px] font-semibold tabular-nums text-yellow" :title="t('Combat power')">{{ cp(k.killer.combatPower) }}</span>
             <svg viewBox="0 0 16 16" class="size-3.5 shrink-0 text-darker" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
               <path d="M3 8h9M9 4.5 12.5 8 9 11.5" stroke-linecap="round" stroke-linejoin="round" />
             </svg>
-            <ClassIcon :class-name="k.victim?.className" :size="16" />
-            <span class="truncate font-medium" :class="k.died && 'text-danger'">{{ k.victim?.name ?? t('a player out of view') }}</span>
-            <span v-if="k.victim && tag(k.victim.server)" class="shrink-0 text-[11px] text-yellow">[{{ tag(k.victim.server) }}]</span>
+            <CharName :name="k.victim?.name ?? t('a player out of view')" :class-name="k.victim?.className ?? null" :size="16" :name-class="['font-medium', k.died && 'text-danger']" :server="k.victim?.server ?? null" hide-own-server />
             <span v-if="k.victim?.combatPower" class="shrink-0 text-[11px] font-semibold tabular-nums text-yellow" :title="t('Combat power')">{{ cp(k.victim.combatPower) }}</span>
           </div>
           <div v-if="k.killer.guild" class="truncate text-[11px] text-darker">{{ k.killer.guild }}</div>

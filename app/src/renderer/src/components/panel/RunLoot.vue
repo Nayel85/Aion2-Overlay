@@ -5,7 +5,8 @@
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
 import { AP_ITEM, KINA_ITEM, runRewards, type DungeonRun, type RewardRow } from '@shared/sessions.ts'
-import { gradeClass, ICON } from './sessionIcons.ts'
+import { ICON } from './sessionIcons.ts'
+import { gradeClass } from '@/lib/grades.ts'
 
 defineProps<{ run: DungeonRun }>()
 

@@ -10,13 +10,12 @@
 // a slider for its opacity.
 import { BOSS_NPCS } from '@/lib/petSources.ts'
 import { useOverlay } from '@/lib/overlay.ts'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
 import ResizeGrip from '@/components/ResizeGrip.vue'
 import PetIcon from '@/components/PetIcon.vue'
 import WorldMap, { type MapLayer } from '@/components/WorldMap.vue'
-import { bridge } from '@/lib/bridge.ts'
 import { clampTo, cornerResize } from '@/lib/cornerResize.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { gatherLayers, useGatherables } from '@/lib/gatherables.ts'
@@ -31,9 +30,8 @@ import { blankPet, canAttack } from '@shared/tracker.ts'
 const NO_FOCUS: [number, number][] = []
 
 const store = useApp()
-const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report, placing } = useOverlay('minimap')
+const { report, placing } = useOverlay('minimap')
 const map = ref<InstanceType<typeof WorldMap> | null>(null)
 const cfg = computed(() => store.settings.minimap)
 const spawns = useSpawns()

@@ -5,29 +5,25 @@
 // its map) and the Abyss's (read as you enter the Abyss, by any of your characters) are known so far.
 import { useNow } from '@/lib/now.ts'
 import { ago as timeAgo, dateTime } from '@/lib/format.ts'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import Toggle from '@/components/Toggle.vue'
 import Countdown from '@/components/ui/Countdown.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { bridge } from '@/lib/bridge.ts'
-import { loc, t } from '@/lib/i18n.ts'
+import { t } from '@/lib/i18n.ts'
 import { leadLabel, setAlert, setLead } from '@/lib/timerView.ts'
 import { useApp } from '@/stores/app.ts'
 import { BOSS_RUNS } from '@shared/bossRuns.ts'
 import type { SyncResult } from '@shared/lokthar.ts'
-import { bossPortrait, bossState, FIELD_BOSSES, leadChoices, TIMERS, type BossZone, type TimerDef } from '@shared/timers.ts'
+import { BOSS_ZONES, bossPortrait, bossState, FIELD_BOSSES, leadChoices, TIMERS, type BossZone, type TimerDef } from '@shared/timers.ts'
 
 const store = useApp()
 const cfg = computed(() => store.settings.timers)
 const now = useNow(1000)
 
-const ZONES: { id: BossZone; label: string }[] = [
-  { id: 'verteron', label: 'Verteron' },
-  { id: 'altgard', label: 'Asmodian bosses' },
-  { id: 'abyss', label: 'Abyss' },
-]
+const ZONES = BOSS_ZONES
 const zone = ref<BossZone>('verteron')
 
 const ago = (at: number): string => timeAgo(at, now.value)

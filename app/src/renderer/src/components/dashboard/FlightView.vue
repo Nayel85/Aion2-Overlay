@@ -2,10 +2,8 @@
 // The flight timer: the ring over the game with your seconds of flight left (pages/FlightPage.vue),
 // and its settings.
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
-import { percent } from '@shared/format.ts'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
-import Slider from '@/components/Slider.vue'
 import Toggle from '@/components/Toggle.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'

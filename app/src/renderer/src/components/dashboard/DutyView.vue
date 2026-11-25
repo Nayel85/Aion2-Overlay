@@ -3,14 +3,15 @@
 // (by quest), each with its 5 rewards and their chances, what it is worth to you, the ones to take
 // highlighted, and whether a reroll is worth its cost; the missions taken apart. Below, what each
 // kind of reward is worth to you (settings.duty), which ranks them, and the board's window over the game.
+import EmptyState from '@/components/ui/EmptyState.vue'
 import { weekdayTime, amount } from '@/lib/format.ts'
 import { computed } from 'vue'
 import DutyAdvice from '@/components/DutyAdvice.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'
-import { gradeClass } from '@/components/panel/sessionIcons.ts'
+import { gradeClass } from '@/lib/grades.ts'
 import { dutyRows, useDuty } from '@/lib/duty.ts'
-import { loc, plural, t } from '@/lib/i18n.ts'
+import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { compact } from '@shared/format.ts'
 import { DUTY_CATEGORIES, dutyAdvice, type DutyCategory } from '@shared/duty.ts'
@@ -30,6 +31,7 @@ const kina = (n: number): string => compact(Math.round(n))
 const when = weekdayTime
 /** The rerolls' costs learned, in order. */
 const costs = computed(() => Object.entries(state.value.rerollCosts).sort((a, b) => Number(a[0]) - Number(b[0])))
+const DUTY_EMPTY_HINT = "With the overlay open, open the duty board in game: today's shows here."
 </script>
 
 <template>
@@ -39,10 +41,7 @@ const costs = computed(() => Object.entries(state.value.rerollCosts).sort((a, b)
       about="Your account's duty missions (the same for all your characters, 5 a day between them), read as you open the board in game or reroll it: each mission's rewards and their chances, what it is worth to you, the ones to take, and whether a reroll pays."
     />
 
-    <div v-if="!board" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
-      <div class="text-sm font-medium">{{ t('No duty board yet today.') }}</div>
-      <div class="mt-1 text-xs text-darker">{{ t("With the overlay open, open the duty board in game: today's shows here.") }}</div>
-    </div>
+    <EmptyState v-if="!board" title="No duty board yet today." :hint="DUTY_EMPTY_HINT" />
 
     <template v-else>
       <DutyAdvice :state="state" :values="values" class="mb-4 text-sm" />

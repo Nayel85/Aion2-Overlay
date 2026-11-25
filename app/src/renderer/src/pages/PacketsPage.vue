@@ -12,7 +12,7 @@ import { NO_PACKET_LOG, type PacketLog } from '@shared/meter.ts'
 
 const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('packets', () => shown.value)
+const { report } = useOverlay('packets', () => shown.value)
 const log = ref<PacketLog>({ ...NO_PACKET_LOG })
 const now = useNow(500)
 

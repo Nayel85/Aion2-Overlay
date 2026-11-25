@@ -5,8 +5,7 @@
 // of the game's traffic.
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
 import { classIconUrl, dateTime } from '@/lib/format.ts'
-import { compact, duration, percent } from '@shared/format.ts'
-import IdleHideRow from '@/components/IdleHideRow.vue'
+import { compact, duration } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import MeterSizeSettings from '@/components/MeterSizeSettings.vue'
@@ -17,7 +16,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import { bridge } from '@/lib/bridge.ts'
-import { loc, t } from '@/lib/i18n.ts'
+import { t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import {
@@ -39,7 +38,6 @@ const store = useApp()
 const api = bridge()
 const meter = ref<MeterData>(NO_METER)
 const cfg = computed(() => store.settings.meter)
-const skills = computed(() => store.settings.skills)
 
 const icon = classIconUrl
 

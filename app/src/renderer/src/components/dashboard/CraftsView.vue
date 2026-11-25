@@ -3,17 +3,18 @@
 // craft, then by character (how many, how many procced, your proc rate against the game's chances:
 // your luck) and by recipe (the same, with what the proc gives: a better item or the same twice).
 // The filters picked are remembered (this window's storage).
+import CharName from '@/components/CharName.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import FilterRow from '@/components/FilterRow.vue'
 import StatsFilters from '@/components/StatsFilters.vue'
-import { classOf, fromOf, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
+import { fromOf, type Period, useSessions } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
-import { computed, ref, watch } from 'vue'
-import ClassIcon from '@/components/ClassIcon.vue'
+import { computed, ref } from 'vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { t } from '@/lib/i18n.ts'
-import { gradeClass } from '@/components/panel/sessionIcons.ts'
+import { gradeClass } from '@/lib/grades.ts'
 import { allCrafts, craftKinds, craftSummaries, filterCrafts, recipeStats, type CraftSummary } from '@shared/craftStats.ts'
 import { luck } from '@shared/lootStats.ts'
 import { itemIcon } from '@shared/sessions.ts'
@@ -69,7 +70,6 @@ const recipes = computed(() => {
   )
 })
 
-const className = (name: string): string | null => classOf(sessions.value, name)
 
 // ---- the numbers ------------------------------------------------------------------------------
 
@@ -89,7 +89,7 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
     <PageHeader v-if="!embedded" title="Crafts" about="Your crafts over the sessions kept: by character and by recipe, how many procced (a better item, or the same one twice), against the game's proc chances (questlog.gg). Your luck: the procs you got against what those chances make of your crafts, ×1 being just that." />
 
     <!-- The filters: the characters and the period (components/StatsFilters.vue), then this view's. -->
-    <StatsFilters v-model:names="f.names" v-model:period="f.period" :characters="characters" :class-of="className">
+    <StatsFilters v-model:names="f.names" v-model:period="f.period" :characters="characters">
       <FilterRow label="Craft">
         <SelectBox :model-value="f.kind ?? ''" size="sm" :options="kindOptions" @update:model-value="(v) => (f.kind = v || null)" />
       </FilterRow>
@@ -99,10 +99,7 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
       </FilterRow>
     </StatsFilters>
 
-    <div v-if="!total.crafts" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
-      <div class="text-sm font-medium">{{ all.length ? t('No crafts match.') : t('No crafts yet.') }}</div>
-      <div class="mt-1 text-xs text-darker">{{ t('Each craft counts once the overlay has seen it done.') }}</div>
-    </div>
+    <EmptyState v-if="!total.crafts" :title="all.length ? 'No crafts match.' : 'No crafts yet.'" hint="Each craft counts once the overlay has seen it done." />
 
     <template v-else>
       <!-- By character, then all of them. -->
@@ -124,7 +121,7 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
           <tbody>
             <tr v-for="r in rows.length > 2 ? rows : rows.slice(-1)" :key="r.name" :class="['border-t border-card', !r.name && 'bg-card/40 font-semibold']">
               <td class="px-4 py-2">
-                <span v-if="r.name" class="flex items-center gap-1.5"><ClassIcon :class-name="className(r.name)" :size="16" />{{ r.name }}</span>
+                <CharName v-if="r.name" :name="r.name" :size="16" />
                 <span v-else>{{ t('All') }}</span>
               </td>
               <td class="px-3 py-2 text-center">{{ r.crafts }}</td>

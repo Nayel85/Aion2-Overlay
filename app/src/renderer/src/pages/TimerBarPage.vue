@@ -8,10 +8,9 @@
 import { timeOfDay, countdown } from '@/lib/format.ts'
 import { useNow } from '@/lib/now.ts'
 import { useOverlay } from '@/lib/overlay.ts'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { bridge } from '@/lib/bridge.ts'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { EVENT_ICONS } from '@/lib/timerView.ts'
-import { loc, t } from '@/lib/i18n.ts'
+import { t } from '@/lib/i18n.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { bossPortrait, bossState, nextStart, TIMERS, type TimerDef, type TimerId } from '@shared/timers.ts'
@@ -21,7 +20,7 @@ const HORIZON_MS = 13 * 3600_000
 
 const store = useApp()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('timerbar', () => items.value.length > 0)
+const { report } = useOverlay('timerbar', () => items.value.length > 0)
 const cfg = computed(() => store.settings.timers)
 
 const now = useNow(1000)

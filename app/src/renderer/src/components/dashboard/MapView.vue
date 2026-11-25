@@ -6,13 +6,11 @@
 // were left (settings `mapPage`), and the Hidden Cubes' settings. The Minimap's and the Game Map
 // Markers' settings are on the Overlays page.
 import { BOSS_NPCS } from '@/lib/petSources.ts'
-import { percent } from '@shared/format.ts'
 import { computed, ref, watch } from 'vue'
 import Button from '@/components/Button.vue'
 import PetIcon from '@/components/PetIcon.vue'
 import SettingRow from '@/components/SettingRow.vue'
 import SoundPicker from '@/components/SoundPicker.vue'
-import Slider from '@/components/Slider.vue'
 import Toggle from '@/components/Toggle.vue'
 import WorldMap, { type MapLayer } from '@/components/WorldMap.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'

@@ -2,17 +2,18 @@
 // History: the boss fights the engine saved (every 30 s while one goes on, and before the meter is
 // cleared), newest first. A click opens one in the Details window: each player's damage, skills and
 // buffs. The last 500 are kept.
+import EmptyState from '@/components/ui/EmptyState.vue'
 import { provideFightOpener } from '@/lib/fights.ts'
 import { onHistory } from '@/lib/history.ts'
 import { classIconUrl, dateTime } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
 import { useStored } from '@/lib/now.ts'
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import DetailsPage from '@/pages/DetailsPage.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import { bridge } from '@/lib/bridge.ts'
-import { loc, plural, t } from '@/lib/i18n.ts'
+import { plural, t } from '@/lib/i18n.ts'
 import { difficultyOf, DIFFICULTY_LABEL, dungeonFor, DUNGEON_KINDS, type Dungeon } from '@shared/dungeons.ts'
 import { CLASS_NAMES, type FightSummary } from '@shared/meter.ts'
 
@@ -101,10 +102,7 @@ onHistory(load)
     </div>
 
     <p v-if="fights === null" class="text-sm text-darker">{{ t('Loading…') }}</p>
-    <div v-else-if="!shown.length" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
-      <div class="text-sm font-medium">{{ query ? t('No fights match.') : t('No fights saved yet.') }}</div>
-      <div class="mt-1 text-xs text-darker">{{ t('Each boss fight is kept as it ends, and before the meter is cleared.') }}</div>
-    </div>
+    <EmptyState v-else-if="!shown.length" :title="query ? 'No fights match.' : 'No fights saved yet.'" hint="Each boss fight is kept as it ends, and before the meter is cleared." />
     <div v-else class="overflow-hidden rounded-xl border border-card">
       <table class="w-full text-sm">
         <thead class="bg-card text-xs uppercase tracking-wide text-darker">

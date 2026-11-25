@@ -4,9 +4,8 @@
 // red-edged. Moved by dragging; sized to what it shows, hidden while nothing is on you.
 import { useOverlay } from '@/lib/overlay.ts'
 import { useNow, useIdle } from '@/lib/now.ts'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, watch } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
-import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
 import { buffName, consumable, hiddenBuff, remaining } from '@/lib/buffs.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
@@ -14,9 +13,8 @@ import { useApp } from '@/stores/app.ts'
 import type { Buff } from '@shared/buffs.ts'
 
 const store = useApp()
-const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('buffs')
+const { report } = useOverlay('buffs')
 const cfg = computed(() => store.settings.buffs)
 // Hidden while idle, if set.
 const idle = useIdle(() => store.settings.buffs)

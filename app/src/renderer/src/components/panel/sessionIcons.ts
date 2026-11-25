@@ -36,9 +36,6 @@ const KIND_ICON: Record<string, string> = {
   transcendence: 'M8 1.5l1.9 4 4.4.5-3.3 3 .9 4.4L8 11.2l-3.9 2.2.9-4.4-3.3-3 4.4-.5z',
 }
 KIND_ICON['conquest'] = KIND_ICON['party']!
-/** questlog's item grades as the game colours them: common, green, blue, gold (Unique), and up. */
-export const gradeClass = (grade: number): string =>
-  grade >= 71 ? 'text-accent' : grade >= 51 ? 'text-orange' : grade >= 41 ? 'text-yellow' : grade >= 31 ? 'text-blue' : grade >= 21 ? 'text-green' : 'text-dark'
 /** The deaths' tooltip: yours, then the group's (yours among them). */
 export const DEATHS_TITLE = "Your deaths, and the group's"
 export const kindIcon = (kind: string): string => KIND_ICON[kind] ?? ICON.dungeon

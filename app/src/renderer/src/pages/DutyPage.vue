@@ -5,7 +5,7 @@
 // highlighted, each with the rewards that count for you; above them, whether to reroll.
 import { computed, nextTick, onMounted, watch } from 'vue'
 import DutyAdvice from '@/components/DutyAdvice.vue'
-import { gradeClass } from '@/components/panel/sessionIcons.ts'
+import { gradeClass } from '@/lib/grades.ts'
 import { bridge } from '@/lib/bridge.ts'
 import { dutyRows, useDuty } from '@/lib/duty.ts'
 import { t } from '@/lib/i18n.ts'
@@ -21,7 +21,7 @@ const live = useDuty()
  * as every overlay has.
  */
 const state = computed<DutyState>(() => (live.value.board || !store.panelVisible ? live.value : { ...live.value, board: live.value.history.at(-1) ?? null }))
-const { root, report, drag } = useOverlay('duty', () => state.value.board !== null)
+const { report, drag } = useOverlay('duty', () => state.value.board !== null)
 
 const values = computed(() => store.settings.duty.values)
 const rows = computed(() => dutyRows(state.value, values.value).offered)

@@ -10,11 +10,10 @@ import { classIconUrl } from '@/lib/format.ts'
 import { compact } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { useNow, useIdle } from '@/lib/now.ts'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
 import { buffIcon, buffName, ccKind, hiddenBuff, isShield } from '@/lib/buffs.ts'
-import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
 import { panelStyle } from '@/lib/overlayLook.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
@@ -22,9 +21,8 @@ import { useApp } from '@/stores/app.ts'
 import type { PartyDebuff, PartyMember, Vitals } from '@shared/party.ts'
 
 const store = useApp()
-const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('party', () => list.value.length > 0)
+const { report } = useOverlay('party', () => list.value.length > 0)
 const cfg = computed(() => store.settings.party)
 // Hidden while idle, if set.
 const idle = useIdle(() => store.settings.party)

@@ -2,12 +2,13 @@
 // Pets: every pet with its souls and level, as a table. Search, filter and sort; click a pet for
 // where its souls drop, a name or a soul count to correct it; the pin puts a pet on the HUD (in
 // pinned mode) and on the maps.
+import Chip from '@/components/ui/Chip.vue'
 import { useStored } from '@/lib/now.ts'
 import { petSource, type PetSourceKind } from '@/lib/petSources.ts'
 import Toggle from '@/components/Toggle.vue'
 import PetSourceTag from '@/components/PetSourceTag.vue'
 import { useNow } from '@/lib/now.ts'
-import { computed, nextTick, onBeforeUnmount, ref, toRefs } from 'vue'
+import { computed, nextTick, ref, toRefs } from 'vue'
 import GenusPill, { GENUS_PILL } from '@/components/GenusPill.vue'
 import LevelBadge from '@/components/LevelBadge.vue'
 import LevelBar from '@/components/LevelBar.vue'
@@ -270,36 +271,20 @@ const syncedAgo = computed(() => {
       />
     </div>
     <div class="mb-4 flex flex-wrap items-center gap-1.5">
-      <button
-        v-for="g in GENERA"
-        :key="g.id"
-        type="button"
-        :class="['rounded-full border px-2.5 py-0.5 text-xs transition', genus === g.id ? GENUS_PILL[g.id] : 'border-light text-darker hover:text-default']"
-        @click="genus = genus === g.id ? null : g.id"
-      >
-        {{ g.label }} <span class="tabular-nums opacity-60">{{ genusCounts.get(g.id) ?? 0 }}</span>
-      </button>
+      <Chip v-for="g in GENERA" :key="g.id" size="sm" :on="genus === g.id" :tone="GENUS_PILL[g.id]" :count="genusCounts.get(g.id) ?? 0" @click="genus = genus === g.id ? null : g.id">{{ g.label }}</Chip>
       <span class="mx-1 h-4 w-px bg-light" />
-      <button
+      <Chip
         v-for="c in CONTINENTS"
         :key="c.id"
-        type="button"
-        :class="['rounded-full border px-2.5 py-0.5 text-xs transition', continent === c.id ? 'border-accent bg-accent-soft text-accent' : 'border-light text-darker hover:text-default']"
+        size="sm"
+        :on="continent === c.id"
+        tone="border-accent bg-accent-soft text-accent"
+        :count="continentCounts.get(c.id) ?? 0"
         :title="c.label === 'Abyss' ? t('Pets whose soul monsters spawn in the Abyss') : t('Pets whose soul monsters spawn in {side} zones', { side: c.label })"
         @click="continent = continent === c.id ? null : c.id"
-      >
-        {{ c.label }} <span class="tabular-nums opacity-60">{{ continentCounts.get(c.id) ?? 0 }}</span>
-      </button>
+      >{{ c.label }}</Chip>
       <span class="mx-1 h-4 w-px bg-light" />
-      <button
-        v-for="c in SOURCE_CHIPS"
-        :key="c.id"
-        type="button"
-        :class="['rounded-full border px-2.5 py-0.5 text-xs transition', source === c.id ? c.on : 'border-light text-darker hover:text-default']"
-        @click="source = source === c.id ? null : c.id"
-      >
-        {{ t(c.label) }} <span class="tabular-nums opacity-60">{{ sourceCounts.get(c.id) ?? 0 }}</span>
-      </button>
+      <Chip v-for="c in SOURCE_CHIPS" :key="c.id" size="sm" :on="source === c.id" :tone="c.on" :count="sourceCounts.get(c.id) ?? 0" @click="source = source === c.id ? null : c.id">{{ t(c.label) }}</Chip>
       <span v-if="filter === 'nearby' && nearMonsters.length" class="ml-auto truncate text-xs text-green">
         {{ nearMonsters.slice(0, 4).map((m) => `${m.name} ${m.count}`).join(' · ') }}
       </span>

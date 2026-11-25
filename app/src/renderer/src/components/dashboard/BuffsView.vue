@@ -4,9 +4,7 @@
 // fight's buffs, each player's and the target's, are in the Details window's Buffs tab.
 import { useNow } from '@/lib/now.ts'
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
-import { percent } from '@shared/format.ts'
-import IdleHideRow from '@/components/IdleHideRow.vue'
-import { computed, onBeforeUnmount, ref } from 'vue'
+import { computed, ref } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
 import SettingRow from '@/components/SettingRow.vue'
 import Slider from '@/components/Slider.vue'

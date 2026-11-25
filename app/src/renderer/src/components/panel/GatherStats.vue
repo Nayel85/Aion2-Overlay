@@ -1,14 +1,14 @@
 <script setup lang="ts">
 // A session's gathering stats: how many gatherings, failed, doubled, ranked up, and the ones that
 // worked by the grade of what they gave (white, green, blue, gold).
+import { gradeName } from '@/lib/grades.ts'
 import { computed } from 'vue'
 import { t } from '@/lib/i18n.ts'
 import { GATHER_GRADES, type GatherStats } from '@shared/sessions.ts'
-import { gradeClass } from './sessionIcons.ts'
+import { gradeClass } from '@/lib/grades.ts'
 
 const props = defineProps<{ stats: GatherStats }>()
 
-const GRADE_LABELS: Record<number, string> = { 11: 'White', 21: 'Green', 31: 'Blue', 41: 'Gold' }
 const worked = computed(() => props.stats.done - props.stats.failed)
 const pct = (n: number): string => (props.stats.done ? `${Math.round((n / props.stats.done) * 100)}%` : '')
 const tiles = computed(() => [
@@ -31,7 +31,7 @@ const tiles = computed(() => [
     <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
       <span class="text-darker">{{ t('Successes') }} <span class="font-semibold tabular-nums text-default">{{ worked }}</span></span>
       <span v-for="grade in GATHER_GRADES" :key="grade" :class="['flex items-center gap-1 tabular-nums', stats.byGrade[grade] ? gradeClass(grade) : 'text-darkest']">
-        <span class="size-2 rounded-full bg-current" />{{ t(GRADE_LABELS[grade]!) }} <span class="font-semibold">{{ stats.byGrade[grade] ?? 0 }}</span>
+        <span class="size-2 rounded-full bg-current" />{{ t(gradeName(grade)) }} <span class="font-semibold">{{ stats.byGrade[grade] ?? 0 }}</span>
       </span>
     </div>
   </div>

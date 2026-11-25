@@ -2,20 +2,17 @@
 // The Unified HUD's page: what it is, a preview of the bar as these settings make it (a sample:
 // Kina coming in, an event a few minutes away), and its settings (pages/UnifiedPage.vue).
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
-import { percent } from '@shared/format.ts'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
-import Slider from '@/components/Slider.vue'
 import Toggle from '@/components/Toggle.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'
-import Segmented from '@/components/ui/Segmented.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { t } from '@/lib/i18n.ts'
 import { panelStyle } from '@/lib/overlayLook.ts'
 import { EVENT_ICONS } from '@/lib/timerView.ts'
 import { useApp } from '@/stores/app.ts'
-import { HUD_WIDGETS, KINA_ICONS, WIDGET_LABELS, type HudWidget, type KinaIcon } from '@shared/settings.ts'
+import { HUD_WIDGETS, KINA_ICONS, WIDGET_LABELS, type KinaIcon } from '@shared/settings.ts'
 
 const store = useApp()
 const cfg = computed(() => store.settings.unified)

@@ -3,11 +3,10 @@
 // tracker/mod.rs), with their legion and server, and a sound when one comes into view. Clicks go
 // through to the game; while the dashboard is up it shows a sample, and can be dragged into place.
 // Nothing around you measures 0, and main keeps the window hidden.
+import CharName from '@/components/CharName.vue'
 import { useOverlay } from '@/lib/overlay.ts'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import ClassIcon from '@/components/ClassIcon.vue'
+import { computed, nextTick, onMounted, watch } from 'vue'
 import CollapseButton from '@/components/CollapseButton.vue'
-import { bridge } from '@/lib/bridge.ts'
 import { t } from '@/lib/i18n.ts'
 import { panelStyle } from '@/lib/overlayLook.ts'
 import { useEnemyAlarm } from '@/lib/enemyAlarm.ts'
@@ -17,9 +16,8 @@ import { serverTag } from '@shared/servers.ts'
 import { canAttack, type Enemy } from '@shared/tracker.ts'
 
 const store = useApp()
-const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('enemies', () => list.value.length > 0)
+const { report } = useOverlay('enemies', () => list.value.length > 0)
 const cfg = computed(() => store.settings.enemies)
 
 const ROWS = 8
@@ -64,8 +62,7 @@ onMounted(() => {
         </div>
         <div v-if="!cfg.collapsed" class="space-y-0.5">
           <div v-for="e in list.slice(0, ROWS)" :key="e.entity" class="flex items-baseline gap-1.5 text-[13px]">
-            <ClassIcon class="self-center" :class-name="e.className" :size="16" />
-            <span class="max-w-[150px] shrink-0 truncate font-medium text-default">{{ e.name }}</span>
+            <CharName class="shrink-0 self-center" :name="e.name" :class-name="e.className" :size="16" name-class="max-w-[150px] font-medium text-default" />
             <span v-if="e.pvp && !e.openPvp" class="shrink-0 self-center rounded bg-red/20 px-1 text-[10px] font-semibold leading-4 text-red" :title="t('Their PvP is on: they can attack you')">PvP</span>
             <span v-if="e.server" class="shrink-0 text-[11px] tabular-nums text-red">[{{ serverTag(e.server) }}]</span>
             <span v-if="cfg.gearScore && e.gearScore" class="shrink-0 text-[11px] font-semibold tabular-nums text-blue" :title="t('Gear score (item level)')">{{ t('ilvl {n}', { n: e.gearScore }) }}</span>

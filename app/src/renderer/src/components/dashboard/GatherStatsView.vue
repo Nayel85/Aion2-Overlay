@@ -3,13 +3,13 @@
 // resource, then by character and resource: how many, failed, ranked up, a plant's x3, doubled
 // against what Plentiful Harvest's level makes expected (your luck), Lady Luck's triggers, and the
 // skills' levels the rolls showed. The filters picked are remembered (this window's storage).
+import CharName from '@/components/CharName.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import FilterRow from '@/components/FilterRow.vue'
 import StatsFilters from '@/components/StatsFilters.vue'
-import { classOf, fromOf, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
+import { fromOf, type Period, useSessions } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
-import { computed, ref, watch } from 'vue'
-import ClassIcon from '@/components/ClassIcon.vue'
-import Segmented from '@/components/ui/Segmented.vue'
+import { computed } from 'vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { t } from '@/lib/i18n.ts'
 import { allGatherings, filterGatherings, gatherResources, gatherRows, gatherTotal } from '@shared/gatherStats.ts'
@@ -37,7 +37,6 @@ const picked = computed(() => filterGatherings(all.value, { names: f.value.names
 const rows = computed(() => gatherRows(picked.value))
 const total = computed(() => gatherTotal(picked.value))
 
-const className = (name: string): string | null => classOf(sessions.value, name)
 
 const pct = (n: number, of: number): string => (of ? `${Math.round((n / of) * 100)}%` : '–')
 function luckOf(got: number, expected: number | null): { text: string; class: string } | null {
@@ -50,16 +49,13 @@ function luckOf(got: number, expected: number | null): { text: string; class: st
 <template>
   <div>
     <!-- The filters: the characters and the period (components/StatsFilters.vue), then this view's. -->
-    <StatsFilters v-model:names="f.names" v-model:period="f.period" :characters="characters" :class-of="className">
+    <StatsFilters v-model:names="f.names" v-model:period="f.period" :characters="characters">
       <FilterRow label="Resource">
         <SelectBox :model-value="f.resource ?? 0" size="sm" :options="resourceOptions" @update:model-value="(v) => (f.resource = v || null)" />
       </FilterRow>
     </StatsFilters>
 
-    <div v-if="!total.done" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
-      <div class="text-sm font-medium">{{ all.length ? t('No gatherings match.') : t('No gatherings yet.') }}</div>
-      <div class="mt-1 text-xs text-darker">{{ t('Each gathering counts once the overlay has seen it, from this version on.') }}</div>
-    </div>
+    <EmptyState v-if="!total.done" :title="all.length ? 'No gatherings match.' : 'No gatherings yet.'" hint="Each gathering counts once the overlay has seen it, from this version on." />
 
     <div v-else class="overflow-x-auto rounded-xl border border-card">
       <table class="w-full text-sm tabular-nums">
@@ -81,7 +77,7 @@ function luckOf(got: number, expected: number | null): { text: string; class: st
         </thead>
         <tbody>
           <tr v-for="r in rows" :key="`${r.name}-${r.resource}`" class="border-t border-card">
-            <td class="px-4 py-1.5"><span class="flex items-center gap-1.5"><ClassIcon :class-name="className(r.name)" :size="16" />{{ r.name }}</span></td>
+            <td class="px-4 py-1.5"><CharName :name="r.name" :size="16" /></td>
             <td class="px-3 py-1.5">
               <span class="flex items-center gap-1.5">
                 <img v-if="itemIcon(r.icon)" :src="itemIcon(r.icon)!" alt="" class="size-5 rounded-sm" draggable="false" />{{ r.resourceName }}

@@ -5,13 +5,14 @@
 // a run's chance of it), per run, per cube or per hour in them; beside it, what the game's rates make
 // of the same cubes, and your luck: what you got against that. The filters picked are remembered
 // (this window's storage).
+import CharName from '@/components/CharName.vue'
+import EmptyState from '@/components/ui/EmptyState.vue'
 import { duration } from '@shared/format.ts'
 import FilterRow from '@/components/FilterRow.vue'
 import StatsFilters from '@/components/StatsFilters.vue'
-import { classOf, fromOf, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
+import { fromOf, type Period, useSessions } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
-import { computed, ref, watch } from 'vue'
-import ClassIcon from '@/components/ClassIcon.vue'
+import { computed, ref } from 'vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
@@ -19,7 +20,8 @@ import { plural, t } from '@/lib/i18n.ts'
 import { formatKina } from '@shared/kina.ts'
 import { filterRuns, itemStats, lootChoices, lootRuns, luck, summaries, unitsOf, type ItemFamily, type LootSummary, type LootUnit } from '@shared/lootStats.ts'
 import { itemIcon, LOOT_KINDS } from '@shared/sessions.ts'
-import { gradeClass, ICON, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
+import { ICON, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
+import { gradeClass } from '@/lib/grades.ts'
 
 /** Inside the Stats page (StatsView): its header is the page's. */
 /** `details`: what the drop rates make expected, your luck, the runs with an item. */
@@ -75,7 +77,6 @@ const items = computed(() => {
   return itemStats(runs.value.map((r) => r.run)).filter((i) => (f.value.family === 'all' || (f.value.family === 'gold' ? i.family !== 'other' : i.family === f.value.family)) && (!q || i.name.toLowerCase().includes(q)))
 })
 
-const className = (name: string): string | null => classOf(sessions.value, name)
 
 // ---- the numbers ----------------------------------------------------------------------------
 
@@ -103,7 +104,7 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
     <PageHeader v-if="!embedded" title="Loot" about="What your dungeon runs gave, from their cubes: by character and by item, per run, per cube or per hour in them. Only the runs whose cubes the overlay saw count. Your luck: what you got against what the drop rates of the game (questlog.gg) make of your cubes, ×1 being just that." />
 
     <!-- The filters: the characters and the period (components/StatsFilters.vue), then this view's. -->
-    <StatsFilters v-model:names="f.names" v-model:period="f.period" :characters="characters" :class-of="className">
+    <StatsFilters v-model:names="f.names" v-model:period="f.period" :characters="characters">
       <FilterRow label="Dungeons">
         <SelectBox :model-value="f.kind ?? ''" size="sm" :options="kindOptions" @update:model-value="(v) => (f = { ...f, kind: v || null, world: null })" />
         <SelectBox :model-value="f.world ?? 0" size="sm" :options="worldOptions" @update:model-value="(v) => (f.world = v || null)" />
@@ -113,10 +114,7 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
       </FilterRow>
     </StatsFilters>
 
-    <div v-if="!total.runs" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
-      <div class="text-sm font-medium">{{ all.length ? t('No runs match.') : t('No dungeon loot yet.') }}</div>
-      <div class="mt-1 text-xs text-darker">{{ t('A run counts once the overlay has seen its cube opened.') }}</div>
-    </div>
+    <EmptyState v-if="!total.runs" :title="all.length ? 'No runs match.' : 'No dungeon loot yet.'" hint="A run counts once the overlay has seen its cube opened." />
 
     <template v-else>
       <!-- By character, then all of them. -->
@@ -141,7 +139,7 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
             <tr v-for="r in rows.length > 2 ? rows : rows.slice(-1)" :key="r.name" :class="['border-t border-card', !r.name && 'bg-card/40 font-semibold']">
               <td class="px-4 py-2">
                 <span class="flex items-center gap-2">
-                  <ClassIcon v-if="r.name" :class-name="className(r.name)" :size="16" />{{ r.name || (rows.length > 2 ? t('All characters') : rows[0]!.name) }}
+                  <CharName v-if="r.name" :name="r.name" :size="16" /><template v-else>{{ rows.length > 2 ? t('All characters') : rows[0]!.name }}</template>
                 </span>
               </td>
               <td class="px-3 py-2 text-center">

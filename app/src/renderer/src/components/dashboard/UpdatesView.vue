@@ -10,7 +10,7 @@ import SettingRow from '@/components/SettingRow.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'
 import { bridge } from '@/lib/bridge.ts'
-import { loc, t } from '@/lib/i18n.ts'
+import { t } from '@/lib/i18n.ts'
 import { releaseFile, releasePage, type UpdateState } from '@shared/update.ts'
 
 const emit = defineEmits<{ go: [page: string] }>()

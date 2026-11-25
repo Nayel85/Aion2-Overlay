@@ -4,10 +4,12 @@
  * shows it, or hides it at 0 × 0; it knows when it is being placed (the dashboard up, or the pets
  * HUD moved by hand), to show its sample; and it is dragged by its header.
  *
+ * The page marks what it shows with `ref="root"` (found here, the page need not hold it).
+ *
  * `shows`: whether it has anything to show now; measured as 0 × 0 when not (its root may keep a
  * margin or an empty frame).
  */
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type ComputedRef, type Ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, useTemplateRef, watch, type ComputedRef, type ShallowRef } from 'vue'
 import type { OverlayId } from '@shared/ipc.ts'
 import { useApp } from '@/stores/app.ts'
 import { bridge } from './bridge.ts'
@@ -16,10 +18,11 @@ import { windowDrag } from './windowDrag.ts'
 export function useOverlay(
   id: OverlayId,
   shows: () => boolean = () => true,
-): { root: Ref<HTMLElement | null>; placing: ComputedRef<boolean>; report: () => void; drag: ReturnType<typeof windowDrag> } {
+): { root: Readonly<ShallowRef<HTMLElement | null>>; placing: ComputedRef<boolean>; report: () => void; drag: ReturnType<typeof windowDrag> } {
   const store = useApp()
   const api = bridge()
-  const root = ref<HTMLElement | null>(null)
+  // The page's element with ref="root": what is measured.
+  const root = useTemplateRef<HTMLElement>('root')
   /** Being placed: shown with its sample, at its real size, to be dragged into place. */
   const placing = computed(() => store.panelVisible || (id === 'hud' && store.hudEditing))
   let sent = ''

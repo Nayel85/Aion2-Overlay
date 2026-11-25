@@ -5,6 +5,7 @@
 // this session's kills and deaths (all it shows between kills), moves the window and closes it;
 // each player kill around you slides in under it and falls off after a few seconds, as the HUD's
 // soul lines do. Its skull opens a small map of where you last died.
+import CharName from '@/components/CharName.vue'
 import { ago as timeAgo } from '@/lib/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { useIdle, useNow } from '@/lib/now.ts'
@@ -30,10 +31,8 @@ const MAX_LINES = 5
 
 const store = useApp()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report, placing } = useOverlay('killfeed')
+const { report, placing } = useOverlay('killfeed')
 const counts = computed(() => store.pvpStats)
-const tag = (server: number | null): string | null =>
-  server === null || server === (store.status?.server ?? null) ? null : serverTag(server)
 
 /** The kills on show: each added as it comes, and dropped SHOW_MS later. */
 const lines = ref<PvpKill[]>([])
@@ -219,13 +218,9 @@ onMounted(() => {
               @pointerdown.stop
               @click="k.fight && bridge().invoke('details:open', { kind: 'pvp', id: k.fight })"
             >
-              <ClassIcon :class-name="k.killer.className" :size="14" />
-              <span :class="['truncate font-semibold', k.mine ? 'text-green' : 'text-dark']">{{ k.killer.name }}</span>
-              <span v-if="tag(k.killer.server)" class="shrink-0 text-[10px] text-yellow">[{{ tag(k.killer.server) }}]</span>
+              <CharName :name="k.killer.name" :class-name="k.killer.className" :name-class="['font-semibold', k.mine ? 'text-green' : 'text-dark']" :server="k.killer.server" hide-own-server server-class="text-[10px] text-yellow" />
               <span class="shrink-0 text-darker">→</span>
-              <ClassIcon :class-name="k.victim?.className" :size="14" />
-              <span :class="['truncate font-semibold', k.died ? 'text-danger' : 'text-dark']">{{ k.victim?.name ?? t('a player') }}</span>
-              <span v-if="k.victim && tag(k.victim.server)" class="shrink-0 text-[10px] text-yellow">[{{ tag(k.victim.server) }}]</span>
+              <CharName :name="k.victim?.name ?? t('a player')" :class-name="k.victim?.className ?? null" :name-class="['font-semibold', k.died ? 'text-danger' : 'text-dark']" :server="k.victim?.server ?? null" hide-own-server server-class="text-[10px] text-yellow" />
             </div>
           </TransitionGroup>
         </div>

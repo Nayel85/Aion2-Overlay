@@ -3,10 +3,8 @@
 // (pages/ApplicantsPage.vue), and its settings. The game shows only the first request until it is
 // answered; this shows all of them, with class, combat power and gear score.
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
-import { percent } from '@shared/format.ts'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
-import Slider from '@/components/Slider.vue'
 import Toggle from '@/components/Toggle.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'

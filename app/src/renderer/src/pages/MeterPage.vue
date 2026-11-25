@@ -40,7 +40,7 @@ import type { TrackerState } from '@shared/tracker.ts'
 
 const store = useApp()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('meter')
+const { report } = useOverlay('meter')
 const cfg = computed(() => store.settings.meter)
 const api = bridge()
 

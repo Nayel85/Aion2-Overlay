@@ -21,7 +21,7 @@ const SHOW_AFTER_HIT_MS = 120_000
 const store = useApp()
 const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('training', () => shown.value)
+const { report } = useOverlay('training', () => shown.value)
 const cfg = computed(() => store.settings.dummy)
 // Hidden while idle, if set.
 const idle = useIdle(() => store.settings.dummy)

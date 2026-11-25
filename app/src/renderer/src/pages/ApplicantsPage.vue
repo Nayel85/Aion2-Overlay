@@ -9,7 +9,7 @@ import { useNow } from '@/lib/now.ts'
 import { classIconUrl } from '@/lib/format.ts'
 import { compact } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
 import { bridge } from '@/lib/bridge.ts'
@@ -24,7 +24,7 @@ import { serverTag } from '@shared/servers.ts'
 const store = useApp()
 const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('applicants', () => list.value.length > 0)
+const { report } = useOverlay('applicants', () => list.value.length > 0)
 const cfg = computed(() => store.settings.applicants)
 
 const now = useNow(1000)

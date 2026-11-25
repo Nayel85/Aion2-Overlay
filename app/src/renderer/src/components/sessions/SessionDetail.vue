@@ -4,17 +4,17 @@
 // its dungeons by zone and mode (their runs in a table, what they gave in all as a row of icons; a
 // run's own loot a click away), its field bosses, and its gathering; the latest first. `header`
 // false: without who and when (the page above says it).
+import CharName from '@/components/CharName.vue'
 import { timeOfDay, longDate, lasting } from '@/lib/format.ts'
 import { duration as mmss } from '@shared/format.ts'
 import FightLink from '@/components/FightLink.vue'
-import { compact } from '@shared/format.ts'
 import { fightDps, runFight, useFights } from '@/lib/fights.ts'
 import { computed, ref } from 'vue'
-import ClassIcon from '@/components/ClassIcon.vue'
 import GatherStats from '@/components/panel/GatherStats.vue'
 import RunLoot from '@/components/panel/RunLoot.vue'
-import { CURRENCY_ICON, gradeClass, ICON, kindIcon, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
-import { loc, t } from '@/lib/i18n.ts'
+import { CURRENCY_ICON, ICON, kindIcon, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
+import { gradeClass } from '@/lib/grades.ts'
+import { t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
 import { formatAmount } from '@shared/earnings.ts'
@@ -139,8 +139,7 @@ function toggle(r: DungeonRun): void {
     <div>
       <template v-if="header">
         <div class="flex items-center gap-2">
-          <ClassIcon :class-name="className" :size="20" />
-          <span class="text-lg font-semibold">{{ session.name }}</span>
+          <CharName :name="session.name" :class-name="className" :size="20" class="text-lg font-semibold" />
           <span v-if="live" class="rounded-full bg-green/15 px-2 py-0.5 text-xs font-medium text-green">{{ t('In progress') }}</span>
         </div>
         <div class="mt-0.5 text-xs text-darker first-letter:uppercase">{{ longDate(session.start) }} · {{ timeOfDay(session.start) }}–{{ timeOfDay(session.last) }} · {{ lasting(session.last - session.start) }}</div>

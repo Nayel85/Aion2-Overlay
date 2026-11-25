@@ -3,8 +3,6 @@
 // and its settings: what each bar shows, its size and colours, and when it turns to the afflicted
 // colour.
 import OverlayWindowSettings from '@/components/OverlayWindowSettings.vue'
-import { percent } from '@shared/format.ts'
-import IdleHideRow from '@/components/IdleHideRow.vue'
 import { computed } from 'vue'
 import SettingRow from '@/components/SettingRow.vue'
 import Slider from '@/components/Slider.vue'

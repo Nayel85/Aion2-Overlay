@@ -5,17 +5,15 @@
 // shows a preview, and can be dragged into place.
 import { useOverlay } from '@/lib/overlay.ts'
 import { useNow } from '@/lib/now.ts'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { bridge } from '@/lib/bridge.ts'
+import { computed, nextTick, onMounted, watch } from 'vue'
 import { t } from '@/lib/i18n.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { flightLeft, flightNow, flightRefill, type FlightPower } from '@shared/flight.ts'
 
 const store = useApp()
-const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('flight', () => shown.value)
+const { report } = useOverlay('flight', () => shown.value)
 const cfg = computed(() => store.settings.flight)
 
 // Ticking while flying or refilling (or with the sample shown): still at full on the ground.

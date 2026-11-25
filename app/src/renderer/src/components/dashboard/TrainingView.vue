@@ -5,8 +5,8 @@
 // Each run is saved with its skills; open one for its skills' DPS, or its Details for the whole
 // breakdown (hits, rotation, buffs...), or tick two to compare them (DPS, damage, crits, hits, and
 // skill by skill). Runs are kept in groups: "New group" starts the next.
+import EmptyState from '@/components/ui/EmptyState.vue'
 import { useNow } from '@/lib/now.ts'
-import Section from '@/components/ui/Section.vue'
 import { dateTime } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -16,7 +16,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import Toggle from '@/components/Toggle.vue'
 import { bridge } from '@/lib/bridge.ts'
-import { loc, plural, t } from '@/lib/i18n.ts'
+import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { DUMMY_DAMAGE_GOALS, DUMMY_LIMITS, NO_DUMMY, nextRunName, type DummyGoal, type DummyRun, type DummyState } from '@shared/dummy.ts'
 
@@ -207,10 +207,7 @@ onBeforeUnmount(() => off?.())
         <h2 class="text-base font-semibold">Runs</h2>
         <span class="text-xs text-darker">{{ t('Tick two runs to compare them.') }}</span>
       </div>
-      <div v-if="!state.runs.length" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
-        <div class="text-sm font-medium">{{ t('No run saved yet.') }}</div>
-        <div class="mt-1 text-xs text-darker">{{ t('Start a run, then hit a training dummy. Finished runs are saved here to compare.') }}</div>
-      </div>
+      <EmptyState v-if="!state.runs.length" title="No run saved yet." hint="Start a run, then hit a training dummy. Finished runs are saved here to compare." />
       <div v-for="[group, runs] in groups" :key="group" class="mb-4 overflow-hidden rounded-xl border border-card">
         <div class="border-b border-card bg-card px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-darker">{{ t('Group {n}', { n: group }) }}</div>
         <table class="w-full text-sm">

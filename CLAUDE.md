@@ -25,5 +25,10 @@
   shortDate, longDate, weekdayTime, countdown, lasting, amount...; `app/tests/sharedFormats.test.ts` checks).
 - What a page shows of the game's content follows the catalogue's settings (`instances.ts`: the tabs'
   order, the kinds ranked by time alone, the Nightmares' levels), not values written in the page.
+- The shared pieces: `CharName.vue` (a character or player: class icon, name, server tag), `CharacterChips.vue`
+  (picking characters, one or several), `ui/Chip.vue` (a filter's pill), `ui/EmptyState.vue` (a page with
+  nothing yet), `FightLink.vue`, `lib/confirm.ts` useArmed (an action that asks once), `lib/grades.ts` (an
+  item's grade: name, colour), `lib/overlay.ts` useOverlay (an overlay window), and the formats.
+- No unused import or variable (`noUnusedLocals`): what a change leaves behind goes with it.
 - Before writing a piece of UI or a format, look for the existing one (components/, lib/, shared/format.ts)
   and extend it with a parameter rather than writing another.

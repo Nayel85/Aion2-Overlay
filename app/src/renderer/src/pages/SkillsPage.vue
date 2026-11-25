@@ -18,7 +18,7 @@ const EVERY_MS = 1000
 const store = useApp()
 const api = bridge()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('skills')
+const { report } = useOverlay('skills')
 const cfg = computed(() => store.settings.skills)
 // Hidden while idle, if set.
 const idle = useIdle(() => store.settings.skills)

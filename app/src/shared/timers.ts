@@ -123,6 +123,12 @@ export const defaultShown = (def: TimerDef): boolean => def.schedule.kind !== 'b
  * not known yet.
  */
 export type BossZone = 'verteron' | 'altgard' | 'abyss'
+/** The field bosses' zones, as the Field Bosses page lists them. */
+export const BOSS_ZONES: { id: BossZone; label: string }[] = [
+  { id: 'verteron', label: 'Verteron' },
+  { id: 'altgard', label: 'Asmodian bosses' },
+  { id: 'abyss', label: 'Abyss' },
+]
 export const FIELD_BOSSES: { boss: number; name: string; zone: BossZone }[] = [
   { boss: 101001, name: 'Neikel of the East', zone: 'verteron' },
   { boss: 101002, name: 'Rotten Kutar', zone: 'verteron' },

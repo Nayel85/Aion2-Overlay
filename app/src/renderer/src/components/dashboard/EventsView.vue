@@ -5,7 +5,6 @@
 // with that event highlighted.
 import { timeOfDay, weekday } from '@/lib/format.ts'
 import { useNow } from '@/lib/now.ts'
-import Section from '@/components/ui/Section.vue'
 import { percent } from '@shared/format.ts'
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import Button from '@/components/Button.vue'
@@ -16,7 +15,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { playChime } from '@/lib/chime.ts'
 import { CLOCK_ICON, EVENT_ICONS, leadLabel, setAlert, setLead, timerNext } from '@/lib/timerView.ts'
-import { loc, t } from '@/lib/i18n.ts'
+import { t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { leadChoices, REGIONS, TIMERS, type TimerDef, type TimerId } from '@shared/timers.ts'
 

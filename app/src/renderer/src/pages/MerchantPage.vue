@@ -7,7 +7,7 @@ import PetSourceTag from '@/components/PetSourceTag.vue'
 import { petSourceTag } from '@/lib/petSources.ts'
 import { useNow } from '@/lib/now.ts'
 import { useOverlay } from '@/lib/overlay.ts'
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, watch } from 'vue'
 import GenusPill from '@/components/GenusPill.vue'
 import PetIcon from '@/components/PetIcon.vue'
 import petItems from '@/data/petItems.json'
@@ -22,7 +22,7 @@ import { blankPet, nextLevelSouls, type Pet } from '@shared/tracker.ts'
 
 const store = useApp()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
-const { root, report } = useOverlay('merchant', () => shownOffers.value.length > 0)
+const { report } = useOverlay('merchant', () => shownOffers.value.length > 0)
 const spawns = useSpawns()
 
 // Ticks so the restock countdown, and offers past it, keep up while the window stays open.

@@ -3,19 +3,19 @@
 // title), each session one line with what it did in a few words; on the right the one picked, all of
 // it (SessionDetail). Filtered by character and since when, as the Loot page; the filters are
 // remembered (this window's storage).
+import CharName from '@/components/CharName.vue'
+import CharacterChips from '@/components/CharacterChips.vue'
 import { longDate } from '@/lib/format.ts'
 import { timeOfDay } from '@/lib/format.ts'
-import { fromOf, namePicker, type Period, PERIODS } from '@/lib/statsFilters.ts'
+import { fromOf, type Period, PERIODS } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
-import { computed, ref, watch } from 'vue'
-import ClassIcon from '@/components/ClassIcon.vue'
+import { computed, ref } from 'vue'
 import SessionDetail from '@/components/sessions/SessionDetail.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
 import { ICON, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
-import { loc, plural, t } from '@/lib/i18n.ts'
+import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { characterId } from '@shared/characters.ts'
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
 import { countedRuns, LOOT_KINDS, lootCounts, sessionDigest, type PlaySession } from '@shared/sessions.ts'
@@ -68,12 +68,6 @@ const picked = ref<string | null>(null)
 /** The session shown: the one picked while the filters keep it, else the first listed. */
 const selected = computed(() => shown.value.find((s) => keyOf(s) === picked.value) ?? shown.value[0] ?? null)
 
-const names = computed({ get: () => f.value.names, set: (v: string[]) => (f.value = { ...f.value, names: v }) })
-const { toggleName, picked: isPicked } = namePicker(names, characters)
-function className(s: Pick<PlaySession, 'name' | 'server'>): string | null {
-  return s.server !== null ? (store.characters[characterId(s.server, s.name)]?.className ?? null) : null
-}
-const serverOf = (name: string): number | null => all.value.find((s) => s.name === name)?.server ?? null
 </script>
 
 <template>
@@ -81,16 +75,7 @@ const serverOf = (name: string): number | null => all.value.find((s) => s.name =
     <PageHeader title="Past sessions" about="Every play session kept, the one going on first: what each character earned and did, its dungeons with what they gave, its field bosses and its gathering. Pick one on the left to see all of it." />
 
     <div class="mb-4 flex flex-wrap items-center gap-2">
-      <button
-        v-for="name in characters"
-        :key="name"
-        type="button"
-        :class="['flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs', isPicked(name) ? 'border-accent bg-accent/15 text-default' : 'border-light text-darker hover:text-default']"
-        @click="toggleName(name)"
-      >
-        <ClassIcon :class-name="className({ name, server: serverOf(name) })" :size="14" />{{ name }}
-      </button>
-      <button v-if="f.names.length" type="button" class="text-xs text-darker hover:text-default hover:underline" @click="f.names = []">{{ t('All') }}</button>
+      <CharacterChips v-model="f.names" multiple :characters="characters" />
       <Segmented v-model="f.period" class="ml-auto" size="sm" :options="PERIODS" />
     </div>
 
@@ -118,8 +103,7 @@ const serverOf = (name: string): number | null => all.value.find((s) => s.name =
             @click="picked = keyOf(s)"
           >
             <div class="flex items-center gap-1.5">
-              <ClassIcon :class-name="className(s)" :size="16" />
-              <span class="font-semibold">{{ s.name }}</span>
+              <CharName :name="s.name" :size="16" class="font-semibold" />
               <span class="text-darker">{{ timeOfDay(s.start) }}–{{ timeOfDay(s.last) }}</span>
               <span v-if="s === live" class="rounded-full bg-green/15 px-1.5 text-[10px] font-medium text-green">{{ t('In progress') }}</span>
               <span class="ml-auto flex items-center gap-2.5 tabular-nums">

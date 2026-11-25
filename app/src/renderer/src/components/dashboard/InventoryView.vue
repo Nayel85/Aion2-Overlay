@@ -5,17 +5,19 @@
 // searched by name, where an item is across all of them and when it last came. Under a character's
 // place, what came into their hands lately (the journal: main/inventory.ts), with where from when known.
 // The character and place picked are remembered (this window's storage).
+import EmptyState from '@/components/ui/EmptyState.vue'
+import { gradeName } from '@/lib/grades.ts'
+import CharacterChips from '@/components/CharacterChips.vue'
 import { fullDateTime } from '@/lib/format.ts'
 import { useStored } from '@/lib/now.ts'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import ClassIcon from '@/components/ClassIcon.vue'
 import ItemTile from '@/components/dashboard/ItemTile.vue'
-import { gradeClass, ICON } from '@/components/panel/sessionIcons.ts'
+import { ICON } from '@/components/panel/sessionIcons.ts'
+import { gradeClass } from '@/lib/grades.ts'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Segmented from '@/components/ui/Segmented.vue'
-import { loc, plural, t } from '@/lib/i18n.ts'
+import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { characterId } from '@shared/characters.ts'
 import { ARRIVAL_SOURCES, PLACES, placeItems, placeSlots, whereIs, WORN_ARCANA, WORN_LAYOUT, type Arrival, type CharacterInventory, type Place, type SlotItem } from '@shared/inventory.ts'
 import { itemIcon, itemInfo } from '@shared/sessions.ts'
 import { arcanaStatLine, baseLines, skillLine, soulLine, soulRate, stoneLine, theostoneOf, type ItemDetails } from '@shared/equipment.ts'
@@ -33,7 +35,6 @@ const query = ref('')
 /** The characters known, the latest first. */
 const characters = computed(() => Object.entries(store.inventories.characters).sort((a, b) => b[1].at - a[1].at))
 const picked = computed<[string, CharacterInventory] | null>(() => characters.value.find(([id]) => id === view.value.who) ?? characters.value[0] ?? null)
-const className = (c: CharacterInventory): string | null => (c.server !== null ? (store.characters[characterId(c.server, c.name)]?.className ?? null) : null)
 
 /** The place picked: its slots, by number. */
 const slots = computed(() => placeSlots(store.inventories, picked.value?.[1] ?? null, view.value.place))
@@ -52,15 +53,6 @@ const hovered = ref<{ item: SlotItem; x: number; y: number } | null>(null)
 function hover(item: SlotItem | null, at: { x: number; y: number }): void {
   hovered.value = item ? { item, ...at } : null
 }
-const GRADE_NAMES: [number, string][] = [
-  [71, 'Mythic'],
-  [61, 'Ancient'],
-  [51, 'Legendary'],
-  [41, 'Unique'],
-  [31, 'Rare'],
-  [21, 'Uncommon'],
-  [0, 'Common'],
-]
 /** An equipment's base stats, asked once of the main process (questlog's): by item id, null while asked or none. */
 const bases = ref(new Map<number, ItemDetails | null>())
 function ask(id: number): void {
@@ -88,7 +80,7 @@ const details = computed(() => {
     name: (info?.name ?? `#${h.item.item}`).replace(' (Bound)', ''),
     bound: info?.name.includes('(Bound)') ?? false,
     grade,
-    gradeName: GRADE_NAMES.find(([g]) => grade >= g)![1],
+    gradeName: gradeName(grade),
     icon: itemIcon(info?.icon),
     enchant,
     amount: h.item.amount,
@@ -163,10 +155,7 @@ function cameText(a: Arrival): string {
   <div>
     <PageHeader title="Inventory" about="What each of your characters has: their equipment, bag, own warehouse and Arcana, and the account's shared warehouse, as the game lists them at login and as items move. Hover an item for its details; search one to see where it is across all of them." />
 
-    <div v-if="!characters.length" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
-      <div class="text-sm font-medium">{{ t('No inventory yet.') }}</div>
-      <div class="mt-1 text-xs text-darker">{{ t('With the overlay open, log in with a character from the character selection: its items show here.') }}</div>
-    </div>
+    <EmptyState v-if="!characters.length" title="No inventory yet." hint="With the overlay open, log in with a character from the character selection: its items show here." />
 
     <template v-else>
       <div class="mb-4 flex flex-wrap items-center gap-2">
@@ -197,17 +186,7 @@ function cameText(a: Arrival): string {
 
       <!-- A character's place, or the account's warehouse. -->
       <template v-else>
-        <div class="mb-3 flex flex-wrap items-center gap-2">
-          <button
-            v-for="[id, c] in characters"
-            :key="id"
-            type="button"
-            :class="['flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs', picked?.[0] === id ? 'border-accent bg-accent/15 text-default' : 'border-light text-darker hover:text-default']"
-            @click="view.who = id"
-          >
-            <ClassIcon :class-name="className(c)" :size="14" />{{ c.name }}
-          </button>
-        </div>
+        <CharacterChips :model-value="picked?.[0] ?? null" class="mb-3" :all="false" :characters="characters.map(([id, c]) => ({ id, name: c.name }))" @update:model-value="view.who = $event as string" />
         <div class="mb-3 flex flex-wrap items-center gap-3">
           <Segmented v-model="view.place" size="sm" :options="placeOptions" />
           <span v-if="asOf" class="text-xs text-darker">{{ t('As of {when}', { when: when(asOf) }) }}</span>
