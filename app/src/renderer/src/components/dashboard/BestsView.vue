@@ -9,6 +9,8 @@
 //   fight without its level is left out), the best DPS or the fastest kill at each, from the fights
 //   kept. A cell's fight can be deleted, or a whole level's (the low ones, once only level 10 is done).
 // A best opens its fight in this page.
+import { provideFightOpener, runClearFight } from '@/lib/fights.ts'
+import FightLink from '@/components/FightLink.vue'
 import CharName from '@/components/CharName.vue'
 import { onHistory } from '@/lib/history.ts'
 import { compact } from '@shared/format.ts'
@@ -242,10 +244,6 @@ const deleteLevel = (level: number): void =>
 
 // ---- formats, the fight open ---------------------------------------------------------------------------------
 
-const mmss = (ms: number): string => {
-  const s = Math.round(ms / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
 const day = (ms: number): string => new Date(ms).toLocaleDateString(loc(), { day: 'numeric', month: 'short' })
 const gear = (id: string | undefined): string | null => {
   const g = id ? you.value[id] : undefined
@@ -253,7 +251,11 @@ const gear = (id: string | undefined): string | null => {
   return [g.gearScore ? `ilvl ${g.gearScore}` : null, g.combatPower ? `${compact(g.combatPower)} CP` : null].filter(Boolean).join(' · ')
 }
 const opened = ref<string | null>(null)
+// The fights open in this page (FightLink).
+provideFightOpener((id) => (opened.value = id))
 const open = (b: Best | null): void => void (b && (opened.value = b.fightId))
+/** A run's clearing fight's id (lib/fights.ts), for its time's link. */
+const clearFight = (r: { world: number; start: number; cleared?: number }): string | null => runClearFight(r, fights.value)?.id ?? null
 const rowFight = (e: Encounter): Best | null => e.myDps ?? e.fastest ?? e.partyDps
 
 async function load(): Promise<void> {
@@ -344,12 +346,12 @@ onHistory(load)
                     <div v-for="who in lines" :key="who" class="flex h-5 items-center justify-center gap-1">
                       <template v-if="r.cells.get(l)?.get(who)">
                         <span class="group/cell inline-flex items-center gap-0.5">
-                          <button
-                            type="button"
-                            class="font-semibold text-yellow hover:underline"
+                          <FightLink
+                            :as="metric === 'dps' ? 'dps' : 'time'"
+                            :value="metric === 'dps' ? dpsOf(r.cells.get(l)!.get(who)!) : r.cells.get(l)!.get(who)!.durationMs"
+                            :fight="r.cells.get(l)!.get(who)!.id"
                             :title="[who, day(r.cells.get(l)!.get(who)!.startTimeMs), gear(r.cells.get(l)!.get(who)!.id)].filter(Boolean).join(' · ')"
-                            @click="opened = r.cells.get(l)!.get(who)!.id"
-                          >{{ metric === 'dps' ? compact(dpsOf(r.cells.get(l)!.get(who)!)) : mmss(r.cells.get(l)!.get(who)!.durationMs) }}</button>
+                          />
                           <button
                             type="button"
                             :class="['text-[10px]', arming === r.cells.get(l)!.get(who)!.id ? 'text-red' : 'text-darkest opacity-0 hover:text-red group-hover/cell:opacity-100']"
@@ -394,7 +396,7 @@ onHistory(load)
                     <template v-if="by === 'fast'">
                       <div v-for="who in lines" :key="who" class="flex h-5 items-center gap-2 text-xs">
                         <CharName v-if="picked === null" :name="who" class="w-24 shrink-0 text-dark" />
-                        <span v-if="fastOf(x.fast[m.id]!, who)" class="font-semibold text-yellow" :title="day(fastOf(x.fast[m.id]!, who)!.start)">{{ mmss(clearMs(fastOf(x.fast[m.id]!, who)!)) }}</span>
+                        <FightLink v-if="fastOf(x.fast[m.id]!, who)" as="time" :value="clearMs(fastOf(x.fast[m.id]!, who)!)" :fight="clearFight(fastOf(x.fast[m.id]!, who)!)" :title="day(fastOf(x.fast[m.id]!, who)!.start)" />
                         <span v-else class="text-darkest">–</span>
                       </div>
                     </template>
@@ -412,13 +414,13 @@ onHistory(load)
                     <template v-if="x.instance.worlds[m.id] !== undefined">
                       <div v-for="who in lines" :key="who" class="flex h-5 items-center gap-2">
                         <CharName v-if="picked === null" :name="who" class="w-24 shrink-0 text-dark" />
-                        <button
+                        <FightLink
                           v-if="bestOf(b.bests[m.id]!, who)"
-                          type="button"
-                          class="font-semibold text-yellow hover:underline"
+                          as="dps"
+                          :value="bestOf(b.bests[m.id]!, who)!.myDps!.value"
+                          :fight="bestOf(b.bests[m.id]!, who)!.myDps!.fightId"
                           :title="[day(bestOf(b.bests[m.id]!, who)!.myDps!.atMs), gear(bestOf(b.bests[m.id]!, who)!.myDps!.fightId)].filter(Boolean).join(' · ')"
-                          @click="open(bestOf(b.bests[m.id]!, who)!.myDps)"
-                        >{{ compact(bestOf(b.bests[m.id]!, who)!.myDps!.value) }}</button>
+                        />
                         <span v-else class="text-darkest">–</span>
                       </div>
                     </template>
@@ -449,7 +451,7 @@ onHistory(load)
           <tbody>
             <tr v-for="r in fastest" :key="`${r.world}|${r.character}`" class="border-t border-card">
               <td class="py-1.5 pl-4 font-medium">{{ dungeonName(r.world) }}</td>
-              <td class="px-3 py-1.5 text-right font-semibold text-yellow">{{ mmss(clearMs(r)) }}</td>
+              <td class="px-3 py-1.5 text-right"><FightLink as="time" :value="clearMs(r)" :fight="clearFight(r)" /></td>
               <td v-if="picked === null" class="px-3 py-1.5 text-dark"><CharName :name="r.character" /></td>
               <td class="px-3 py-1.5 pr-4 text-right text-darker">{{ day(r.start) }}</td>
             </tr>
@@ -482,17 +484,17 @@ onHistory(load)
               <td class="py-1.5 pl-4"><span :class="e.finalBoss && 'font-medium'">{{ e.bossName }}</span></td>
               <td v-if="picked === null" class="px-3 py-1.5 text-dark"><CharName :name="e.character" /></td>
               <td class="px-3 py-1.5 text-right">
-                <button v-if="e.myDps" type="button" class="font-semibold text-yellow hover:underline" @click.stop="open(e.myDps)">{{ compact(e.myDps.value) }}</button>
+                <FightLink v-if="e.myDps" as="dps" :value="e.myDps.value" :fight="e.myDps.fightId" />
                 <span v-else class="text-darker">–</span>
                 <span v-if="e.myDps" class="ml-1.5 text-[11px] text-darker">{{ day(e.myDps.atMs) }}</span>
                 <div v-if="gear(e.myDps?.fightId)" class="text-[10px] text-darker">{{ gear(e.myDps?.fightId) }}</div>
               </td>
               <td class="px-3 py-1.5 text-right">
-                <button v-if="e.partyDps" type="button" class="text-dark hover:underline" @click.stop="open(e.partyDps)">{{ compact(e.partyDps.value) }}</button>
+                <FightLink v-if="e.partyDps" as="dps" :value="e.partyDps.value" :fight="e.partyDps.fightId" class="!font-normal !text-dark" />
                 <span v-else class="text-darker">–</span>
               </td>
               <td class="px-3 py-1.5 pr-4 text-right">
-                <button v-if="e.fastest" type="button" class="text-dark hover:underline" @click.stop="open(e.fastest)">{{ mmss(e.fastest.value) }}</button>
+                <FightLink v-if="e.fastest" as="time" :value="e.fastest.value" :fight="e.fastest.fightId" class="!font-normal !text-dark" />
                 <span v-else class="text-darker">–</span>
               </td>
             </tr>

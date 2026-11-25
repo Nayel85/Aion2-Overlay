@@ -14,3 +14,13 @@
   page that shows it (tables, grids, filters). `app/tests/dataAccess.test.ts` checks the imports.
 - Tables and grids are built from the catalogue (every instance, every boss, in the game's order), the
   player's data filling the cells; not from whatever the player happens to have.
+
+## The same thing shown the same way: shared components
+
+- A thing shown in several places has one component or function, with parameters for what differs, never a
+  copy per page: a character (`CharName.vue`: their class icon, the name or not), a record's value linked to
+  its fight (`FightLink.vue`: a DPS or a time; the fight opens in the page that shows fights, else in its own
+  window: `lib/fights.ts` provideFightOpener / useOpenFight), numbers and clocks (`shared/format.ts`
+  compact, duration).
+- Before writing a piece of UI or a format, look for the existing one (components/, lib/, shared/format.ts)
+  and extend it with a parameter rather than writing another.

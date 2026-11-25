@@ -2,6 +2,7 @@
 // History: the boss fights the engine saved (every 30 s while one goes on, and before the meter is
 // cleared), newest first. A click opens one in the Details window: each player's damage, skills and
 // buffs. The last 500 are kept.
+import { provideFightOpener } from '@/lib/fights.ts'
 import { onHistory } from '@/lib/history.ts'
 import { classIconUrl, dateTime } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
@@ -70,6 +71,7 @@ async function load(): Promise<void> {
 
 /** The fight open in place of the list (its Details, in this page, with the full width of the panel). */
 const opened = ref<string | null>(null)
+provideFightOpener((id) => (opened.value = id))
 const open = (id: string): void => void (opened.value = id)
 function remove(id: string): void {
   void api.invoke('history:delete', id)

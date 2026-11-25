@@ -5,6 +5,7 @@
 // a run's chance of it), per run, per cube or per hour in them; beside it, what the game's rates make
 // of the same cubes, and your luck: what you got against that. The filters picked are remembered
 // (this window's storage).
+import { duration } from '@shared/format.ts'
 import FilterRow from '@/components/FilterRow.vue'
 import StatsFilters from '@/components/StatsFilters.vue'
 import { classOf, fromOf, type Period, PERIODS, useSessions } from '@/lib/statsFilters.ts'
@@ -91,11 +92,7 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
   if (l === null) return null
   return { text: `×${l.toFixed(l >= 10 ? 0 : 2)}`, class: l >= 1.1 ? 'text-green' : l <= 0.9 ? 'text-red' : 'text-dark' }
 }
-const mmss = (ms: number | null): string => {
-  if (ms === null) return '–'
-  const s = Math.round(ms / 1000)
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-}
+const mmss = (ms: number | null): string => (ms === null ? '–' : duration(ms))
 const hours = (ms: number): string => `${(ms / 3_600_000).toFixed(1)} h`
 /** One every how many runs an item drops, from its chance a run. */
 const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('every run') : t('1 in {n} runs', { n: (1 / chance).toFixed(1) })) : '–')

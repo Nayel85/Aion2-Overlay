@@ -4,6 +4,8 @@
 // its dungeons by zone and mode (their runs in a table, what they gave in all as a row of icons; a
 // run's own loot a click away), its field bosses, and its gathering; the latest first. `header`
 // false: without who and when (the page above says it).
+import { duration as mmss } from '@shared/format.ts'
+import FightLink from '@/components/FightLink.vue'
 import { compact } from '@shared/format.ts'
 import { fightDps, runFight, useFights } from '@/lib/fights.ts'
 import { computed, ref } from 'vue'
@@ -30,10 +32,6 @@ const date = (ms: number): string => new Date(ms).toLocaleDateString(loc(), { we
 function length(s: PlaySession): string {
   const m = Math.max(1, Math.round((s.last - s.start) / 60_000))
   return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`
-}
-const mmss = (ms: number): string => {
-  const s = Math.max(0, Math.round(ms / 1000))
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 /** A run's time: its clear time once its last boss fell, else how long you were in it. */
 const runMs = (r: DungeonRun): number => (r.cleared !== undefined ? r.cleared - (r.started ?? r.start) : (r.end ?? r.start) - r.start)
@@ -211,7 +209,7 @@ function toggle(r: DungeonRun): void {
                 <span v-if="abandoned(r)" class="ml-1 text-darker">{{ t('abandoned') }}</span>
               </td>
               <td class="py-1">
-                <span v-if="runBest(r)" class="font-semibold text-yellow" :title="t('Your DPS on {boss}', { boss: runBest(r)!.bossName })">{{ compact(fightDps(runBest(r)!)) }} DPS</span>
+                <template v-if="runBest(r)"><FightLink as="dps" :value="fightDps(runBest(r)!)" :fight="runBest(r)!.id" :title="t('Your DPS on {boss}', { boss: runBest(r)!.bossName })" /> DPS</template>
               </td>
               <td class="py-1" :title="t('Your deaths')">
                 <span class="flex items-center gap-0.5"><svg viewBox="0 0 16 16" class="size-3 text-red" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.skull" /></svg><span :class="r.deaths ? 'font-semibold text-red' : 'text-darker'">{{ r.deaths ?? '-' }}</span></span>
