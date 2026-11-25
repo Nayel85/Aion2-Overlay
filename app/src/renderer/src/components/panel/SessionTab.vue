@@ -4,6 +4,7 @@
 // of it as the Past sessions page shows a session (SessionDetail, the latest first), and beside it its
 // souls by pet (their total in the box's title) and a way to the past sessions. The rates per hour are
 // the Unified HUD's; the engine's state is in Settings.
+import { timeOfDay } from '@/lib/format.ts'
 import CharName from '@/components/CharName.vue'
 import { useNow } from '@/lib/now.ts'
 import { computed, ref } from 'vue'
@@ -39,7 +40,6 @@ function resetSession(): void {
 const current = computed(() => store.sessions.current)
 const runs = computed(() => (current.value ? countedRuns(current.value) : []))
 const counts = computed(() => lootCounts(runs.value))
-const clock = (ms: number): string => new Date(ms).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
 /** How long it has gone on, kept current: "1 h 24 min". */
 const now = useNow(30_000)
 const lasted = computed(() => {
@@ -53,7 +53,7 @@ const lasted = computed(() => {
   <div class="space-y-3 p-3">
     <div class="flex items-center justify-between text-xs">
       <span class="font-medium text-darker">
-        {{ t('This session') }}<template v-if="current"> · <CharName :name="current.name" class="text-dark" />, {{ t('since {time}', { time: clock(current.start) }) }} · {{ lasted }}</template>
+        {{ t('This session') }}<template v-if="current"> · <CharName :name="current.name" class="text-dark" />, {{ t('since {time}', { time: timeOfDay(current.start) }) }} · {{ lasted }}</template>
       </span>
       <button
         type="button"

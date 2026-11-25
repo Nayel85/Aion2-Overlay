@@ -29,6 +29,8 @@ export interface ContentMode {
 
 export interface ContentDef {
   label: string
+  /** Its records are times alone (no best DPS): the Ascension Trials'. */
+  timeOnly?: boolean
   /** Its instances' column header. */
   head: string
   modes: ContentMode[]
@@ -49,7 +51,7 @@ export const CONTENT: Record<ContentKind, ContentDef> = {
   },
   // Stages alone: the zones' `easy` one (Deus Research Base's 600051...) has no boss nor reward, no mode of the game's.
   transcendence: { label: 'Transcendence', head: 'Dungeon', modes: STAGES },
-  trial: { label: 'Ascension Trials', head: 'Trial', modes: TRIAL_DIFFICULTIES.map((d) => ({ id: d, label: d, short: d })) },
+  trial: { label: 'Ascension Trials', head: 'Trial', timeOnly: true, modes: TRIAL_DIFFICULTIES.map((d) => ({ id: d, label: d, short: d })) },
   // The raids, as the game calls them: ten players, two parties.
   raid: {
     label: 'Sanctuaries',
@@ -218,6 +220,13 @@ export const NIGHTMARES: Nightmare[] = [...SEASON, ...Object.keys(NIGHTMARE_BOSS
   grade: GRADES[Math.floor(id / 1000)] ?? 'common',
   season: SEASON.includes(id),
 }))
+
+/** The Nightmares' levels, 1 to 10 (the suggested item levels' count). */
+export const NIGHTMARE_LEVELS = NIGHTMARE_ILVL.common.map((_, i) => i + 1)
+/** The zone type of the Nightmares (all in one zone, 200003). */
+export const NIGHTMARE_ZONE = 'bosschallenge'
+/** The kinds of content in the game's menus' order, the Nightmares among them. */
+export const CONTENT_ORDER: string[] = ['expedition', 'transcendence', NIGHTMARE_ZONE, 'trial', 'raid']
 
 /** A Nightmare level's suggested item level for a boss of a grade. */
 export const nightmareIlvl = (grade: NightmareGrade | null, level: number): number | undefined => (grade ? NIGHTMARE_ILVL[grade][level - 1] : undefined)

@@ -5,7 +5,7 @@
 // landed), Buffs (A2Tools DPS Meter's buff timeline, as its Details does) and Healing. From A2Tools
 // DPS Meter's parser. Opened on the live target from a meter row (it follows the fight, redrawn
 // every second), or on a saved fight from the History page. Moved by its header; its X closes it.
-import { classIconUrl } from '@/lib/format.ts'
+import { classIconUrl, weekdayTime } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
@@ -164,7 +164,7 @@ const onActor = computed(() => buffRows((view.value?.buffs?.tracks ?? []).filter
 const onTarget = computed(() => buffRows((view.value?.buffs?.tracks ?? []).filter((t) => t.on === view.value?.buffs?.targetId && (showPassives.value || !t.passive)), true))
 const showPassives = ref(false)
 const started = computed(() =>
-  view.value?.startedAt ? new Date(view.value.startedAt).toLocaleString(loc(), { weekday: 'short', hour: '2-digit', minute: '2-digit' }) : null,
+  view.value?.startedAt ? weekdayTime(view.value.startedAt) : null,
 )
 
 let pending = false

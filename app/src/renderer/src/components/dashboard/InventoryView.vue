@@ -5,6 +5,7 @@
 // searched by name, where an item is across all of them and when it last came. Under a character's
 // place, what came into their hands lately (the journal: main/inventory.ts), with where from when known.
 // The character and place picked are remembered (this window's storage).
+import { fullDateTime } from '@/lib/format.ts'
 import { useStored } from '@/lib/now.ts'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -123,7 +124,7 @@ const found = computed(() => {
     .sort((a, b) => b.grade - a.grade || a.name.localeCompare(b.name))
 })
 const placeLabel = (p: Place): string => t(PLACES.find((x) => x.id === p)!.label)
-const when = (ms: number): string => new Date(ms).toLocaleString(loc(), { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+const when = fullDateTime
 const amountText = (n: number): string => (n >= 10_000 ? n.toLocaleString('en-US') : `×${n}`)
 const itemCount = computed(() => Object.keys(placeItems(slots.value)).length)
 

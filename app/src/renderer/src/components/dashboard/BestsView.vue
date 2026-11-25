@@ -9,6 +9,7 @@
 //   fight without its level is left out), the best DPS or the fastest kill at each, from the fights
 //   kept. A cell's fight can be deleted, or a whole level's (the low ones, once only level 10 is done).
 // A best opens its fight in this page.
+import { shortDate } from '@/lib/format.ts'
 import { provideFightOpener, runClearFight } from '@/lib/fights.ts'
 import FightLink from '@/components/FightLink.vue'
 import CharName from '@/components/CharName.vue'
@@ -24,7 +25,7 @@ import { useStored } from '@/lib/now.ts'
 import { useApp } from '@/stores/app.ts'
 import type { Best, Encounter, FightSummary, FightYou } from '@shared/meter.ts'
 import { runKindLabel, zoneMode } from '@shared/sessions.ts'
-import { CONTENT, INSTANCES, NIGHTMARES, instanceAt, instanceIlvl, nightmareIlvl, type ContentKind, type NightmareGrade } from '@shared/instances.ts'
+import { CONTENT, INSTANCES, NIGHTMARES, NIGHTMARE_LEVELS, NIGHTMARE_ZONE, CONTENT_ORDER, instanceAt, instanceIlvl, nightmareIlvl, type ContentKind, type NightmareGrade } from '@shared/instances.ts'
 import { knownZone, zoneName, zoneType } from '@shared/worlds.ts'
 
 const store = useApp()
@@ -34,9 +35,9 @@ const fights = ref<FightSummary[]>([])
 /** You in each best's fight: your item level and combat power then. */
 const you = ref<Record<string, FightYou>>({})
 
-const NIGHTMARE = 'bosschallenge'
-/** Kinds where only the clear time counts (the Ascension Trials). */
-const FAST_ONLY = ['trial']
+const NIGHTMARE = NIGHTMARE_ZONE
+/** Kinds where only the clear time counts (the catalogue's: the Ascension Trials). */
+const FAST_ONLY = (Object.keys(CONTENT) as ContentKind[]).filter((k) => CONTENT[k].timeOnly) as string[]
 const NOT_TIMED = ['fieldevent', 'shugo', 'invasion', 'fieldboss', 'hiddencube', 'other']
 /** A zone's tab: its kind of content in the catalogue (shared/instances.ts), else its dungeon type. */
 const kindOf = (world: number): string => instanceAt(world)?.instance.kind ?? zoneType(world) ?? 'other'
@@ -80,7 +81,7 @@ const kinds = computed(() => {
   for (const k of [...Object.keys(CONTENT), NIGHTMARE]) set.add(k)
   // Not dungeons to be fastest in: festivals' games, invasions, field events.
   for (const k of NOT_TIMED) set.delete(k)
-  const order = ['expedition', 'transcendence', NIGHTMARE, 'trial', 'raid']
+  const order = CONTENT_ORDER
   return [...set].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99) || a.localeCompare(b))
 })
 const tab = useStored<string>('bests.tab', 'expedition', (raw) => (typeof raw === 'string' ? raw : 'expedition'))
@@ -190,7 +191,7 @@ const fixed = computed(() => {
 
 // ---- Nightmares: a boss's row, a level's column ------------------------------------------------------------
 
-const LEVELS = Array.from({ length: 10 }, (_, i) => i + 1)
+const LEVELS = NIGHTMARE_LEVELS
 const dpsOf = (f: FightSummary): number => (f.myDamage ?? 0) / Math.max(1, f.durationMs / 1000)
 type NightmareFight = (typeof nightmareFights.value)[number]
 const grid = computed(() => {
@@ -244,7 +245,6 @@ const deleteLevel = (level: number): void =>
 
 // ---- formats, the fight open ---------------------------------------------------------------------------------
 
-const day = (ms: number): string => new Date(ms).toLocaleDateString(loc(), { day: 'numeric', month: 'short' })
 const gear = (id: string | undefined): string | null => {
   const g = id ? you.value[id] : undefined
   if (!g || (!g.gearScore && !g.combatPower)) return null
@@ -350,7 +350,7 @@ onHistory(load)
                             :as="metric === 'dps' ? 'dps' : 'time'"
                             :value="metric === 'dps' ? dpsOf(r.cells.get(l)!.get(who)!) : r.cells.get(l)!.get(who)!.durationMs"
                             :fight="r.cells.get(l)!.get(who)!.id"
-                            :title="[who, day(r.cells.get(l)!.get(who)!.startTimeMs), gear(r.cells.get(l)!.get(who)!.id)].filter(Boolean).join(' · ')"
+                            :title="[who, shortDate(r.cells.get(l)!.get(who)!.startTimeMs), gear(r.cells.get(l)!.get(who)!.id)].filter(Boolean).join(' · ')"
                           />
                           <button
                             type="button"
@@ -396,7 +396,7 @@ onHistory(load)
                     <template v-if="by === 'fast'">
                       <div v-for="who in lines" :key="who" class="flex h-5 items-center gap-2 text-xs">
                         <CharName v-if="picked === null" :name="who" class="w-24 shrink-0 text-dark" />
-                        <FightLink v-if="fastOf(x.fast[m.id]!, who)" as="time" :value="clearMs(fastOf(x.fast[m.id]!, who)!)" :fight="clearFight(fastOf(x.fast[m.id]!, who)!)" :title="day(fastOf(x.fast[m.id]!, who)!.start)" />
+                        <FightLink v-if="fastOf(x.fast[m.id]!, who)" as="time" :value="clearMs(fastOf(x.fast[m.id]!, who)!)" :fight="clearFight(fastOf(x.fast[m.id]!, who)!)" :title="shortDate(fastOf(x.fast[m.id]!, who)!.start)" />
                         <span v-else class="text-darkest">–</span>
                       </div>
                     </template>
@@ -419,7 +419,7 @@ onHistory(load)
                           as="dps"
                           :value="bestOf(b.bests[m.id]!, who)!.myDps!.value"
                           :fight="bestOf(b.bests[m.id]!, who)!.myDps!.fightId"
-                          :title="[day(bestOf(b.bests[m.id]!, who)!.myDps!.atMs), gear(bestOf(b.bests[m.id]!, who)!.myDps!.fightId)].filter(Boolean).join(' · ')"
+                          :title="[shortDate(bestOf(b.bests[m.id]!, who)!.myDps!.atMs), gear(bestOf(b.bests[m.id]!, who)!.myDps!.fightId)].filter(Boolean).join(' · ')"
                         />
                         <span v-else class="text-darkest">–</span>
                       </div>
@@ -453,7 +453,7 @@ onHistory(load)
               <td class="py-1.5 pl-4 font-medium">{{ dungeonName(r.world) }}</td>
               <td class="px-3 py-1.5 text-right"><FightLink as="time" :value="clearMs(r)" :fight="clearFight(r)" /></td>
               <td v-if="picked === null" class="px-3 py-1.5 text-dark"><CharName :name="r.character" /></td>
-              <td class="px-3 py-1.5 pr-4 text-right text-darker">{{ day(r.start) }}</td>
+              <td class="px-3 py-1.5 pr-4 text-right text-darker">{{ shortDate(r.start) }}</td>
             </tr>
           </tbody>
         </table>
@@ -486,7 +486,7 @@ onHistory(load)
               <td class="px-3 py-1.5 text-right">
                 <FightLink v-if="e.myDps" as="dps" :value="e.myDps.value" :fight="e.myDps.fightId" />
                 <span v-else class="text-darker">–</span>
-                <span v-if="e.myDps" class="ml-1.5 text-[11px] text-darker">{{ day(e.myDps.atMs) }}</span>
+                <span v-if="e.myDps" class="ml-1.5 text-[11px] text-darker">{{ shortDate(e.myDps.atMs) }}</span>
                 <div v-if="gear(e.myDps?.fightId)" class="text-[10px] text-darker">{{ gear(e.myDps?.fightId) }}</div>
               </td>
               <td class="px-3 py-1.5 text-right">

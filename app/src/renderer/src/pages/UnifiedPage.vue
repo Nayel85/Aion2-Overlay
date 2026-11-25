@@ -9,7 +9,7 @@
 // alive, and where you last died. Moved by dragging the bar; it grows around its top centre, sized to
 // what it shows (main sizes the window to it).
 import { useNow } from '@/lib/now.ts'
-import { ago as timeAgo } from '@/lib/format.ts'
+import { ago as timeAgo, timeOfDay, numericDate, countdown, weekdayTime } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -165,16 +165,7 @@ function stage(at: number): 'far' | 'near' | 'soon' | 'now' {
   return min <= 0 ? 'now' : min <= cfg.value.countdownMinutes ? 'soon' : min <= 30 ? 'near' : 'far'
 }
 const STAGE_TEXT = { far: 'text-darker', near: 'text-yellow', soon: 'text-orange', now: 'text-green' }
-/** 48:09, 1:48:09; "now" once it has started. */
-function countdown(at: number): string {
-  const s = Math.ceil((at - now.value) / 1000)
-  if (s <= 0) return t('now')
-  const h = Math.floor(s / 3600)
-  const mm = String(Math.floor((s % 3600) / 60)).padStart(h ? 2 : 1, '0')
-  const ss = String(s % 60).padStart(2, '0')
-  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`
-}
-const startsAt = (at: number): string => new Date(at).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
+const countdownTo = (at: number): string => countdown(at, now.value)
 
 // ---- Kina and Abyss Points, to the left while they come in --------------------------------------
 
@@ -290,7 +281,6 @@ const deathHere = computed(() => {
 const pvpCounts = computed(() => store.pvpStats)
 const lastKills = computed(() => [...store.pvpStats.recent].reverse())
 const lastRift = computed(() => store.rifts[0] ?? null)
-const day = (ms: number): string => new Date(ms).toLocaleDateString(loc(), { day: '2-digit', month: '2-digit' })
 
 const nearPets = computed<{ pet: Pet; count: number }[]>(() => {
   if (!spawns.value) return []
@@ -312,7 +302,7 @@ const pingDot = computed(() => {
   const ms = ping.value
   return ms === null ? '' : ms < 80 ? 'bg-green' : ms < 150 ? 'bg-yellow' : 'bg-danger'
 })
-const localTime = computed(() => new Date(now.value).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' }))
+const localTime = computed(() => timeOfDay(now.value))
 /** The Odyle energy of the character playing, worked out from its last login. */
 const odyle = computed(() => {
   const s = store.status
@@ -368,7 +358,7 @@ onBeforeUnmount(() => {
             </span>
             <span v-if="rift" class="flex items-center gap-1 text-xs font-semibold tabular-nums text-blue" :title="t('Abyss Points earned in this Spacetime Rift')">
               <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="EVENT_ICONS.rift" /></svg>
-              <span class="font-medium text-darker">{{ t('Rift') }} {{ startsAt(rift.start) }}</span>
+              <span class="font-medium text-darker">{{ t('Rift') }} {{ timeOfDay(rift.start) }}</span>
               +{{ formatAmount(rift.points) }}
             </span>
             <span class="h-4 w-px bg-light" />
@@ -400,7 +390,7 @@ onBeforeUnmount(() => {
             <span v-for="{ def, at } in upcoming" :key="def.id" :class="['flex items-center gap-1 transition-colors', STAGE_TEXT[stage(at)]]">
               <img v-if="portrait(def)" :src="portrait(def)!" alt="" draggable="false" :class="['size-4 rounded-sm object-cover', stage(at) === 'far' && 'opacity-60 grayscale']" />
               <svg v-else viewBox="0 0 16 16" class="size-[15px]" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="eventIcon(def)" /></svg>
-              <span v-if="stage(at) === 'soon' || stage(at) === 'now'" class="text-xs font-semibold tabular-nums">{{ countdown(at) }}</span>
+              <span v-if="stage(at) === 'soon' || stage(at) === 'now'" class="text-xs font-semibold tabular-nums">{{ countdownTo(at) }}</span>
             </span>
           </button>
 
@@ -649,7 +639,7 @@ onBeforeUnmount(() => {
           <div v-else-if="shown === 'corridors'" class="min-w-[300px]">
             <div class="flex items-baseline gap-2">
               <span class="text-[13px] font-semibold">{{ t('Corridors') }}</span>
-              <span class="text-[11px] text-darker">{{ t('Back {when}', { when: new Date(nextCorridorReset(now)).toLocaleString(loc(), { weekday: 'short', hour: '2-digit', minute: '2-digit' }) }) }}</span>
+              <span class="text-[11px] text-darker">{{ t('Back {when}', { when: weekdayTime(nextCorridorReset(now)) }) }}</span>
             </div>
             <div class="mt-1.5 space-y-1">
               <div v-for="r in corridorRows" :key="r.c.name + r.c.server" class="flex items-center gap-2 whitespace-nowrap text-xs">
@@ -673,9 +663,9 @@ onBeforeUnmount(() => {
                 <img v-if="portrait(def)" :src="portrait(def)!" alt="" draggable="false" class="size-4 shrink-0 rounded-sm object-cover" />
                 <svg v-else viewBox="0 0 16 16" class="size-4 shrink-0 text-darker" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="eventIcon(def)" /></svg>
                 <span class="font-medium">{{ t(def.name) }}</span>
-                <span v-if="!up" class="tabular-nums text-darker">{{ startsAt(at) }}</span>
+                <span v-if="!up" class="tabular-nums text-darker">{{ timeOfDay(at) }}</span>
                 <span v-if="up" class="ml-auto pl-4 font-semibold text-green">{{ t('Alive') }}</span>
-                <span v-else :class="['ml-auto pl-4 font-semibold tabular-nums', stage(at) === 'far' ? 'text-default' : STAGE_TEXT[stage(at)]]">{{ countdown(at) }}</span>
+                <span v-else :class="['ml-auto pl-4 font-semibold tabular-nums', stage(at) === 'far' ? 'text-default' : STAGE_TEXT[stage(at)]]">{{ countdownTo(at) }}</span>
               </div>
             </div>
           </div>
@@ -788,7 +778,7 @@ onBeforeUnmount(() => {
             </div>
             <p v-else class="mt-1.5 text-xs text-darker">{{ t('No player kills seen yet.') }}</p>
             <div v-if="lastRift" class="mt-2 flex items-center gap-2 rounded-lg bg-dark px-2 py-1.5 text-xs">
-              <span class="font-semibold">{{ t('PvP Rift {time} {day}', { time: startsAt(lastRift.start), day: day(lastRift.start) }) }}</span>
+              <span class="font-semibold">{{ t('PvP Rift {time} {day}', { time: timeOfDay(lastRift.start), day: numericDate(lastRift.start) }) }}</span>
               <span class="ml-auto font-semibold tabular-nums text-blue">+{{ formatAmount(lastRift.points) }} AP</span>
             </div>
             <div class="mt-2 border-t border-card pt-1.5"><button type="button" class="text-[11px] font-medium text-accent hover:underline" @pointerdown.stop @click="toggleOverlay(shown as Peek)">{{ peekHint }}</button></div>

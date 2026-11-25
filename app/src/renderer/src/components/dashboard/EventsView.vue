@@ -3,6 +3,7 @@
 // off, and how early). The bar above: the server region, the chime and its volume, the bubble's
 // shake, and the countdown bar over the game. A click on the bubble during an alert opens this page
 // with that event highlighted.
+import { timeOfDay, weekday } from '@/lib/format.ts'
 import { useNow } from '@/lib/now.ts'
 import Section from '@/components/ui/Section.vue'
 import { percent } from '@shared/format.ts'
@@ -25,8 +26,6 @@ const now = useNow(1000)
 
 const EVENT_IMAGES: Partial<Record<TimerId, string>> = { shugo: 'events/shugo.webp', rift: 'events/rift.webp' }
 const alerting = computed(() => new Set(store.alerting.map((a) => a.id)))
-const time = (ms: number): string => new Date(ms).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
-const day = (ms: number): string => new Date(ms).toLocaleDateString(loc(), { weekday: 'short' })
 
 /** The events (field bosses have their own page), soonest first. */
 const rows = computed(() =>
@@ -34,7 +33,7 @@ const rows = computed(() =>
     .map((def) => {
       const next = timerNext(def, now.value)
       const today = new Date(next).toDateString() === new Date(now.value).toDateString()
-      return { def, next, at: today ? time(next) : `${day(next)} ${time(next)}` }
+      return { def, next, at: today ? timeOfDay(next) : `${weekday(next)} ${timeOfDay(next)}` }
     })
     .sort((a, b) => a.next - b.next),
 )

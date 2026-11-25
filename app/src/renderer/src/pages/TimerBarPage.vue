@@ -5,6 +5,7 @@
 // short name. Moved by dragging; sized to what it shows, and hidden with nothing to show. Hovering
 // one names it right away, in a label under the bar (the window grows to it: a title's tooltip
 // waits a second or so). As a list instead, a timer a line: its icon, its name and its countdown.
+import { timeOfDay, countdown } from '@/lib/format.ts'
 import { useNow } from '@/lib/now.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -80,15 +81,7 @@ const items = computed(() =>
         .slice(0, 3),
 )
 
-/** 48:09, 1:48:09; "now" once it has started. */
-function countdown(at: number): string {
-  const s = Math.ceil((at - now.value) / 1000)
-  if (s <= 0) return 'now'
-  const h = Math.floor(s / 3600)
-  const mm = String(Math.floor((s % 3600) / 60)).padStart(h ? 2 : 1, '0')
-  const ss = String(s % 60).padStart(2, '0')
-  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`
-}
+const countdownTo = (at: number): string => countdown(at, now.value)
 
 /** The timer hovered, and where its label goes: under it (its offset from the page's left). */
 const hovered = ref<{ id: TimerId; x: number } | null>(null)
@@ -97,7 +90,6 @@ function hover(id: TimerId, e: PointerEvent): void {
   const el = e.currentTarget as HTMLElement
   hovered.value = { id, x: el.offsetLeft }
 }
-const startsAt = (at: number): string => new Date(at).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
 
 const drag = windowDrag({ overlay: 'timerbar' })
 
@@ -129,7 +121,7 @@ onMounted(() => {
           </svg>
           <span :class="['font-semibold', alerting.has(def.id) ? 'text-yellow' : 'text-default']">{{ t(def.name) }}</span>
           <span v-if="up" class="ml-auto pl-6 font-semibold text-green">{{ t('Alive') }}</span>
-          <span v-else :class="['ml-auto pl-6 text-right font-bold tabular-nums', alerting.has(def.id) ? 'text-yellow' : 'text-default']">{{ countdown(at) }}</span>
+          <span v-else :class="['ml-auto pl-6 text-right font-bold tabular-nums', alerting.has(def.id) ? 'text-yellow' : 'text-default']">{{ countdownTo(at) }}</span>
         </div>
       </div>
       <!-- Sized like the kill feed's title bar: 12 px figures, 16 px icons. -->
@@ -156,8 +148,8 @@ onMounted(() => {
           <span
             v-else
             :class="['text-xs font-semibold tabular-nums', alerting.has(def.id) ? 'text-yellow' : 'text-default']"
-            :style="{ minWidth: `${countdown(at).length}ch` }"
-          >{{ countdown(at) }}</span>
+            :style="{ minWidth: `${countdownTo(at).length}ch` }"
+          >{{ countdownTo(at) }}</span>
         </div>
       </div>
       <!-- In the flow, not floating: the window is measured with it, so it isn't cut off. -->
@@ -167,7 +159,7 @@ onMounted(() => {
         :style="{ marginLeft: `${hovered!.x}px`, opacity: store.settings.timerBar.opacity }"
       >
         <span class="font-semibold text-default">{{ t(hoveredItem.def.name) }}</span>
-        <span class="ml-1.5 tabular-nums text-darker">{{ hoveredItem.up ? t('Alive') : startsAt(hoveredItem.at) }}</span>
+        <span class="ml-1.5 tabular-nums text-darker">{{ hoveredItem.up ? t('Alive') : timeOfDay(hoveredItem.at) }}</span>
       </div>
     </div>
   </div>

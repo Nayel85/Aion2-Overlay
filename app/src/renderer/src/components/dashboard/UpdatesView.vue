@@ -2,6 +2,7 @@
 // Updates: this copy's version and Check for updates, which downloads a newer release, puts it in
 // and restarts the app (main/updater.ts), the installed and the portable copy alike. What's new
 // lists what each version changed.
+import { plainDate } from '@/lib/format.ts'
 import ChangelogView from '@/components/dashboard/ChangelogView.vue'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
@@ -40,7 +41,7 @@ const updateLine = computed(() => {
       return t('You have the latest version ({v}).', { v: u.latest ?? u.current })
     case 'available':
       return u.releasedAt
-        ? t('Version {v} is out ({date}).', { v: u.latest ?? '', date: new Date(u.releasedAt).toLocaleDateString(loc()) })
+        ? t('Version {v} is out ({date}).', { v: u.latest ?? '', date: plainDate(u.releasedAt) })
         : t('Version {v} is out.', { v: u.latest ?? '' })
     case 'downloading':
       return t("Downloading version {v}… {p}%. The app restarts by itself once it's in.", { v: u.latest ?? '', p: u.percent })

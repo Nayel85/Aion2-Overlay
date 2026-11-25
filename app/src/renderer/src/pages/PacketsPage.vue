@@ -2,6 +2,7 @@
 // The packet log's pill over the game (Alt+Shift+R): while it records, how long and how many marks;
 // once it stops, the file it went to, for the few seconds main keeps the window (packets.ts).
 // Clicks go through to the game.
+import { duration } from '@shared/format.ts'
 import { useNow } from '@/lib/now.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -16,8 +17,7 @@ const log = ref<PacketLog>({ ...NO_PACKET_LOG })
 const now = useNow(500)
 
 const elapsed = computed(() => {
-  const s = log.value.startedAt ? Math.max(0, Math.floor((now.value - log.value.startedAt) / 1000)) : 0
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+  return duration(log.value.startedAt ? now.value - log.value.startedAt : 0)
 })
 const fileName = (path: string): string => path.split(/[\\/]/).pop() ?? path
 const shown = computed(() => log.value.on || !!log.value.path)

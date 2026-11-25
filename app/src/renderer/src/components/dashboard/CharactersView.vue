@@ -5,7 +5,7 @@
 // (Daily Dungeon, Shugo and invasion keys). Counters are read at each login and worked out from the
 // game's refill times since: a character not logged in with the overlay yet shows greyed out.
 import { useNow } from '@/lib/now.ts'
-import { ago as timeAgo } from '@/lib/format.ts'
+import { ago as timeAgo, weekdayTime } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CharacterExpeditions from '@/components/dashboard/CharacterExpeditions.vue'
 import type { Expeditions } from '@shared/expeditions.ts'
@@ -113,7 +113,7 @@ function left(end: number): string {
   const h = Math.floor((end - now.value) / 3_600_000)
   return h >= 24 ? plural(Math.floor(h / 24), '{n} day left', '{n} days left') : plural(Math.max(1, h), '{n} hour left', '{n} hours left')
 }
-const stamp = (ms: number): string => new Date(ms).toLocaleString(loc(), { weekday: 'short', hour: '2-digit', minute: '2-digit' })
+const stamp = weekdayTime
 
 /** What a counter's number is: as read, or worked out since. */
 function counterTitle(r: Refill, c: CounterNow): string {

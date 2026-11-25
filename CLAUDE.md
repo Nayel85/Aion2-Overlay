@@ -21,6 +21,9 @@
   copy per page: a character (`CharName.vue`: their class icon, the name or not), a record's value linked to
   its fight (`FightLink.vue`: a DPS or a time; the fight opens in the page that shows fights, else in its own
   window: `lib/fights.ts` provideFightOpener / useOpenFight), numbers and clocks (`shared/format.ts`
-  compact, duration).
+  compact, duration), dates, times, countdowns and counts (`renderer/src/lib/format.ts`: timeOfDay,
+  shortDate, longDate, weekdayTime, countdown, lasting, amount...; `app/tests/sharedFormats.test.ts` checks).
+- What a page shows of the game's content follows the catalogue's settings (`instances.ts`: the tabs'
+  order, the kinds ranked by time alone, the Nightmares' levels), not values written in the page.
 - Before writing a piece of UI or a format, look for the existing one (components/, lib/, shared/format.ts)
   and extend it with a parameter rather than writing another.

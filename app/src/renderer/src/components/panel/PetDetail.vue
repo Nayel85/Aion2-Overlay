@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Where a pet's souls drop: every monster that drops its soul, with its level, zone and spawns,
 // and a map of them. Monster names link to questlog.gg's page for that monster.
+import { plainDate } from '@/lib/format.ts'
 import { BOSS_NPCS, petSource } from '@/lib/petSources.ts'
 import PetSourceTag from '@/components/PetSourceTag.vue'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -113,7 +114,7 @@ const FIT_CLASS = { good: 'text-green', low: 'text-red', high: 'text-yellow' }
           <PetSourceTag :id="id" />
         </div>
         <div class="flex items-center gap-2 text-xs text-darker">
-          <span v-if="merchant" class="text-yellow" :title="t('Last seen {when}', { when: new Date(merchant.last).toLocaleDateString(loc()) })">{{ plural(merchant.stocks, 'At the Black Cloud Merchant once', 'At the Black Cloud Merchant {n} times') }}</span>
+          <span v-if="merchant" class="text-yellow" :title="t('Last seen {when}', { when: plainDate(merchant.last) })">{{ plural(merchant.stocks, 'At the Black Cloud Merchant once', 'At the Black Cloud Merchant {n} times') }}</span>
           <span class="tabular-nums">{{ pet.souls }} souls</span>
           <LevelBadge :pet="pet" />
           <span v-if="pet.session" class="text-green">{{ t('+{n} this session', { n: pet.session }) }}</span>

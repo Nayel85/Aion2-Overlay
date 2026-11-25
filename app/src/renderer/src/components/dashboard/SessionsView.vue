@@ -3,6 +3,8 @@
 // title), each session one line with what it did in a few words; on the right the one picked, all of
 // it (SessionDetail). Filtered by character and since when, as the Loot page; the filters are
 // remembered (this window's storage).
+import { longDate } from '@/lib/format.ts'
+import { timeOfDay } from '@/lib/format.ts'
 import { fromOf, namePicker, type Period, PERIODS } from '@/lib/statsFilters.ts'
 import { useStored } from '@/lib/now.ts'
 import { computed, ref, watch } from 'vue'
@@ -54,7 +56,7 @@ const days = computed<Day[]>(() => {
   }
   return [...by].map(([key, list]) => ({
     key,
-    label: new Date(list[0]!.start).toLocaleDateString(loc(), { weekday: 'long', day: 'numeric', month: 'long' }),
+    label: longDate(list[0]!.start),
     sessions: list,
     ap: list.reduce((n, s) => n + s.ap, 0),
     kina: list.reduce((n, s) => n + s.kina, 0),
@@ -72,7 +74,6 @@ function className(s: Pick<PlaySession, 'name' | 'server'>): string | null {
   return s.server !== null ? (store.characters[characterId(s.server, s.name)]?.className ?? null) : null
 }
 const serverOf = (name: string): number | null => all.value.find((s) => s.name === name)?.server ?? null
-const clock = (ms: number): string => new Date(ms).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
 </script>
 
 <template>
@@ -119,7 +120,7 @@ const clock = (ms: number): string => new Date(ms).toLocaleTimeString(loc(), { h
             <div class="flex items-center gap-1.5">
               <ClassIcon :class-name="className(s)" :size="16" />
               <span class="font-semibold">{{ s.name }}</span>
-              <span class="text-darker">{{ clock(s.start) }}–{{ clock(s.last) }}</span>
+              <span class="text-darker">{{ timeOfDay(s.start) }}–{{ timeOfDay(s.last) }}</span>
               <span v-if="s === live" class="rounded-full bg-green/15 px-1.5 text-[10px] font-medium text-green">{{ t('In progress') }}</span>
               <span class="ml-auto flex items-center gap-2.5 tabular-nums">
                 <span v-if="s.kina" class="text-yellow">{{ formatKina(s.kina) }}</span>

@@ -3,6 +3,7 @@
 // (by quest), each with its 5 rewards and their chances, what it is worth to you, the ones to take
 // highlighted, and whether a reroll is worth its cost; the missions taken apart. Below, what each
 // kind of reward is worth to you (settings.duty), which ranks them, and the board's window over the game.
+import { weekdayTime, amount } from '@/lib/format.ts'
 import { computed } from 'vue'
 import DutyAdvice from '@/components/DutyAdvice.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -26,7 +27,7 @@ const picked = computed(() => new Set(dutyAdvice(state.value, values.value)?.pic
 const rows = computed(() => dutyRows(state.value, values.value))
 
 const kina = (n: number): string => compact(Math.round(n))
-const when = (ms: number): string => new Date(ms).toLocaleString(loc(), { weekday: 'short', hour: '2-digit', minute: '2-digit' })
+const when = weekdayTime
 /** The rerolls' costs learned, in order. */
 const costs = computed(() => Object.entries(state.value.rerollCosts).sort((a, b) => Number(a[0]) - Number(b[0])))
 </script>
@@ -68,7 +69,7 @@ const costs = computed(() => Object.entries(state.value.rerollCosts).sort((a, b)
             <span v-for="r in m.rewards" :key="r.key" :class="['flex items-center gap-1 rounded-md px-1.5 py-0.5 tabular-nums', r.counts ? 'bg-dark' : 'opacity-50']" :title="r.name">
               <img v-if="r.icon" :src="r.icon" alt="" class="size-4 rounded-sm" draggable="false" loading="lazy" />
               <span :class="gradeClass(r.grade)">{{ r.name }}</span>
-              <span v-if="r.amount > 1">×{{ r.amount.toLocaleString(loc()) }}</span>
+              <span v-if="r.amount > 1">×{{ amount(r.amount) }}</span>
               <span class="text-darker">{{ r.chance }}%</span>
             </span>
           </div>
@@ -81,7 +82,7 @@ const costs = computed(() => Object.entries(state.value.rerollCosts).sort((a, b)
         <div class="rounded-xl border border-card opacity-70">
           <div v-for="m in rows.taken" :key="m.quest" class="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-card px-4 py-1.5 text-xs last:border-b-0">
             <span class="font-medium">{{ m.name }}</span>
-            <span v-for="r in m.rewards" :key="r.key" :class="gradeClass(r.grade)">{{ r.name }}<template v-if="r.amount > 1"> ×{{ r.amount.toLocaleString(loc()) }}</template> {{ r.chance }}%</span>
+            <span v-for="r in m.rewards" :key="r.key" :class="gradeClass(r.grade)">{{ r.name }}<template v-if="r.amount > 1"> ×{{ amount(r.amount) }}</template> {{ r.chance }}%</span>
           </div>
         </div>
       </div>

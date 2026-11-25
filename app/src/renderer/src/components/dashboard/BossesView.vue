@@ -4,7 +4,7 @@
 // Lokthar sync can fill in what others' maps saw. Verteron's bosses, Altgard's (the Asmodians', from
 // its map) and the Abyss's (read as you enter the Abyss, by any of your characters) are known so far.
 import { useNow } from '@/lib/now.ts'
-import { ago as timeAgo } from '@/lib/format.ts'
+import { ago as timeAgo, dateTime } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Button from '@/components/Button.vue'
 import Toggle from '@/components/Toggle.vue'
@@ -32,7 +32,7 @@ const zone = ref<BossZone>('verteron')
 
 const ago = (at: number): string => timeAgo(at, now.value)
 /** "Oct 21, 14:56": the exact time a respawn or a read was, to check against the game's map. */
-const stamp = (ms: number): string => new Date(ms).toLocaleString(loc(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+const stamp = dateTime
 
 /** Alive first, then by respawn, the ones never seen last. */
 const rows = computed(() =>

@@ -4,6 +4,7 @@
 // its dungeons by zone and mode (their runs in a table, what they gave in all as a row of icons; a
 // run's own loot a click away), its field bosses, and its gathering; the latest first. `header`
 // false: without who and when (the page above says it).
+import { timeOfDay, longDate, lasting } from '@/lib/format.ts'
 import { duration as mmss } from '@shared/format.ts'
 import FightLink from '@/components/FightLink.vue'
 import { compact } from '@shared/format.ts'
@@ -27,12 +28,6 @@ const fights = useFights()
 const runBest = (r: DungeonRun) => runFight(r, fights.value)
 const store = useApp()
 
-const clock = (ms: number): string => new Date(ms).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
-const date = (ms: number): string => new Date(ms).toLocaleDateString(loc(), { weekday: 'long', day: 'numeric', month: 'long' })
-function length(s: PlaySession): string {
-  const m = Math.max(1, Math.round((s.last - s.start) / 60_000))
-  return m < 60 ? `${m} min` : `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, '0')}`
-}
 /** A run's time: its clear time once its last boss fell, else how long you were in it. */
 const runMs = (r: DungeonRun): number => (r.cleared !== undefined ? r.cleared - (r.started ?? r.start) : (r.end ?? r.start) - r.start)
 const className = computed(() => (props.session.server !== null ? (store.characters[characterId(props.session.server, props.session.name)]?.className ?? null) : null))
@@ -148,7 +143,7 @@ function toggle(r: DungeonRun): void {
           <span class="text-lg font-semibold">{{ session.name }}</span>
           <span v-if="live" class="rounded-full bg-green/15 px-2 py-0.5 text-xs font-medium text-green">{{ t('In progress') }}</span>
         </div>
-        <div class="mt-0.5 text-xs text-darker first-letter:uppercase">{{ date(session.start) }} · {{ clock(session.start) }}–{{ clock(session.last) }} · {{ length(session) }}</div>
+        <div class="mt-0.5 text-xs text-darker first-letter:uppercase">{{ longDate(session.start) }} · {{ timeOfDay(session.start) }}–{{ timeOfDay(session.last) }} · {{ lasting(session.last - session.start) }}</div>
       </template>
       <div :class="['flex flex-wrap items-center gap-x-5 gap-y-1.5 tabular-nums', header && 'mt-3']">
         <span v-if="session.ap" class="flex items-center gap-1.5 font-semibold text-blue"><img :src="'items/abyss-point.webp'" alt="" class="size-4" draggable="false" />{{ formatAmount(session.ap) }} AP</span>
@@ -201,7 +196,7 @@ function toggle(r: DungeonRun): void {
         <tbody>
           <template v-for="r in g" :key="r.start">
             <tr :class="['cursor-pointer border-t border-dark hover:bg-dark/50', abandoned(r) && 'text-darker line-through']" @click="toggle(r)">
-              <td class="py-1 pl-1 text-dark">{{ clock(r.start) }}</td>
+              <td class="py-1 pl-1 text-dark">{{ timeOfDay(r.start) }}</td>
               <td class="py-1">
                 <span v-if="!runIsTimed(r)" class="text-darker">–</span>
                 <span v-else-if="r.end === null && r.cleared === undefined" class="text-accent">{{ t('in progress') }}</span>
@@ -237,7 +232,7 @@ function toggle(r: DungeonRun): void {
       </div>
       <div v-for="r in bosses" :key="r.start" class="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 first:border-t-0">
         <span class="font-semibold">{{ r.name }}</span>
-        <span class="tabular-nums text-darker">{{ clock(r.start) }}</span>
+        <span class="tabular-nums text-darker">{{ timeOfDay(r.start) }}</span>
         <span v-for="x in runRewards(r)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
           <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
           <span :class="gradeClass(x.grade)">{{ x.name.replace(' (Bound)', '') }}</span> ×{{ x.amount }}
@@ -252,7 +247,7 @@ function toggle(r: DungeonRun): void {
         <span class="font-semibold tabular-nums text-default">{{ hiddenCubes.length }}</span>
       </div>
       <div v-for="r in hiddenCubes" :key="r.start" class="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 first:border-t-0">
-        <span class="tabular-nums text-darker">{{ clock(r.start) }}</span>
+        <span class="tabular-nums text-darker">{{ timeOfDay(r.start) }}</span>
         <span v-if="!runRewards(r).length" class="text-darker">{{ t('Nothing worth keeping') }}</span>
         <span v-for="x in runRewards(r)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
           <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
@@ -286,7 +281,7 @@ function toggle(r: DungeonRun): void {
         <span class="font-semibold tabular-nums text-default">{{ session.supplies.length }}</span>
       </div>
       <div v-for="d in [...session.supplies].reverse()" :key="d.at" class="flex w-full flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 first:border-t-0">
-        <span class="tabular-nums text-darker">{{ clock(d.at) }}</span>
+        <span class="tabular-nums text-darker">{{ timeOfDay(d.at) }}</span>
         <span class="font-semibold">{{ supplyName(d.request) }}</span>
         <span v-for="x in dutyRewards(d)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
           <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
@@ -304,7 +299,7 @@ function toggle(r: DungeonRun): void {
       </div>
       <template v-for="d in [...session.duties].reverse()" :key="d.at">
         <button type="button" class="flex w-full flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 text-left first:border-t-0 hover:bg-dark/50" @click="toggleDuty(d)">
-          <span class="tabular-nums text-darker">{{ clock(d.at) }}</span>
+          <span class="tabular-nums text-darker">{{ timeOfDay(d.at) }}</span>
           <span class="font-semibold">{{ questName(d.quest) }}</span>
           <span v-for="x in dutyRewards(d)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
             <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />

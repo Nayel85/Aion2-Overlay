@@ -6,6 +6,7 @@
 // servers carry their server's tag ([LUM]).
 // Lokthar: the rift farms on top (shared/abyss.ts), each the Abyss Points one character earned in a
 // Spacetime Rift's window, with your kills, deaths and assists in it; picking one lists those.
+import { numericDate, timeOfDay } from '@/lib/format.ts'
 import { useNow } from '@/lib/now.ts'
 import { computed, onBeforeUnmount, ref, shallowRef, triggerRef } from 'vue'
 import Button from '@/components/Button.vue'
@@ -74,12 +75,11 @@ const riftCounts = (f: RiftFarm): { kills: number; deaths: number; assists: numb
   return out
 }
 const riftStats = computed(() => new Map(rifts.value.map((f) => [f, riftCounts(f)])))
-const day = (ms: number): string => new Date(ms).toLocaleDateString(loc(), { day: '2-digit', month: '2-digit' })
 /** "PvP Rift 17:00 14/11". */
-const riftName = (f: RiftFarm): string => t('PvP Rift {time} {day}', { time: time(f.start), day: day(f.start) })
+const riftName = (f: RiftFarm): string => t('PvP Rift {time} {day}', { time: timeOfDay(f.start), day: numericDate(f.start) })
 const riftOpen = (f: RiftFarm): boolean => now.value < f.start + RIFT_MS
 const riftTitle = (f: RiftFarm): string =>
-  t('Abyss Points earned from {from} to {to} (the rift opens, and is over 1 h 10 min later)', { from: time(f.start), to: time(f.start + RIFT_MS) })
+  t('Abyss Points earned from {from} to {to} (the rift opens, and is over 1 h 10 min later)', { from: timeOfDay(f.start), to: timeOfDay(f.start + RIFT_MS) })
 
 const filtered = computed(() => {
   const farm = rift.value
@@ -111,12 +111,11 @@ const counts = computed(() => ({
 
 // "2 min ago": redrawn every 15 s.
 const now = useNow(15_000)
-const time = (ms: number): string => new Date(ms).toLocaleTimeString(loc(), { hour: '2-digit', minute: '2-digit' })
 function ago(ms: number): string {
   const s = Math.max(0, Math.round((now.value - ms) / 1000))
   if (s < 60) return t('just now')
   const m = Math.round(s / 60)
-  return m < 60 ? t('{n} min ago', { n: m }) : time(ms)
+  return m < 60 ? t('{n} min ago', { n: m }) : timeOfDay(ms)
 }
 const rowClass = (k: PvpKill): string =>
   k.mine ? 'bg-green/10 border-l-2 border-green' : k.died ? 'bg-danger/10 border-l-2 border-danger' : 'border-l-2 border-transparent'
@@ -239,7 +238,7 @@ const toggleHud = (): void => void bridge().invoke(hudOpen.value ? 'killfeed:clo
         <span v-if="riftAp && (k.mine || isAssist(k))" :class="['shrink-0 text-[11px] font-semibold tabular-nums', apOf(k) ? 'text-blue' : 'text-darkest']" :title="t('Abyss Points this earned (the points that came in right after it)')">{{ apOf(k) ? `+${formatAmount(apOf(k))} AP` : '- AP' }}</span>
         <span v-if="k.fight && !k.mine && !k.died" class="shrink-0 rounded bg-accent/15 px-1.5 text-[10px] font-semibold text-accent" :title="t('You fought this player before someone else took the kill')">Assist</span>
         <span v-if="k.fight" class="shrink-0 text-[11px] font-medium text-accent">{{ t('Details') }} ›</span>
-        <span class="shrink-0 text-[11px] tabular-nums text-darker" :title="time(k.at)">{{ ago(k.at) }}</span>
+        <span class="shrink-0 text-[11px] tabular-nums text-darker" :title="timeOfDay(k.at)">{{ ago(k.at) }}</span>
       </li>
     </ul>
     <button
