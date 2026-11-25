@@ -541,9 +541,15 @@ impl Sidecar {
                 if !died.is_empty() {
                     let (names, you) = (storage.get_nicknames(), storage.local_player_id());
                     for &(entity, at, _) in &died {
-                        let name = names.get(&entity).filter(|n| !n.is_empty());
-                        emit(&event("playerDied", json!({ "at": at, "name": name, "you": you == Some(i64::from(entity)) })));
                         deaths_after = deaths_after.max(at);
+                        let name = names.get(&entity).filter(|n| !n.is_empty());
+                        let is_you = you == Some(i64::from(entity));
+                        // A player has a name; the nameless ones are the dungeon's own (its monsters,
+                        // summons), dying every few seconds in a fight: not deaths of the group.
+                        if name.is_none() && !is_you {
+                            continue;
+                        }
+                        emit(&event("playerDied", json!({ "at": at, "name": name, "you": is_you })));
                     }
                 }
                 let mut tracker = me.tracker.lock();

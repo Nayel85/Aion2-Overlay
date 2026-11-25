@@ -57,6 +57,8 @@ function noteGain(gain: RecentGain): void {
 let currencySeen = new Map<number, number>()
 /** The zone you were last in: a dungeon run starts and ends as it changes. */
 let worldSeen: number | null = null
+/** Back in the open run's dungeon this soon after the session's last news (the app restarted): the same run. */
+const RESUME_MS = 10 * 60_000
 /** The run counters' last values, and the last one to drop (its kind, when): the next run's kind. */
 const counterSeen = new Map<string, number>()
 let counterDrop: { kind: string; at: number } | null = null
@@ -194,9 +196,17 @@ export function startSessions(): void {
   tracker.onEvent('nearby', (ev) => {
     const world = (ev['world'] as number | null) ?? null
     if (world === null || world === worldSeen) return
+    const first = worldSeen === null
     worldSeen = world
     const s = sessions.current
     if (!s) return
+    // The app started again inside the dungeon of the run left open (an update, a restart): that run
+    // goes on, not a new one (nor the first one left as abandoned).
+    const open = openRun()
+    if (first && open && open.world === world && Date.now() - s.last < RESUME_MS) {
+      log(`session: back in ${open.name}, the same run`)
+      return
+    }
     const at = Date.now()
     closeRun(s, at)
     const dungeon = dungeonOf(world)
