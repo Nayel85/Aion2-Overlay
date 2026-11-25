@@ -118,6 +118,12 @@ export function finishLog(): Promise<void> | null {
   })
 }
 
+/** How many cubes an opened cube's list (the engine's `loot`) holds: 2 with the membership's second one (its source), else 1. */
+export const lootCubes = (ev: Record<string, unknown>): number => {
+  const source = ev['source'] as number | undefined
+  return source === 1 || source === 2 ? source : 1
+}
+
 export function log(line: string): void {
   if (logClosing) return
   try {

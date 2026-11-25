@@ -11,7 +11,7 @@ import { app } from 'electron'
 import { readFileSync, writeFile } from 'node:fs'
 import { join } from 'node:path'
 import { broadcast } from './broadcast.ts'
-import { log, tracker } from './tracker.ts'
+import { log, lootCubes, tracker } from './tracker.ts'
 import { characterId } from '../shared/characters.ts'
 import { ceilingAt } from '../shared/instances.ts'
 import type { Expeditions } from '../shared/expeditions.ts'
@@ -60,12 +60,13 @@ export function startExpeditions(): void {
     else pending = { at: Date.now(), entries }
   })
   // A cube opened in an expedition: one more toward its chest (the next login says it as the game counts it).
-  tracker.onEvent('loot', () => {
+  // Each cube counts, as the game does: the membership's second too (lootCubes, the session's count).
+  tracker.onEvent('loot', (ev) => {
     const world = tracker.nearby().world
     const ceiling = world !== null ? ceilingAt(world) : undefined
     const mine = playing && state[playing.id]
     if (!ceiling || !mine || world === null) return
-    const cubes = Math.min(ceiling, (mine.cubes[world] ?? 0) + 1)
+    const cubes = Math.min(ceiling, (mine.cubes[world] ?? 0) + lootCubes(ev))
     state = { ...state, [playing!.id]: { ...mine, cubes: { ...mine.cubes, [world]: cubes } } }
     log(`expeditions: ${mine.name} at ${cubes} of ${ceiling} in ${world}`)
     changed()

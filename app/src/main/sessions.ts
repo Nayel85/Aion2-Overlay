@@ -16,7 +16,7 @@ import { readFileSync, writeFile } from 'node:fs'
 import { join } from 'node:path'
 import { abyss } from './abyss.ts'
 import { broadcast } from './broadcast.ts'
-import { log, tracker } from './tracker.ts'
+import { log, lootCubes, tracker } from './tracker.ts'
 import { onCrafted, onGathered } from './gather.ts'
 import { onArrival } from './inventory.ts'
 import { recipeOf } from '../shared/gather.ts'
@@ -270,9 +270,7 @@ export function startSessions(): void {
     if (!run || !Object.keys(loot).length) return
     run.loot ??= {}
     for (const [id, n] of Object.entries(loot)) run.loot[id] = (run.loot[id] ?? 0) + n
-    // Its source: how many cubes the list holds (2 with the membership's).
-    const source = ev['source'] as number | undefined
-    run.cubes = (run.cubes ?? 0) + (source === 1 || source === 2 ? source : 1)
+    run.cubes = (run.cubes ?? 0) + lootCubes(ev)
     log(`session: ${run.name}'s cube gave ${JSON.stringify(loot)} (${run.cubes} cubes)`)
     changed()
   })
