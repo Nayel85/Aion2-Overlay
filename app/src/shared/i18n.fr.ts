@@ -1751,4 +1751,8 @@ export const FR: Record<string, string> = {
   'Suggested item level: {n}': 'Item level conseillé : {n}',
   'Item level asked to enter': 'Item level requis pour entrer',
   'From a later season': "D'une saison à venir",
+  'Current season': 'Saison en cours',
+  'Later seasons': 'Saisons à venir',
+  'Sanctuaries': 'Sanctuaires',
+  'No such mode': 'Ce mode n\'existe pas ici',
 }

@@ -66,6 +66,8 @@ const characters = computed(() =>
 const who = useStored<string | null>('bests.who', null, (raw) => (typeof raw === 'string' ? raw : null))
 const picked = computed(() => (who.value && characters.value.includes(who.value) ? who.value : null))
 const mine = (name: string | undefined): boolean => !picked.value || name === picked.value
+/** The characters a cell has a line for, each one's whether a record or not: the grids keep their shape. */
+const lines = computed(() => (picked.value ? [picked.value] : characters.value))
 
 // ---- the tabs -----------------------------------------------------------------------------------------
 
@@ -126,6 +128,15 @@ const clearMs = (r: { started?: number; cleared?: number }): number => r.cleared
 
 const gridDef = computed(() => CONTENT[kind.value as ContentKind] ?? null)
 
+/** A mode's item level, in its column's header when every instance that has the mode asks the same (the Ascension Trials'). */
+function headIlvl(mode: string): number | undefined {
+  const levels = new Set(fixed.value.filter((x) => x.instance.worlds[mode] !== undefined).map((x) => instanceIlvl(x.instance, mode)))
+  const [only] = [...levels]
+  return levels.size === 1 ? only : undefined
+}
+/** A character's fastest run among a cell's. */
+const fastOf = <R extends { character: string }>(runs: R[], who: string): R | undefined => runs.find((r) => r.character === who)
+
 /**
  * The tab's grid: every instance and boss of it (the game's order, the final boss last), the cells with a
  * best filled: each character's fastest run on the instance's line, each one's best DPS on a boss's, the
@@ -177,23 +188,33 @@ const fixed = computed(() => {
 
 const LEVELS = Array.from({ length: 10 }, (_, i) => i + 1)
 const dpsOf = (f: FightSummary): number => (f.myDamage ?? 0) / Math.max(1, f.durationMs / 1000)
+type NightmareFight = (typeof nightmareFights.value)[number]
 const grid = computed(() => {
-  const rows = new Map<string, Map<number, (typeof nightmareFights.value)[number]>>()
+  // By boss, by level, by character: their best.
+  const rows = new Map<string, Map<number, Map<string, NightmareFight>>>()
   for (const f of nightmareFights.value) {
-    if (!mine(f.myName)) continue
-    const row = rows.get(f.bossName) ?? new Map()
-    const was = row.get(f.level)
-    const better = !was || (metric.value === 'dps' ? dpsOf(f) > dpsOf(was) : f.durationMs < was.durationMs)
-    if (better) row.set(f.level, f)
+    if (!mine(f.myName) || !f.myName) continue
+    const row = rows.get(f.bossName) ?? new Map<number, Map<string, NightmareFight>>()
+    const cell = row.get(f.level) ?? new Map<string, NightmareFight>()
+    const was = cell.get(f.myName)
+    if (!was || (metric.value === 'dps' ? dpsOf(f) > dpsOf(was) : f.durationMs < was.durationMs)) cell.set(f.myName, f)
+    row.set(f.level, cell)
     rows.set(f.bossName, row)
   }
   // Every Nightmare of the catalogue (the season's first), and any other a fight names.
   const extra = [...rows.keys()].filter((b) => !NIGHTMARES.some((n) => n.boss === b))
   return [...NIGHTMARES.map((n) => ({ boss: n.boss, grade: n.grade as NightmareGrade | null, season: n.season })), ...extra.map((boss) => ({ boss, grade: null, season: false }))].map((r) => ({
     ...r,
-    cells: rows.get(r.boss) ?? new Map(),
+    cells: rows.get(r.boss) ?? new Map<number, Map<string, NightmareFight>>(),
   }))
 })
+/** The season on now, and the later ones, apart. */
+const seasons = computed(() =>
+  [
+    { id: 'now', title: 'Current season', rows: grid.value.filter((r) => r.season) },
+    { id: 'later', title: 'Later seasons', rows: grid.value.filter((r) => !r.season) },
+  ].filter((s) => s.rows.length),
+)
 /** A Nightmare boss's colour, by its grade: the rares (Notun, Gerod) green, the legend (Zikel) blue, the commons grey. */
 const GRADE_TONE: Record<NightmareGrade, string> = { common: 'text-dark', rare: 'text-green', legend: 'text-blue' }
 const bossTone = (grade: NightmareGrade | null): string => (grade ? GRADE_TONE[grade] : 'text-darker')
@@ -278,52 +299,64 @@ onHistory(load)
         </button>
       </div>
 
-      <!-- Nightmares: a row per boss, a column per level. -->
-      <div v-if="kind === NIGHTMARE" class="overflow-x-auto rounded-xl border border-card">
-        <table class="w-full text-sm tabular-nums">
-          <thead class="bg-card text-xs text-darker">
-            <tr>
-              <th class="py-2 pl-4 text-left font-medium">{{ t('Boss') }}</th>
-              <th v-for="l in LEVELS" :key="l" class="px-2 text-center font-medium">
-                <span class="group/level inline-flex items-center gap-1">
-                  {{ t('Lv {n}', { n: l }) }}
-                  <button
-                    v-if="grid.some((r) => r.cells.has(l))"
-                    type="button"
-                    :class="['text-[10px]', arming === `level-${l}` ? 'text-red' : 'text-darkest opacity-0 hover:text-red group-hover/level:opacity-100']"
-                    :title="arming === `level-${l}` ? t('Click again to delete every fight of this level') : t('Delete every fight of this level')"
-                    @click="deleteLevel(l)"
-                  >✕</button>
-                </span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(r, i) in grid" :key="r.boss" :class="['border-t', i && grid[i - 1]!.season && !r.season ? 'border-light' : 'border-card']" :title="r.season ? undefined : t('From a later season')">
-              <td :class="['py-1.5 pl-4 font-medium', bossTone(r.grade)]">
-                {{ r.boss }}
-                <div v-if="r.grade" class="text-[10px] font-normal text-darkest">ilvl {{ nightmareIlvl(r.grade, 1) }}–{{ nightmareIlvl(r.grade, 10) }}</div>
-              </td>
-              <td v-for="l in LEVELS" :key="l" class="px-2 py-1.5 text-center" :title="nightmareIlvl(r.grade, l) ? t('Suggested item level: {n}', { n: nightmareIlvl(r.grade, l)! }) : undefined">
-                <span v-if="r.cells.get(l)" class="group/cell relative inline-flex items-center gap-1">
-                  <button
-                    type="button"
-                    class="font-semibold text-yellow hover:underline"
-                    :title="[r.cells.get(l)!.myName, day(r.cells.get(l)!.startTimeMs), gear(r.cells.get(l)!.id)].filter(Boolean).join(' · ')"
-                    @click="opened = r.cells.get(l)!.id"
-                  >{{ metric === 'dps' ? compact(dpsOf(r.cells.get(l)!)) : mmss(r.cells.get(l)!.durationMs) }}</button>
-                  <button
-                    type="button"
-                    :class="['text-[10px]', arming === r.cells.get(l)!.id ? 'text-red' : 'text-darkest opacity-0 hover:text-red group-hover/cell:opacity-100']"
-                    :title="arming === r.cells.get(l)!.id ? t('Click again to delete this fight') : t('Delete this fight')"
-                    @click="deleteFight(r.cells.get(l)!.id)"
-                  >✕</button>
-                </span>
-                <span v-else class="text-darkest">–</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- Nightmares: a table per season, a row per boss, a column per level, a line per character. -->
+      <div v-if="kind === NIGHTMARE" class="space-y-4">
+        <section v-for="season in seasons" :key="season.id">
+          <h3 class="mb-1.5 text-xs font-semibold uppercase tracking-wide text-darker">{{ t(season.title) }}</h3>
+          <div class="overflow-x-auto rounded-xl border border-card">
+            <table class="w-full table-fixed text-sm tabular-nums">
+              <colgroup>
+                <col class="w-56" />
+                <col v-for="l in LEVELS" :key="l" />
+              </colgroup>
+              <thead class="bg-card text-xs text-darker">
+                <tr>
+                  <th class="py-2 pl-4 text-left font-medium">{{ t('Boss') }}</th>
+                  <th v-for="l in LEVELS" :key="l" class="px-1 text-center font-medium">
+                    <span class="group/level inline-flex items-center gap-1">
+                      {{ t('Lv {n}', { n: l }) }}
+                      <button
+                        v-if="grid.some((r) => r.cells.has(l))"
+                        type="button"
+                        :class="['text-[10px]', arming === `level-${l}` ? 'text-red' : 'text-darkest opacity-0 hover:text-red group-hover/level:opacity-100']"
+                        :title="arming === `level-${l}` ? t('Click again to delete every fight of this level') : t('Delete every fight of this level')"
+                        @click="deleteLevel(l)"
+                      >✕</button>
+                    </span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="r in season.rows" :key="r.boss" class="border-t border-card">
+                  <td :class="['py-1.5 pl-4 align-middle font-medium', bossTone(r.grade)]">{{ r.boss }}</td>
+                  <td v-for="l in LEVELS" :key="l" class="px-1 py-1.5 align-top text-center text-xs">
+                    <div v-if="nightmareIlvl(r.grade, l)" class="text-[10px] text-darker" :title="t('Suggested item level: {n}', { n: nightmareIlvl(r.grade, l)! })">ilvl {{ nightmareIlvl(r.grade, l) }}</div>
+                    <div v-for="who in lines" :key="who" class="flex h-5 items-center justify-center gap-1">
+                      <template v-if="r.cells.get(l)?.get(who)">
+                        <CharName v-if="picked === null" :name="who" icon-only />
+                        <span class="group/cell inline-flex items-center gap-0.5">
+                          <button
+                            type="button"
+                            class="font-semibold text-yellow hover:underline"
+                            :title="[who, day(r.cells.get(l)!.get(who)!.startTimeMs), gear(r.cells.get(l)!.get(who)!.id)].filter(Boolean).join(' · ')"
+                            @click="opened = r.cells.get(l)!.get(who)!.id"
+                          >{{ metric === 'dps' ? compact(dpsOf(r.cells.get(l)!.get(who)!)) : mmss(r.cells.get(l)!.get(who)!.durationMs) }}</button>
+                          <button
+                            type="button"
+                            :class="['text-[10px]', arming === r.cells.get(l)!.get(who)!.id ? 'text-red' : 'text-darkest opacity-0 hover:text-red group-hover/cell:opacity-100']"
+                            :title="arming === r.cells.get(l)!.get(who)!.id ? t('Click again to delete this fight') : t('Delete this fight')"
+                            @click="deleteFight(r.cells.get(l)!.get(who)!.id)"
+                          >✕</button>
+                        </span>
+                      </template>
+                      <span v-else class="text-darkest" :title="who">–</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
 
       <!-- A fixed grid: every instance and boss, a mode per column, the cells with a best filled. -->
@@ -331,38 +364,45 @@ onHistory(load)
         <div class="overflow-x-auto rounded-xl border border-card">
           <table class="w-full table-fixed text-sm tabular-nums">
             <colgroup>
-              <col class="w-56" />
+              <col class="w-72" />
               <col v-for="m in gridDef.modes" :key="m.id" />
             </colgroup>
             <thead class="bg-card text-xs text-darker">
               <tr>
                 <th class="py-2 pl-4 text-left font-medium">{{ t(gridDef.head) }}</th>
-                <th v-for="m in gridDef.modes" :key="m.id" class="px-3 text-left font-medium">{{ t(m.label, { n: m.n ?? '' }) }}</th>
+                <th v-for="m in gridDef.modes" :key="m.id" class="px-3 text-left font-medium">
+                  {{ t(m.label, { n: m.n ?? '' }) }}
+                  <span v-if="headIlvl(m.id)" class="ml-1 font-normal text-darkest" :title="t('Item level asked to enter')">· ilvl {{ headIlvl(m.id) }}</span>
+                </th>
               </tr>
             </thead>
             <tbody v-for="x in fixed" :key="x.name" class="border-t border-light">
-              <tr class="bg-card/50 align-top">
-                <td class="py-1.5 pl-4 font-semibold">{{ x.name }}</td>
-                <td v-for="m in gridDef.modes" :key="m.id" class="px-3 py-1.5">
-                  <div v-if="instanceIlvl(x.instance, m.id)" class="text-[10px] text-darker" :title="t('Item level asked to enter')">ilvl {{ instanceIlvl(x.instance, m.id) }}</div>
-                  <div v-if="by === 'fast' && x.fast[m.id]!.length" class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
-                    <span v-for="r in x.fast[m.id]" :key="r.character" class="flex items-center gap-1" :title="day(r.start)">
-                      <CharName v-if="picked === null" :name="r.character" class="text-dark" />
-                      <span class="font-semibold text-yellow">{{ mmss(clearMs(r)) }}</span>
-                    </span>
-                  </div>
-                  <span v-else-if="by === 'fast'" class="text-xs text-darkest">–</span>
+              <tr class="bg-card/50">
+                <td class="truncate py-1.5 pl-4 align-middle font-semibold" :title="x.name">{{ x.name }}</td>
+                <td v-for="m in gridDef.modes" :key="m.id" class="px-3 py-1.5 align-top">
+                  <span v-if="x.instance.worlds[m.id] === undefined" class="text-xs text-darkest" :title="t('No such mode')">·</span>
+                  <template v-else>
+                    <div v-if="!headIlvl(m.id) && instanceIlvl(x.instance, m.id)" class="text-[10px] text-darker" :title="t('Item level asked to enter')">ilvl {{ instanceIlvl(x.instance, m.id) }}</div>
+                    <template v-if="by === 'fast'">
+                      <div v-for="who in lines" :key="who" class="flex h-5 items-center gap-1.5 text-xs">
+                        <CharName v-if="picked === null" :name="who" class="text-dark" />
+                        <span v-if="fastOf(x.fast[m.id]!, who)" class="font-semibold text-yellow" :title="day(fastOf(x.fast[m.id]!, who)!.start)">{{ mmss(clearMs(fastOf(x.fast[m.id]!, who)!)) }}</span>
+                        <span v-else class="text-darkest">–</span>
+                      </div>
+                    </template>
+                  </template>
                 </td>
               </tr>
               <template v-if="by === 'dps'">
                 <tr v-for="b in x.bosses" :key="b.name" class="border-t border-card">
-                  <td :class="['py-1 pl-6 text-xs', b.final ? 'font-semibold text-red' : 'text-darker']" :title="b.final ? t('Final boss') : t('Sub-boss')">
+                  <td :class="['py-1 pl-6 align-middle text-xs', b.final ? 'font-semibold text-red' : 'text-darker']" :title="b.final ? t('Final boss') : t('Sub-boss')">
                     <span class="flex items-center gap-1.5 truncate">
                       <span :class="['size-1.5 shrink-0 rounded-full', b.final ? 'bg-red' : 'bg-darkest']" />{{ b.name }}
                     </span>
                   </td>
                   <td v-for="m in gridDef.modes" :key="m.id" class="px-3 py-1 text-xs">
-                    <span v-if="b.bests[m.id]!.length" class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                    <span v-if="x.instance.worlds[m.id] === undefined" class="text-darkest">·</span>
+                    <span v-else-if="b.bests[m.id]!.length" class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
                       <span v-for="e in b.bests[m.id]" :key="e.character" class="flex items-center gap-1">
                         <CharName v-if="picked === null" :name="e.character" class="text-dark" />
                         <button type="button" class="font-semibold text-yellow hover:underline" :title="[day(e.myDps!.atMs), gear(e.myDps!.fightId)].filter(Boolean).join(' · ')" @click="open(e.myDps)">{{ compact(e.myDps!.value) }}</button>

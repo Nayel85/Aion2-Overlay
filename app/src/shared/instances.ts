@@ -47,11 +47,13 @@ export const CONTENT: Record<ContentKind, ContentDef> = {
       { id: 'advanced', label: 'Conquest Hard', short: 'Hard' },
     ],
   },
-  transcendence: { label: 'Transcendence', head: 'Dungeon', modes: [{ id: 'easy', label: 'Exploration', short: 'Exp' }, ...STAGES] },
+  // Stages alone: the zones' `easy` one (Deus Research Base's 600051...) has no boss nor reward, no mode of the game's.
+  transcendence: { label: 'Transcendence', head: 'Dungeon', modes: STAGES },
   trial: { label: 'Ascension Trials', head: 'Trial', modes: TRIAL_DIFFICULTIES.map((d) => ({ id: d, label: d, short: d })) },
+  // The raids, as the game calls them: ten players, two parties.
   raid: {
-    label: 'Raids',
-    head: 'Raid',
+    label: 'Sanctuaries',
+    head: 'Sanctuary',
     modes: [
       { id: 'easy', label: 'Easy', short: 'Easy' },
       { id: 'normal', label: 'Normal', short: 'Normal' },

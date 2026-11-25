@@ -4,7 +4,7 @@
  * (`s1`..`s4`), the raids' `normal` and `advanced`; the Ascension Trials' by difficulty, the same in
  * every trial. A mode no source gives is left out.
  *
- * Sources (2026-11-25): aion2.wiki.fextralife.com (Expeditions, Raids, Ascension Trial), daevaguides.com,
+ * Sources (2026-11-25): metabot.gg's Transcendence, aion2.wiki.fextralife.com (Expeditions, Raids, Ascension Trial), daevaguides.com,
  * aion2builds.com and expcarry.com's dungeon lists, which agree where they overlap. The later
  * expeditions' and raids' come from the client's data (not out on the global client yet). Conquest Hard
  * of Urugugu Canyon and Vakron Sky Island: expcarry's alone. The trials' Insane and Hell: aion2builds'
@@ -24,6 +24,11 @@ export const REQUIRED_ILVL: Record<string, Record<string, number>> = {
   'Citadel of the Fallen Daeva': { normal: 3800, advanced: 4500 },
   'Deus Research Base': { s1: 1600, s2: 1900, s3: 2200, s4: 2500 },
   'Shattered Arkanis': { s1: 1600, s2: 1900, s3: 2200, s4: 2500 },
+  // Not out on the global client yet (metabot.gg and metaroad.gg, the Korean client's; Submerged Life
+  // Temple's stage 4: metabot's 3500, metaroad says 3200).
+  'Submerged Life Temple': { s1: 2400, s2: 2800, s3: 3200, s4: 3500 },
+  'Mirror of Scarlet Desire': { s1: 3200, s2: 3500, s3: 3800, s4: 4000 },
+  'Abyssal Horn Den': { s1: 3800, s2: 4100, s3: 4500, s4: 4800 },
   'Abyssal Forge: Ludra': { normal: 2800, advanced: 3000 },
   'Corroded Decontamination Facility': { normal: 3500 },
   'Chalice of Muspel': { normal: 4300, advanced: 4500 },
