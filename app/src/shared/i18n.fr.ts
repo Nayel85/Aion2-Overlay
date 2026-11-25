@@ -1741,4 +1741,6 @@ export const FR: Record<string, string> = {
   'Search settings (Ctrl+F)': 'Chercher un réglage (Ctrl+F)',
   'No setting matches.': 'Aucun réglage ne correspond.',
   'Your DPS on {boss}': 'Ton DPS sur {boss}',
+  'Final boss': 'Boss final',
+  'Sub-boss': 'Sous-boss',
 }

@@ -2,6 +2,8 @@
 // Pets: every pet with its souls and level, as a table. Search, filter and sort; click a pet for
 // where its souls drop, a name or a soul count to correct it; the pin puts a pet on the HUD (in
 // pinned mode) and on the maps.
+import { useStored } from '@/lib/now.ts'
+import { petSource, type PetSourceKind } from '@/lib/petSources.ts'
 import Toggle from '@/components/Toggle.vue'
 import PetSourceTag from '@/components/PetSourceTag.vue'
 import { useNow } from '@/lib/now.ts'
@@ -44,6 +46,22 @@ const spawns = useSpawns()
 /** The continents each pet's soul monsters spawn on (Elyos, Asmodian, Abyss). */
 const continents = computed(() => (spawns.value ? petContinents(spawns.value) : new Map<number, Set<string>>()))
 const onContinent = (id: number): boolean => !continent.value || !!continents.value.get(id)?.has(continent.value)
+/** Where each pet comes from (lib/petSources.ts): a boss, an instance, the Black Cloud Merchant alone; picked or not (remembered). */
+const SOURCE_CHIPS = [
+  { id: 'boss' as const, label: 'Boss', on: 'border-red/50 bg-red/10 text-red' },
+  { id: 'instance' as const, label: 'Instance', on: 'border-blue/50 bg-blue/10 text-blue' },
+  { id: 'merchant' as const, label: 'Black Cloud Merchant only', on: 'border-yellow/50 bg-yellow/10 text-yellow' },
+]
+const source = useStored<PetSourceKind | null>('pets.source', null, (raw) => (raw === 'boss' || raw === 'instance' || raw === 'merchant' ? raw : null))
+const ofSource = (id: number): boolean => !source.value || petSource(id)?.kind === source.value
+const sourceCounts = computed(() => {
+  const counts = new Map<string, number>()
+  for (const p of store.pets) {
+    const k = petSource(p.id)?.kind
+    if (k && ofGenus(p.id) && onContinent(p.id) && !store.hiddenPet(p.id)) counts.set(k, (counts.get(k) ?? 0) + 1)
+  }
+  return counts
+})
 /** The zones each pet's soul monsters spawn in. */
 const worlds = computed(() => (spawns.value ? petWorlds(spawns.value) : new Map<number, Set<number>>()))
 /**
@@ -133,7 +151,7 @@ const list = computed(() => {
     if (filter.value === 'unfinished' && p.level >= MAX_LEVEL) return false
     if (filter.value === 'session' && !p.session) return false
     const info = petInfo(p.id)
-    if (!ofGenus(p.id) || !onContinent(p.id)) return false
+    if (!ofGenus(p.id) || !onContinent(p.id) || !ofSource(p.id)) return false
     if (!q) return true
     const haystack = [displayName(p), p.name ?? '', info ? GENUS_LABEL[info.genus] : '', String(p.id)]
     return haystack.some((h) => h.toLowerCase().includes(q))
@@ -271,6 +289,16 @@ const syncedAgo = computed(() => {
         @click="continent = continent === c.id ? null : c.id"
       >
         {{ c.label }} <span class="tabular-nums opacity-60">{{ continentCounts.get(c.id) ?? 0 }}</span>
+      </button>
+      <span class="mx-1 h-4 w-px bg-light" />
+      <button
+        v-for="c in SOURCE_CHIPS"
+        :key="c.id"
+        type="button"
+        :class="['rounded-full border px-2.5 py-0.5 text-xs transition', source === c.id ? c.on : 'border-light text-darker hover:text-default']"
+        @click="source = source === c.id ? null : c.id"
+      >
+        {{ t(c.label) }} <span class="tabular-nums opacity-60">{{ sourceCounts.get(c.id) ?? 0 }}</span>
       </button>
       <span v-if="filter === 'nearby' && nearMonsters.length" class="ml-auto truncate text-xs text-green">
         {{ nearMonsters.slice(0, 4).map((m) => `${m.name} ${m.count}`).join(' · ') }}
