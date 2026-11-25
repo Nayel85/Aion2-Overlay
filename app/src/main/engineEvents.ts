@@ -59,7 +59,7 @@ export type EngineEvents = {
   craftDone: { recipe: number }
   spot: { template: number; world: number | null; position: [number, number] }
   partyDebuffs: { debuffs?: Record<number, PartyDebuff[]> }
-  bossTarget: { boss?: number; target: number }
+  bossTarget: { boss?: number; target: number | null }
   partyVitals: { entity: number; hp: number; maxHp: number; flight: number; maxFlight: number }
   inventory: Whose & { items?: DepotItem[] }
   inventorySlots: Whose & { slots?: DepotItem[] }

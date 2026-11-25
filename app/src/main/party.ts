@@ -38,7 +38,8 @@ export function startParty(): void {
     changed()
   })
   tracker.onEvent('bossTarget', (ev) => {
-    state = { ...state, bossTarget: { entity: ev.target, at: Date.now() } }
+    // null: the boss let go of everyone (or died).
+    state = { ...state, bossTarget: ev.target === null ? null : { entity: ev.target, at: Date.now() } }
     changed()
   })
   tracker.onEvent('partyVitals', (ev) => {

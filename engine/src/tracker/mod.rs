@@ -570,6 +570,33 @@ impl Tracker {
         }));
     }
 
+    /// A monster on someone (its target, its cast, its hit): kept for the aggro list, and when it is a boss
+    /// on a player (you, your party, anyone in view), told for the party frames (`bossTarget`: on a
+    /// change, or again after 3 s).
+    fn monster_on(&mut self, ts: i64, monster: u32, target: u32) {
+        if monster == target || !self.mob_code.contains_key(&monster) {
+            return;
+        }
+        self.aggro.hit(monster as i32, target as i32, 0, ts);
+        let boss = self.storage.is_boss(monster as i32) || self.mob_code.get(&monster).is_some_and(|&c| self.npcs.is_boss(c as i32));
+        if boss && (Some(target) == self.me() || self.players.contains_key(&target)) {
+            let changed = self.boss_target.is_none_or(|(b, t, at)| b != monster || t != target || ts - at > 3_000);
+            if changed {
+                self.boss_target = Some((monster, target, ts));
+                (self.emit)(json!({ "type": "bossTarget", "ts": ts, "boss": monster, "target": target }));
+            }
+        }
+        self.aggro_tick(ts);
+    }
+
+    /// A monster on no one any more (dead, gone, or letting go): the boss the party frames show is off.
+    fn monster_off(&mut self, ts: i64, monster: u32) {
+        if self.boss_target.is_some_and(|(b, _, _)| b == monster) {
+            self.boss_target = None;
+            (self.emit)(json!({ "type": "bossTarget", "ts": ts, "boss": monster, "target": null }));
+        }
+    }
+
     /// The monsters on you now (aggro.rs), told when the list changes: `{"type": "aggro", "mobs": [...]}`.
     /// Asked as soon as anything changes it (a hit, a cast, a target, a death), and twice a second by
     /// the sidecar for those that leave you without a word (`AGGRO_MS` of silence).
@@ -595,10 +622,7 @@ impl Tracker {
         let me = self.me();
         // A monster's hit on anyone: who it is on (aggro.rs); a monster known by its spawn.
         if let Some((target, monster)) = damage::monster_hit(frame) {
-            if self.mob_code.contains_key(&monster) {
-                self.aggro.hit(monster as i32, target as i32, 0, ts);
-                self.aggro_tick(ts);
-            }
+            self.monster_on(ts, monster, target);
         }
         // Nobody in view: no player's hit to read.
         if self.players.is_empty() && me.is_none() {
@@ -613,14 +637,6 @@ impl Tracker {
             }
             if self.players.is_empty() {
                 continue;
-            }
-            // A boss hitting a player: the one it is on (told on a change, or again after 3 s).
-            if h.actor != h.target && (Some(h.target) == me || self.players.contains_key(&h.target)) && storage.is_boss(h.actor as i32) {
-                let changed = self.boss_target.is_none_or(|(boss, target, at)| boss != h.actor || target != h.target || ts - at > 3_000);
-                if changed {
-                    self.boss_target = Some((h.actor, h.target, ts));
-                    (self.emit)(json!({ "type": "bossTarget", "ts": ts, "boss": h.actor, "target": h.target }));
-                }
             }
             if self.players.contains_key(&h.actor) || Some(h.actor) == me {
                 if let Some(class) = pvp::skill_class(h.skill) {
@@ -984,6 +1000,7 @@ impl Tracker {
                         self.enemies_changed(ts);
                     }
                     self.aggro.died(entity as i32);
+                    self.monster_off(ts, entity);
                     self.aggro_tick(ts);
                     if flag == p::DEATH_FLAG_COMBAT && self.mob_code.contains_key(&entity) {
                         self.push_recent(ts, entity);
@@ -1032,9 +1049,8 @@ impl Tracker {
             op if p::OP_CASTS.contains(&op) => {
                 // A monster's cast: who it is on, before its hit lands (aggro.rs).
                 if let Some((caster, target, skill)) = p::cast_on(f) {
-                    if (1_000_000..=9_999_999).contains(&skill) && self.mob_code.contains_key(&caster) && caster != target {
-                        self.aggro.hit(caster as i32, target as i32, 0, ts);
-                        self.aggro_tick(ts);
+                    if (1_000_000..=9_999_999).contains(&skill) {
+                        self.monster_on(ts, caster, target);
                     }
                 }
                 // Your casts give where their target is: only a guess at where you
@@ -1237,10 +1253,10 @@ impl Tracker {
                     // Its target none: it let go of whoever it was on.
                     if self.mob_code.contains_key(&entity) && target == 0 {
                         self.aggro.released(entity as i32);
+                        self.monster_off(ts, entity);
                         self.aggro_tick(ts);
-                    } else if self.mob_code.contains_key(&entity) && entity != target {
-                        self.aggro.hit(entity as i32, target as i32, 0, ts);
-                        self.aggro_tick(ts);
+                    } else {
+                        self.monster_on(ts, entity, target);
                     }
                 }
                 if let Some(entity) = p::selection(f) {
