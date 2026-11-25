@@ -29,6 +29,8 @@ export interface ContentMode {
 
 export interface ContentDef {
   label: string
+  /** Its group's size: five, the raids ten (two parties). */
+  players: number
   /** Its records are times alone (no best DPS): the Ascension Trials'. */
   timeOnly?: boolean
   /** Its instances' column header. */
@@ -43,6 +45,7 @@ export const CONTENT: Record<ContentKind, ContentDef> = {
   expedition: {
     label: 'Expeditions',
     head: 'Expedition',
+    players: 5,
     modes: [
       { id: 'easy', label: 'Exploration', short: 'Exp' },
       { id: 'normal', label: 'Conquest Normal', short: 'Normal' },
@@ -50,12 +53,13 @@ export const CONTENT: Record<ContentKind, ContentDef> = {
     ],
   },
   // Stages alone: the zones' `easy` one (Deus Research Base's 600051...) has no boss nor reward, no mode of the game's.
-  transcendence: { label: 'Transcendence', head: 'Dungeon', modes: STAGES },
-  trial: { label: 'Ascension Trials', head: 'Trial', timeOnly: true, modes: TRIAL_DIFFICULTIES.map((d) => ({ id: d, label: d, short: d })) },
+  transcendence: { label: 'Transcendence', head: 'Dungeon', players: 5, modes: STAGES },
+  trial: { label: 'Ascension Trials', head: 'Trial', players: 1, timeOnly: true, modes: TRIAL_DIFFICULTIES.map((d) => ({ id: d, label: d, short: d })) },
   // The raids, as the game calls them: ten players, two parties.
   raid: {
     label: 'Sanctuaries',
     head: 'Sanctuary',
+    players: 10,
     modes: [
       { id: 'easy', label: 'Easy', short: 'Easy' },
       { id: 'normal', label: 'Normal', short: 'Normal' },
@@ -149,6 +153,9 @@ export function instanceAt(world: number): { instance: Instance; mode: ContentMo
   const instance = INSTANCES[p.kind].find((i) => i.name === p.name)!
   return { instance, mode: CONTENT[p.kind].modes.find((m) => m.id === p.mode)! }
 }
+
+/** The group an instance's zone is played by (10 in a raid), or null: no instance of the catalogue's. */
+export const groupSizeAt = (world: number | null): number | null => (world === null ? null : (instanceAt(world) ? CONTENT[instanceAt(world)!.instance.kind].players : null))
 
 /** The item level an instance's mode asks to enter, when a source gives it. */
 export const instanceIlvl = (instance: Instance, mode: string): number | undefined =>

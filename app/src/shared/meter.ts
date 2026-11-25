@@ -97,14 +97,19 @@ export const MAIN_TARGET_MODES: { id: TargetMode; label: string }[] = [
 ]
 
 /** The rows to show: the players chosen, ranked by the stat, each with its value and per second. */
+/**
+ * The meter's rows to show, by what they show, sorted. `instance`: in a PvE instance, where only your
+ * group can be: "Me and party" is everyone there (a raid's other party is in no roster of yours).
+ */
 export function meterRows(
   m: MeterData,
   players: MeterPlayers,
   stat: MeterStat,
+  instance = false,
 ): (MeterRow & { value: number; perSecond: number; part: number })[] {
   const seconds = Math.max(1, m.battleTime / 1000)
   const value = (r: MeterRow): number => (stat === 'damage' ? r.damage : stat === 'healing' ? r.heal : r.taken)
-  const shown = m.rows.filter((r) => (players === 'all' ? true : players === 'me' ? r.you : r.you || (r.party && !r.others)))
+  const shown = m.rows.filter((r) => (players === 'all' ? true : players === 'me' ? r.you : r.you || ((r.party || instance) && !r.others)))
   const total = shown.reduce((n, r) => n + value(r), 0) || 1
   return shown
     .map((r) => ({ ...r, value: value(r), perSecond: stat === 'damage' ? r.dps : stat === 'healing' ? r.hps : r.taken / seconds, part: (value(r) / total) * 100 }))

@@ -2,6 +2,8 @@
  * Everything the windows render from, kept in step with main. Each window has its own copy of
  * this store (separate renderers); main broadcasts every change to all of them.
  */
+import { pveInstance } from '@shared/sessions.ts'
+import { groupSizeAt } from '@shared/instances.ts'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, toRaw } from 'vue'
 import { SETTINGS_DEFAULTS, type SettingKey, type Settings } from '@shared/settings.ts'
@@ -53,6 +55,10 @@ export const useApp = defineStore('app', () => {
   let battleTime = 0
   /** Your party and its members' HP (the party frames). */
   const party = ref<Party>(NO_PARTY)
+  /** In a PvE instance (a dungeon, a raid): only your group is there. */
+  const inInstance = computed(() => pveInstance(nearby.value.world))
+  /** Your group's size: your party's, or the instance's (a raid's 10, two parties). */
+  const groupSize = computed(() => Math.max(party.value.members.length, groupSizeAt(nearby.value.world) ?? 0))
   /** Your flight power (the flight timer). */
   const flight = ref<FlightPower | null>(null)
   /** A gathering's outcome, known as it starts (the CC banner). */
@@ -254,7 +260,7 @@ export const useApp = defineStore('app', () => {
   }
 
   return {
-    aggro, settings, applicants, combatAt, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, inventories, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
+    inInstance, groupSize, aggro, settings, applicants, combatAt, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, inventories, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
     init, set, setHud, togglePin, openPet, hiddenPet,
   }
 })

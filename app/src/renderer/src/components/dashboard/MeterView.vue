@@ -41,7 +41,7 @@ const cfg = computed(() => store.settings.meter)
 
 const icon = classIconUrl
 
-const rows = computed(() => meterRows(meter.value, cfg.value.players, cfg.value.stat))
+const rows = computed(() => meterRows(meter.value, cfg.value.players, cfg.value.stat, store.inInstance))
 const top = computed(() => Math.max(1, ...rows.value.map((r) => r.value)))
 const perSecond = computed(() => rows.value.reduce((n, r) => n + r.perSecond, 0))
 const total = computed(() => rows.value.reduce((n, r) => n + r.value, 0))

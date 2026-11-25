@@ -235,7 +235,7 @@ const ttk = computed(() => (fighting.value ? timeToKill(meter.value) : null))
 function targetClick(): void {
   if (!store.settings.meter.enabled) toggleOverlay('meter')
 }
-const meterTop = computed(() => meterRows(meter.value, store.settings.meter.players, 'damage').slice(0, 5))
+const meterTop = computed(() => meterRows(meter.value, store.settings.meter.players, 'damage', store.inInstance).slice(0, 5))
 const meterMax = computed(() => Math.max(1, ...meterTop.value.map((r) => r.value)))
 
 // ---- chips: a cube, enemies, your last death, a boss run -----------------------------------------

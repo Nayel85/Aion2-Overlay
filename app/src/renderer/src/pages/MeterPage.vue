@@ -50,12 +50,12 @@ const status = computed(() => store.status ?? { state: 'starting' as TrackerStat
 
 const icon = classIconUrl
 
-const all = computed(() => meterRows(meter.value, cfg.value.players, cfg.value.stat))
+const all = computed(() => meterRows(meter.value, cfg.value.players, cfg.value.stat, store.inInstance))
 /**
- * Your party's size (a dungeon's group): each member gets a row whatever the meter's rows or height,
- * so the whole group shows without resizing it on entering.
+ * Your group's size (a dungeon's party, a raid's ten: the store's): each member gets a row whatever
+ * the meter's rows or height, so the whole group shows without resizing it on entering.
  */
-const partySize = computed(() => store.party.members.length)
+const partySize = computed(() => store.groupSize)
 /** A height of its own shows every row it fits (scrolling past them); otherwise as many as set, the whole party at least. */
 const rows = computed(() => all.value.slice(0, height.value === null ? Math.max(cfg.value.rows, partySize.value) : 24))
 /** Its height grows past the one set while its rows are no more than the party's: nothing to scroll for them. */

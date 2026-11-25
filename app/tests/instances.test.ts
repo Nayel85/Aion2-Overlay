@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { INSTANCES, instanceAt, instanceCeiling, instanceIlvl } from '../src/shared/instances.ts'
+import { groupSizeAt, INSTANCES, instanceAt, instanceCeiling, instanceIlvl } from '../src/shared/instances.ts'
 import { zoneMode } from '../src/shared/sessions.ts'
 
 test("the catalogue: each kind's instances in the game's order, their cube bosses, modes and item levels", () => {
@@ -25,4 +25,8 @@ test("the catalogue: each kind's instances in the game's order, their cube bosse
   assert.equal(zoneMode(600021), null)
   assert.equal(zoneMode(600055), 'Stage 2')
   assert.equal(zoneMode(600082), 'Normal')
+  // A raid's group is ten (two parties), an expedition's five; none out of an instance.
+  assert.equal(groupSizeAt(600082), 10)
+  assert.equal(groupSizeAt(600022), 5)
+  assert.equal(groupSizeAt(1010), null)
 })
