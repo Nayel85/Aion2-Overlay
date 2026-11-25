@@ -7,12 +7,13 @@ import { computed } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
 import { plural, t } from '@/lib/i18n.ts'
 import { EXPEDITION_MODES, expeditionCell, shownExpeditions, type Expeditions } from '@shared/expeditions.ts'
-import { REQUIRED_ILVL } from '@shared/instanceLevels.ts'
+import { INSTANCES, instanceIlvl } from '@shared/instances.ts'
 
-/** Each mode's item level asked to enter (shared/instanceLevels.ts: `easy`, `normal`, `advanced`). */
-const ILVL_KEY = { exploration: 'easy', conquest: 'normal', advanced: 'advanced' } as const
-const ilvls = (name: string) =>
-  EXPEDITION_MODES.map((m) => ({ ...m, ilvl: REQUIRED_ILVL[name]?.[ILVL_KEY[m.id]] })).filter((m) => m.ilvl && expeditionCell(undefined, name, m.id))
+/** Each mode's item level asked to enter (the catalogue's), the modes it has. */
+const ilvls = (name: string) => {
+  const instance = INSTANCES.expedition.find((i) => i.name === name)
+  return instance ? EXPEDITION_MODES.map((m) => ({ ...m, ilvl: instanceIlvl(instance, m.id) })).filter((m) => m.ilvl && expeditionCell(undefined, name, m.id)) : []
+}
 
 const props = defineProps<{ characters: { id: string; name: string; className: string | null }[]; state: Expeditions }>()
 const names = computed(() => shownExpeditions(props.state))

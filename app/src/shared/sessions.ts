@@ -19,6 +19,7 @@ import { GATHERABLES } from './gatherables.ts'
 import { itemIcon, type ItemTuple } from './itemRef.ts'
 import { RECIPES } from './recipes.ts'
 import { ZONES } from './zones.ts'
+import { instanceAt } from './instances.ts'
 
 export { ABYSS_WORLDS }
 
@@ -365,31 +366,13 @@ export const NIGHTMARE_BOSSES: Record<number, string> = {
   3004: 'Ascended Atheron',
 }
 
-/**
- * The Nightmares of the season (the global client's first, 2026-09-30 to 12-16), in the game's order,
- * with their grade: four common, two rare (each unlocked by two commons at level 10), the legend last
- * (by the two rares). Fextralife's Nightmare Dungeons. The other bosses of NIGHTMARE_BOSSES come later.
- */
-export const NIGHTMARE_SEASON: { boss: string; grade: 'common' | 'rare' | 'legend' }[] = [
-  { boss: 'Gatekeeper Pinopi', grade: 'common' },
-  { boss: 'Furious Feruk', grade: 'common' },
-  { boss: "Fafnir's Poison Blood", grade: 'common' },
-  { boss: 'Wraith Giselle', grade: 'common' },
-  { boss: 'Fortress Guardian Notun', grade: 'rare' },
-  { boss: 'Mutated Gerod', grade: 'rare' },
-  { boss: "Zikel's Apparition", grade: 'legend' },
-]
-
-/** A zone's mode beside its name (questlog's difficulty): Conquest's and a raid's Normal or Hard, a Transcendence's stage. */
-const DIFFICULTY_LABELS: Record<string, string> = { easy: 'Easy', normal: 'Normal', advanced: 'Hard' }
+/** A zone's mode beside its name (the catalogue's, shared/instances.ts): Conquest's and a raid's Normal or Hard, a Transcendence's stage; none for an Exploration (its name alone) or a trial (in its name). */
 type Translate = (text: string, params?: Record<string, string | number>) => string
 const untranslated: Translate = (text, params) => text.replace(/\{(\w+)\}/g, (_, k: string) => String(params?.[k] ?? ''))
 export function zoneMode(world: number, tr: Translate = untranslated): string | null {
-  const z = ZONES[world]
-  if (!z || (z[2] !== 'party' && z[2] !== 'raid')) return null
-  if (z[4] !== null) return tr('Stage {n}', { n: z[4] })
-  const label = z[2] === 'party' && z[3] === 'easy' ? undefined : DIFFICULTY_LABELS[z[3] ?? '']
-  return label ? tr(label) : null
+  const at = instanceAt(world)
+  if (!at || at.instance.kind === 'trial' || (at.instance.kind !== 'raid' && at.mode.id === 'easy')) return null
+  return tr(at.mode.short, { n: at.mode.n ?? '' })
 }
 
 /** A run's name: a Nightmare's by its boss and level, else its zone's, with its mode (`tr` translating it). */
