@@ -2,7 +2,7 @@
 // monsters, bosses alone, instances alone, or no monster at all (the Black Cloud Merchant's), with
 // the bosses and instances by name; for the merchant's window, the Pets page and the maps.
 import data from '@/data/petSources.json'
-import { ZONES } from '@shared/zones.ts'
+import { zoneName } from '@shared/worlds.ts'
 
 export type PetSourceKind = 'field' | 'boss' | 'instance' | 'merchant'
 export interface PetSource {
@@ -17,7 +17,6 @@ export const PET_SOURCES_DATE = (data as { fetched: string }).fetched
 export const petSource = (pet: number): PetSource | null => SOURCES[pet] ?? null
 /** The monsters that are bosses (questlog's heromonster), by npc id: their spawns stand out on the maps. */
 export const BOSS_NPCS = new Set(Object.values(SOURCES).flatMap((s) => (s.bosses ?? []).map((b) => b.npc)))
-const zoneName = (world: number): string => ZONES[world]?.[0] ?? `#${world}`
 
 /**
  * What to tell about a pet's source, or null for an ordinary one (open-world monsters): its tone and

@@ -17,7 +17,7 @@ import { characterId } from '@shared/characters.ts'
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
 import { countedRuns, CURRENCY_LABELS, gatheredByResource, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsOneOff, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type GatheredResource, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
-import { RECIPES } from '@shared/recipes.ts'
+import { recipeOf } from '@shared/gather.ts'
 
 const props = withDefaults(defineProps<{ session: PlaySession; live?: boolean; header?: boolean }>(), { live: false, header: true })
 /** The saved fights: each run's best (your DPS on a boss in it, a Nightmare's boss). */
@@ -88,7 +88,7 @@ const craftRows = computed(() => {
   }
   return [...by]
     .map(([recipe, r]) => {
-      const def = RECIPES[String(recipe)]
+      const def = recipeOf(recipe)
       return {
         recipe,
         ...r,

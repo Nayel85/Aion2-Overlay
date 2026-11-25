@@ -68,6 +68,14 @@ export function gatherItem(plain: number | undefined, grade: number): ForecastIt
   return drop ? asItem(drop) : null
 }
 
+/** A recipe (recipes.ts): its product and proc product ([item id, quantity, name, grade, icon]), its proc chance and craft; null when unknown. */
+export const recipeOf = (recipe: number): (typeof RECIPES)[string] | null => RECIPES[String(recipe)] ?? null
+
+/** A resource's plain item, by its name (questlog's: every spot of one gives the same). */
+const PLAIN_BY_NAME = new Map<string, number>()
+for (const [name, , groups] of Object.values(GATHERABLES)) if (groups['1'] && !PLAIN_BY_NAME.has(name)) PLAIN_BY_NAME.set(name, groups['1'][0])
+export const plainItemByName = (name: string): number | undefined => PLAIN_BY_NAME.get(name)
+
 /** What a craft makes, plain or on a proc; and whether its proc is the same item twice. */
 export function craftItem(recipe: number, proc: boolean): { item: ForecastItem | null; doubled: boolean } {
   const r = RECIPES[String(recipe)]

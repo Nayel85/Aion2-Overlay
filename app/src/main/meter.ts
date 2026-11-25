@@ -10,7 +10,7 @@ import { settings } from './settings.ts'
 import { command, tracker } from './tracker.ts'
 import type { Buff, BuffTrack, FightBuffs } from '../shared/buffs.ts'
 import { pveInstance } from '../shared/sessions.ts'
-import { ZONES } from '../shared/zones.ts'
+import { zoneType } from '../shared/worlds.ts'
 import { CLASS_NAMES, detailsView, meterData, NO_METER, unmaskName, type DetailsActor, type DetailsDefense, type DetailsSkill, type DetailsSource, type DetailsView, type DpsEvent, type FightRecord, type FightSummary, type MeterData, type PersonalView, type TargetDetails, NO_PERSONAL, NO_RECORDINGS, type Recordings, type TargetMode, type Encounter, type NewBest, listedFight, type FightYou } from '../shared/meter.ts'
 
 const ASK_TIMEOUT_MS = 5000
@@ -214,7 +214,7 @@ export const meterState = {
   /** A fight's breakdown by player and skill: the live target's, or a saved fight's. */
   async details(source: DetailsSource, display = false): Promise<DetailsView | null> {
     /** A Nightmare (questlog's `bosschallenge`): fought alone, in an instance others share. */
-    const soloZone = (world: number | null | undefined): boolean => world != null && ZONES[world]?.[2] === 'bosschallenge'
+    const soloZone = (world: number | null | undefined): boolean => zoneType(world) === 'bosschallenge'
     if (source.kind === 'live') {
       const ev = await ask({ cmd: 'details', target: source.target, display }, 'details', (e) => e['target'] === source.target)
       if (!ev) return null

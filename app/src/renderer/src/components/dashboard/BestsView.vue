@@ -23,7 +23,7 @@ import { useApp } from '@/stores/app.ts'
 import type { Best, Encounter, FightSummary, FightYou } from '@shared/meter.ts'
 import { runKindLabel, zoneMode } from '@shared/sessions.ts'
 import { CONTENT, INSTANCES, NIGHTMARES, instanceAt, instanceIlvl, nightmareIlvl, type ContentKind, type NightmareGrade } from '@shared/instances.ts'
-import { ZONES } from '@shared/zones.ts'
+import { knownZone, zoneName, zoneType } from '@shared/worlds.ts'
 
 const store = useApp()
 const api = bridge()
@@ -37,7 +37,7 @@ const NIGHTMARE = 'bosschallenge'
 const FAST_ONLY = ['trial']
 const NOT_TIMED = ['fieldevent', 'shugo', 'invasion', 'fieldboss', 'hiddencube', 'other']
 /** A zone's tab: its kind of content in the catalogue (shared/instances.ts), else its dungeon type. */
-const kindOf = (world: number): string => instanceAt(world)?.instance.kind ?? ZONES[world]?.[2] ?? 'other'
+const kindOf = (world: number): string => instanceAt(world)?.instance.kind ?? zoneType(world) ?? 'other'
 const kindLabel = (kind: string): string => CONTENT[kind as ContentKind]?.label ?? runKindLabel(kind)
 
 // ---- the sessions' runs: a Nightmare's level, each dungeon's fastest ---------------------------------
@@ -69,7 +69,7 @@ const mine = (name: string | undefined): boolean => !picked.value || name === pi
 
 // ---- the tabs -----------------------------------------------------------------------------------------
 
-const timedRuns = computed(() => allRuns.value.filter((r) => r.started !== undefined && r.cleared !== undefined && r.cleared > r.started && ZONES[r.world]))
+const timedRuns = computed(() => allRuns.value.filter((r) => r.started !== undefined && r.cleared !== undefined && r.cleared > r.started && knownZone(r.world)))
 const kinds = computed(() => {
   const set = new Set([...shown.value.map((e) => kindOf(e.dungeonId)), ...timedRuns.value.map((r) => kindOf(r.world))])
   // The fixed grids, with a best or not.
@@ -92,7 +92,7 @@ const METRICS = computed(() => [
 
 /** A dungeon as the game names it, with its mode ("Vakron Sky Island · Normal"). */
 function dungeonName(id: number): string {
-  const name = ZONES[id]?.[0] ?? `#${id}`
+  const name = zoneName(id)
   const mode = zoneMode(id, t)
   return mode ? `${name} · ${mode}` : name
 }

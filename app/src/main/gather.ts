@@ -12,12 +12,11 @@
 import { app } from 'electron'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { GATHERABLES } from '../shared/gatherables.ts'
 import { resourceOf } from '../shared/sessions.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { craftOutcome, gatherFlow, gatherOutcome, type CraftOver, type GatheringOver } from '../shared/gatherFlow.ts'
-import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, plainItem, type GatherForecast, type GatherRoll, type GatherTemplates } from '../shared/gather.ts'
+import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, plainItem, type GatherForecast, type GatherRoll, type GatherTemplates, plainItemByName } from '../shared/gather.ts'
 
 /** Gone this long after it should have ended, if nothing said it did. */
 const FORGET_AFTER_MS = 2_000
@@ -68,9 +67,6 @@ function mapPoints(): [string, number, number, number][] {
   }
   return points
 }
-/** A resource's plain item, by its name (questlog's: every spot of one gives the same). */
-const PLAIN_BY_NAME = new Map<string, number>()
-for (const [name, , groups] of Object.values(GATHERABLES)) if (groups['1'] && !PLAIN_BY_NAME.has(name)) PLAIN_BY_NAME.set(name, groups['1'][0])
 /** Nearer than this to a point (the map's units, ~cm): its resource. */
 const NEAR = 800
 /** Each unknown kind's votes, by resource name. */
@@ -81,7 +77,7 @@ function voted(template: number): { item: number; sure: boolean } | null {
   if (!v) return null
   const all = [...v.values()].reduce((a, b) => a + b, 0)
   const [name, n] = [...v].sort((a, b) => b[1] - a[1])[0]!
-  const item = PLAIN_BY_NAME.get(name)
+  const item = plainItemByName(name)
   if (!item || n / all < 0.6) return null
   return { item, sure: n >= 3 && n / all >= 0.75 }
 }

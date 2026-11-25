@@ -13,7 +13,7 @@ import { join } from 'node:path'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { characterId } from '../shared/characters.ts'
-import { EXPEDITION_CEILINGS } from '../shared/expeditionCeilings.ts'
+import { ceilingAt } from '../shared/instances.ts'
 import type { Expeditions } from '../shared/expeditions.ts'
 
 /** A login's list and its inventory this close together are the same character's. */
@@ -62,7 +62,7 @@ export function startExpeditions(): void {
   // A cube opened in an expedition: one more toward its chest (the next login says it as the game counts it).
   tracker.onEvent('loot', () => {
     const world = tracker.nearby().world
-    const ceiling = world !== null ? EXPEDITION_CEILINGS[world] : undefined
+    const ceiling = world !== null ? ceilingAt(world) : undefined
     const mine = playing && state[playing.id]
     if (!ceiling || !mine || world === null) return
     const cubes = Math.min(ceiling, (mine.cubes[world] ?? 0) + 1)

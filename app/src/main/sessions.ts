@@ -19,7 +19,7 @@ import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { onCrafted, onGathered } from './gather.ts'
 import { onArrival } from './inventory.ts'
-import { RECIPES } from '../shared/recipes.ts'
+import { recipeOf } from '../shared/gather.ts'
 import { BOSS_RUNS } from '../shared/bossRuns.ts'
 import { AP_ITEM, apSource, GATHER_FAILED, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
 
@@ -342,7 +342,7 @@ export function startSessions(): void {
   onCrafted((c) => {
     const s = sessions.current
     if (!s) return
-    const r = RECIPES[String(c.recipe)]
+    const r = recipeOf(c.recipe)
     const count = c.failed ? 0 : ((c.proc ? r?.[1]?.[1] : r?.[0][1]) ?? 1)
     s.crafts = [...(s.crafts ?? []), c.failed ? { at: c.at, recipe: c.recipe, proc: false, failed: true, item: 0, count } : { at: c.at, recipe: c.recipe, proc: c.proc, item: c.item ?? 0, count }]
     s.last = c.at

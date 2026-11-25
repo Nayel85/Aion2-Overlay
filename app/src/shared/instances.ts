@@ -156,6 +156,9 @@ export const instanceCeiling = (instance: Instance, mode: string): number | unde
   return w === undefined ? undefined : EXPEDITION_CEILINGS[w]
 }
 
+/** A zone's guaranteed chest (an expedition's mode's): cubes opened before it, when it has one. */
+export const ceilingAt = (world: number): number | undefined => EXPEDITION_CEILINGS[world]
+
 // ---- the Nightmares --------------------------------------------------------------------------------
 
 export type NightmareGrade = keyof typeof NIGHTMARE_ILVL
