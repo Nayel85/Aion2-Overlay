@@ -377,6 +377,36 @@ pub fn cast_target(frame: &[u8]) -> Option<u32> {
     varint(b, n + 1).map(|(target, _)| target).filter(|&t| t != 0)
 }
 
+/// A cast's caster, target and skill, as it starts (`02 38 <caster> 00 <skill u32> <n> <kind> <target>`)
+/// or lands (`03 38 <caster> 00 <target> <skill u32>`): a monster's (a 7-digit skill) tells who it is on
+/// before its hit does (the owner's 2026-11-25 23:32 log: a monster's cast on you 0.8 s before its hit).
+pub fn cast_on(frame: &[u8]) -> Option<(u32, u32, u32)> {
+    let (op, b) = OP_CASTS.iter().find_map(|&op| body(frame, op).map(|b| (op, b)))?;
+    let (caster, n) = varint(b, 0)?;
+    if *b.get(n)? != 0 {
+        return None;
+    }
+    let (target, skill) = if op == OP_CASTS[0] {
+        (varint(b, n + 7)?.0, u32_at(b, n + 1)?)
+    } else {
+        let (target, m) = varint(b, n + 1)?;
+        (target, u32_at(b, n + 1 + m)?)
+    };
+    (target != 0).then_some((caster, target, skill))
+}
+
+/// `35 38 <entity> 00 <its target | 00>`: the target of an entity you look at (your target's target,
+/// sent as it changes): a monster's is who it is on. None when it has none.
+pub fn selection_target(frame: &[u8]) -> Option<(u32, u32)> {
+    let b = body(frame, OP_SELECTION)?;
+    let (entity, n) = varint(b, 0)?;
+    if *b.get(n)? != 0 {
+        return None;
+    }
+    let (target, _) = varint(b, n + 1)?;
+    (entity > 0 && target > 0).then_some((entity, target))
+}
+
 /// Epoch ms, 2020 to 2128: how the time in an effect record is found. Effects
 /// that never run out carry the end of 2099.
 const EFFECT_MS: std::ops::Range<u64> = 1_580_000_000_000..5_000_000_000_000;
@@ -1335,6 +1365,20 @@ mod tests {
         assert_eq!(one, selection(&frame(OP_SELECTION, &hex("bc44 00 b01a"))));
         assert!(selection(&frame(OP_SELECTION, &hex("ddd001 0000"))).is_some());
         assert_eq!(selection(&frame(OP_SELECTION, &hex("bc44"))), None);
+    }
+
+    #[test]
+    fn a_monsters_cast_and_target_say_who_it_is_on() {
+        // The owner's 2026-11-25 23:32 log: monster 28855 (b7e101) casting at you (3511, b71b), then landing.
+        let start = frame(OP_CASTS[0], &hex("b7e101007ec412000102b71bfdac2dc321b850c835076c48432a1c46904e01e807"));
+        assert_eq!(cast_on(&start), Some((28_855, 3_511, 1_229_950)));
+        let lands = frame(OP_CASTS[1], &hex("b7e10100b71b7ec4120001edd9ee05268a52c815746c48007c1e46d804010000000100"));
+        assert_eq!(cast_on(&lands), Some((28_855, 3_511, 1_229_950)));
+        // Yours on it: a player's skill (8 digits).
+        let yours = frame(OP_CASTS[0], &hex("b71b0090eed5001502b7e101a9eaf740a9ff4fc8bb156c4800ac1b46bc5e0100"));
+        assert_eq!(cast_on(&yours), Some((3_511, 28_855, 14_020_240)));
+        assert_eq!(selection_target(&frame(OP_SELECTION, &hex("b7e10100b71b"))), Some((28_855, 3_511)));
+        assert_eq!(selection_target(&frame(OP_SELECTION, &hex("b7e1010000"))), None);
     }
 
     #[test]

@@ -169,6 +169,17 @@ mod replay {
             if let Some((t, m)) = damage::monster_hit(f) {
                 aggro.hit(m as i32, t as i32, 0, *ms);
             }
+            // A monster's cast, or the target of the one you look at.
+            if let Some((caster, target, skill)) = crate::tracker::protocol::cast_on(f) {
+                if (1_000_000..=9_999_999).contains(&skill) && caster as i32 != you {
+                    aggro.hit(caster as i32, target as i32, 0, *ms);
+                }
+            }
+            if let Some((entity, target)) = crate::tracker::protocol::selection_target(f) {
+                if entity as i32 != you {
+                    aggro.hit(entity as i32, target as i32, 0, *ms);
+                }
+            }
             // Yours on a monster (a hit on an entity no player: the log has no spawns to tell them).
             for h in damage::hits(f, |_| true) {
                 if h.actor as i32 == you && h.target as i32 != you {

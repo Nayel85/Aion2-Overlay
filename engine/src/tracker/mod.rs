@@ -1025,6 +1025,12 @@ impl Tracker {
                 }
             }
             op if p::OP_CASTS.contains(&op) => {
+                // A monster's cast: who it is on, before its hit lands (aggro.rs).
+                if let Some((caster, target, skill)) = p::cast_on(f) {
+                    if (1_000_000..=9_999_999).contains(&skill) && self.mob_code.contains_key(&caster) && caster != target {
+                        self.aggro.hit(caster as i32, target as i32, 0, ts);
+                    }
+                }
                 // Your casts give where their target is: only a guess at where you
                 // are, taken when nothing better is known or it is far from it.
                 if let Some((actor, x, y)) = p::cast(f) {
@@ -1220,6 +1226,12 @@ impl Tracker {
                 }
             }
             p::OP_SELECTION => {
+                // The target of a monster you look at: who it is on (aggro.rs).
+                if let Some((entity, target)) = p::selection_target(f) {
+                    if self.mob_code.contains_key(&entity) && entity != target {
+                        self.aggro.hit(entity as i32, target as i32, 0, ts);
+                    }
+                }
                 if let Some(entity) = p::selection(f) {
                     self.selected(ts, entity);
                 }
