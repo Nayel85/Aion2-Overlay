@@ -408,6 +408,15 @@ export interface FightSummary {
   memberJobs: string[]
   /** Your own damage in it (0: you did not hit; a training dummy others hit near you). */
   myDamage?: number
+  /** You in it (your character's name), the boss's code, and how it ended ("kill"...). */
+  myName?: string
+  mobCode?: number
+  outcome?: string
+}
+/** You in a fight: your item level and combat power then (0: not known). */
+export interface FightYou {
+  gearScore: number
+  combatPower: number
 }
 
 /**

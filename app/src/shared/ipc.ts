@@ -20,7 +20,7 @@ import type { UpdateState } from './update.ts'
 import type { KinaSession } from './kina.ts'
 import type { AbyssSession, RiftFarm } from './abyss.ts'
 import type { StorageId, StorageUsage } from './storage.ts'
-import type { DetailsSource, DetailsView, Encounter, FightSummary, MeterData, NewBest, PacketLog, PersonalView, Recordings } from './meter.ts'
+import type { DetailsSource, DetailsView, Encounter, FightSummary, FightYou, MeterData, NewBest, PacketLog, PersonalView, Recordings } from './meter.ts'
 import type { SyncResult } from './lokthar.ts'
 import type { CustomSoundResult, SoundSlot } from './sounds.ts'
 import type { Point, Rect, SettingKey, Settings } from './settings.ts'
@@ -70,6 +70,8 @@ export interface InvokeChannels {
   'inventory:get': { args: []; result: Inventories }
   /** The duty board: today's, every one seen, the rerolls' costs (shared/duty.ts). */
   'duty:get': { args: []; result: DutyState }
+  /** You in each of these saved fights: your item level and combat power then. */
+  'history:you': { args: [ids: string[]]; result: Record<string, FightYou> }
   /** Each character's cubes toward each expedition's guaranteed chest. */
   'expeditions:get': { args: []; result: Expeditions }
   /** What the Black Cloud Merchant has offered over time, by item. */
@@ -293,7 +295,7 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'inventory:arrivals',
   'app:info', 'app:quit', 'app:openPath',
   'settings:all', 'settings:set',
-  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'duty:get', 'expeditions:get', 'merchant:seen', 'duty:close', 'items:details', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
+  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'duty:get', 'history:you', 'expeditions:get', 'merchant:seen', 'duty:close', 'items:details', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
   'killfeed:open', 'killfeed:close', 
   
   'panel:open', 'panel:characters',

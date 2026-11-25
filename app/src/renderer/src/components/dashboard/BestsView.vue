@@ -1,39 +1,87 @@
 <script setup lang="ts">
-// Personal bests: each character's best on each dungeon boss (the engine keeps them apart from the
-// fights), by dungeon, then boss; all characters, or one picked. A Nightmare's says its level (the
-// session's run it was in). A row opens the fight of your best DPS on it; each figure opens its own
-// fight (the party's best, the fastest kill). The fight opens in this page.
+// Personal bests, a tab per kind of content (Expeditions, Nightmares, Awakening...), all characters or
+// one picked (remembered).
+// - Most kinds: the best DPS on each boss (the engine keeps them apart from the fights: a pruned fight
+//   does not take one away), by dungeon and mode, with your item level and combat power in that fight;
+//   or the fastest run of each dungeon and mode (the sessions' runs: from the entry to the last boss).
+// - Nightmares: a grid, a row per boss, a column per level (1 to 10, the session's run telling it; a
+//   fight without its level is left out), the best DPS or the fastest kill at each, from the fights
+//   kept. A cell's fight can be deleted, or a whole level's (the low ones, once only level 10 is done).
+// A best opens its fight in this page.
 import { onHistory } from '@/lib/history.ts'
 import { compact } from '@shared/format.ts'
 import { computed, ref } from 'vue'
 import DetailsPage from '@/pages/DetailsPage.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
+import Segmented from '@/components/ui/Segmented.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { loc, t } from '@/lib/i18n.ts'
 import { useStored } from '@/lib/now.ts'
 import { useApp } from '@/stores/app.ts'
-import type { Best, Encounter } from '@shared/meter.ts'
-import { zoneMode } from '@shared/sessions.ts'
+import type { Best, Encounter, FightSummary, FightYou } from '@shared/meter.ts'
+import { runKindLabel, zoneMode } from '@shared/sessions.ts'
 import { ZONES } from '@shared/zones.ts'
 
 const store = useApp()
 const api = bridge()
 const bests = ref<Encounter[] | null>(null)
-const shown = computed(() => (bests.value ?? []).filter((e) => e.myDps || e.fastest))
+const fights = ref<FightSummary[]>([])
+/** You in each best's fight: your item level and combat power then. */
+const you = ref<Record<string, FightYou>>({})
 
-/** The characters with a best, and the one picked (null: all of them), remembered. */
-const characters = computed(() => [...new Set(shown.value.map((e) => e.character))].sort((a, b) => a.localeCompare(b)))
+const NIGHTMARE = 'bosschallenge'
+const NOT_TIMED = ['fieldevent', 'shugo', 'invasion', 'fieldboss', 'hiddencube', 'other']
+const kindOf = (world: number): string => ZONES[world]?.[2] ?? 'other'
+const kindLabel = (kind: string): string => (kind === 'party' ? 'Expeditions' : runKindLabel(kind))
+
+// ---- the sessions' runs: a Nightmare's level, each dungeon's fastest ---------------------------------
+
+const allRuns = computed(() =>
+  [...store.sessions.history, ...(store.sessions.current ? [store.sessions.current] : [])].flatMap((s) => (s.runs ?? []).map((r) => ({ ...r, character: s.name }))),
+)
+/** A Nightmare's level at a moment, in an instance: the session's run it was in. */
+const levelAt = (world: number, at: number): number | null =>
+  allRuns.value.find((r) => r.level !== undefined && r.world === world && at >= r.start && at <= (r.end ?? Infinity))?.level ?? null
+
+// ---- whose ------------------------------------------------------------------------------------------
+
+const shown = computed(() => (bests.value ?? []).filter((e) => e.myDps || e.fastest))
+const nightmareFights = computed(() =>
+  fights.value
+    .filter((f) => kindOf(f.dungeonId) === NIGHTMARE && (f.outcome ?? 'kill') === 'kill' && (f.myDamage ?? 0) > 0)
+    .map((f) => ({ ...f, level: levelAt(f.dungeonId, f.startTimeMs) }))
+    .filter((f): f is typeof f & { level: number } => f.level !== null),
+)
+const characters = computed(() =>
+  [...new Set([...shown.value.map((e) => e.character), ...nightmareFights.value.map((f) => f.myName ?? ''), ...allRuns.value.filter((r) => r.cleared !== undefined).map((r) => r.character)])]
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b)),
+)
 const who = useStored<string | null>('bests.who', null, (raw) => (typeof raw === 'string' ? raw : null))
 const picked = computed(() => (who.value && characters.value.includes(who.value) ? who.value : null))
+const mine = (name: string | undefined): boolean => !picked.value || name === picked.value
 
-/** By dungeon (the game's order), each one's bosses (then characters, when all are shown). */
-const byDungeon = computed(() => {
-  const by = new Map<number, Encounter[]>()
-  for (const e of shown.value) if (!picked.value || e.character === picked.value) by.set(e.dungeonId, [...(by.get(e.dungeonId) ?? []), e])
-  return [...by]
-    .sort((a, b) => a[0] - b[0])
-    .map(([id, list]) => ({ id, name: dungeonName(id), list: list.sort((a, b) => a.bossName.localeCompare(b.bossName) || a.character.localeCompare(b.character)) }))
+// ---- the tabs -----------------------------------------------------------------------------------------
+
+const timedRuns = computed(() => allRuns.value.filter((r) => r.started !== undefined && r.cleared !== undefined && r.cleared > r.started && ZONES[r.world]))
+const kinds = computed(() => {
+  const set = new Set([...shown.value.map((e) => kindOf(e.dungeonId)), ...timedRuns.value.map((r) => kindOf(r.world))])
+  if (nightmareFights.value.length) set.add(NIGHTMARE)
+  // Not dungeons to be fastest in: festivals' games, invasions, field events.
+  for (const k of NOT_TIMED) set.delete(k)
+  const order = ['party', NIGHTMARE]
+  return [...set].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99) || a.localeCompare(b))
 })
+const tab = useStored<string>('bests.tab', 'party', (raw) => (typeof raw === 'string' ? raw : 'party'))
+const kind = computed(() => (kinds.value.includes(tab.value) ? tab.value : (kinds.value[0] ?? 'party')))
+const tabs = computed(() => kinds.value.map((k) => ({ id: k, label: kindLabel(k) })))
+/** What a tab ranks by: the best DPS, or the fastest (a run; a Nightmare's kill). */
+const metric = useStored<'dps' | 'fast'>('bests.metric', 'dps', (raw) => (raw === 'fast' ? 'fast' : 'dps'))
+const METRICS = computed(() => [
+  { id: 'dps' as const, label: 'Best DPS' },
+  { id: 'fast' as const, label: kind.value === NIGHTMARE ? 'Fastest kill' : 'Fastest run' },
+])
+
 /** A dungeon as the game names it, with its mode ("Vakron Sky Island · Normal"). */
 function dungeonName(id: number): string {
   const name = ZONES[id]?.[0] ?? `#${id}`
@@ -41,33 +89,86 @@ function dungeonName(id: number): string {
   return mode ? `${name} · ${mode}` : name
 }
 
-/** A Nightmare's level at a moment, in a dungeon: the session's run it was in (kept with the session). */
-const nightmares = computed(() =>
-  [...store.sessions.history, ...(store.sessions.current ? [store.sessions.current] : [])].flatMap((s) =>
-    (s.runs ?? []).filter((r) => r.level !== undefined).map((r) => ({ world: r.world, start: r.start, end: r.end ?? Infinity, level: r.level! })),
-  ),
-)
-const levelAt = (dungeon: number, at: number): number | null => nightmares.value.find((r) => r.world === dungeon && at >= r.start && at <= r.end)?.level ?? null
-/** A row's Nightmare level, from its fight's moment, if it is one. */
-const level = (e: Encounter): number | null => {
-  const f = rowFight(e)
-  return f ? levelAt(e.dungeonId, f.atMs) : null
+// ---- best DPS by boss ----------------------------------------------------------------------------------
+
+const byDungeon = computed(() => {
+  const by = new Map<number, Encounter[]>()
+  for (const e of shown.value) if (kindOf(e.dungeonId) === kind.value && mine(e.character)) by.set(e.dungeonId, [...(by.get(e.dungeonId) ?? []), e])
+  return [...by]
+    .sort((a, b) => a[0] - b[0])
+    .map(([id, list]) => ({ id, name: dungeonName(id), list: list.sort((a, b) => a.bossName.localeCompare(b.bossName) || a.character.localeCompare(b.character)) }))
+})
+
+// ---- fastest run by dungeon ------------------------------------------------------------------------------
+
+const fastest = computed(() => {
+  const best = new Map<number, (typeof timedRuns.value)[number]>()
+  for (const r of timedRuns.value) {
+    if (kindOf(r.world) !== kind.value || !mine(r.character)) continue
+    const was = best.get(r.world)
+    if (!was || r.cleared! - r.started! < was.cleared! - was.started!) best.set(r.world, r)
+  }
+  return [...best.values()].sort((a, b) => a.world - b.world)
+})
+
+// ---- Nightmares: a boss's row, a level's column ------------------------------------------------------------
+
+const LEVELS = Array.from({ length: 10 }, (_, i) => i + 1)
+const dpsOf = (f: FightSummary): number => (f.myDamage ?? 0) / Math.max(1, f.durationMs / 1000)
+const grid = computed(() => {
+  const rows = new Map<string, Map<number, (typeof nightmareFights.value)[number]>>()
+  for (const f of nightmareFights.value) {
+    if (!mine(f.myName)) continue
+    const row = rows.get(f.bossName) ?? new Map()
+    const was = row.get(f.level)
+    const better = !was || (metric.value === 'dps' ? dpsOf(f) > dpsOf(was) : f.durationMs < was.durationMs)
+    if (better) row.set(f.level, f)
+    rows.set(f.bossName, row)
+  }
+  return [...rows].sort((a, b) => a[0].localeCompare(b[0])).map(([boss, cells]) => ({ boss, cells }))
+})
+/** Delete asks once: the first click arms it for 3 seconds, the second deletes. */
+const arming = ref<string | null>(null)
+let armTimer: ReturnType<typeof setTimeout> | null = null
+function confirmThen(key: string, act: () => void): void {
+  if (armTimer) clearTimeout(armTimer)
+  if (arming.value !== key) {
+    arming.value = key
+    armTimer = setTimeout(() => (arming.value = null), 3000)
+    return
+  }
+  arming.value = null
+  act()
 }
+const deleteFight = (id: string): void => confirmThen(id, () => void api.invoke('history:delete', id))
+/** Every fight of a level (the characters shown), not only the best kept in the grid. */
+const deleteLevel = (level: number): void =>
+  confirmThen(`level-${level}`, () => {
+    for (const f of nightmareFights.value) if (f.level === level && mine(f.myName)) void api.invoke('history:delete', f.id)
+  })
+
+// ---- formats, the fight open ---------------------------------------------------------------------------------
 
 const mmss = (ms: number): string => {
   const s = Math.round(ms / 1000)
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
 }
 const day = (ms: number): string => new Date(ms).toLocaleDateString(loc(), { day: 'numeric', month: 'short' })
-
-/** The fight open in place of the list. */
+const gear = (id: string | undefined): string | null => {
+  const g = id ? you.value[id] : undefined
+  if (!g || (!g.gearScore && !g.combatPower)) return null
+  return [g.gearScore ? `ilvl ${g.gearScore}` : null, g.combatPower ? `${compact(g.combatPower)} CP` : null].filter(Boolean).join(' · ')
+}
 const opened = ref<string | null>(null)
 const open = (b: Best | null): void => void (b && (opened.value = b.fightId))
-/** A row's fight: your best DPS on it, else its fastest kill. */
 const rowFight = (e: Encounter): Best | null => e.myDps ?? e.fastest ?? e.partyDps
 
 async function load(): Promise<void> {
-  bests.value = await api.invoke('history:bests')
+  const [b, f] = await Promise.all([api.invoke('history:bests'), api.invoke('history:list')])
+  bests.value = b
+  fights.value = f
+  const ids = [...new Set([...b.flatMap((e) => [e.myDps?.fightId, e.fastest?.fightId]), ...nightmareFights.value.map((x) => x.id)].filter((x): x is string => !!x))]
+  you.value = await api.invoke('history:you', ids)
 }
 onHistory(load)
 </script>
@@ -75,15 +176,19 @@ onHistory(load)
 <template>
   <DetailsPage v-if="opened" :key="opened" :source="{ kind: 'saved', id: opened }" @back="opened = null" />
   <div v-show="!opened">
-    <PageHeader title="Personal bests" about="Your best damage per second on each dungeon boss, each character; a beaten one shows on the meter. Click one for its fight." />
+    <PageHeader title="Personal bests" about="Your bests on each kind of content, each character: the best DPS on each boss or the fastest run, and for the Nightmares each level's. Click one for its fight." />
 
     <p v-if="bests === null" class="text-sm text-darker">{{ t('Loading…') }}</p>
-    <div v-else-if="!shown.length" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
+    <div v-else-if="!kinds.length" class="rounded-xl border border-dashed border-card px-4 py-10 text-center">
       <div class="text-sm font-medium">{{ t('No personal best yet.') }}</div>
       <div class="mt-1 text-xs text-darker">{{ t('Each dungeon boss you kill sets one.') }}</div>
     </div>
     <template v-else>
-      <!-- Whose. -->
+      <!-- What, whose, by what. -->
+      <div class="mb-3 flex flex-wrap items-center gap-3">
+        <Segmented v-model="tab" :options="tabs" size="sm" />
+        <Segmented v-model="metric" :options="METRICS" size="sm" />
+      </div>
       <div class="mb-3 flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -103,8 +208,79 @@ onHistory(load)
         </button>
       </div>
 
-      <div class="overflow-x-auto rounded-xl border border-card">
-        <table class="w-full text-sm tabular-nums">
+      <!-- Nightmares: a row per boss, a column per level. -->
+      <div v-if="kind === NIGHTMARE" class="overflow-x-auto rounded-xl border border-card">
+        <p v-if="!grid.length" class="px-4 py-6 text-center text-xs text-darker">{{ t('No Nightmare with its level yet: the next ones you clear show here.') }}</p>
+        <table v-else class="w-full text-sm tabular-nums">
+          <thead class="bg-card text-xs text-darker">
+            <tr>
+              <th class="py-2 pl-4 text-left font-medium">{{ t('Boss') }}</th>
+              <th v-for="l in LEVELS" :key="l" class="px-2 text-center font-medium">
+                <span class="group/level inline-flex items-center gap-1">
+                  {{ t('Lv {n}', { n: l }) }}
+                  <button
+                    v-if="grid.some((r) => r.cells.has(l))"
+                    type="button"
+                    :class="['text-[10px]', arming === `level-${l}` ? 'text-red' : 'text-darkest opacity-0 hover:text-red group-hover/level:opacity-100']"
+                    :title="arming === `level-${l}` ? t('Click again to delete every fight of this level') : t('Delete every fight of this level')"
+                    @click="deleteLevel(l)"
+                  >✕</button>
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in grid" :key="r.boss" class="border-t border-card">
+              <td class="py-1.5 pl-4 font-medium">{{ r.boss }}</td>
+              <td v-for="l in LEVELS" :key="l" class="px-2 py-1.5 text-center">
+                <span v-if="r.cells.get(l)" class="group/cell relative inline-flex items-center gap-1">
+                  <button
+                    type="button"
+                    class="font-semibold text-yellow hover:underline"
+                    :title="[r.cells.get(l)!.myName, day(r.cells.get(l)!.startTimeMs), gear(r.cells.get(l)!.id)].filter(Boolean).join(' · ')"
+                    @click="opened = r.cells.get(l)!.id"
+                  >{{ metric === 'dps' ? compact(dpsOf(r.cells.get(l)!)) : mmss(r.cells.get(l)!.durationMs) }}</button>
+                  <button
+                    type="button"
+                    :class="['text-[10px]', arming === r.cells.get(l)!.id ? 'text-red' : 'text-darkest opacity-0 hover:text-red group-hover/cell:opacity-100']"
+                    :title="arming === r.cells.get(l)!.id ? t('Click again to delete this fight') : t('Delete this fight')"
+                    @click="deleteFight(r.cells.get(l)!.id)"
+                  >✕</button>
+                </span>
+                <span v-else class="text-darkest">–</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- The fastest run of each dungeon and mode. -->
+      <div v-else-if="metric === 'fast'" class="overflow-x-auto rounded-xl border border-card">
+        <p v-if="!fastest.length" class="px-4 py-6 text-center text-xs text-darker">{{ t('No cleared run yet: the runs your sessions keep, from the entry to the last boss.') }}</p>
+        <table v-else class="w-full text-sm tabular-nums">
+          <thead class="bg-card text-xs uppercase tracking-wide text-darker">
+            <tr>
+              <th class="py-2.5 pl-4 text-left font-medium">{{ t('Dungeon') }}</th>
+              <th class="px-3 text-right font-medium">{{ t('Clear time') }}</th>
+              <th v-if="picked === null" class="px-3 text-left font-medium">{{ t('Character') }}</th>
+              <th class="px-3 pr-4 text-right font-medium">{{ t('Date') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in fastest" :key="r.world" class="border-t border-card">
+              <td class="py-1.5 pl-4 font-medium">{{ dungeonName(r.world) }}</td>
+              <td class="px-3 py-1.5 text-right font-semibold text-yellow">{{ mmss(r.cleared! - r.started!) }}</td>
+              <td v-if="picked === null" class="px-3 py-1.5 text-dark">{{ r.character }}</td>
+              <td class="px-3 py-1.5 pr-4 text-right text-darker">{{ day(r.start) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- The best DPS on each boss, by dungeon. -->
+      <div v-else class="overflow-x-auto rounded-xl border border-card">
+        <p v-if="!byDungeon.length" class="px-4 py-6 text-center text-xs text-darker">{{ t('No personal best yet.') }}</p>
+        <table v-else class="w-full text-sm tabular-nums">
           <thead class="bg-card text-xs uppercase tracking-wide text-darker">
             <tr>
               <th class="py-2.5 pl-4 text-left font-medium">{{ t('Boss') }}</th>
@@ -123,15 +299,13 @@ onHistory(load)
               :title="t('Open the fight')"
               @click="open(rowFight(e))"
             >
-              <td class="py-1.5 pl-4">
-                <span :class="e.finalBoss && 'font-medium'">{{ e.bossName }}</span>
-                <span v-if="level(e) !== null" class="ml-2 rounded bg-dark px-1.5 text-[11px] font-semibold text-yellow">{{ t('Lv {n}', { n: level(e)! }) }}</span>
-              </td>
+              <td class="py-1.5 pl-4"><span :class="e.finalBoss && 'font-medium'">{{ e.bossName }}</span></td>
               <td v-if="picked === null" class="px-3 py-1.5 text-dark">{{ e.character }}</td>
               <td class="px-3 py-1.5 text-right">
                 <button v-if="e.myDps" type="button" class="font-semibold text-yellow hover:underline" @click.stop="open(e.myDps)">{{ compact(e.myDps.value) }}</button>
                 <span v-else class="text-darker">–</span>
                 <span v-if="e.myDps" class="ml-1.5 text-[11px] text-darker">{{ day(e.myDps.atMs) }}</span>
+                <div v-if="gear(e.myDps?.fightId)" class="text-[10px] text-darker">{{ gear(e.myDps?.fightId) }}</div>
               </td>
               <td class="px-3 py-1.5 text-right">
                 <button v-if="e.partyDps" type="button" class="text-dark hover:underline" @click.stop="open(e.partyDps)">{{ compact(e.partyDps.value) }}</button>

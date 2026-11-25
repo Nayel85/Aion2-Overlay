@@ -11,7 +11,7 @@ import { command, tracker } from './tracker.ts'
 import type { Buff, BuffTrack, FightBuffs } from '../shared/buffs.ts'
 import { pveInstance } from '../shared/sessions.ts'
 import { ZONES } from '../shared/zones.ts'
-import { CLASS_NAMES, detailsView, meterData, NO_METER, unmaskName, type DetailsActor, type DetailsDefense, type DetailsSkill, type DetailsSource, type DetailsView, type DpsEvent, type FightRecord, type FightSummary, type MeterData, type PersonalView, type TargetDetails, NO_PERSONAL, NO_RECORDINGS, type Recordings, type TargetMode, type Encounter, type NewBest, listedFight } from '../shared/meter.ts'
+import { CLASS_NAMES, detailsView, meterData, NO_METER, unmaskName, type DetailsActor, type DetailsDefense, type DetailsSkill, type DetailsSource, type DetailsView, type DpsEvent, type FightRecord, type FightSummary, type MeterData, type PersonalView, type TargetDetails, NO_PERSONAL, NO_RECORDINGS, type Recordings, type TargetMode, type Encounter, type NewBest, listedFight, type FightYou } from '../shared/meter.ts'
 
 const ASK_TIMEOUT_MS = 5000
 
@@ -276,6 +276,12 @@ export const meterState = {
   async bests(): Promise<Encounter[]> {
     const ev = await ask({ cmd: 'bests' }, 'bests')
     return Object.values(((ev?.['bests'] as { encounters?: Record<string, Encounter> } | null)?.encounters ?? {}))
+  },
+  /** You in each of these fights: your item level and combat power then. */
+  async fightsYou(ids: string[]): Promise<Record<string, FightYou>> {
+    if (!ids.length) return {}
+    const ev = await ask({ cmd: 'fightsYou', ids }, 'fightsYou')
+    return (ev?.['you'] as Record<string, FightYou> | undefined) ?? {}
   },
   deleteFight(id: string): void {
     command({ cmd: 'deleteFight', id })

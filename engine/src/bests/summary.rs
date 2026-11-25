@@ -71,7 +71,7 @@ pub fn of(record: &FightRecord) -> FightSummary {
 /// You in the fight: the actor it recorded as you, else (fights saved before
 /// 2.0.87) the one name kept unmasked, as `obscure_nickname` masks everyone
 /// else's.
-fn you(record: &FightRecord) -> Option<&a2tools_dps_meter_lib::entity::details_context::DetailsActorSummary> {
+pub(crate) fn you(record: &FightRecord) -> Option<&a2tools_dps_meter_lib::entity::details_context::DetailsActorSummary> {
     if let Some(id) = record.local_actor_id {
         return record.actors.iter().find(|a| a.actor_id == id);
     }

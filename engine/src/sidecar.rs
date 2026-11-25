@@ -105,7 +105,7 @@
 //!   {"cmd": "training", "on": true}    send the meter (its `train`) even while it is off: training runs
 //!   {"cmd": "dpsReset"} · {"cmd": "targetMode", "mode": "bossTargets"} · {"cmd": "details", "target": 123, "actors"?: [..]}
 //!   {"cmd": "pvpFight", "id": "..."}   a PvP fight saved on a kill or death of yours
-//!   {"cmd": "history"} · {"cmd": "fight", "id": "..."} · {"cmd": "deleteFight", "id": "..."}
+//!   {"cmd": "history"} · {"cmd": "fight", "id": "..."} · {"cmd": "deleteFight", "id": "..."} · {"cmd": "fightsYou", "ids": [...]} (answered {"type": "fightsYou", "you": {id: {"gearScore", "combatPower"}}})
 //!                                      the saved boss fights (in <data folder>/history)
 //!   {"cmd": "record", "on": true}      record the game's traffic (<data folder>/recordings), or stop
 //!   {"cmd": "recordings"}              the recordings kept
@@ -668,6 +668,17 @@ impl Sidecar {
                         }
                     emit(&event("pvpFight", json!({ "id": id, "fight": fight })));
                     }
+                }
+                "fightsYou" => {
+                    // You in each of these fights (the personal bests'): your item level and combat power then.
+                    let history = self.meter.history.get().ok_or("no history")?;
+                    let mut you = serde_json::Map::new();
+                    for id in msg["ids"].as_array().into_iter().flatten().filter_map(|v| v.as_str()).take(500) {
+                        if let Some(a) = history.load_fight(id).ok().as_ref().and_then(crate::bests::summary::you) {
+                            you.insert(id.to_string(), json!({ "gearScore": a.gear_score, "combatPower": a.combat_power }));
+                        }
+                    }
+                    emit(&event("fightsYou", json!({ "you": you })));
                 }
                 "fight" => {
                     let id = msg["id"].as_str().ok_or("no id")?;
