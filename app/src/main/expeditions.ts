@@ -7,9 +7,7 @@
  * The login's list does not say whose it is: it goes to the character the login's inventory names
  * (just before or just after it).
  */
-import { app } from 'electron'
-import { readFileSync, writeFile } from 'node:fs'
-import { join } from 'node:path'
+import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
 import { log, lootCubes, tracker } from './tracker.ts'
 import { characterId } from '../shared/characters.ts'
@@ -20,7 +18,7 @@ import type { Expeditions } from '../shared/expeditions.ts'
 const LOGIN_WITHIN_MS = 15_000
 
 let state: Expeditions = {}
-const file = (): string => join(app.getPath('userData'), 'expeditions.json')
+const file = dataFile('expeditions.json')
 /** Whose the cubes opened are: the character last logged in. */
 let playing: { id: string; name: string; at: number } | null = null
 /** A login's list waiting for its character. */
@@ -28,7 +26,7 @@ let pending: { at: number; entries: { world: number; cubes: number }[] } | null 
 
 function changed(): void {
   broadcast('expeditions:changed', state)
-  writeFile(file(), JSON.stringify(state), () => {})
+  file.save(() => state)
 }
 
 export const expeditionsStore = { get: (): Expeditions => state }
@@ -40,11 +38,7 @@ function apply(who: { id: string; name: string }, entries: { world: number; cube
 }
 
 export function startExpeditions(): void {
-  try {
-    state = JSON.parse(readFileSync(file(), 'utf8')) as Expeditions
-  } catch {
-    state = {} // none yet
-  }
+  state = (file.read() as Expeditions | null) ?? {} // none yet
   // A login: whose the list is.
   tracker.onEvent('inventory', (ev) => {
     const name = ev['name'] as string | null

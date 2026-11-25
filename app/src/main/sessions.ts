@@ -11,9 +11,7 @@
  * restarted mid-game goes on with the session it had, unless nothing came in it for CONTINUE_MS
  * (another day's).
  */
-import { app } from 'electron'
-import { readFileSync, writeFile } from 'node:fs'
-import { join } from 'node:path'
+import { dataFile } from './dataFile.ts'
 import { abyss } from './abyss.ts'
 import { broadcast } from './broadcast.ts'
 import { log, lootCubes, tracker } from './tracker.ts'
@@ -38,7 +36,6 @@ const RUN_CARRY_MS = 30_000
 let sessions: Sessions = NO_SESSIONS
 /** The character selection was shown (its list of characters): the next counters are a login. */
 let selecting = false
-let saveTimer: NodeJS.Timeout | null = null
 /** Your last PvP kill or assist: the Abyss Points right after it are its. */
 let pvpAt: number | null = null
 /** The Kina balance last seen for the session's character: its rises are earned. */
@@ -76,24 +73,17 @@ function toRun(add: (run: DungeonRun) => void): void {
 /** A counter's total: its values together (Nightmare's are its entries and tickets). */
 const total = (values: number[]): number => values.reduce((n, v) => n + v, 0)
 
-const file = (): string => join(app.getPath('userData'), 'sessions.json')
+const file = dataFile('sessions.json', SAVE_AFTER_MS)
 
 function load(): void {
-  try {
-    const saved = JSON.parse(readFileSync(file(), 'utf8')) as Partial<Sessions>
-    sessions = { current: saved.current ?? null, history: Array.isArray(saved.history) ? saved.history : [] }
-  } catch {
-    sessions = NO_SESSIONS // none saved yet, or unreadable: start empty
-  }
+  const saved = file.read() as Partial<Sessions> | null
+  // None saved yet, or unreadable: start empty.
+  sessions = saved ? { current: saved.current ?? null, history: Array.isArray(saved.history) ? saved.history : [] } : NO_SESSIONS
 }
 
 function changed(): void {
   broadcast('sessions:changed', sessions)
-  if (saveTimer) return
-  saveTimer = setTimeout(() => {
-    saveTimer = null
-    writeFile(file(), JSON.stringify(sessions), () => {})
-  }, SAVE_AFTER_MS)
+  file.save(() => sessions)
 }
 
 /** The session going on into the history (if it earned anything), and a new one for `name`. */

@@ -9,8 +9,8 @@
 //
 // It also follows each one to its end for the sessions (main/sessions.ts): `onGathered` with a
 // gathering's start and result (or none: given up), `onCrafted` with a craft's.
-import { app } from 'electron'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { dataFile } from './dataFile.ts'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { resourceOf } from '../shared/sessions.ts'
 import { broadcast } from './broadcast.ts'
@@ -36,7 +36,7 @@ const flow = gatherFlow({
 let state: GatherForecast | null = null
 let timer: NodeJS.Timeout | null = null
 let templates: GatherTemplates = { ...GATHER_TEMPLATES_SEED }
-const file = (): string => join(app.getPath('userData'), 'gather-spots.json')
+const file = dataFile('gather-spots.json')
 
 function set(next: GatherForecast | null): void {
   if (timer) clearTimeout(timer)
@@ -82,19 +82,11 @@ function voted(template: number): { item: number; sure: boolean } | null {
   return { item, sure: n >= 3 && n / all >= 0.75 }
 }
 function keep(): void {
-  try {
-    writeFileSync(file(), JSON.stringify(templates))
-  } catch {
-    // Learnt again next time.
-  }
+  file.save(() => templates)
 }
 
 export function startGather(): void {
-  try {
-    templates = { ...GATHER_TEMPLATES_SEED, ...(JSON.parse(readFileSync(file(), 'utf8')) as GatherTemplates) }
-  } catch {
-    // None learnt yet.
-  }
+  templates = { ...GATHER_TEMPLATES_SEED, ...((file.read() as GatherTemplates | null) ?? {}) }
   tracker.onEvent('spot', (ev) => {
     const template = ev['template'] as number
     const world = ev['world'] as number | null

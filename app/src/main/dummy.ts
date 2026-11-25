@@ -12,13 +12,11 @@
  * `dummy-details.json`: the dummy's own numbers are the whole time you have hit it, so what was on
  * it when the run started is taken off, and its hit times and buffs are cut to the run's clock.
  */
-import { app } from 'electron'
-import { readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
 import { meterState, onMeter } from './meter.ts'
 import { settings } from './settings.ts'
-import { command, log, tracker } from './tracker.ts'
+import { command, tracker } from './tracker.ts'
 import type { FightBuffs } from '../shared/buffs.ts'
 import { NO_DUMMY, nextRunName, type DummyActive, type DummyPlan, type DummyState } from '../shared/dummy.ts'
 import type { DetailsSkill, DetailsView, MeterData } from '../shared/meter.ts'
@@ -28,9 +26,9 @@ const KEEP = 300
 const REARM_MS = 5_000
 /** How often the clock is checked while a run goes on (a time limit ends it between hits too). */
 const TICK_MS = 250
-const file = (): string => join(app.getPath('userData'), 'dummy-runs.json')
+const file = dataFile('dummy-runs.json')
 /** The runs' breakdowns, by run id: apart from the runs, which go to the windows on every update. */
-const detailsFile = (): string => join(app.getPath('userData'), 'dummy-details.json')
+const detailsFile = dataFile('dummy-details.json')
 
 let state: DummyState = structuredClone(NO_DUMMY)
 let finishing = false
@@ -48,21 +46,13 @@ let details: Record<string, DetailsView> | null = null
 let ticker: NodeJS.Timeout | null = null
 
 function load(): void {
-  try {
-    const saved = JSON.parse(readFileSync(file(), 'utf8')) as Partial<DummyState>
-    state = { active: null, group: saved.group ?? 1, runs: saved.runs ?? [], lastHitAt: null }
-  } catch {
-    state = structuredClone(NO_DUMMY)
-  }
+  const saved = file.read() as Partial<DummyState> | null
+  state = saved ? { active: null, group: saved.group ?? 1, runs: saved.runs ?? [], lastHitAt: null } : structuredClone(NO_DUMMY)
 }
 
 function loadDetails(): Record<string, DetailsView> {
   if (details) return details
-  try {
-    details = JSON.parse(readFileSync(detailsFile(), 'utf8')) as Record<string, DetailsView>
-  } catch {
-    details = {}
-  }
+  details = (detailsFile.read() as Record<string, DetailsView> | null) ?? {}
   return details
 }
 
@@ -70,20 +60,12 @@ function saveDetails(): void {
   const all = loadDetails()
   const kept = new Set(state.runs.map((r) => r.id))
   for (const id of Object.keys(all)) if (!kept.has(id)) delete all[id]
-  try {
-    writeFileSync(detailsFile(), JSON.stringify(all))
-  } catch (err) {
-    log(`training dummy: breakdowns not saved: ${String(err)}`)
-  }
+  detailsFile.save(() => all)
 }
 
 function changed(save = false): void {
   if (save) {
-    try {
-      writeFileSync(file(), JSON.stringify({ group: state.group, runs: state.runs }))
-    } catch (err) {
-      log(`training dummy: not saved: ${String(err)}`)
-    }
+    file.save(() => ({ group: state.group, runs: state.runs }))
   }
   broadcast('dummy:state', state)
 }

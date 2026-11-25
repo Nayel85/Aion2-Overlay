@@ -3,25 +3,19 @@
  * item, when it was first and last seen, and the stocks it was in (by when each was replaced), so a
  * pet's card can say how often its soul or unlock is sold, and the pets sold there alone come out.
  */
-import { app } from 'electron'
-import { readFileSync, writeFile } from 'node:fs'
-import { join } from 'node:path'
+import { dataFile } from './dataFile.ts'
 import { tracker } from './tracker.ts'
 import type { MerchantSeen } from '../shared/tracker.ts'
 
 /** The stocks remembered per item. */
 const STOCKS_KEPT = 200
 let seen: MerchantSeen = {}
-const file = (): string => join(app.getPath('userData'), 'merchant-seen.json')
+const file = dataFile('merchant-seen.json')
 
 export const merchantSeen = { get: (): MerchantSeen => seen }
 
 export function startMerchantSeen(): void {
-  try {
-    seen = JSON.parse(readFileSync(file(), 'utf8')) as MerchantSeen
-  } catch {
-    seen = {} // none yet
-  }
+  seen = (file.read() as MerchantSeen | null) ?? {} // none yet
   tracker.onShop((stocks) => {
     const now = Date.now()
     let changed = false
@@ -34,6 +28,6 @@ export function startMerchantSeen(): void {
         seen[it.item] = { ...e, last: now }
         changed = true
       }
-    if (changed) writeFile(file(), JSON.stringify(seen), () => {})
+    if (changed) file.save(() => seen)
   })
 }

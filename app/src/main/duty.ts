@@ -5,9 +5,7 @@
  *
  * The board sent as you log in is the day before's until you open it: one past its time is left out.
  */
-import { app } from 'electron'
-import { readFileSync, writeFile } from 'node:fs'
-import { join } from 'node:path'
+import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { NO_DUTY, sameBoard, type DutyBoard, type DutyMission, type DutyState } from '../shared/duty.ts'
@@ -23,28 +21,19 @@ const COST_WITHIN_MS = 5000
 const COST_AFTER_MS = 3000
 
 let state: DutyState = NO_DUTY
-let saveTimer: NodeJS.Timeout | null = null
-const file = (): string => join(app.getPath('userData'), 'duty.json')
+const file = dataFile('duty.json', SAVE_AFTER_MS)
 /** Kina and bound Kina as last seen, and what was spent lately (a reroll's cost). */
 const balance: { kina: number | null; boundKina: number | null } = { kina: null, boundKina: null }
 let spent: { at: number; amount: number }[] = []
 
 function load(): void {
-  try {
-    const saved = JSON.parse(readFileSync(file(), 'utf8')) as Partial<DutyState>
-    state = { board: saved.board ?? null, history: saved.history ?? [], rerollCosts: saved.rerollCosts ?? {} }
-  } catch {
-    state = NO_DUTY // none yet
-  }
+  const saved = file.read() as Partial<DutyState> | null
+  state = saved ? { board: saved.board ?? null, history: saved.history ?? [], rerollCosts: saved.rerollCosts ?? {} } : NO_DUTY // none yet
 }
 
 function changed(): void {
   broadcast('duty:changed', state)
-  if (saveTimer) return
-  saveTimer = setTimeout(() => {
-    saveTimer = null
-    writeFile(file(), JSON.stringify(state), () => {})
-  }, SAVE_AFTER_MS)
+  file.save(() => state)
 }
 
 export const dutyStore = {

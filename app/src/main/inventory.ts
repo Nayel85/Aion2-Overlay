@@ -8,8 +8,9 @@
  * where it came from when an event said so just before or after (a Hidden Cube opened, a dungeon's
  * cube, a box, a duty mission); a login's list, against the one kept, what came while the app was off.
  */
+import { dataFile } from './dataFile.ts'
 import { app } from 'electron'
-import { appendFile, readFileSync, writeFile } from 'node:fs'
+import { appendFile, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
@@ -18,8 +19,7 @@ import { addChanges, applySlots, fromList, heldItems, NO_INVENTORIES, type Arriv
 
 const SAVE_AFTER_MS = 3000
 let inventories: Inventories = NO_INVENTORIES
-let saveTimer: NodeJS.Timeout | null = null
-const file = (): string => join(app.getPath('userData'), 'inventory.json')
+const file = dataFile('inventory.json', SAVE_AFTER_MS)
 
 /** The arrivals kept to show (the journal on disk keeps them all). */
 const ARRIVALS_KEPT = 1000
@@ -84,23 +84,16 @@ function settle(id: string): void {
 }
 
 function load(): void {
-  try {
-    const saved = JSON.parse(readFileSync(file(), 'utf8')) as Partial<Inventories>
-    // Lists kept before the slots were (items by place): dropped, the next login lists them again.
-    const characters = Object.fromEntries(Object.entries(saved.characters ?? {}).filter(([, c]) => c && typeof c === 'object' && 'slots' in c))
-    inventories = { characters, account: saved.account && 'slots' in saved.account ? saved.account : null }
-  } catch {
-    inventories = NO_INVENTORIES // none saved yet, or unreadable: start empty
-  }
+  const saved = file.read() as Partial<Inventories> | null
+  if (!saved) return void (inventories = NO_INVENTORIES) // none saved yet, or unreadable: start empty
+  // Lists kept before the slots were (items by place): dropped, the next login lists them again.
+  const characters = Object.fromEntries(Object.entries(saved.characters ?? {}).filter(([, c]) => c && typeof c === 'object' && 'slots' in c))
+  inventories = { characters, account: saved.account && 'slots' in saved.account ? saved.account : null }
 }
 
 function changed(): void {
   broadcast('inventory:changed', inventories)
-  if (saveTimer) return
-  saveTimer = setTimeout(() => {
-    saveTimer = null
-    writeFile(file(), JSON.stringify(inventories), () => {})
-  }, SAVE_AFTER_MS)
+  file.save(() => inventories)
 }
 
 export const inventoryStore = {

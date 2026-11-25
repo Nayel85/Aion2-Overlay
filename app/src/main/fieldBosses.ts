@@ -10,9 +10,7 @@
  * Kept across restarts in `<userData>/fieldbosses.json`, by game server (a respawn 11 h away
  * outlives the app, and each server has its own bosses).
  */
-import { app } from 'electron'
-import { readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
 import { log } from './tracker.ts'
 import { bossOfNpc } from '../shared/bossRuns.ts'
@@ -30,25 +28,17 @@ let world: number | null = null
 let bosses: FieldBosses = {}
 const mapListeners = new Set<(server: number | null, world: number, list: MapBoss[]) => void>()
 
-const file = (): string => join(app.getPath('userData'), 'fieldbosses.json')
+const file = dataFile('fieldbosses.json')
 
 function load(): void {
-  try {
-    const saved = JSON.parse(readFileSync(file(), 'utf8')) as { server?: number | null; world?: number | null; bosses?: FieldBosses }
-    server = saved.server ?? null
-    world = saved.world ?? null
-    bosses = saved.bosses ?? {}
-  } catch {
-    bosses = {}
-  }
+  const saved = file.read() as { server?: number | null; world?: number | null; bosses?: FieldBosses } | null
+  server = saved?.server ?? null
+  world = saved?.world ?? null
+  bosses = saved?.bosses ?? {}
 }
 
 function save(): void {
-  try {
-    writeFileSync(file(), JSON.stringify({ server, world, bosses }))
-  } catch (err) {
-    log(`field bosses: not saved: ${String(err)}`)
-  }
+  file.save(() => ({ server, world, bosses }))
 }
 
 function changed(): void {

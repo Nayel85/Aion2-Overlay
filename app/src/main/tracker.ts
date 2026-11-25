@@ -13,6 +13,7 @@
  *                     game, to try the UI without it
  *   A2T_REPLAY_SPEED  its speed, as a multiple of real time (default 1)
  */
+import { flushJsonFiles } from './jsonFile.ts'
 import { app } from 'electron'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
 import { createWriteStream, existsSync, mkdirSync, type WriteStream } from 'node:fs'
@@ -607,7 +608,7 @@ export const tracker = {
 export function stopTracker(): void {
   stopping = true
   void pvpLog.flush()
-  abyss.flush()
+  flushJsonFiles()
   if (restartTimer) clearTimeout(restartTimer)
   restartTimer = null
   const proc = child
@@ -626,7 +627,7 @@ export function stopTracker(): void {
 /** For process exit, where timers never fire. */
 export function killTrackerNow(): void {
   stopping = true
-  abyss.flush()
+  flushJsonFiles()
   if (child && child.exitCode === null) child.kill()
   child = null
 }

@@ -5,9 +5,7 @@
  * The gains are saved to `<userData>/abyss.json` as `[at, gained, name]`, the last KEEP_MS of them,
  * a moment after each (a farm's burst is one write), so the rift farms outlive a restart.
  */
-import { app } from 'electron'
-import { readFileSync, writeFile, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
 import { currentSeason, NO_ABYSS, riftFarms, type AbyssGain, type AbyssSession, type RiftFarm } from '../shared/abyss.ts'
 import { earn, unearn } from '../shared/earnings.ts'
@@ -20,27 +18,19 @@ const SAVE_AFTER_MS = 3000
 let session: AbyssSession = NO_ABYSS
 let gains: AbyssGain[] | null = null
 let farms: RiftFarm[] | null = null
-let saveTimer: NodeJS.Timeout | null = null
-const file = (): string => join(app.getPath('userData'), 'abyss.json')
+const file = dataFile('abyss.json', SAVE_AFTER_MS)
 
 function all(): AbyssGain[] {
   if (gains === null) {
-    try {
-      const saved = JSON.parse(readFileSync(file(), 'utf8')) as unknown
-      gains = Array.isArray(saved) ? (saved as AbyssGain[]).filter((g) => Array.isArray(g) && typeof g[0] === 'number' && typeof g[1] === 'number') : []
-    } catch {
-      gains = [] // none saved yet, or unreadable: start empty
-    }
+    // None saved yet, or unreadable: start empty.
+    const saved = file.read()
+    gains = Array.isArray(saved) ? (saved as AbyssGain[]).filter((g) => Array.isArray(g) && typeof g[0] === 'number' && typeof g[1] === 'number') : []
   }
   return gains
 }
 
 function save(): void {
-  if (saveTimer) return
-  saveTimer = setTimeout(() => {
-    saveTimer = null
-    writeFile(file(), JSON.stringify(all()), () => {})
-  }, SAVE_AFTER_MS)
+  file.save(() => all())
 }
 
 const withSeason = (s: AbyssSession): AbyssSession => ({ ...s, season: currentSeason(all()) })
@@ -103,17 +93,5 @@ export const abyss = {
   /** Start the session again (the Session page's reset); the kept gains stay. */
   reset(): void {
     setSession({ ...NO_ABYSS, points: session.points, limit: session.limit })
-  },
-
-  /** Write a pending save now (the app is quitting). */
-  flush(): void {
-    if (!saveTimer) return
-    clearTimeout(saveTimer)
-    saveTimer = null
-    try {
-      writeFileSync(file(), JSON.stringify(all()))
-    } catch {
-      // a full disk or a locked file: the last save stands
-    }
   },
 }

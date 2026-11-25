@@ -6,9 +6,7 @@
  *
  * Kept across restarts in `<userData>/characters.json`.
  */
-import { app } from 'electron'
-import { readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { ABYSS_TIME, ASCENSION, characterId, corridorReset, CORRIDORS, ENERGY, ncsoftRegion, NIGHTMARE, portraitUrl, type Characters, type TrackedCharacter } from '../shared/characters.ts'
@@ -29,22 +27,14 @@ let again = false
 
 const listeners = new Set<() => void>()
 
-const file = (): string => join(app.getPath('userData'), 'characters.json')
+const file = dataFile('characters.json')
 
 function load(): void {
-  try {
-    characters = (JSON.parse(readFileSync(file(), 'utf8')) as { characters?: Characters }).characters ?? {}
-  } catch {
-    characters = {}
-  }
+  characters = (file.read() as { characters?: Characters } | null)?.characters ?? {}
 }
 
 function changed(): void {
-  try {
-    writeFileSync(file(), JSON.stringify({ characters }))
-  } catch (err) {
-    log(`characters: not saved: ${String(err)}`)
-  }
+  file.save(() => ({ characters }))
   broadcast('characters:changed', characters)
   for (const fn of listeners) fn()
 }

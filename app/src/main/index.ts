@@ -2,6 +2,7 @@
  * Lokthar (an Aion 2 overlay: pet collection, timers, the guild's field boss sync): a tray app with a floating bubble, a panel and an in-game HUD, fed by the
  * engine (engine/, Rust) running as a child process.
  */
+import { flushJsonFiles } from './jsonFile.ts'
 import { app, session } from 'electron'
 import { DISPLAY_NAME, LOKTHAR_FOLDER } from '../shared/app.ts'
 import { broadcast } from './broadcast.ts'
@@ -175,6 +176,8 @@ if (!app.requestSingleInstanceLock()) {
   app.on('window-all-closed', () => undefined)
 
   app.on('before-quit', () => {
+    // Every store's pending save, now (main/jsonFile.ts).
+    flushJsonFiles()
     markQuitting()
     stopHotkeys()
     stopTracker()
