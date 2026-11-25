@@ -8,6 +8,7 @@
 //   fight without its level is left out), the best DPS or the fastest kill at each, from the fights
 //   kept. A cell's fight can be deleted, or a whole level's (the low ones, once only level 10 is done).
 // A best opens its fight in this page.
+import CharName from '@/components/CharName.vue'
 import { onHistory } from '@/lib/history.ts'
 import { compact } from '@shared/format.ts'
 import { computed, ref } from 'vue'
@@ -30,6 +31,8 @@ const fights = ref<FightSummary[]>([])
 const you = ref<Record<string, FightYou>>({})
 
 const NIGHTMARE = 'bosschallenge'
+/** Kinds where only the clear time counts (the Ascension Trials). */
+const FAST_ONLY = ['awaken']
 const NOT_TIMED = ['fieldevent', 'shugo', 'invasion', 'fieldboss', 'hiddencube', 'other']
 const kindOf = (world: number): string => ZONES[world]?.[2] ?? 'other'
 const kindLabel = (kind: string): string => (kind === 'party' ? 'Expeditions' : runKindLabel(kind))
@@ -75,8 +78,9 @@ const kinds = computed(() => {
 const tab = useStored<string>('bests.tab', 'party', (raw) => (typeof raw === 'string' ? raw : 'party'))
 const kind = computed(() => (kinds.value.includes(tab.value) ? tab.value : (kinds.value[0] ?? 'party')))
 const tabs = computed(() => kinds.value.map((k) => ({ id: k, label: kindLabel(k) })))
-/** What a tab ranks by: the best DPS, or the fastest (a run; a Nightmare's kill). */
+/** What a tab ranks by: the best DPS, or the fastest (a run; a Nightmare's kill); the Ascension Trials by their time alone. */
 const metric = useStored<'dps' | 'fast'>('bests.metric', 'dps', (raw) => (raw === 'fast' ? 'fast' : 'dps'))
+const by = computed(() => (FAST_ONLY.includes(kind.value) ? 'fast' : metric.value))
 const METRICS = computed(() => [
   { id: 'dps' as const, label: 'Best DPS' },
   { id: 'fast' as const, label: kind.value === NIGHTMARE ? 'Fastest kill' : 'Fastest run' },
@@ -111,6 +115,35 @@ const fastest = computed(() => {
   return [...best.values()].sort((a, b) => a.world - b.world)
 })
 
+// ---- Expeditions: a dungeon per row, a mode per column ----------------------------------------------------
+
+const MODES = [
+  { id: 'easy', label: 'Exploration' },
+  { id: 'normal', label: 'Conquest Normal' },
+  { id: 'advanced', label: 'Conquest Hard' },
+]
+/** By dungeon (the game's order), each mode's world: its fastest run, and its bosses' best DPS. */
+const expeditions = computed(() => {
+  const rows = new Map<string, { name: string; first: number; modes: Record<string, { fast: (typeof timedRuns.value)[number] | null; bosses: Encounter[] }> }>()
+  const cell = (world: number) => {
+    const z = ZONES[world]
+    if (!z || !MODES.some((m) => m.id === z[3])) return null
+    const row = rows.get(z[0]) ?? { name: z[0], first: world, modes: {} }
+    row.first = Math.min(row.first, world)
+    rows.set(z[0], row)
+    return (row.modes[z[3]!] ??= { fast: null, bosses: [] })
+  }
+  for (const r of fastest.value) {
+    const c = cell(r.world)
+    if (c) c.fast = r
+  }
+  for (const d of byDungeon.value) {
+    const c = cell(d.id)
+    if (c) c.bosses = d.list
+  }
+  return [...rows.values()].sort((a, b) => a.first - b.first)
+})
+
 // ---- Nightmares: a boss's row, a level's column ------------------------------------------------------------
 
 const LEVELS = Array.from({ length: 10 }, (_, i) => i + 1)
@@ -127,6 +160,8 @@ const grid = computed(() => {
   }
   return [...rows].sort((a, b) => a[0].localeCompare(b[0])).map(([boss, cells]) => ({ boss, cells }))
 })
+/** A Nightmare boss's colour, as the game's tiers: Notun and Gerod green, Zikel blue, the others grey. */
+const bossTone = (boss: string): string => (/Notun|Gerod/.test(boss) ? 'text-green' : /Zikel/.test(boss) ? 'text-blue' : 'text-darker')
 /** Delete asks once: the first click arms it for 3 seconds, the second deletes. */
 const arming = ref<string | null>(null)
 let armTimer: ReturnType<typeof setTimeout> | null = null
@@ -187,7 +222,7 @@ onHistory(load)
       <!-- What, whose, by what. -->
       <div class="mb-3 flex flex-wrap items-center gap-3">
         <Segmented v-model="tab" :options="tabs" size="sm" />
-        <Segmented v-model="metric" :options="METRICS" size="sm" />
+        <Segmented v-if="!FAST_ONLY.includes(kind)" v-model="metric" :options="METRICS" size="sm" />
       </div>
       <div class="mb-3 flex flex-wrap items-center gap-2">
         <button
@@ -204,7 +239,7 @@ onHistory(load)
           :class="['rounded-full border px-2.5 py-1 text-xs', picked === c ? 'border-accent bg-accent/15 text-default' : 'border-light text-darker hover:text-default']"
           @click="who = c"
         >
-          {{ c }}
+          <CharName :name="c" />
         </button>
       </div>
 
@@ -231,7 +266,7 @@ onHistory(load)
           </thead>
           <tbody>
             <tr v-for="r in grid" :key="r.boss" class="border-t border-card">
-              <td class="py-1.5 pl-4 font-medium">{{ r.boss }}</td>
+              <td :class="['py-1.5 pl-4 font-medium', bossTone(r.boss)]">{{ r.boss }}</td>
               <td v-for="l in LEVELS" :key="l" class="px-2 py-1.5 text-center">
                 <span v-if="r.cells.get(l)" class="group/cell relative inline-flex items-center gap-1">
                   <button
@@ -254,8 +289,44 @@ onHistory(load)
         </table>
       </div>
 
+      <!-- Expeditions: a dungeon per row, a mode per column, its fastest run or its bosses' best DPS. -->
+      <div v-else-if="kind === 'party'" class="overflow-x-auto rounded-xl border border-card">
+        <p v-if="!expeditions.length" class="px-4 py-6 text-center text-xs text-darker">{{ t('No personal best yet.') }}</p>
+        <table v-else class="w-full text-sm tabular-nums">
+          <thead class="bg-card text-xs text-darker">
+            <tr>
+              <th class="py-2 pl-4 text-left font-medium">{{ t('Expedition') }}</th>
+              <th v-for="m in MODES" :key="m.id" class="px-3 text-left font-medium">{{ t(m.label) }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="row in expeditions" :key="row.name" class="border-t border-card align-top">
+              <td class="py-2 pl-4 font-medium">{{ row.name }}</td>
+              <td v-for="m in MODES" :key="m.id" class="px-3 py-2">
+                <template v-if="by === 'fast'">
+                  <div v-if="row.modes[m.id]?.fast" class="flex items-center gap-2">
+                    <span class="font-semibold text-yellow">{{ mmss(row.modes[m.id]!.fast!.cleared! - row.modes[m.id]!.fast!.started!) }}</span>
+                    <CharName v-if="picked === null" :name="row.modes[m.id]!.fast!.character" class="text-xs text-dark" />
+                    <span class="text-[11px] text-darker">{{ day(row.modes[m.id]!.fast!.start) }}</span>
+                  </div>
+                  <span v-else class="text-darkest">–</span>
+                </template>
+                <template v-else>
+                  <div v-for="e in row.modes[m.id]?.bosses ?? []" :key="`${e.character}:${e.mobCode}`" class="flex items-center gap-2 text-xs">
+                    <span :class="['min-w-0 flex-1 truncate', e.finalBoss ? 'font-medium text-default' : 'text-dark']">{{ e.bossName }}</span>
+                    <CharName v-if="picked === null" :name="e.character" class="text-dark" />
+                    <button v-if="e.myDps" type="button" class="font-semibold text-yellow hover:underline" :title="[day(e.myDps.atMs), gear(e.myDps.fightId)].filter(Boolean).join(' · ')" @click="open(e.myDps)">{{ compact(e.myDps.value) }}</button>
+                  </div>
+                  <span v-if="!row.modes[m.id]?.bosses.length" class="text-darkest">–</span>
+                </template>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
       <!-- The fastest run of each dungeon and mode. -->
-      <div v-else-if="metric === 'fast'" class="overflow-x-auto rounded-xl border border-card">
+      <div v-else-if="by === 'fast'" class="overflow-x-auto rounded-xl border border-card">
         <p v-if="!fastest.length" class="px-4 py-6 text-center text-xs text-darker">{{ t('No cleared run yet: the runs your sessions keep, from the entry to the last boss.') }}</p>
         <table v-else class="w-full text-sm tabular-nums">
           <thead class="bg-card text-xs uppercase tracking-wide text-darker">
@@ -270,7 +341,7 @@ onHistory(load)
             <tr v-for="r in fastest" :key="r.world" class="border-t border-card">
               <td class="py-1.5 pl-4 font-medium">{{ dungeonName(r.world) }}</td>
               <td class="px-3 py-1.5 text-right font-semibold text-yellow">{{ mmss(r.cleared! - r.started!) }}</td>
-              <td v-if="picked === null" class="px-3 py-1.5 text-dark">{{ r.character }}</td>
+              <td v-if="picked === null" class="px-3 py-1.5 text-dark"><CharName :name="r.character" /></td>
               <td class="px-3 py-1.5 pr-4 text-right text-darker">{{ day(r.start) }}</td>
             </tr>
           </tbody>
@@ -300,7 +371,7 @@ onHistory(load)
               @click="open(rowFight(e))"
             >
               <td class="py-1.5 pl-4"><span :class="e.finalBoss && 'font-medium'">{{ e.bossName }}</span></td>
-              <td v-if="picked === null" class="px-3 py-1.5 text-dark">{{ e.character }}</td>
+              <td v-if="picked === null" class="px-3 py-1.5 text-dark"><CharName :name="e.character" /></td>
               <td class="px-3 py-1.5 text-right">
                 <button v-if="e.myDps" type="button" class="font-semibold text-yellow hover:underline" @click.stop="open(e.myDps)">{{ compact(e.myDps.value) }}</button>
                 <span v-else class="text-darker">–</span>

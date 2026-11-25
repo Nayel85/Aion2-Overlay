@@ -311,7 +311,7 @@ export const RUN_KIND_LABELS: Record<string, string> = {
   transcendence: 'Transcendence',
   raid: 'Raids',
   seal: 'Seal dungeons',
-  awaken: 'Awakening dungeons',
+  awaken: 'Ascension Trials',
   bosschallenge: 'Nightmares',
   nightmare: 'Nightmares',
   growth: 'Growth dungeons',
