@@ -15,7 +15,7 @@ import { join } from 'node:path'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { characterId } from '../shared/characters.ts'
-import { addChanges, applySlots, fromList, heldItems, NO_INVENTORIES, type Arrival, type ArrivalSource, type DepotItem, type Inventories } from '../shared/inventory.ts'
+import { addChanges, applySlots, fromList, heldItems, NO_INVENTORIES, type Arrival, type ArrivalSource, type Inventories } from '../shared/inventory.ts'
 
 const SAVE_AFTER_MS = 3000
 let inventories: Inventories = NO_INVENTORIES
@@ -108,10 +108,10 @@ export function onArrival(fn: (a: Arrival) => void): () => void {
 }
 
 /** The character an event is about: their id, name and server. */
-function whose(ev: Record<string, unknown>): { id: string; name: string; server: number | null } | null {
-  const name = ev['name'] as string | null
+function whose(ev: { name: string | null; server: number | null }): { id: string; name: string; server: number | null } | null {
+  const name = ev.name
   if (!name) return null
-  const server = (ev['server'] as number | null) ?? null
+  const server = ev.server ?? null
   return { id: server !== null ? characterId(server, name) : name, name, server }
 }
 
@@ -122,8 +122,8 @@ export function startInventory(): void {
   // what comes into your bags about then makes it yours).
   tracker.onEvent('cubeOpened', (ev) => {
     const you = tracker.nearby().position
-    const at = ev['position'] as [number, number] | undefined
-    log(`hidden cube ${ev['id'] as number} opened${you && at ? `, ${Math.round(Math.hypot(you[0] - at[0], you[1] - at[1]))} from you` : ''}`)
+    const at = ev.position
+    log(`hidden cube ${ev.id} opened${you && at ? `, ${Math.round(Math.hypot(you[0] - at[0], you[1] - at[1]))} from you` : ''}`)
     noteSource('hiddencube')
   })
   tracker.onEvent('loot', () => noteSource('cube'))
@@ -133,8 +133,8 @@ export function startInventory(): void {
   tracker.onEvent('inventory', (ev) => {
     const who = whose(ev)
     if (!who) return
-    const at = (ev['ts'] as number | undefined) ?? Date.now()
-    const { own, account } = fromList((ev['items'] as DepotItem[] | undefined) ?? [])
+    const at = ev.ts ?? Date.now()
+    const { own, account } = fromList(ev.items ?? [])
     // Against the list kept, what came while the app was off (theirs alone: the account's warehouse
     // changes with the other characters).
     const kept = inventories.characters[who.id]
@@ -157,7 +157,7 @@ export function startInventory(): void {
     const who = whose(ev)
     if (!who) return
     const before = heldItems(inventories, who.id, true)
-    inventories = applySlots(inventories, who.id, who, (ev['ts'] as number | undefined) ?? Date.now(), (ev['slots'] as DepotItem[] | undefined) ?? [])
+    inventories = applySlots(inventories, who.id, who, ev.ts ?? Date.now(), ev.slots ?? [])
     // A burst's changes, netted once it is over.
     const p = pending.get(who.id) ?? { name: who.name, first: Date.now(), changes: {}, timer: setTimeout(() => settle(who.id), SETTLE_MS) }
     addChanges(p.changes, before, heldItems(inventories, who.id, true))

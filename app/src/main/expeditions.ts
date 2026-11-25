@@ -41,15 +41,15 @@ export function startExpeditions(): void {
   state = (file.read() as Expeditions | null) ?? {} // none yet
   // A login: whose the list is.
   tracker.onEvent('inventory', (ev) => {
-    const name = ev['name'] as string | null
+    const name = ev.name
     if (!name) return
-    const server = (ev['server'] as number | null) ?? null
+    const server = ev.server ?? null
     playing = { id: server !== null ? characterId(server, name) : name, name, at: Date.now() }
     if (pending && Date.now() - pending.at < LOGIN_WITHIN_MS) apply(playing, pending.entries, pending.at)
     pending = null
   })
   tracker.onEvent('expeditions', (ev) => {
-    const entries = ((ev['entries'] as { world: number; cubes: number }[] | undefined) ?? []).map((e) => ({ world: e.world, cubes: e.cubes }))
+    const entries = (ev.entries ?? []).map((e) => ({ world: e.world, cubes: e.cubes }))
     if (playing && Date.now() - playing.at < LOGIN_WITHIN_MS) apply(playing, entries, Date.now())
     else pending = { at: Date.now(), entries }
   })

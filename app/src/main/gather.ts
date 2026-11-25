@@ -16,7 +16,7 @@ import { resourceOf } from '../shared/sessions.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
 import { craftOutcome, gatherFlow, gatherOutcome, type CraftOver, type GatheringOver } from '../shared/gatherFlow.ts'
-import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, plainItem, type GatherForecast, type GatherRoll, type GatherTemplates, plainItemByName } from '../shared/gather.ts'
+import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, plainItem, type GatherForecast, type GatherTemplates, plainItemByName } from '../shared/gather.ts'
 
 /** Gone this long after it should have ended, if nothing said it did. */
 const FORGET_AFTER_MS = 2_000
@@ -88,9 +88,9 @@ function keep(): void {
 export function startGather(): void {
   templates = { ...GATHER_TEMPLATES_SEED, ...((file.read() as GatherTemplates | null) ?? {}) }
   tracker.onEvent('spot', (ev) => {
-    const template = ev['template'] as number
-    const world = ev['world'] as number | null
-    const [x, y] = ev['position'] as [number, number]
+    const template = ev.template
+    const world = ev.world
+    const [x, y] = ev.position
     if (templates[template] || world === null) return
     let best: [string, number] | null = null
     for (const [name, zone, px, py] of mapPoints()) {
@@ -111,22 +111,22 @@ export function startGather(): void {
     }
   })
   tracker.onEvent('gatherStart', (ev) => {
-    const code = ev['outcome'] as number
-    const grade = (ev['grade'] as number | undefined) ?? 1
+    const code = ev.outcome
+    const grade = ev.grade ?? 1
     // 0 failed; else the grade rolled says it: above 1 ranked up (7 the code seen with it, others too).
     // Flags: 1 made, 2 and 4 a better grade rolled. 0 failed, 1 made, 7 ranked up, 6 a rank up
     // rolled and failed (2026-11-23: a Pure Diamond, nothing gathered).
     const outcome = gatherOutcome(code, grade)
     if (![0, 1, 6, 7].includes(code)) log(`gathering: outcome ${code} (grade ${grade}) not known before`)
-    const template = (ev['template'] as number | null | undefined) ?? null
+    const template = ev.template ?? null
     const plain = gatherStore.plainOf(template) ?? undefined
     const item = gatherItem(plain, outcome === 'fail' ? 1 : grade)
     // A grade that gives the plain item more times (a plant's x3) is no rank up.
     const base = plainItem(plain)
     const times = outcome === 'rankUp' && item && base && item.id === base.id ? item.count : 1
-    const rolls = (ev['rolls'] as GatherRoll[] | undefined) ?? []
-    flow.gatherStart({ outcome: code, grade, doubled: ev['doubled'] === true, skills: rolls.flatMap((r) => r.skills ?? []), template })
-    set({ kind: 'gather', grade, outcome: times > 1 ? 'ok' : outcome, times, doubled: ev['doubled'] === true, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls })
+    const rolls = ev.rolls ?? []
+    flow.gatherStart({ outcome: code, grade, doubled: ev.doubled === true, skills: rolls.flatMap((r) => r.skills ?? []), template })
+    set({ kind: 'gather', grade, outcome: times > 1 ? 'ok' : outcome, times, doubled: ev.doubled === true, item, at: Date.now(), durationMs: ev.durationMs ?? null, rolls })
   })
   // Over: done (its result just after) or given up, walking away. The next gathering's start, coming
   // meanwhile, is left alone.
@@ -136,9 +136,9 @@ export function startGather(): void {
   })
   tracker.onEvent('gather', (ev) => {
     // Its result says the spot's resource, even failed or ranked up (a Fine Yggdrasil Log's plain one).
-    const item = (ev['item'] as number | undefined) ?? 0
+    const item = ev.item ?? 0
     const plain = item ? resourceOf(item) : undefined
-    const result = { item, amount: (ev['amount'] as number | undefined) ?? 0, bonus: (ev['bonus'] as number | undefined) ?? 0, result: (ev['result'] as number | undefined) ?? 0 }
+    const result = { item, amount: ev.amount ?? 0, bonus: ev.bonus ?? 0, result: ev.result ?? 0 }
     const start = flow.gather(result, plain ?? null)
     const template = start?.template ?? null
     if (template !== null && plain && templates[String(template)] !== plain) {
@@ -149,18 +149,18 @@ export function startGather(): void {
     if (state) set(null)
   })
   tracker.onEvent('craftStart', (ev) => {
-    const code = ev['outcome'] as number
+    const code = ev.outcome
     // Flags as a gathering's: 1 made; 13 (1, 4, 8) a proc. Without 1 it failed, whatever else rolled.
-    if (![0, 1, 13].includes(code)) log(`craft: outcome ${code} not known (recipe ${ev['recipe']})`)
+    if (![0, 1, 13].includes(code)) log(`craft: outcome ${code} not known (recipe ${ev.recipe})`)
     const { made, proc } = craftOutcome(code)
-    const { item, doubled } = craftItem(ev['recipe'] as number, proc)
-    flow.craftStart(ev['recipe'] as number, code)
-    set({ kind: 'craft', times: 1, outcome: !made ? 'fail' : proc ? 'proc' : 'ok', doubled, item, at: Date.now(), durationMs: (ev['durationMs'] as number | undefined) ?? null, rolls: [] })
+    const { item, doubled } = craftItem(ev.recipe, proc)
+    flow.craftStart(ev.recipe, code)
+    set({ kind: 'craft', times: 1, outcome: !made ? 'fail' : proc ? 'proc' : 'ok', doubled, item, at: Date.now(), durationMs: ev.durationMs ?? null, rolls: [] })
   })
   // Done: a failed one made nothing (no result follows); a made one's item comes with `craftResult`.
   tracker.onEvent('craftDone', (ev) => {
     if (state?.kind === 'craft') set(null)
-    flow.craftDone(ev['recipe'] as number)
+    flow.craftDone(ev.recipe)
   })
-  tracker.onEvent('craftResult', (ev) => flow.craftResult(ev['recipe'] as number, ev['item'] as number))
+  tracker.onEvent('craftResult', (ev) => flow.craftResult(ev.recipe, ev.item))
 }

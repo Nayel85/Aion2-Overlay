@@ -11,6 +11,7 @@
  * restarted mid-game goes on with the session it had, unless nothing came in it for CONTINUE_MS
  * (another day's).
  */
+import type { EngineEvents } from './engineEvents.ts'
 import { dataFile } from './dataFile.ts'
 import { abyss } from './abyss.ts'
 import { broadcast } from './broadcast.ts'
@@ -140,19 +141,19 @@ export function startSessions(): void {
   load()
   // The character selection: its list (empty as a dungeon's server takes you in or out).
   tracker.onEvent('characterList', (ev) => {
-    if (((ev['characters'] as unknown[] | undefined) ?? []).length) selecting = true
+    if (((ev.characters as unknown[] | undefined) ?? []).length) selecting = true
   })
   // A login: the counters come as you enter the world from the character selection. They come too
   // as you go into an instance on its own server (Expeditions, Transcendences...) and back out, with
   // no selection (whose list comes once, the first time): the same character goes on with its session.
   tracker.onEvent('counters', (ev) => {
-    const name = ev['name'] as string | null
+    const name = ev.name
     if (!name) return
-    const at = (ev['ts'] as number | undefined) ?? Date.now()
-    const server = (ev['server'] as number | null) ?? null
+    const at = ev.ts ?? Date.now()
+    const server = ev.server ?? null
     const c = sessions.current
     if (!selecting && c && c.name === name && (c.server === null || server === null || c.server === server) && at - c.last < CONTINUE_MS) {
-      const values = ev['values'] as Record<string, number[]>
+      const values = ev.values
       for (const id of Object.keys(RUN_COUNTERS)) if (values[id]) counterSeen.set(id, total(values[id]))
       log(`session: ${name} moved servers (an instance's), same session`)
       return
@@ -161,7 +162,7 @@ export function startSessions(): void {
     begin(name, server, at)
     log(`session: ${name} logged in`)
     tracker.resetSession()
-    const values = ev['values'] as Record<string, number[]>
+    const values = ev.values
     counterSeen.clear()
     counterDrop = null
     for (const id of Object.keys(RUN_COUNTERS)) if (values[id]) counterSeen.set(id, total(values[id]))
@@ -169,10 +170,10 @@ export function startSessions(): void {
   })
   // An entry paid (a Nightmare's, an Ascension Trial's, a Daily Dungeon's): the run's kind.
   tracker.onEvent('counter', (ev) => {
-    const id = ev['id'] as string
+    const id = ev.id
     const kind = RUN_COUNTERS[id]
     if (!kind) return
-    const now = total(ev['values'] as number[])
+    const now = total(ev.values)
     const before = counterSeen.get(id)
     counterSeen.set(id, now)
     if (before === undefined || now >= before) return
@@ -184,7 +185,7 @@ export function startSessions(): void {
   })
   // Into a dungeon, or out of one: a run starts, or ends.
   tracker.onEvent('nearby', (ev) => {
-    const world = (ev['world'] as number | null) ?? null
+    const world = ev.world ?? null
     if (world === null || world === worldSeen) return
     const first = worldSeen === null
     worldSeen = world
@@ -231,8 +232,8 @@ export function startSessions(): void {
     const run = openRun()
     if (!run) return
     run.partyDeaths = (run.partyDeaths ?? 0) + 1
-    if (ev['you'] === true) run.deaths = (run.deaths ?? 0) + 1
-    log(`session: ${String(ev['name'] ?? 'a player')} died in ${run.name}`)
+    if (ev.you === true) run.deaths = (run.deaths ?? 0) + 1
+    log(`session: ${String(ev.name ?? 'a player')} died in ${run.name}`)
     changed()
   })
   tracker.onEvent('dungeonClear', () => {
@@ -247,14 +248,14 @@ export function startSessions(): void {
   tracker.onEvent('nightmare', (ev) => {
     const run = openRun()
     if (!run) return
-    run.boss = ev['boss'] as number
-    if (typeof ev['level'] === 'number') run.level = ev['level']
+    run.boss = ev.boss
+    if (typeof ev.level === 'number') run.level = ev.level
     changed()
   })
   // A cube opened: its Unique-or-better items and Arcana cards go to the run (the membership's
   // second cube comes in the same list). One opened just after leaving goes to the run just left.
   tracker.onEvent('loot', (ev) => {
-    const loot = notableLoot((ev['items'] as { item: number; amount: number }[] | undefined) ?? [])
+    const loot = notableLoot(ev.items ?? [])
     const last = sessions.current?.runs?.at(-1)
     const run = openRun() ?? (last?.end && Date.now() - last.end < LOOT_AFTER_MS ? last : null)
     if (!run || !Object.keys(loot).length) return
@@ -280,13 +281,13 @@ export function startSessions(): void {
   })
   // A field boss that fell in view: when it fell, for its loot chest opened after.
   tracker.onEvent('bossKilled', (ev) => {
-    bossDown = { npc: ev['npc'] as number, at: Date.now() }
+    bossDown = { npc: ev.npc, at: Date.now() }
   })
   // A box opened from your bags. A field boss's loot chest ("Kashapa's Loot Chest"): what it gave is
   // that boss's run, done, in the history. Any other: what it gave goes to the run going on.
   tracker.onEvent('boxOpened', (ev) => {
     const s = sessions.current
-    const items = (ev['items'] as { item: number; spent: boolean; amount: number }[] | undefined) ?? []
+    const items = ev.items ?? []
     const loot = notableLoot(items.filter((i) => !i.spent))
     const chest = items.filter((i) => i.spent).map((i) => itemInfo(i.item)?.name ?? '').map((name) => /^(.+)'s Loot Chest/.exec(name)?.[1]).find(Boolean)
     // A boss's chest is its run, whatever it gave (none worth keeping, or not read); another box only for what it gave.
@@ -316,7 +317,7 @@ export function startSessions(): void {
     const s = sessions.current
     if (!s) return
     const rewards: Record<string, number> = {}
-    for (const r of (ev['rewards'] as { item: number; amount: number }[] | undefined) ?? []) rewards[r.item] = (rewards[r.item] ?? 0) + r.amount
+    for (const r of ev.rewards ?? []) rewards[r.item] = (rewards[r.item] ?? 0) + r.amount
     const at = Date.now()
     // Its Abyss Points (not in its list: the balance rose as it was handed in): the rewards', not
     // where you stood, nor a rift's.
@@ -329,10 +330,10 @@ export function startSessions(): void {
       rewards[AP_ITEM] = (rewards[AP_ITEM] ?? 0) + apTotal
       abyss.notRift(at - QUEST_WITHIN_MS, at)
     }
-    const offered = ((ev['offered'] as { item: number; amount: number; chance: number; got: boolean }[] | undefined) ?? []).map((r) => ({ ...r, chance: r.chance / 100_000_000 }))
-    s.duties = [...(s.duties ?? []), { at, quest: ev['quest'] as number, rewards, offered }]
+    const offered = (ev.offered ?? []).map((r) => ({ ...r, chance: r.chance / 100_000_000 }))
+    s.duties = [...(s.duties ?? []), { at, quest: ev.quest, rewards, offered }]
     s.last = at
-    log(`session: duty mission ${String(ev['quest'])} gave ${JSON.stringify(rewards)}`)
+    log(`session: duty mission ${String(ev.quest)} gave ${JSON.stringify(rewards)}`)
     changed()
   })
   // A craft over (main/gather.ts follows it): what it made, its count the recipe's (shared/recipes.ts:
@@ -352,11 +353,11 @@ export function startSessions(): void {
     const s = sessions.current
     if (!s) return
     const rewards: Record<string, number> = {}
-    for (const r of (ev['rewards'] as { item: number; amount: number }[] | undefined) ?? []) rewards[r.item] = (rewards[r.item] ?? 0) + r.amount
+    for (const r of ev.rewards ?? []) rewards[r.item] = (rewards[r.item] ?? 0) + r.amount
     const at = Date.now()
-    s.supplies = [...(s.supplies ?? []), { at, request: ev['request'] as number, rewards }]
+    s.supplies = [...(s.supplies ?? []), { at, request: ev.request, rewards }]
     s.last = at
-    log(`session: supply request ${String(ev['request'])} gave ${JSON.stringify(rewards)}`)
+    log(`session: supply request ${String(ev.request)} gave ${JSON.stringify(rewards)}`)
     changed()
     const ap = rewards[AP_ITEM] ?? 0
     const kina = rewards[KINA_ITEM] ?? 0
@@ -375,7 +376,7 @@ export function startSessions(): void {
           moved = true
         }
         if (moved) changed()
-        else log(`session: supply request ${String(ev['request'])}'s rewards came with no gain to take them from`)
+        else log(`session: supply request ${String(ev.request)}'s rewards came with no gain to take them from`)
       }, 1_500)
   })
   // A field event's reward board (a Shugo Festival's five chests): the entries with your name are
@@ -385,7 +386,7 @@ export function startSessions(): void {
     const last = s?.runs?.at(-1)
     const run = openRun() ?? (last?.end && Date.now() - last.end < LOOT_AFTER_MS ? last : null)
     if (!s || !run) return
-    const entries = (ev['entries'] as { name: string | null; items: { item: number; amount: number }[] }[] | undefined) ?? []
+    const entries = ev.entries ?? []
     const loot = notableLoot(entries.filter((e) => e.name === s.name).flatMap((e) => e.items))
     if (!Object.keys(loot).length) return
     // The game sends the board more than once (twice, 0.1 s apart): the last one replaces the one before.
@@ -400,9 +401,9 @@ export function startSessions(): void {
   // Enhance Stones and Phantasmal Fragments: each rise of their balance is earned.
   tracker.onEvent('currency', (ev) => {
     const s = sessions.current
-    const item = ev['item'] as number
-    const balance = ev['balance'] as number
-    if (!s || s.name !== ev['name']) return
+    const item = ev.item
+    const balance = ev.balance
+    if (!s || s.name !== ev.name) return
     const before = currencySeen.get(item)
     currencySeen.set(item, balance)
     if (before === undefined || balance <= before) return
@@ -432,11 +433,11 @@ export function startSessions(): void {
     changed()
   })
   tracker.onEvent('pvpKill', (ev) => {
-    if (ev['died'] !== true && (ev['mine'] === true || typeof ev['fight'] === 'string')) pvpAt = Date.now()
+    if (ev.died !== true && (ev.mine === true || typeof ev.fight === 'string')) pvpAt = Date.now()
   })
   tracker.onEvent('abyssGain', (ev) => {
-    const name = ev['name'] as string | null
-    const gained = ev['gained'] as number
+    const name = ev.name
+    const gained = ev.gained
     if (!name || !(gained > 0)) return
     const at = Date.now()
     const s = sessionOf(name, tracker.status().server, at)
@@ -452,14 +453,14 @@ export function startSessions(): void {
   // handler above takes: its gains come just after it, so they are moved a moment later.
   // The login's balance is a start; each rise after it is earned.
   tracker.onEvent('wallet', (ev) => {
-    if (sessions.current?.name !== ev['name']) return
-    if (typeof ev['kina'] === 'number') kinaSeen.kina = ev['kina']
-    if (typeof ev['boundKina'] === 'number') kinaSeen.boundKina = ev['boundKina']
+    if (sessions.current?.name !== ev.name) return
+    if (typeof ev.kina === 'number') kinaSeen.kina = ev.kina
+    if (typeof ev.boundKina === 'number') kinaSeen.boundKina = ev.boundKina
   })
   // Kina and bound Kina alike: the session's Kina is both (most rewards are bound).
-  const onKina = (which: 'kina' | 'boundKina') => (ev: Record<string, unknown>): void => {
-    const name = ev['name'] as string | null
-    const balance = ev['balance'] as number
+  const onKina = (which: 'kina' | 'boundKina') => (ev: EngineEvents['kina']): void => {
+    const name = ev.name
+    const balance = ev.balance
     const s = sessions.current
     // Only the session going on's character: a balance alone (spending) never starts one.
     if (!name || !s || s.name !== name) {

@@ -46,13 +46,13 @@ export function startApplicants(): void {
     if (!settings.get('applicants').enabled) return
     const at = Date.now()
     const a: Applicant = {
-      character: ev['character'] as number,
-      name: ev['name'] as string,
-      server: (ev['server'] as number | null) ?? null,
-      className: (ev['className'] as string | null) ?? null,
-      level: (ev['level'] as number | null) ?? null,
-      gearScore: (ev['gearScore'] as number | null) ?? null,
-      combatPower: (ev['combatPower'] as number | null) ?? null,
+      character: ev.character,
+      name: ev.name,
+      server: ev.server ?? null,
+      className: ev.className ?? null,
+      level: ev.level ?? null,
+      gearScore: ev.gearScore ?? null,
+      combatPower: ev.combatPower ?? null,
       at,
     }
     // Applying again keeps their place and shows the numbers as they are now.
@@ -65,5 +65,5 @@ export function startApplicants(): void {
     rearm()
     changed()
   })
-  tracker.onEvent('applicantGone', (ev) => applicantStore.dismiss(ev['character'] as number))
+  tracker.onEvent('applicantGone', (ev) => applicantStore.dismiss(ev.character))
 }

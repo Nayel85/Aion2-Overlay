@@ -5,6 +5,7 @@
  *
  * The board sent as you log in is the day before's until you open it: one past its time is left out.
  */
+import type { EngineEvents } from './engineEvents.ts'
 import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
@@ -53,8 +54,8 @@ function learnCost(board: DutyBoard): void {
 
 export function startDuty(): void {
   load()
-  const onBalance = (which: 'kina' | 'boundKina') => (ev: Record<string, unknown>): void => {
-    const now = ev['balance'] as number
+  const onBalance = (which: 'kina' | 'boundKina') => (ev: EngineEvents['kina']): void => {
+    const now = ev.balance
     const before = balance[which]
     if (before !== null && now < before) spent = [...spent.filter((s) => Date.now() - s.at < COST_WITHIN_MS * 2), { at: Date.now(), amount: before - now }]
     balance[which] = now
@@ -64,20 +65,20 @@ export function startDuty(): void {
   // A mission taken: off the offer, into a slot, before the board comes again (if it does).
   tracker.onEvent('dutyTaken', (ev) => {
     const board = state.board
-    const quest = ev['quest'] as number
+    const quest = ev.quest
     if (!board || !board.missions.some((m) => m.quest === quest && m.place === 0)) return
-    state = { ...state, board: { ...board, missions: board.missions.map((m) => (m.quest === quest && m.place === 0 ? { ...m, place: ev['place'] as number } : m)) } }
+    state = { ...state, board: { ...board, missions: board.missions.map((m) => (m.quest === quest && m.place === 0 ? { ...m, place: ev.place} : m)) } }
     log(`duty: mission ${quest} taken`)
     changed()
   })
   tracker.onEvent('dutyBoard', (ev) => {
     const now = Date.now()
-    const expires = (ev['expires'] as number | null) ?? null
+    const expires = ev.expires ?? null
     if (expires !== null && expires <= now) return log(`duty: a board past its time (${new Date(expires).toISOString()}) left out`)
-    const missions = ((ev['missions'] as { quest: number; place: number; rewards: { item: number; amount: number; chance: number }[] }[] | undefined) ?? []).map(
+    const missions = (ev.missions ?? []).map(
       (m): DutyMission => ({ quest: m.quest, place: m.place, rewards: m.rewards.map((r) => ({ item: r.item, amount: r.amount, chance: r.chance / 100_000_000 })) }),
     )
-    const board: DutyBoard = { at: now, rerolls: ev['rerolls'] as number, expires, missions }
+    const board: DutyBoard = { at: now, rerolls: ev.rerolls, expires, missions }
     const before = state.board
     if (before && before.expires === expires && board.rerolls > before.rerolls) learnCost(board)
     const offered = missions.filter((m) => m.place === 0).length

@@ -19,7 +19,7 @@ export const flightStore = {
 
 export function startFlight(): void {
   tracker.onEvent('flight', (ev) => {
-    const fp = (ev['fp'] as FlightPower | null) ?? null
+    const fp = ev.fp ?? null
     if (!fp) {
       state = null
       flyingAt = 0

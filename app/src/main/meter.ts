@@ -101,20 +101,20 @@ export function startMeter(): void {
   tracker.onEvent('targetClear', () => follow())
   // Into a dungeon and out of it: its own mode there, your last hit again after. (The event's
   // world: listeners hear it before the tracker keeps it.)
-  tracker.onEvent('nearby', (ev) => follow((ev['world'] as number | null | undefined) ?? null))
+  tracker.onEvent('nearby', (ev) => follow(ev.world ?? null))
   tracker.onEvent('ping', (ev) => {
-    ping = (ev['ms'] as number | null) ?? null
+    ping = ev.ms ?? null
     meter = { ...meter, ping }
     broadcast('meter:dps', meter, ['panel', 'meter', 'unified'])
   })
   tracker.onEvent('buffs', (ev) => {
-    buffs = (ev['buffs'] as Buff[] | undefined) ?? []
+    buffs = ev.buffs ?? []
     broadcast('buffs:list', buffs)
   })
   tracker.onEvent('historyChanged', () => broadcast('history:changed', Date.now()))
   // A kill beat its character's best damage per second there: the meter tells it.
   tracker.onEvent('personalBest', (ev) => broadcast('meter:personalBest', ev as unknown as NewBest))
-  for (const type of ['details', 'history', 'bests', 'fight', 'pvpFight', 'recordings']) tracker.onEvent(type, answer)
+  for (const type of ['details', 'history', 'bests', 'fight', 'pvpFight', 'recordings'] as const) tracker.onEvent(type, answer)
   // A recording started or stopped: the list again, with it.
   tracker.onEvent('recording', () => void meterState.recordings().then((r) => broadcast('recordings:changed', r)))
   let last = JSON.stringify([settings.get('meter').enabled, settings.get('meter').targetMode, settings.get('unified').enabled, settings.get('unified').target, settings.get('unified').targetMode, settings.get('buffs').enabled, settings.get('buffs').cc])

@@ -48,12 +48,12 @@ export function startPackets(): void {
     if (key === 'tracker') command({ cmd: 'bossDiagnostics', on: all.tracker.bossDiagnostics })
   })
   tracker.onEvent('packets', (ev) => {
-    const on = ev['on'] === true
-    const path = typeof ev['path'] === 'string' ? ev['path'] : state.path
+    const on = ev.on === true
+    const path = typeof ev.path === 'string' ? ev.path : state.path
     if (on && !state.on) log(`packet log: writing ${path}`)
-    if (!on && state.on) log(`packet log: ${String(ev['count'])} messages in ${path}`)
+    if (!on && state.on) log(`packet log: ${String(ev.count)} messages in ${path}`)
     const was = state.on
-    state = { ...state, on, path, count: Number(ev['count'] ?? state.count), startedAt: on ? (state.startedAt ?? Date.now()) : null }
+    state = { ...state, on, path, count: Number(ev.count ?? state.count), startedAt: on ? (state.startedAt ?? Date.now()) : null }
     markKey(on)
     if (on !== was) hud(on)
     changed()

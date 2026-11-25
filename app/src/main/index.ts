@@ -105,8 +105,8 @@ if (!app.requestSingleInstanceLock()) {
     // An alt-tab away from the game hides the overlays; back to it shows them.
     let gameInFront = true
     tracker.onEvent('focus', (ev) => {
-      gameInFront = ev['game'] === true
-      setForeground(ev['game'] === true, ev['app'] === true)
+      gameInFront = ev.game === true
+      setForeground(ev.game === true, ev.app === true)
     })
     // A window opened by a screen of the game: the Black Cloud Merchant's pets worth buying as a tab
     // of its shop opens, the duty board's advice as you open it, reroll it or take a mission. The game
@@ -132,7 +132,7 @@ if (!app.requestSingleInstanceLock()) {
     }
     const leftAll = (why: string): void => SCREENS.forEach((id) => left(id, why))
     tracker.onShop(() => openedBy('merchant'))
-    tracker.onEvent('dutyBoard', (ev) => ev['opened'] === true && openedBy('duty'))
+    tracker.onEvent('dutyBoard', (ev) => ev.opened === true && openedBy('duty'))
     tracker.onEvent('dutyTaken', () => openedBy('duty'))
     tracker.onEvent('nearby', () => SCREENS.forEach((id) => screenAt[id] && String(tracker.nearby().position) !== screenAt[id]!.position && left(id, 'you moved')))
     tracker.onEvent('combat', () => leftAll('you are fighting'))

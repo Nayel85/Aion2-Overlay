@@ -13,6 +13,7 @@
  *                     game, to try the UI without it
  *   A2T_REPLAY_SPEED  its speed, as a multiple of real time (default 1)
  */
+import type { EngineEvent, EngineEvents, EngineEventType } from './engineEvents.ts'
 import { flushJsonFiles } from './jsonFile.ts'
 import { app } from 'electron'
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
@@ -29,7 +30,7 @@ import { pvpLog } from './pvpLog.ts'
 import { abyss } from './abyss.ts'
 import type { AbyssSession, RiftFarm } from '../shared/abyss.ts'
 import { serverFaction, serverRegion } from '../shared/servers.ts'
-import { GAME_ACTIVE_S, NO_NEARBY, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type PvpKill, type ShopItem, type ShopStock, type SoulToast, type TrackerStatus } from '../shared/tracker.ts'
+import { GAME_ACTIVE_S, NO_NEARBY, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type PvpKill, type ShopStock, type SoulToast, type TrackerStatus } from '../shared/tracker.ts'
 import { tr } from './i18n.ts'
 import { pveInstance } from '../shared/sessions.ts'
 
@@ -121,7 +122,7 @@ export function finishLog(): Promise<void> | null {
 
 /** How many cubes an opened cube's list (the engine's `loot`) holds: 2 with the membership's second one (its source), else 1. */
 export const lootCubes = (ev: Record<string, unknown>): number => {
-  const source = ev['source'] as number | undefined
+  const source = ev.source
   return source === 1 || source === 2 ? source : 1
 }
 
@@ -291,25 +292,27 @@ function handleLine(line: string): void {
     return
   }
   for (const fn of eventListeners.get(ev['type'] as string) ?? []) fn(ev)
-  switch (ev['type']) {
+  // The tracker's own handling, each event as engineEvents.ts has it.
+  const msg = ev as unknown as EngineEvent
+  switch (msg.type) {
     case 'ready':
       restarts = 0
       // A (re)started engine knows no one in view yet.
       enemies = []
       broadcast('tracker:enemies', enemies)
-      replacePets(ev['pets'] as Pet[])
+      replacePets(msg.pets)
       setStatus({
-        character: (ev['character'] as { name: string } | null)?.name ?? null,
-        server: (ev['character'] as { server?: number } | null)?.server ?? null,
+        character: msg.character?.name ?? null,
+        server: msg.character?.server ?? null,
       })
       learnServer(status.server)
-      fieldBosses.setServer((ev['character'] as { server?: number } | null)?.server ?? null)
+      fieldBosses.setServer(msg.character?.server ?? null)
       break
     case 'character': {
       // Another character entered the world: its own collection (pet levels are per character).
-      const name = ev['name'] as string
-      log(`character: ${name}${ev['server'] ? ` (server ${ev['server']})` : ''}${ev['switched'] ? ', switched collection' : ''}`)
-      replacePets(ev['pets'] as Pet[])
+      const name = msg.name
+      log(`character: ${name}${msg.server ? ` (server ${msg.server})` : ''}${msg.switched ? ', switched collection' : ''}`)
+      replacePets(msg.pets)
       // Each character has its own Black Cloud Merchant stock: the last one's is not this one's.
       if (name !== status.character && shopTabs.size) {
         shopTabs.clear()
@@ -317,47 +320,47 @@ function handleLine(line: string): void {
         // Not to the shop listeners: they open the merchant window, for a tab just opened.
         broadcast('tracker:shop', currentShop())
       }
-      setStatus({ character: name, server: (ev['server'] as number | undefined) ?? null })
+      setStatus({ character: name, server: msg.server ?? null })
       learnServer(status.server)
-      fieldBosses.setServer((ev['server'] as number | undefined) ?? null)
+      fieldBosses.setServer(msg.server ?? null)
       break
     }
     case 'status': {
-      const state = ev['state'] as TrackerStatus['state']
-      const detail = state === 'locked' ? `Game server ${ev['server']}` : ((ev['detail'] as string | undefined) ?? null)
+      const state = msg.state
+      const detail = state === 'locked' ? `Game server ${msg.server}` : (msg.detail ?? null)
       // Paused, the heartbeats stop: the last one must not keep saying the game is active.
       setStatus(state === 'idle' ? { state, detail, lastPacketAgo: null } : { state, detail })
       break
     }
     case 'player': {
       // Your level, as the game's record of you says: kept for the Nearby marks.
-      const level = ev['level'] as number
+      const level = msg.level
       setStatus({ level })
       if (settings.get('playerLevel') !== level) settings.set('playerLevel', level)
       break
     }
     case 'heartbeat':
-      setStatus({ lastPacketAgo: ev['lastPacketAgo'] as number | null })
+      setStatus({ lastPacketAgo: msg.lastPacketAgo})
       break
     case 'sync': {
-      log(`login sync: ${ev['pets']} pets, ${ev['souls']} souls`)
+      log(`login sync: ${msg.pets} pets, ${msg.souls} souls`)
       // Entering the world, maybe as another character: its Kina is a new starting point.
       setKina(kinaRebase(kina))
-      replacePets(ev['collection'] as Pet[])
-      setStatus({ synced: { at: Date.now(), pets: ev['pets'] as number, souls: ev['souls'] as number } })
+      replacePets(msg.collection)
+      setStatus({ synced: { at: Date.now(), pets: msg.pets, souls: msg.souls} })
       break
     }
     case 'soul': {
-      const pet = ev['pet'] as Pet
+      const pet = msg.pet
       updatePet(pet)
       // Every soul, with the running totals: what to compare against when counts look wrong.
       const sessionTotal = [...pets.values()].reduce((n, p) => n + p.session, 0)
-      log(`soul: +${ev['amount']} pet ${pet.id}${pet.name ? ` (${pet.name})` : ''} -> ${pet.souls} souls; session ${pet.session} for this pet, ${sessionTotal} in all`)
+      log(`soul: +${msg.amount} pet ${pet.id}${pet.name ? ` (${pet.name})` : ''} -> ${pet.souls} souls; session ${pet.session} for this pet, ${sessionTotal} in all`)
       const toast: SoulToast = {
         pet,
-        amount: ev['amount'] as number,
+        amount: msg.amount,
         at: Date.now(),
-        levelUp: ev['levelUp'] === true,
+        levelUp: msg.levelUp === true,
         crystal: false,
       }
       if (toast.levelUp) log(`level up: pet ${pet.id}${pet.name ? ` (${pet.name})` : ''} is now Lv${pet.level}`)
@@ -368,16 +371,16 @@ function handleLine(line: string): void {
     case 'crystal': {
       // Genus crystals: the pet is maxed. No pet when none of the kills just before could be it;
       // the kills it considered are logged then, and the raw body always.
-      const pet = ev['pet'] as Pet | null
-      const kills = (ev['kills'] as { npc: number | null; name: string | null; pet: number | null; ago: number }[] | undefined) ?? []
+      const pet = msg.pet
+      const kills = msg.kills ?? []
       const considered = kills.length
         ? kills.map((k) => `${k.name ?? `monster ${k.npc ?? '?'}`}${k.pet ? ` (pet ${k.pet})` : ' (no pet)'} ${k.ago}s before`).join(', ')
         : 'no kill just before'
-      log(`crystal: +${ev['amount']} ${ev['genus'] ?? 'unknown genus'} ${pet ? `pet ${pet.id}${pet.name ? ` (${pet.name})` : ''} -> ${pet.crystals} crystals` : `credited to no pet; kills: ${considered}`} [${ev['raw']}]`)
-      if (ev['levelCorrected'] === true && pet) log(`level: pet ${pet.id}${pet.name ? ` (${pet.name})` : ''} is at Lv${pet.level} in game (it gets crystals): corrected`)
+      log(`crystal: +${msg.amount} ${msg.genus ?? 'unknown genus'} ${pet ? `pet ${pet.id}${pet.name ? ` (${pet.name})` : ''} -> ${pet.crystals} crystals` : `credited to no pet; kills: ${considered}`} [${msg.raw}]`)
+      if (msg.levelCorrected === true && pet) log(`level: pet ${pet.id}${pet.name ? ` (${pet.name})` : ''} is at Lv${pet.level} in game (it gets crystals): corrected`)
       if (!pet) break
       updatePet(pet)
-      const toast: SoulToast = { pet, amount: ev['amount'] as number, at: Date.now(), levelUp: false, crystal: true }
+      const toast: SoulToast = { pet, amount: msg.amount, at: Date.now(), levelUp: false, crystal: true }
       broadcast('tracker:soul', toast)
       for (const fn of soulListeners) fn(toast)
       break
@@ -388,7 +391,7 @@ function handleLine(line: string): void {
     case 'cubes': {
       const before = new Map(cubes.map((c) => [c.id, c.seenAt]))
       const now = Date.now()
-      cubes = (ev['cubes'] as Omit<Cube, 'seenAt'>[]).map((c) => ({ ...c, seenAt: before.get(c.id) ?? now }))
+      cubes = msg.cubes.map((c) => ({ ...c, seenAt: before.get(c.id) ?? now }))
       for (const c of cubes) if (!before.has(c.id)) log(`hidden cube ${c.id} (template ${c.template}) at ${c.position.join(', ')}`)
       broadcast('tracker:cubes', cubes)
       break
@@ -396,22 +399,22 @@ function handleLine(line: string): void {
     case 'enemies': {
       const before = new Set(enemies.map((e) => e.entity))
       // In a PvE instance the other servers' players are your party: no enemies there.
-      enemies = pveInstance(nearby.world) ? [] : ((ev['players'] as Enemy[] | undefined) ?? [])
+      enemies = pveInstance(nearby.world) ? [] : (msg.players ?? [])
       for (const e of enemies) if (!before.has(e.entity)) log(`enemy in view: ${e.name}${e.server ? ` (${e.server})` : ''}${e.legion ? ` <${e.legion}>` : ''}`)
       broadcast('tracker:enemies', enemies)
       break
     }
     case 'target': {
       target = {
-        name: ev['name'] as string,
-        server: (ev['server'] as number | null) ?? null,
-        level: (ev['level'] as number | null) ?? null,
-        gearScore: (ev['gearScore'] as number | null) ?? null,
-        pvp: ev['pvp'] === true || ev['openPvp'] === true,
-        combatPower: (ev['combatPower'] as number | null) ?? null,
-        className: (ev['className'] as string | null) ?? null,
-        legion: (ev['legion'] as string | null) ?? null,
-        enemy: ev['enemy'] === true,
+        name: msg.name,
+        server: msg.server ?? null,
+        level: msg.level ?? null,
+        gearScore: msg.gearScore ?? null,
+        pvp: msg.pvp === true || msg.openPvp === true,
+        combatPower: msg.combatPower ?? null,
+        className: msg.className ?? null,
+        legion: msg.legion ?? null,
+        enemy: msg.enemy === true,
         at: Date.now(),
       }
       broadcast('tracker:target', target)
@@ -426,12 +429,12 @@ function handleLine(line: string): void {
     case 'pvpKill': {
       const kill: PvpKill = {
         at: Date.now(),
-        killer: ev['killer'] as PvpKill['killer'],
-        victim: (ev['victim'] as PvpKill['victim']) ?? null,
-        mine: ev['mine'] === true,
-        died: ev['died'] === true,
-        legion: ev['legion'] === true,
-        fight: (ev['fight'] as string | null | undefined) ?? null,
+        killer: msg.killer,
+        victim: msg.victim ?? null,
+        mine: msg.mine === true,
+        died: msg.died === true,
+        legion: msg.legion === true,
+        fight: msg.fight ?? null,
       }
       if (kill.died && nearby.world !== null && nearby.position) kill.place = { world: nearby.world, position: nearby.position }
       pvpLog.add(kill)
@@ -439,31 +442,31 @@ function handleLine(line: string): void {
       break
     }
     case 'fieldBosses':
-      fieldBosses.fromMap(ev['world'] as number, ev['bosses'] as { id: number; up: boolean; at: number }[])
+      fieldBosses.fromMap(msg.world, msg.bosses)
       break
     case 'bossKilled':
-      bossKilled(ev['npc'] as number)
+      bossKilled(msg.npc)
       break
     case 'kina':
       // What a dungeon gives counts in the rate only if the setting says (settings.rates).
-      setKina(kinaBalance(kina, ev['balance'] as number, Date.now(), settings.get('rates').kinaDungeons || !pveInstance(nearby.world)))
+      setKina(kinaBalance(kina, msg.balance, Date.now(), settings.get('rates').kinaDungeons || !pveInstance(nearby.world)))
       break
     case 'abyss':
       abyss.read({
-        points: ev['points'] as number,
-        limit: ev['limit'] as number,
+        points: msg.points,
+        limit: msg.limit,
       })
       break
     case 'abyssGain':
       // Where: a rift's farm is the continents', not the Abyss's corridors at the same time.
-      abyss.gain({ gained: ev['gained'] as number, name: (ev['name'] as string | null) ?? null, world: nearby.world })
+      abyss.gain({ gained: msg.gained, name: msg.name ?? null, world: nearby.world })
       break
     case 'shop': {
       const stock: ShopStock = {
-        tab: ev['tab'] as number,
-        nextAt: (ev['nextAt'] as number | null) ?? null,
+        tab: msg.tab,
+        nextAt: msg.nextAt ?? null,
         at: Date.now(),
-        items: ev['items'] as ShopItem[],
+        items: msg.items,
       }
       // Opened again before its restock: what was bought from it still was.
       const before = shopTabs.get(stock.tab)
@@ -477,23 +480,23 @@ function handleLine(line: string): void {
     }
     case 'item':
       // An item of the merchant's stock reaching your bags: bought.
-      if (markBought(ev['item'] as number)) log(`merchant: bought ${String(ev['item'])}`)
+      if (markBought(msg.item)) log(`merchant: bought ${String(msg.item)}`)
       break
     case 'pet':
-      updatePet(ev['pet'] as Pet)
+      updatePet(msg.pet)
       break
     case 'snapshot':
-      replacePets(ev['pets'] as Pet[])
+      replacePets(msg.pets)
       break
     case 'nearby': {
-      const position = ev['position'] as Nearby['position']
+      const position = msg.position
       // Stamped here, on change only: the helper resends the same position with every Nearby update.
-      const moved = String(position) !== String(nearby.position) || ev['world'] !== nearby.world
+      const moved = String(position) !== String(nearby.position) || msg.world !== nearby.world
       nearby = {
-        world: ev['world'] as number | null,
+        world: msg.world ?? null,
         position,
         positionAt: position ? (moved ? Date.now() : nearby.positionAt) : null,
-        monsters: ev['monsters'] as Nearby['monsters'],
+        monsters: msg.monsters,
       }
       broadcast('tracker:nearby', nearby)
       if (enemies.length && pveInstance(nearby.world)) {
@@ -503,7 +506,7 @@ function handleLine(line: string): void {
       break
     }
     case 'error':
-      stderrTail = [...stderrTail, `sidecar: ${ev['detail']}`].slice(-20)
+      stderrTail = [...stderrTail, `sidecar: ${msg.detail}`].slice(-20)
       break
   }
 }
@@ -577,10 +580,11 @@ export const tracker = {
     return () => statusListeners.delete(fn)
   },
   /** Handle the engine's events of this type too (after the tracker's own handling). */
-  onEvent(type: string, fn: (ev: Record<string, unknown>) => void): () => void {
+  onEvent<K extends EngineEventType>(type: K, fn: (ev: EngineEvents[K]) => void): () => void {
+    const listener = fn as (ev: Record<string, unknown>) => void
     if (!eventListeners.has(type)) eventListeners.set(type, new Set())
-    eventListeners.get(type)!.add(fn)
-    return () => eventListeners.get(type)?.delete(fn)
+    eventListeners.get(type)!.add(listener)
+    return () => eventListeners.get(type)?.delete(listener)
   },
   /** The sidecar process is up (capturing or not). */
   running: (): boolean => child !== null,

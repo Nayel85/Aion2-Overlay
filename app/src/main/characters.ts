@@ -48,15 +48,6 @@ function entry(server: number, name: string): TrackedCharacter {
   return characters[id]
 }
 
-interface Listed {
-  key: string
-  name: string
-  server: number
-  className: string | null
-  level: number
-  gearScore: number
-  legion: string | null
-}
 
 async function getJson(url: string, params: Record<string, string | number>): Promise<Record<string, unknown>> {
   const query = new URLSearchParams(Object.entries(params).map(([k, v]): [string, string] => [k, String(v)]))
@@ -164,8 +155,8 @@ export function startCharacters(): void {
   load()
   // The character selection screen: every character of the server, in the game's order.
   tracker.onEvent('characterList', (ev) => {
-    const list = ev['characters'] as Listed[]
-    const at = (ev['ts'] as number | undefined) ?? Date.now()
+    const list = ev.characters ?? []
+    const at = ev.ts ?? Date.now()
     list.forEach((l, order) => {
       const c = entry(l.server, l.name)
       Object.assign(c, { key: l.key, className: l.className ?? c.className, level: l.level, gearScore: l.gearScore, legion: l.legion, order, listedAt: at })
@@ -176,8 +167,8 @@ export function startCharacters(): void {
   })
   // You, entering the world: what you are now.
   tracker.onEvent('me', (ev) => {
-    const c = entry(ev['server'] as number, ev['name'] as string)
-    Object.assign(c, { className: (ev['className'] as string | null) ?? c.className, level: ev['level'], gearScore: ev['gearScore'] })
+    const c = entry(ev.server, ev.name)
+    Object.assign(c, { className: ev.className ?? c.className, level: ev.level, gearScore: ev.gearScore })
     changed()
     void fetchMissing()
   })
@@ -185,10 +176,10 @@ export function startCharacters(): void {
   const RUNS = new Set([NIGHTMARE.id, ASCENSION.id, ENERGY.id])
   // The login's counters.
   tracker.onEvent('counters', (ev) => {
-    const server = ev['server'] as number | null
+    const server = ev.server
     if (server === null) return
-    const c = entry(server, ev['name'] as string)
-    c.counters = { at: (ev['ts'] as number | undefined) ?? Date.now(), values: ev['values'] as Record<string, number[]> }
+    const c = entry(server, ev.name)
+    c.counters = { at: ev.ts ?? Date.now(), values: ev.values}
     for (const { id } of CORRIDORS) corridorSeen(c, id, c.counters.values[id]?.[0] ?? 0, c.counters.at)
     log(`characters: ${c.name}'s counters, energy ${JSON.stringify(c.counters.values['60000001'] ?? null)}`)
     changed()
@@ -196,11 +187,11 @@ export function startCharacters(): void {
   // A counter changed while playing: a Nightmare or Ascension Trial entered, Odyle energy spent (the loot chest), the corridors given or
   // done, and your Abyss time ticking.
   tracker.onEvent('counter', (ev) => {
-    const server = ev['server'] as number | null
+    const server = ev.server
     if (server === null) return
-    const c = entry(server, ev['name'] as string)
-    const at = (ev['ts'] as number | undefined) ?? Date.now()
-    const id = ev['id'] as string
+    const c = entry(server, ev.name)
+    const at = ev.ts ?? Date.now()
+    const id = ev.id
     if (id === ABYSS_TIME) {
       c.corridors ??= { left: {}, abyssAt: null }
       // Saved only when it tells something new: the first time in the Abyss since the reset.
@@ -212,7 +203,7 @@ export function startCharacters(): void {
     if (RUNS.has(id)) {
       // Only newer news than what is kept (the login's counters can be told after changes).
       if (!c.counters || at < (c.counters.changedAt?.[id] ?? c.counters.at)) return
-      const values = ev['values'] as number[]
+      const values = ev.values
       c.counters.values[id] = values
       c.counters.changedAt = { ...c.counters.changedAt, [id]: at }
       log(`characters: ${c.name}'s ${id === NIGHTMARE.id ? 'Nightmare' : id === ENERGY.id ? 'Odyle energy' : 'Ascension Trial'} now ${JSON.stringify(values)}`)
@@ -221,7 +212,7 @@ export function startCharacters(): void {
     }
     if (!CORRIDORS.some((k) => k.id === id)) {
       // Any other counter: kept up to date as it changes (a Daily Dungeon entered, keys used), and logged.
-      const values = ev['values'] as number[]
+      const values = ev.values
       log(`characters: ${c.name}'s counter ${id} now ${JSON.stringify(values)} (was ${JSON.stringify(c.counters?.values[id] ?? null)})`)
       if (!c.counters || at < (c.counters.changedAt?.[id] ?? c.counters.at)) return
       c.counters.values[id] = values
@@ -229,16 +220,16 @@ export function startCharacters(): void {
       changed()
       return
     }
-    if (corridorSeen(c, id, (ev['values'] as number[])[0] ?? 0, at)) changed()
+    if (corridorSeen(c, id, ev.values[0] ?? 0, at)) changed()
   })
   // Your Kina and bound Kina as you enter the world (the item list): theirs until they change.
   tracker.onEvent('wallet', (ev) => {
-    const server = ev['server'] as number | null
+    const server = ev.server
     if (server === null) return
-    const c = entry(server, ev['name'] as string)
-    const at = (ev['ts'] as number | undefined) ?? Date.now()
-    const kina = ev['kina'] as number | null
-    const bound = ev['boundKina'] as number | null
+    const c = entry(server, ev.name)
+    const at = ev.ts ?? Date.now()
+    const kina = ev.kina
+    const bound = ev.boundKina
     if (kina !== null) c.kina = { balance: kina, at }
     // Not in the list: none.
     c.boundKina = { balance: bound ?? 0, at }
@@ -247,11 +238,11 @@ export function startCharacters(): void {
   // Your subscriptions, at login: the account's, kept on the character that logged in (the newest
   // reading counts, whichever character it was); the memberships among them show on the Characters page.
   tracker.onEvent('subscriptions', (ev) => {
-    const server = ev['server'] as number | null
+    const server = ev.server
     if (server === null) return
-    const c = entry(server, ev['name'] as string)
-    const list = ev['list'] as { id: number; end: number }[]
-    c.subscriptions = { list, at: (ev['ts'] as number | undefined) ?? Date.now() }
+    const c = entry(server, ev.name)
+    const list = ev.list
+    c.subscriptions = { list, at: ev.ts ?? Date.now() }
     log(`characters: ${c.name}'s subscriptions ${JSON.stringify(list)}`)
     changed()
   })
@@ -261,12 +252,12 @@ export function startCharacters(): void {
   for (const [type, field] of [['kina', 'kina'], ['boundKina', 'boundKina']] as const) {
     tracker.onEvent(type, (ev) => {
       // Whose the engine says (nobody's while a login is under way: the one playing is the last one).
-      const name = ev['name'] as string | null
-      const server = ev['server'] as number | null
+      const name = ev.name
+      const server = ev.server
       if (!name || server === null) return
       const c = characters[characterId(server, name)]
       if (!c) return
-      c[field] = { balance: ev['balance'] as number, at: (ev['ts'] as number | undefined) ?? Date.now() }
+      c[field] = { balance: ev.balance, at: ev.ts ?? Date.now() }
       if (kinaSave) clearTimeout(kinaSave)
       kinaSave = setTimeout(() => {
         kinaSave = null
