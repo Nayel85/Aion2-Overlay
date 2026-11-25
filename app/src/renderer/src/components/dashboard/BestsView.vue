@@ -22,6 +22,8 @@ import { useApp } from '@/stores/app.ts'
 import type { Best, Encounter, FightSummary, FightYou } from '@shared/meter.ts'
 import { runKindLabel, zoneMode } from '@shared/sessions.ts'
 import { ZONES } from '@shared/zones.ts'
+import { DUNGEONS } from '@shared/dungeons.ts'
+import { OPEN_EXPEDITIONS } from '@shared/expeditions.ts'
 
 const store = useApp()
 const api = bridge()
@@ -125,34 +127,49 @@ const MODES = [
   { id: 'normal', label: 'Conquest Normal' },
   { id: 'advanced', label: 'Conquest Hard' },
 ]
-/** By dungeon (the game's order), each mode's world: its fastest run, and its bosses' best DPS. */
+/**
+ * A fixed grid: every open expedition (and any other with a best), every boss of it in the game's order
+ * (shared/dungeons.ts, the final one last), a mode per column; the cells with a best filled: each
+ * character's fastest run on the expedition's line, each character's best DPS on a boss's, the best first.
+ */
 const expeditions = computed(() => {
-  type Boss = { name: string; final: boolean; mob: number; bests: Encounter[] }
-  const rows = new Map<string, { name: string; first: number; modes: Record<string, { fast: (typeof timedRuns.value)[number][]; bosses: Boss[] }> }>()
-  const cell = (world: number) => {
+  type Run = (typeof timedRuns.value)[number]
+  const runs = new Map<string, Run[]>()
+  const dps = new Map<string, Encounter[]>()
+  const modeOf = (world: number): string | null => {
     const z = ZONES[world]
-    if (!z || !MODES.some((m) => m.id === z[3])) return null
-    const row = rows.get(z[0]) ?? { name: z[0], first: world, modes: {} }
-    row.first = Math.min(row.first, world)
-    rows.set(z[0], row)
-    return (row.modes[z[3]!] ??= { fast: [], bosses: [] })
+    return z && MODES.some((m) => m.id === z[3]) ? `${z[0]}|${z[3]}` : null
   }
-  for (const r of fastest.value) cell(r.world)?.fast.push(r)
-  // A boss per line, its characters' bests on it, the best first; the final boss last, as in the dungeon.
+  for (const r of fastest.value) {
+    const k = modeOf(r.world)
+    if (k) runs.set(k, [...(runs.get(k) ?? []), r])
+  }
+  const met = new Map<string, Set<string>>()
   for (const d of byDungeon.value) {
-    const c = cell(d.id)
-    if (!c) continue
-    const bosses = new Map<number, Boss>()
+    const k = modeOf(d.id)
+    if (!k) continue
     for (const e of d.list) {
-      const b = bosses.get(e.mobCode) ?? { name: e.bossName, final: e.finalBoss, mob: e.mobCode, bests: [] }
-      b.bests.push(e)
-      bosses.set(e.mobCode, b)
+      if (!e.myDps) continue
+      const key = `${k}|${e.bossName}`
+      dps.set(key, [...(dps.get(key) ?? []), e].sort((x, y) => y.myDps!.value - x.myDps!.value))
+      const name = ZONES[d.id]![0]
+      met.set(name, (met.get(name) ?? new Set()).add(e.bossName))
     }
-    c.bosses = [...bosses.values()]
-      .map((b) => ({ ...b, bests: b.bests.filter((e) => e.myDps).sort((x, y) => y.myDps!.value - x.myDps!.value) }))
-      .sort((a, b) => Number(a.final) - Number(b.final) || a.name.localeCompare(b.name))
   }
-  return [...rows.values()].sort((a, b) => a.first - b.first)
+  const names = [...OPEN_EXPEDITIONS, ...[...met.keys(), ...[...runs.keys()].map((k) => k.split('|')[0]!)].filter((n) => !OPEN_EXPEDITIONS.includes(n))]
+  return [...new Set(names)].map((name) => {
+    const known = DUNGEONS.expedition[name] ?? []
+    const bosses = [...known, ...[...(met.get(name) ?? [])].filter((b) => !known.includes(b))]
+    return {
+      name,
+      fast: Object.fromEntries(MODES.map((m) => [m.id, runs.get(`${name}|${m.id}`) ?? []])),
+      bosses: bosses.map((b, i) => ({
+        name: b,
+        final: i === known.length - 1,
+        bests: Object.fromEntries(MODES.map((m) => [m.id, dps.get(`${name}|${m.id}|${b}`) ?? []])),
+      })),
+    }
+  })
 })
 
 // ---- Nightmares: a boss's row, a level's column ------------------------------------------------------------
@@ -300,53 +317,59 @@ onHistory(load)
         </table>
       </div>
 
-      <!-- Expeditions: a dungeon per row, a mode per column, its fastest run or its bosses' best DPS. -->
-      <div v-else-if="kind === 'party'" class="overflow-x-auto rounded-xl border border-card">
-        <p v-if="!expeditions.length" class="px-4 py-6 text-center text-xs text-darker">{{ t('No personal best yet.') }}</p>
-        <table v-else class="w-full text-sm tabular-nums">
-          <thead class="bg-card text-xs text-darker">
-            <tr>
-              <th class="py-2 pl-4 text-left font-medium">{{ t('Expedition') }}</th>
-              <th v-for="m in MODES" :key="m.id" class="px-3 text-left font-medium">{{ t(m.label) }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="row in expeditions" :key="row.name" class="border-t border-card align-top">
-              <td class="py-2 pl-4 font-medium">{{ row.name }}</td>
-              <td v-for="m in MODES" :key="m.id" class="px-3 py-2">
-                <template v-if="by === 'fast'">
-                  <div v-if="row.modes[m.id]?.fast.length" class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                    <span v-for="r in row.modes[m.id]!.fast" :key="r.character" class="flex items-center gap-1.5" :title="day(r.start)">
+      <!-- Expeditions: a fixed grid, every expedition and boss, a mode per column, the cells with a best filled. -->
+      <div v-else-if="kind === 'party'">
+        <div class="overflow-x-auto rounded-xl border border-card">
+          <table class="w-full table-fixed text-sm tabular-nums">
+            <colgroup>
+              <col class="w-56" />
+              <col v-for="m in MODES" :key="m.id" />
+            </colgroup>
+            <thead class="bg-card text-xs text-darker">
+              <tr>
+                <th class="py-2 pl-4 text-left font-medium">{{ t('Expedition') }}</th>
+                <th v-for="m in MODES" :key="m.id" class="px-3 text-left font-medium">{{ t(m.label) }}</th>
+              </tr>
+            </thead>
+            <tbody v-for="x in expeditions" :key="x.name" class="border-t border-light">
+              <tr class="bg-card/50">
+                <td class="py-1.5 pl-4 font-semibold">{{ x.name }}</td>
+                <td v-for="m in MODES" :key="m.id" class="px-3 py-1.5">
+                  <div v-if="by === 'fast' && x.fast[m.id]!.length" class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
+                    <span v-for="r in x.fast[m.id]" :key="r.character" class="flex items-center gap-1" :title="day(r.start)">
                       <CharName v-if="picked === null" :name="r.character" class="text-dark" />
                       <span class="font-semibold text-yellow">{{ mmss(clearMs(r)) }}</span>
                     </span>
                   </div>
-                  <span v-else class="text-darkest">–</span>
-                </template>
-                <template v-else>
-                  <div v-for="b in row.modes[m.id]?.bosses ?? []" :key="b.mob" class="flex items-center gap-3 py-0.5 text-xs">
-                    <span :class="['flex w-36 shrink-0 items-center gap-1.5 truncate', b.final ? 'font-semibold text-red' : 'text-darker']" :title="b.final ? t('Final boss') : t('Sub-boss')">
+                  <span v-else-if="by === 'fast'" class="text-xs text-darkest">–</span>
+                </td>
+              </tr>
+              <template v-if="by === 'dps'">
+                <tr v-for="b in x.bosses" :key="b.name" class="border-t border-card">
+                  <td :class="['py-1 pl-6 text-xs', b.final ? 'font-semibold text-red' : 'text-darker']" :title="b.final ? t('Final boss') : t('Sub-boss')">
+                    <span class="flex items-center gap-1.5 truncate">
                       <span :class="['size-1.5 shrink-0 rounded-full', b.final ? 'bg-red' : 'bg-darkest']" />{{ b.name }}
                     </span>
-                    <span class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                      <span v-for="e in b.bests" :key="e.character" class="flex items-center gap-1">
+                  </td>
+                  <td v-for="m in MODES" :key="m.id" class="px-3 py-1 text-xs">
+                    <span v-if="b.bests[m.id]!.length" class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+                      <span v-for="e in b.bests[m.id]" :key="e.character" class="flex items-center gap-1">
                         <CharName v-if="picked === null" :name="e.character" class="text-dark" />
                         <button type="button" class="font-semibold text-yellow hover:underline" :title="[day(e.myDps!.atMs), gear(e.myDps!.fightId)].filter(Boolean).join(' · ')" @click="open(e.myDps)">{{ compact(e.myDps!.value) }}</button>
                       </span>
                     </span>
-                  </div>
-                  <span v-if="!row.modes[m.id]?.bosses.length" class="text-darkest">–</span>
-                </template>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                    <span v-else class="text-darkest">–</span>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <p v-if="by === 'dps'" class="mt-2 flex items-center gap-4 text-[11px] text-darker">
+          <span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-red" />{{ t('Final boss') }}</span>
+          <span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-darkest" />{{ t('Sub-boss') }}</span>
+        </p>
       </div>
-
-      <p v-if="kind === 'party' && by === 'dps'" class="mt-2 flex items-center gap-4 text-[11px] text-darker">
-        <span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-red" />{{ t('Final boss') }}</span>
-        <span class="flex items-center gap-1.5"><span class="size-1.5 rounded-full bg-darkest" />{{ t('Sub-boss') }}</span>
-      </p>
 
       <!-- The fastest run of each dungeon and mode. -->
       <div v-else-if="by === 'fast'" class="overflow-x-auto rounded-xl border border-card">
