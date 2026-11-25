@@ -165,8 +165,11 @@ mod replay {
             if let Some((t, _)) = damage::monster_hit(f) {
                 *targets.entry(t).or_default() += 1;
             }
+            if let Some((_, t)) = crate::tracker::protocol::selection_target(f).filter(|&(_, t)| t != 0) {
+                *targets.entry(t).or_default() += 1;
+            }
         }
-        let you = targets.into_iter().max_by_key(|&(_, n)| n).map(|(t, _)| t as i32).expect("no monster hit anyone");
+        let you = targets.into_iter().max_by_key(|&(_, n)| n).map(|(t, _)| t as i32).expect("no monster on anyone");
         println!("you: #{you}");
         let mut aggro = Aggro::default();
         let (mut told, mut checked) = (String::new(), 0);

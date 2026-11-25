@@ -14,7 +14,7 @@ const set = (patch: Partial<typeof cfg.value>): void => void store.set('aggro', 
 
 <template>
   <Section bare>
-    <SettingRow label="Show the monsters on me" hint="While monsters are on you: each one, the bosses first, with how long it has been on you. One is on you when its last hit was on you, or when you hit it and it is on no one else; it leaves the list when it dies or lets go of you (its target none), or has done nothing to you for 6 seconds. Clicks pass through it; while this window is open it shows a preview you can drag into place.">
+    <SettingRow label="Show the monsters on me" hint="While monsters are on you: each one, the bosses first, with how long it has been on you. One is on you as soon as it takes you as its target (before any hit), casts at you or hits you, or when you hit it and it is on no one else; it leaves the list when it dies, turns to someone else or lets go, or has done nothing to you for 6 seconds. Clicks pass through it; while this window is open it shows a preview you can drag into place.">
       <Toggle :model-value="cfg.enabled" @update:model-value="set({ enabled: $event })" />
     </SettingRow>
     <OverlayWindowSettings overlay="aggro" setting="aggro" />
