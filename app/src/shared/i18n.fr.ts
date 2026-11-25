@@ -1728,7 +1728,6 @@ export const FR: Record<string, string> = {
   'runs': 'runs',
   'on {n} pet': 'sur {n} familier',
   'on {n} pets': 'sur {n} familiers',
-  'No Nightmare with its level yet: the next ones you clear show here.': 'Aucun Nightmare avec son niveau pour l\'instant : les prochains que tu termines s\'afficheront ici.',
   'Click again to delete every fight of this level': 'Clique encore pour supprimer tous les combats de ce niveau',
   'Delete every fight of this level': 'Supprimer tous les combats de ce niveau',
   'Click again to delete this fight': 'Clique encore pour supprimer ce combat',
@@ -1743,4 +1742,10 @@ export const FR: Record<string, string> = {
   'Your DPS on {boss}': 'Ton DPS sur {boss}',
   'Final boss': 'Boss final',
   'Sub-boss': 'Sous-boss',
+  'Trial': 'Épreuve',
+  'Raid': 'Raid',
+  'Challenge': 'Défi',
+  'Insane': 'Démentiel',
+  'Hell': 'Enfer',
+  'Doom': 'Apocalypse',
 }

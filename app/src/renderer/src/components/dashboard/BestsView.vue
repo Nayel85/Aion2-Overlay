@@ -1,6 +1,7 @@
 <script setup lang="ts">
-// Personal bests, a tab per kind of content (Expeditions, Nightmares, Awakening...), all characters or
-// one picked (remembered).
+// Personal bests, a tab per kind of content (Expeditions, Nightmares, Ascension Trials...), all characters or
+// one picked (remembered). The Expeditions, Transcendences, Nightmares, Ascension Trials and Raids are
+// fixed grids: every instance and boss the game has, the cells with a best filled.
 // - Most kinds: the best DPS on each boss (the engine keeps them apart from the fights: a pruned fight
 //   does not take one away), by dungeon and mode, with your item level and combat power in that fight;
 //   or the fastest run of each dungeon and mode (the sessions' runs: from the entry to the last boss).
@@ -20,7 +21,7 @@ import { loc, t } from '@/lib/i18n.ts'
 import { useStored } from '@/lib/now.ts'
 import { useApp } from '@/stores/app.ts'
 import type { Best, Encounter, FightSummary, FightYou } from '@shared/meter.ts'
-import { runKindLabel, zoneMode } from '@shared/sessions.ts'
+import { NIGHTMARE_BOSSES, runKindLabel, zoneMode } from '@shared/sessions.ts'
 import { ZONES } from '@shared/zones.ts'
 import { DUNGEONS } from '@shared/dungeons.ts'
 import { OPEN_EXPEDITIONS } from '@shared/expeditions.ts'
@@ -36,7 +37,12 @@ const NIGHTMARE = 'bosschallenge'
 /** Kinds where only the clear time counts (the Ascension Trials). */
 const FAST_ONLY = ['awaken']
 const NOT_TIMED = ['fieldevent', 'shugo', 'invasion', 'fieldboss', 'hiddencube', 'other']
-const kindOf = (world: number): string => ZONES[world]?.[2] ?? 'other'
+/** A zone's tab: its dungeon type, but the Transcendences apart from the Expeditions (both party dungeons). */
+const kindOf = (world: number): string => {
+  const z = ZONES[world]
+  if (!z) return 'other'
+  return z[2] === 'party' && DUNGEONS.transcendence[z[0]] ? 'transcendence' : (z[2] ?? 'other')
+}
 const kindLabel = (kind: string): string => (kind === 'party' ? 'Expeditions' : runKindLabel(kind))
 
 // ---- the sessions' runs: a Nightmare's level, each dungeon's fastest ---------------------------------
@@ -71,10 +77,11 @@ const mine = (name: string | undefined): boolean => !picked.value || name === pi
 const timedRuns = computed(() => allRuns.value.filter((r) => r.started !== undefined && r.cleared !== undefined && r.cleared > r.started && ZONES[r.world]))
 const kinds = computed(() => {
   const set = new Set([...shown.value.map((e) => kindOf(e.dungeonId)), ...timedRuns.value.map((r) => kindOf(r.world))])
-  if (nightmareFights.value.length) set.add(NIGHTMARE)
+  // The fixed grids, with a best or not.
+  for (const k of [...Object.keys(GRIDS), NIGHTMARE]) set.add(k)
   // Not dungeons to be fastest in: festivals' games, invasions, field events.
   for (const k of NOT_TIMED) set.delete(k)
-  const order = ['party', NIGHTMARE]
+  const order = ['party', 'transcendence', NIGHTMARE, 'awaken', 'raid']
   return [...set].sort((a, b) => (order.indexOf(a) + 1 || 99) - (order.indexOf(b) + 1 || 99) || a.localeCompare(b))
 })
 const tab = useStored<string>('bests.tab', 'party', (raw) => (typeof raw === 'string' ? raw : 'party'))
@@ -120,53 +127,103 @@ const fastest = computed(() => {
 })
 const clearMs = (r: { started?: number; cleared?: number }): number => r.cleared! - r.started!
 
-// ---- Expeditions: a dungeon per row, a mode per column ----------------------------------------------------
+// ---- the fixed grids: an instance per row (its bosses under it), a mode per column ----------------------------
 
+interface GridDef {
+  /** The rows' header. */
+  head: string
+  cols: { id: string; label: string; n?: number }[]
+  /** Every instance, in the game's order (more come from the bests: a later update's). */
+  rows: string[]
+  /** Each instance's bosses, the final one last. */
+  bosses: Record<string, string[]>
+  /** A zone's row and column, or null: not one of the grid's. */
+  place: (world: number) => { row: string; col: string } | null
+}
 const MODES = [
   { id: 'easy', label: 'Exploration' },
   { id: 'normal', label: 'Conquest Normal' },
   { id: 'advanced', label: 'Conquest Hard' },
 ]
+const byDifficulty = (world: number) => {
+  const z = ZONES[world]
+  return z ? { row: z[0], col: z[4] !== null ? `s${z[4]}` : (z[3] ?? '') } : null
+}
+/** The Ascension Trials: a zone per difficulty, named in it ("Tyrant's Hideout (Hard)"). */
+const TRIAL_COLS = ['Easy', 'Normal', 'Hard', 'Challenge', 'Insane', 'Hell', 'Doom']
+const GRIDS: Record<string, GridDef> = {
+  party: { head: 'Expedition', cols: MODES, rows: OPEN_EXPEDITIONS, bosses: DUNGEONS.expedition, place: byDifficulty },
+  transcendence: {
+    head: 'Dungeon',
+    cols: [{ id: 'easy', label: 'Exploration' }, ...[1, 2, 3, 4].map((n) => ({ id: `s${n}`, label: 'Stage {n}', n }))],
+    rows: Object.keys(DUNGEONS.transcendence),
+    bosses: DUNGEONS.transcendence,
+    place: byDifficulty,
+  },
+  awaken: {
+    head: 'Trial',
+    cols: TRIAL_COLS.map((d) => ({ id: d, label: d })),
+    rows: ['Nightmare Altar', "Tyrant's Hideout", 'Sanctum of Loathing', 'Depository of Fates', 'Forgotten Repository', 'Chamber of the Dead'],
+    bosses: DUNGEONS.awakening,
+    place: (world) => {
+      const m = /^(.*) \((\w+)\)$/.exec(ZONES[world]?.[0] ?? '')
+      return m ? { row: m[1]!, col: m[2]! } : null
+    },
+  },
+  raid: {
+    head: 'Raid',
+    cols: [
+      { id: 'easy', label: 'Easy' },
+      { id: 'normal', label: 'Normal' },
+      { id: 'advanced', label: 'Hard' },
+    ],
+    rows: Object.keys(DUNGEONS.sanctuary),
+    bosses: DUNGEONS.sanctuary,
+    place: byDifficulty,
+  },
+}
+const gridDef = computed(() => GRIDS[kind.value] ?? null)
 /**
- * A fixed grid: every open expedition (and any other with a best), every boss of it in the game's order
- * (shared/dungeons.ts, the final one last), a mode per column; the cells with a best filled: each
- * character's fastest run on the expedition's line, each character's best DPS on a boss's, the best first.
+ * The tab's grid: every instance and boss of it (the game's order, the final boss last), the cells with a
+ * best filled: each character's fastest run on the instance's line, each one's best DPS on a boss's, the
+ * best first.
  */
-const expeditions = computed(() => {
+const fixed = computed(() => {
+  const def = gridDef.value
+  if (!def) return []
   type Run = (typeof timedRuns.value)[number]
   const runs = new Map<string, Run[]>()
   const dps = new Map<string, Encounter[]>()
-  const modeOf = (world: number): string | null => {
-    const z = ZONES[world]
-    return z && MODES.some((m) => m.id === z[3]) ? `${z[0]}|${z[3]}` : null
+  const met = new Map<string, Set<string>>()
+  const key = (world: number): string | null => {
+    const p = def.place(world)
+    return p && def.cols.some((c) => c.id === p.col) ? `${p.row}|${p.col}` : null
   }
   for (const r of fastest.value) {
-    const k = modeOf(r.world)
+    const k = key(r.world)
     if (k) runs.set(k, [...(runs.get(k) ?? []), r])
   }
-  const met = new Map<string, Set<string>>()
   for (const d of byDungeon.value) {
-    const k = modeOf(d.id)
+    const k = key(d.id)
     if (!k) continue
+    const row = k.split('|')[0]!
     for (const e of d.list) {
       if (!e.myDps) continue
-      const key = `${k}|${e.bossName}`
-      dps.set(key, [...(dps.get(key) ?? []), e].sort((x, y) => y.myDps!.value - x.myDps!.value))
-      const name = ZONES[d.id]![0]
-      met.set(name, (met.get(name) ?? new Set()).add(e.bossName))
+      dps.set(`${k}|${e.bossName}`, [...(dps.get(`${k}|${e.bossName}`) ?? []), e].sort((x, y) => y.myDps!.value - x.myDps!.value))
+      met.set(row, (met.get(row) ?? new Set()).add(e.bossName))
     }
   }
-  const names = [...OPEN_EXPEDITIONS, ...[...met.keys(), ...[...runs.keys()].map((k) => k.split('|')[0]!)].filter((n) => !OPEN_EXPEDITIONS.includes(n))]
-  return [...new Set(names)].map((name) => {
-    const known = DUNGEONS.expedition[name] ?? []
+  const extra = [...met.keys(), ...[...runs.keys()].map((k) => k.split('|')[0]!)].filter((n) => !def.rows.includes(n))
+  return [...new Set([...def.rows, ...extra])].map((name) => {
+    const known = def.bosses[name] ?? []
     const bosses = [...known, ...[...(met.get(name) ?? [])].filter((b) => !known.includes(b))]
     return {
       name,
-      fast: Object.fromEntries(MODES.map((m) => [m.id, runs.get(`${name}|${m.id}`) ?? []])),
+      fast: Object.fromEntries(def.cols.map((c) => [c.id, runs.get(`${name}|${c.id}`) ?? []])),
       bosses: bosses.map((b, i) => ({
         name: b,
         final: i === known.length - 1,
-        bests: Object.fromEntries(MODES.map((m) => [m.id, dps.get(`${name}|${m.id}|${b}`) ?? []])),
+        bests: Object.fromEntries(def.cols.map((c) => [c.id, dps.get(`${name}|${c.id}|${b}`) ?? []])),
       })),
     }
   })
@@ -186,7 +243,8 @@ const grid = computed(() => {
     if (better) row.set(f.level, f)
     rows.set(f.bossName, row)
   }
-  return [...rows].sort((a, b) => a[0].localeCompare(b[0])).map(([boss, cells]) => ({ boss, cells }))
+  const all = [...new Set([...Object.values(NIGHTMARE_BOSSES), ...rows.keys()])]
+  return all.map((boss) => ({ boss, cells: rows.get(boss) ?? new Map() }))
 })
 /** A Nightmare boss's colour, as the game's tiers: Notun and Gerod green, Zikel blue, the others grey. */
 const bossTone = (boss: string): string => (/Notun|Gerod/.test(boss) ? 'text-green' : /Zikel/.test(boss) ? 'text-blue' : 'text-darker')
@@ -273,8 +331,7 @@ onHistory(load)
 
       <!-- Nightmares: a row per boss, a column per level. -->
       <div v-if="kind === NIGHTMARE" class="overflow-x-auto rounded-xl border border-card">
-        <p v-if="!grid.length" class="px-4 py-6 text-center text-xs text-darker">{{ t('No Nightmare with its level yet: the next ones you clear show here.') }}</p>
-        <table v-else class="w-full text-sm tabular-nums">
+        <table class="w-full text-sm tabular-nums">
           <thead class="bg-card text-xs text-darker">
             <tr>
               <th class="py-2 pl-4 text-left font-medium">{{ t('Boss') }}</th>
@@ -317,24 +374,24 @@ onHistory(load)
         </table>
       </div>
 
-      <!-- Expeditions: a fixed grid, every expedition and boss, a mode per column, the cells with a best filled. -->
-      <div v-else-if="kind === 'party'">
+      <!-- A fixed grid: every instance and boss, a mode per column, the cells with a best filled. -->
+      <div v-else-if="gridDef">
         <div class="overflow-x-auto rounded-xl border border-card">
           <table class="w-full table-fixed text-sm tabular-nums">
             <colgroup>
               <col class="w-56" />
-              <col v-for="m in MODES" :key="m.id" />
+              <col v-for="m in gridDef.cols" :key="m.id" />
             </colgroup>
             <thead class="bg-card text-xs text-darker">
               <tr>
-                <th class="py-2 pl-4 text-left font-medium">{{ t('Expedition') }}</th>
-                <th v-for="m in MODES" :key="m.id" class="px-3 text-left font-medium">{{ t(m.label) }}</th>
+                <th class="py-2 pl-4 text-left font-medium">{{ t(gridDef.head) }}</th>
+                <th v-for="m in gridDef.cols" :key="m.id" class="px-3 text-left font-medium">{{ t(m.label, { n: m.n ?? '' }) }}</th>
               </tr>
             </thead>
-            <tbody v-for="x in expeditions" :key="x.name" class="border-t border-light">
+            <tbody v-for="x in fixed" :key="x.name" class="border-t border-light">
               <tr class="bg-card/50">
                 <td class="py-1.5 pl-4 font-semibold">{{ x.name }}</td>
-                <td v-for="m in MODES" :key="m.id" class="px-3 py-1.5">
+                <td v-for="m in gridDef.cols" :key="m.id" class="px-3 py-1.5">
                   <div v-if="by === 'fast' && x.fast[m.id]!.length" class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs">
                     <span v-for="r in x.fast[m.id]" :key="r.character" class="flex items-center gap-1" :title="day(r.start)">
                       <CharName v-if="picked === null" :name="r.character" class="text-dark" />
@@ -351,7 +408,7 @@ onHistory(load)
                       <span :class="['size-1.5 shrink-0 rounded-full', b.final ? 'bg-red' : 'bg-darkest']" />{{ b.name }}
                     </span>
                   </td>
-                  <td v-for="m in MODES" :key="m.id" class="px-3 py-1 text-xs">
+                  <td v-for="m in gridDef.cols" :key="m.id" class="px-3 py-1 text-xs">
                     <span v-if="b.bests[m.id]!.length" class="flex flex-wrap items-center gap-x-3 gap-y-0.5">
                       <span v-for="e in b.bests[m.id]" :key="e.character" class="flex items-center gap-1">
                         <CharName v-if="picked === null" :name="e.character" class="text-dark" />
