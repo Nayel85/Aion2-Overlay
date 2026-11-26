@@ -35,6 +35,8 @@ export const KINA_ITEM = 930100031
 /** The other currencies a session counts (the engine's SESSION_CURRENCIES), by item id. */
 export const ENHANCE_STONE = 930100023
 export const PHANTASMAL_FRAGMENT = 930100017
+/** The Centuryroot Tokens (each character's). */
+export const CENTURYROOT_TOKEN = 930100011
 /** The season's Oath Coins, its points (each character's; the engine's SEASON_POINTS). */
 export const SEASON_POINTS = 930100019
 /** The Abyss Points, as an item (the engine's ABYSS_POINTS). */

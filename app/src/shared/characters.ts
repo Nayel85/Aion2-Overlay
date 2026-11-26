@@ -51,6 +51,8 @@ export interface TrackedCharacter {
   seasonPoints?: { balance: number; at: number }
   /** The Abyss Points, as last seen. */
   abyssPoints?: { balance: number; at: number }
+  /** Other currencies' balances by item id (WALLET_MORE: Phantasmal Fragments, Centuryroot Tokens), as last seen. */
+  wallet?: Record<string, { balance: number; at: number }>
   /** The season's weekly rewards' progress (out of SEASON_WEEK_MAX), as last seen: 0 again at the weekly reset. */
   seasonWeek?: { value: number; at: number }
   /** The subscriptions the game listed at their last login (`3B E3`): each id and its end (unix ms). */
@@ -206,6 +208,9 @@ export const WEEKLY_RESET = DAILY_DUNGEON
  * 3, 6 and 9 Shugo Festival games in a week. Aion2Maps' Season 1 guide (2026-11-26); NC's notes say a
  * weekly Shugo Festival mission came, not its steps.
  */
+/** The currencies each character's wallet shows besides Kina, Abyss Points and Oath Coins (the engine's BALANCES). */
+export const WALLET_MORE = [930100017, 930100011]
+
 export const SHUGO_MISSION = { name: 'Festival-Loving Daeva', steps: [3, 6, 9], reward: '20,000 Abyss Points' } as const
 
 /** The season's weekly rewards' bar: 0 to 8,000, back to 0 at the weekly reset (the game's, 2026-11-26). */

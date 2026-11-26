@@ -705,8 +705,9 @@ pub fn wallet(frame: &[u8]) -> Option<(Option<u64>, Option<u64>)> {
 pub const SEASON_POINTS: u32 = 930_100_019;
 /// The Abyss Points, as an item (`ABYSS_ITEM`'s id).
 pub const ABYSS_POINTS: u32 = 930_100_003;
-/// The balances each character's row shows (with Kina): the Oath Coins and the Abyss Points.
-pub const BALANCES: [u32; 2] = [SEASON_POINTS, ABYSS_POINTS];
+/// The balances each character's row shows (with Kina): the Oath Coins, the Abyss Points, the
+/// Phantasmal Fragments (the Nightmares') and the Centuryroot Tokens.
+pub const BALANCES: [u32; 4] = [SEASON_POINTS, ABYSS_POINTS, 930_100_017, 930_100_011];
 
 /// The season's weekly rewards' progress, one of the `83 56` / `84 56` progress records (0 to 8,000,
 /// back to 0 at the weekly reset: Nayoul's 8,000 on 2026-11-23, 0 after the reset, 320 after a mission).

@@ -4,7 +4,7 @@
 // Odyle energy, entry counts, Kina and Abyss corridors at a glance, and what a server's characters share
 // (Daily Dungeon, Shugo and invasion keys). Counters are read at each login and worked out from the
 // game's refill times since: a character not logged in with the overlay yet shows greyed out.
-import { ABYSS_POINTS, currencyIcon, KINA_ITEM, runsSince, SEASON_POINTS } from '@shared/sessions.ts'
+import { ABYSS_POINTS, currencyIcon, itemInfo, KINA_ITEM, runsSince, SEASON_POINTS } from '@shared/sessions.ts'
 import { useNow } from '@/lib/now.ts'
 import { ago as timeAgo, weekdayTime, amount } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -16,7 +16,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { ASCENSION, characterId, lastRefill, SEASON_WEEK_MAX, seasonWeekNow, SHUGO_MISSION, WEEKLY_RESET, CORRIDORS, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
+import { ASCENSION, characterId, lastRefill, SEASON_WEEK_MAX, WALLET_MORE, seasonWeekNow, SHUGO_MISSION, WEEKLY_RESET, CORRIDORS, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
 import { formatKina } from '@shared/kina.ts'
 import { serverLabel } from '@shared/servers.ts'
 
@@ -302,7 +302,7 @@ function corridorTitle(list: CorridorState[]): string {
                 <span class="flex items-center gap-1.5"><img :src="ICONS.ticket" alt="" draggable="false" class="size-5" />{{ t('Ascension Trial') }}</span>
               </th>
               <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('The season: the weekly rewards\' bar (back to 0 at the weekly reset, Wednesday 07:00 UTC), and the Shugo Festival\'s games this week for the mission Festival-Loving Daeva.')">{{ t('Season (week)') }}</th>
-              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('Kina (and bound Kina), Abyss Points and Oath Coins, as last seen')">{{ t('Wallet') }}</th>
+              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('Kina (and bound Kina), Abyss Points, Oath Coins, Phantasmal Fragments and Centuryroot Tokens, as last seen')">{{ t('Wallet') }}</th>
               <th class="w-40 whitespace-nowrap px-5 text-center font-medium" :title="t('The Abyss\'s Artifact corridors, back as the Artifact siege starts (Thursdays and Saturdays at 21:00 in Europe).')">{{ t('Corridors') }}</th>
               <th class="w-px whitespace-nowrap pl-5 pr-4 text-right font-medium">{{ t('Last read') }}</th>
             </tr>
@@ -394,6 +394,8 @@ function corridorTitle(list: CorridorState[]): string {
                       {{ r.kinaTotal !== null ? formatKina(r.kinaTotal) : '–' }}<img :src="ICONS.kina" alt="" draggable="false" class="size-4" />
                     </span>
                     <span class="flex items-center gap-1" :title="t('Abyss Points')">{{ r.abyss !== null ? formatKina(r.abyss) : '–' }}<img :src="ICONS.abyss" alt="" draggable="false" class="size-4" /></span>
+                    <!-- Phantasmal Fragments, Centuryroot Tokens. -->
+                    <span v-for="id in WALLET_MORE" :key="id" class="flex items-center gap-1" :title="itemInfo(id)?.name">{{ r.c.wallet?.[id] ? amount(r.c.wallet[id]!.balance) : '–' }}<img :src="currencyIcon(id) ?? undefined" alt="" draggable="false" class="size-4" /></span>
                     <span class="flex items-center gap-1" :title="r.c.seasonPoints ? `${t('Oath Coins')} · ${t('Read {when}', { when: stamp(r.c.seasonPoints.at) })}` : t('Oath Coins')">{{ r.oath !== null ? amount(r.oath) : '–' }}<img :src="ICONS.oath" alt="" draggable="false" class="size-4" /></span>
                   </div>
                 </td>

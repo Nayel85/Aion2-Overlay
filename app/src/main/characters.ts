@@ -10,7 +10,7 @@ import { ABYSS_POINTS, SEASON_POINTS } from '../shared/sessions.ts'
 import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
-import { ABYSS_TIME, ASCENSION, characterId, corridorReset, CORRIDORS, ENERGY, ncsoftRegion, NIGHTMARE, portraitUrl, type Characters, type TrackedCharacter } from '../shared/characters.ts'
+import { ABYSS_TIME, ASCENSION, characterId, corridorReset, CORRIDORS, ENERGY, ncsoftRegion, NIGHTMARE, portraitUrl, type Characters, type TrackedCharacter, WALLET_MORE } from '../shared/characters.ts'
 
 /** How long NCSoft's combat power and portrait are kept before asking again. */
 const FETCH_EVERY_MS = 24 * 3_600_000
@@ -244,6 +244,7 @@ export function startCharacters(): void {
     log(`characters: ${c.name} at login: Oath Coins ${oath ?? '?'} (last ${c.seasonPoints?.balance ?? '?'}), Abyss Points ${abyss ?? '?'}, season week ${ev.seasonWeek ?? '?'} (last ${c.seasonWeek?.value ?? '?'})`)
     if (oath !== undefined) c.seasonPoints = { balance: oath, at }
     if (abyss !== undefined) c.abyssPoints = { balance: abyss, at }
+    for (const id of WALLET_MORE) if (ev.balances?.[id] !== undefined) c.wallet = { ...c.wallet, [id]: { balance: ev.balances[id]!, at } }
     if (ev.seasonWeek != null) c.seasonWeek = { value: ev.seasonWeek, at }
     changed()
   })
@@ -256,6 +257,7 @@ export function startCharacters(): void {
       log(`characters: ${c.name}'s Oath Coins ${c.seasonPoints?.balance ?? '?'} -> ${ev.balance}`)
       c.seasonPoints = { balance: ev.balance, at }
     } else if (ev.item === ABYSS_POINTS) c.abyssPoints = { balance: ev.balance, at }
+    else if (WALLET_MORE.includes(ev.item)) c.wallet = { ...c.wallet, [ev.item]: { balance: ev.balance, at } }
     else return
     changed()
   })
