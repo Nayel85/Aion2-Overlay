@@ -26,6 +26,7 @@ import { applyLayoutUpdates, settings } from './settings.ts'
 import { startIdleWatch } from './idle.ts'
 import { startLokthar } from './lokthar.ts'
 import { dutyScreen, watchDutyScreen } from './dutyScreen.ts'
+import { startMarket } from './market.ts'
 import { join } from 'node:path'
 import { copyDataFolder, moveDataFolder, OLD_NAMES } from './migrate.ts'
 import { startHotkeys, stopHotkeys } from './hotkeys.ts'
@@ -77,6 +78,7 @@ if (!app.requestSingleInstanceLock()) {
     startCharacters()
     startSessions()
     startInventory()
+    startMarket()
     startDuty()
     startExpeditions()
     startMerchantSeen()

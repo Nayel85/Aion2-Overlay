@@ -9,6 +9,7 @@ import type { EngineEvents } from './engineEvents.ts'
 import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
+import { wantPrices } from './market.ts'
 import { NO_DUTY, sameBoard, type DutyBoard, type DutyMission, type DutyState } from '../shared/duty.ts'
 
 const SAVE_AFTER_MS = 2000
@@ -32,7 +33,11 @@ function load(): void {
   state = saved ? { board: saved.board ?? null, history: saved.history ?? [], rerollCosts: saved.rerollCosts ?? {} } : NO_DUTY // none yet
 }
 
+/** Every reward of the board and the boards seen: their market prices asked for. */
+const askPrices = (): void => wantPrices([...new Set([state.board, ...state.history].flatMap((b) => b?.missions.flatMap((m) => m.rewards.map((r) => r.item)) ?? []))])
+
 function changed(): void {
+  askPrices()
   broadcast('duty:changed', state)
   file.save(() => state)
 }

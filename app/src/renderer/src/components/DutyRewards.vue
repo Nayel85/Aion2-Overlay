@@ -16,7 +16,7 @@ defineProps<{ rewards: DutyRow['rewards'] }>()
       v-for="r in rewards"
       :key="r.key"
       :class="['flex w-9 flex-col items-center leading-none', !r.counts && 'opacity-40']"
-      :title="`${r.name}${r.amount > 1 ? ` ×${r.amount.toLocaleString('en-US')}` : ''} · ${r.chance}%`"
+      :title="`${r.name}${r.amount > 1 ? ` ×${r.amount.toLocaleString('en-US')}` : ''} · ${r.chance}%${r.unit ? ` · ${compact(r.unit)}${r.market ? ' (market)' : ''}` : ''}`"
     >
       <span class="relative">
         <img v-if="r.icon" :src="r.icon" alt="" class="size-7 rounded" draggable="false" loading="lazy" />

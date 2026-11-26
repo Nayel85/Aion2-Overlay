@@ -4,6 +4,7 @@
 // highlighted, and whether a reroll is worth its cost; the missions taken apart. Below, what each
 // kind of reward is worth to you (settings.duty), which ranks them, and the board's window over the game.
 import EmptyState from '@/components/ui/EmptyState.vue'
+import Toggle from '@/components/Toggle.vue'
 import { weekdayTime, amount } from '@/lib/format.ts'
 import { computed } from 'vue'
 import DutyAdvice from '@/components/DutyAdvice.vue'
@@ -11,7 +12,7 @@ import DutyRewards from '@/components/DutyRewards.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'
 import { gradeClass } from '@/lib/grades.ts'
-import { dutyRows, useDuty } from '@/lib/duty.ts'
+import { dutyRows, useDuty, useMarket } from '@/lib/duty.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { compact } from '@shared/format.ts'
@@ -24,9 +25,10 @@ const values = computed(() => cfg.value.values)
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('duty', { ...cfg.value, ...patch })
 const setValue = (id: DutyCategory, v: number): void => set({ values: { ...values.value, [id]: Number.isFinite(v) && v >= 0 ? v : 0 } })
 
+const prices = useMarket(() => cfg.value.market)
 const board = computed(() => state.value.board)
-const picked = computed(() => new Set(dutyAdvice(state.value, values.value)?.picks ?? []))
-const rows = computed(() => dutyRows(state.value, values.value))
+const picked = computed(() => new Set(dutyAdvice(state.value, values.value, prices.value)?.picks ?? []))
+const rows = computed(() => dutyRows(state.value, values.value, prices.value))
 
 const kina = (n: number): string => compact(Math.round(n))
 const when = weekdayTime
@@ -45,7 +47,7 @@ const DUTY_EMPTY_HINT = "With the overlay open, open the duty board in game: tod
     <EmptyState v-if="!board" title="No duty board yet today." :hint="DUTY_EMPTY_HINT" />
 
     <template v-else>
-      <DutyAdvice :state="state" :values="values" class="mb-4 text-sm" />
+      <DutyAdvice :state="state" :values="values" :prices="prices" class="mb-4 text-sm" />
 
       <div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-darker">
         <span>{{ plural(board.rerolls, '{n} reroll today', '{n} rerolls today') }}</span>
@@ -84,6 +86,11 @@ const DUTY_EMPTY_HINT = "With the overlay open, open the duty board in game: tod
     <!-- What each reward is worth to you. -->
     <Section title="What you are after" class="mt-6">
       <p class="mb-3 text-xs text-darker">{{ t('What one of each is worth to you, in Kina: the missions are ranked by it, 0 leaves it out. Each reward counts at its chance.') }}</p>
+      <!-- The market's prices first, for what can be sold; these worths for the rest (bound items, keys...), or for all with it off. -->
+      <label class="mb-3 flex items-center gap-3 rounded-lg bg-card px-3 py-2" :title="t('What can be sold counts at its price on your server\'s market (questlog.gg: the median of the last 7 days), fetched as the board shows; the rest at the worths below. Off: the worths below for all.')">
+        <span class="flex-1 text-sm">{{ t('Market prices (questlog.gg)') }}</span>
+        <Toggle :model-value="cfg.market" @update:model-value="set({ market: $event })" />
+      </label>
       <div class="grid gap-2 sm:grid-cols-2">
         <label v-for="c in DUTY_CATEGORIES" :key="c.id" class="flex items-center gap-3 rounded-lg bg-card px-3 py-2" :title="t(c.hint)">
           <span class="flex-1 text-sm">{{ t(c.label) }}</span>

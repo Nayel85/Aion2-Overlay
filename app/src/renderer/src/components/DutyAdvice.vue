@@ -5,10 +5,11 @@ import { computed } from 'vue'
 import { plural, t } from '@/lib/i18n.ts'
 import { compact } from '@shared/format.ts'
 import { dutyAdvice, type DutyState, type DutyValues } from '@shared/duty.ts'
+import type { MarketPrices } from '@shared/market.ts'
 import { questName } from '@shared/sessions.ts'
 
-const props = defineProps<{ state: DutyState; values: DutyValues }>()
-const advice = computed(() => dutyAdvice(props.state, props.values))
+const props = defineProps<{ state: DutyState; values: DutyValues; prices?: MarketPrices }>()
+const advice = computed(() => dutyAdvice(props.state, props.values, props.prices))
 const kina = (n: number): string => compact(Math.round(n))
 </script>
 

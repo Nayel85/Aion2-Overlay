@@ -1,4 +1,5 @@
 /** Every invoke handler, typed against the contract in shared/ipc.ts. */
+import { marketStore } from './market.ts'
 import { dutyScreen } from './dutyScreen.ts'
 import { app, ipcMain, shell } from 'electron'
 import { mkdir } from 'node:fs/promises'
@@ -145,6 +146,7 @@ export function registerIpc(): void {
   handle('sessions:get', () => sessionStore.all())
   handle('inventory:get', () => inventoryStore.all())
   handle('duty:get', () => dutyStore.get())
+  handle('market:get', () => marketStore.get())
   handle('expeditions:get', () => expeditionsStore.get())
   handle('merchant:seen', () => merchantSeen.get())
   handle('duty:close', () => closeOverlay('duty'))
