@@ -65,7 +65,7 @@ const DUTY_EMPTY_HINT = "With the overlay open, open the duty board in game: tod
             <span v-if="picked.has(m.quest)" class="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">{{ t('Recommended') }}</span>
             <span class="ml-auto tabular-nums" :class="m.value > 0 ? 'font-semibold' : 'text-darkest'">{{ kina(m.value) }}</span>
           </div>
-          <DutyRewards :rewards="m.rewards" class="mt-1 text-xs" />
+          <DutyRewards :rewards="m.rewards" class="mt-1" />
         </div>
       </div>
 
