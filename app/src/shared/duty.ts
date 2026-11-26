@@ -72,10 +72,15 @@ export function dutyCategory(item: number): DutyCategory | null {
   return null
 }
 
+/** A Small Odyle Energy is a quarter of an Odyle Energy. */
+const SMALL_ODYLE = 0.25
+/** How many of its category one of an item is: a Small Odyle Energy a quarter, any other one. */
+const shareOf = (item: number): number => (/^Small Odyle Energy/.test(itemInfo(item)?.name ?? '') ? SMALL_ODYLE : 1)
+
 /** A reward's worth on average: how many, at its chance, at what one is worth. */
 export function rewardValue(r: DutyReward, values: DutyValues): number {
   const c = dutyCategory(r.item)
-  return c ? r.amount * r.chance * values[c] : 0
+  return c ? r.amount * r.chance * values[c] * shareOf(r.item) : 0
 }
 export const missionValue = (m: DutyMission, values: DutyValues): number => m.rewards.reduce((n, r) => n + rewardValue(r, values), 0)
 

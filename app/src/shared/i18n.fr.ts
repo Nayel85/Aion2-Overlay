@@ -1803,5 +1803,5 @@ export const FR: Record<string, string> = {
   'Reroll all · {cost}': 'Reroll tout · {cost}',
   'Tickets': 'Tickets',
   'Each Nightmare, Ascension Trial or Unknown Fissure ticket.': 'Chaque ticket Nightmare, Ascension Trial ou Unknown Fissure.',
-  'Each Odyle Energy, or Small Odyle Energy.': 'Chaque Odyle Energy, ou Small Odyle Energy.',
+  'Each Odyle Energy; a Small Odyle Energy counts a quarter of one.': 'Chaque Odyle Energy ; une Small Odyle Energy compte pour un quart.',
 }

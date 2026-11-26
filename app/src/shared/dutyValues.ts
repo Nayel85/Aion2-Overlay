@@ -9,7 +9,7 @@ export const DUTY_CATEGORIES: { id: DutyCategory; label: string; hint: string }[
   { id: 'cubeKey', label: 'Hidden Cube keys', hint: 'Each Key: Hidden Cube.' },
   { id: 'shugoKey', label: 'Shugo Festival keys', hint: 'Each Shugo Festival Reward Key.' },
   { id: 'tickets', label: 'Tickets', hint: 'Each Nightmare, Ascension Trial or Unknown Fissure ticket.' },
-  { id: 'odyle', label: 'Odyle Energy', hint: 'Each Odyle Energy, or Small Odyle Energy.' },
+  { id: 'odyle', label: 'Odyle Energy', hint: 'Each Odyle Energy; a Small Odyle Energy counts a quarter of one.' },
   { id: 'pureCraft', label: 'Pure crafting materials', hint: 'Each Pure (purple) gemstone, ore or log.' },
 ]
 export type DutyValues = Record<DutyCategory, number>
