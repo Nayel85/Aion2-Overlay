@@ -49,6 +49,7 @@ pub const OP_ITEM_LIST: [u8; 2] = [0x11, 0x56];
 pub const OP_SUPPLY_DONE: [u8; 2] = [0x3F, 0xE2];
 pub const OP_DUNGEON_START: [u8; 2] = [0x01, 0x40];
 pub const OP_DUNGEON_CLEAR: [u8; 2] = [0x01, 0x61];
+pub const OP_DUNGEON_STATE: [u8; 2] = [0x00, 0x61];
 pub const OP_NIGHTMARE_START: [u8; 2] = [0x35, 0xE2];
 pub const OP_LOOT: [u8; 2] = [0x15, 0x57];
 /// Each expedition's cubes toward its guaranteed chest, as you log in (`12 57`).
@@ -677,6 +678,15 @@ pub fn currencies(frame: &[u8]) -> Vec<(u32, u64)> {
 /// 200003, 1 min 25 apart; 01 their Shugo Festival's "Up! Up! Up!", 500035).
 pub fn dungeon_start(frame: &[u8]) -> Option<u32> {
     u32_at(body(frame, OP_DUNGEON_START)?, 0).filter(|&z| z > 0)
+}
+
+/// `00 61 <zone u32> <state u8> <at u64 ms> <deadline u64 ms>`: a run's state as the game keeps it, on its
+/// own clock (A2Tools' `dungeon_state`): 1 entered (the countdown before the start), 2 under way (`at`:
+/// its start; `deadline`: its time limit, 0 none), 3 over (`at`: when; the reward follows).
+pub fn dungeon_state(frame: &[u8]) -> Option<(u32, u8, u64, u64)> {
+    let b = body(frame, OP_DUNGEON_STATE)?;
+    let zone = u32_at(b, 0).filter(|&z| z > 0)?;
+    Some((zone, *b.get(4)?, u64_at(b, 5)?, u64_at(b, 13)?))
 }
 
 pub fn dungeon_clear(frame: &[u8]) -> Option<u32> {
@@ -1365,6 +1375,17 @@ mod tests {
         assert_eq!(one, selection(&frame(OP_SELECTION, &hex("bc44 00 b01a"))));
         assert!(selection(&frame(OP_SELECTION, &hex("ddd001 0000"))).is_some());
         assert_eq!(selection(&frame(OP_SELECTION, &hex("bc44"))), None);
+    }
+
+    #[test]
+    fn a_runs_states_read_as_the_game_sends_them() {
+        // A2Tools' cases: Vakron (600071) entered, under way with its 60-minute limit, over 7.5 minutes after.
+        assert_eq!(dungeon_state(&frame(OP_DUNGEON_STATE, &hex("07280900 01 e1afea21a1010000 0000000000000000"))), Some((600_071, 1, 1_791_570_391_009, 0)));
+        let (_, state, start, deadline) = dungeon_state(&frame(OP_DUNGEON_STATE, &hex("07280900 02 d105eb21a1010000 51f42122a1010000"))).unwrap();
+        assert_eq!((state, deadline - start), (2, 60 * 60 * 1000));
+        let (_, state, over, _) = dungeon_state(&frame(OP_DUNGEON_STATE, &hex("07280900 03 a0e3f121a1010000 600bfb21a1010000"))).unwrap();
+        assert_eq!((state, over - start), (3, 449_999));
+        assert_eq!(dungeon_state(&frame(OP_DUNGEON_STATE, &hex("4ba10700 03"))), None, "cut short");
     }
 
     #[test]

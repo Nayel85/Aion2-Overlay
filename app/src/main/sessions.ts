@@ -238,6 +238,18 @@ export function startSessions(): void {
       changed()
     }
   })
+  // The run's own clock (the game's): under way at the end of its countdown, over as its reward comes.
+  // Its time is the game's run alone, the countdown before and the reward's wait after left out.
+  tracker.onEvent('dungeonState', (ev) => {
+    const run = openRun()
+    if (!run || run.world !== ev.zone || !ev.at) return
+    if (ev.state === 2) run.started = ev.at
+    else if (ev.state === 3 && run.started !== undefined && ev.at >= run.started) {
+      run.cleared = ev.at
+      log(`session: ${run.name} over in ${Math.round((ev.at - run.started) / 1000)} s`)
+    } else return
+    changed()
+  })
   // A player down: yours and the group's deaths in the run going on.
   tracker.onEvent('playerDied', (ev) => {
     const run = openRun()

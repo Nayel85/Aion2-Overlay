@@ -26,6 +26,7 @@
 //!                                                     an Enhance Stone or Phantasmal Fragment balance (whose, as Kina's)
 //!   {"type": "item", "ts": ms, "item": 534760128, "amount": 1}
 //!                                                     an item in your bags changed (bought, looted, used)
+//!   {"type": "dungeonState", "ts": ms, "zone", "state": 1 entered (the countdown) | 2 under way | 3 over, "at": ms (the game's clock), "deadline": ms | 0}
 //!   {"type": "dungeonStart" | "dungeonClear", "ts": ms, "zone": 200003}
 //!                                                     a dungeon begins / its last boss is down
 //!   {"type": "nightmare", "ts": ms, "boss": 2001, "level": 2}   a Nightmare entered: its boss and level

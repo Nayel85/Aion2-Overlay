@@ -12,6 +12,11 @@ impl Tracker {
                     (self.emit)(json!({ "type": "dungeonStart", "ts": ts, "zone": zone }));
                 }
             }
+            p::OP_DUNGEON_STATE => {
+                if let Some((zone, state, at, deadline)) = p::dungeon_state(f) {
+                    (self.emit)(json!({ "type": "dungeonState", "ts": ts, "zone": zone, "state": state, "at": at, "deadline": deadline }));
+                }
+            }
             p::OP_DUNGEON_CLEAR => {
                 if let Some(zone) = p::dungeon_clear(f) {
                     tracing::info!("dungeon cleared: {zone}");

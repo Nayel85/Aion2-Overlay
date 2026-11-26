@@ -37,6 +37,8 @@ export type EngineEvents = {
   item: { ts?: number; item: number; amount: number }
   dungeonStart: { ts?: number; zone: number }
   dungeonClear: { ts?: number; zone: number }
+  /** 1 entered (the countdown before the start), 2 under way, 3 over; `at` on the game's clock. */
+  dungeonState: { ts?: number; zone: number; state: number; at: number; deadline: number }
   nightmare: { ts?: number; boss: number; level?: number }
   gather: { ts?: number; item?: number; amount?: number; bonus?: number; result?: number }
   gatherStart: { node?: number; template?: number | null; outcome: number; grade?: number; rolls?: GatherRoll[]; doubled?: boolean; durationMs?: number }
