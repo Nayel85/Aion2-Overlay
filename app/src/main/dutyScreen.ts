@@ -1,12 +1,15 @@
 /**
  * The game's Journal open on its Duty tab, told by looking at the screen: once the board is loaded,
  * opening it again sends nothing the app can read (its `41 8D` comes as it closes, 2026-11-26), so the
- * duty window opens as the tab is seen. The Journal's top band (its title, the Duty tab lit, Mission
- * under it) is learned once, the tab open (`learn`): its bright spots, the text the game draws white,
- * grouped into its words (Journal, Duty and its glow, Mission). Then, while the game is in front and
- * you are not fighting, the band is looked at a few times a second: every word bright again, and few
- * other spots, is the tab (the Journal alone, opening or on another tab, has some of them only). Seen, the window opens;
- * gone, it closes. Closed by its X while the tab is up, it waits for the tab to go and come back.
+ * duty window opens as the tab is seen. What is looked for is its sub-tab's word, lit (the game draws
+ * the chosen one white): Mission, or Command beside it. Those are under Duty alone; the Journal's
+ * title and tabs light up as it opens, before them, and opened the window too soon.
+ *
+ * Learned once, the Journal open on Duty and Mission (`learn`): the top band's bright spots grouped
+ * into words, the lowest one Mission. Then, while the game is in front and you are not fighting, the
+ * band is looked at a few times a second: Mission's spots bright again, or a word as big lit just
+ * right of it (Command), is the tab. Seen, the window opens; gone, it closes. Closed by its X while the
+ * tab is up, it waits for the tab to go and come back.
  */
 import { screen, type Display } from 'electron'
 import { dataFile } from './dataFile.ts'
@@ -17,21 +20,20 @@ import { overlayBounds, shownOverlayBounds } from './windows.ts'
 /** The picture: half the display's size, its top band (the Journal's title, its tabs and Mission under them: 12% down on a 1152-high screen). */
 const SCALE = 0.5
 const BAND = 0.16
-/** What a learned picture is: one of another version (a narrower band) is learned again. */
-const VERSION = 2
+/** What a learned picture is: one of another version is learned again. */
+const VERSION = 3
 const EVERY_MS = 600
-/** A learned spot counts as bright from this share of the band's brightest. */
+/** A spot counts as bright from this share of the band's brightest when learned. */
 const BRIGHT = 0.72
-/** The tab: this share of each word's bright spots bright again... */
+/** Mission: this share of its spots bright again. */
 const MATCH = 0.7
-/** A word: bright spots this close (in spots) are one; fewer than PART_MIN of them, a speck, not counted. */
+/** Command: lit spots right of Mission, within this many Mission widths, this many times Mission's. */
+const COMMAND_SPAN = 4
+const COMMAND_SIZE = [0.5, 2.5] as const
+/** A word: bright spots this close (in spots) are one; fewer than WORD_MIN of them, a speck. */
 const GAP_X = 4
 const GAP_Y = 2
-const PART_MIN = 6
-/** ...and at most this many others (a share of the learned): another tab lit, a bright scene. */
-const EXTRA = 0.35
-/** Too few bright spots learned: not the Journal (learned with something else in front). */
-const FEWEST = 40
+const WORD_MIN = 6
 /** Learning waits this long for the game to be in front. */
 const WAIT_MS = 15_000
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
@@ -43,9 +45,9 @@ interface Print {
   width: number
   height: number
   level: number
-  bright: number[]
-  /** `bright` by word (learned before, found from it). */
-  parts?: number[][]
+  /** Mission's spots, and its box. */
+  word: number[]
+  box: { left: number; right: number; top: number; bottom: number }
   at: number
 }
 
@@ -65,7 +67,7 @@ function wordsOf(bright: number[], width: number): number[][] {
   })
   const words = new Map<number, number[]>()
   bright.forEach((i, n) => words.set(find(n), [...(words.get(find(n)) ?? []), i]))
-  return [...words.values()].filter((w) => w.length >= PART_MIN)
+  return [...words.values()].filter((w) => w.length >= WORD_MIN)
 }
 
 const file = dataFile('duty-screen.json')
@@ -100,8 +102,8 @@ export const dutyScreen = {
     return print?.at ?? null
   },
   /**
-   * Learn the band: asked from the dashboard, so once the game is back in front (up to `WAIT_MS`) and
-   * a moment after, the Journal open on Duty.
+   * Learn Mission: asked from the dashboard, so once the game is back in front (up to `WAIT_MS`) and
+   * a moment after, the Journal open on Duty and Mission.
    */
   async learn(): Promise<{ ok: boolean; spots: number }> {
     const until = Date.now() + WAIT_MS
@@ -116,17 +118,24 @@ export const dutyScreen = {
     const level = Math.round(max * BRIGHT)
     const bright: number[] = []
     pic.spots.forEach((v, i) => v >= level && bright.push(i))
-    if (bright.length < FEWEST) {
-      log(`duty screen: not learned, ${bright.length} bright spots`)
+    // Mission: the lowest word, whole in the band.
+    const boxOf = (w: number[]): Print['box'] => {
+      const xs = w.map((i) => i % pic.width)
+      const ys = w.map((i) => Math.floor(i / pic.width))
+      return { left: Math.min(...xs), right: Math.max(...xs), top: Math.min(...ys), bottom: Math.max(...ys) }
+    }
+    const word = wordsOf(bright, pic.width)
+      .filter((w) => boxOf(w).bottom < pic.height - 1)
+      .sort((a, b) => boxOf(b).top - boxOf(a).top)[0]
+    if (!word) {
+      log(`duty screen: not learned, no word among ${bright.length} bright spots`)
       return { ok: false, spots: bright.length }
     }
-    const parts = wordsOf(bright, pic.width)
-    print = { version: VERSION, display: { width: display.size.width, height: display.size.height }, width: pic.width, height: pic.height, level, bright, parts, at: Date.now() }
+    const box = boxOf(word)
+    print = { version: VERSION, display: { width: display.size.width, height: display.size.height }, width: pic.width, height: pic.height, level, word, box, at: Date.now() }
     file.save(() => print)
-    // Each word where it is (its left, % of the width) and how big: to tell what was learned.
-    const where = parts.map((w) => `${Math.round(((Math.min(...w.map((i) => i % pic.width)) / pic.width) * 100))}%:${w.length}`).join(' ')
-    log(`duty screen: learned, ${bright.length} bright spots at ${level}+ on ${display.size.width}x${display.size.height}, ${parts.length} words (${where})`)
-    return { ok: true, spots: bright.length }
+    log(`duty screen: learned Mission, ${word.length} spots at ${level}+, ${Math.round((box.left / pic.width) * 100)}-${Math.round((box.right / pic.width) * 100)}% across, ${box.top}-${box.bottom} down, on ${display.size.width}x${display.size.height}`)
+    return { ok: true, spots: word.length }
   },
   forget(): void {
     print = null
@@ -134,40 +143,35 @@ export const dutyScreen = {
   },
 }
 
-/** Whether the band now is the learned tab's (null: nothing to tell, the picture not taken). */
+/** Whether the sub-tab lit now is Mission or Command (null: nothing to tell, no picture or Mission under this app's windows). */
 async function isTab(): Promise<boolean | null> {
   if (!print) return null
   const display = gameDisplay()
   if (display.size.width !== print.display.width || display.size.height !== print.display.height) return null
   const pic = await band(display)
   if (!pic || pic.width !== print.width || pic.height !== print.height) return null
-  const learned = new Set(print.bright)
-  let total = 0
-  let words = 0
-  for (const word of (print.parts ??= wordsOf(print.bright, print.width))) {
-    let seen = 0
-    let lit = 0
-    for (const i of word) {
-      const v = pic.spots[i]!
-      if (v < 0) continue
-      seen++
-      if (v >= print.level) lit++
-    }
-    total += seen
-    // Under one of this app's windows: not told either way.
-    if (seen < PART_MIN) continue
-    if (lit / seen < MATCH) return false
-    words++
+  const { level, word, box } = print
+  let seen = 0
+  let lit = 0
+  for (const i of word) {
+    const v = pic.spots[i]!
+    if (v < 0) continue
+    seen++
+    if (v >= level) lit++
   }
-  let extra = 0
-  pic.spots.forEach((v, i) => v >= print!.level && !learned.has(i) && extra++)
-  if (total < FEWEST || !words) return null
-  return extra <= total * EXTRA
+  if (seen < WORD_MIN) return null
+  if (lit / seen >= MATCH) return true
+  // Command: as big a word lit on Mission's line, right of it.
+  const wide = box.right - box.left + 1
+  let command = 0
+  for (let y = Math.max(0, box.top - 1); y <= Math.min(pic.height - 1, box.bottom + 1); y++)
+    for (let x = box.right + 1; x <= Math.min(pic.width - 1, box.right + wide * COMMAND_SPAN); x++) if (pic.spots[y * pic.width + x]! >= level) command++
+  return command >= word.length * COMMAND_SIZE[0] && command <= word.length * COMMAND_SIZE[1]
 }
 
 export function watchDutyScreen(w: DutyScreenWatch): void {
   const saved = file.read() as Print | null
-  print = saved && saved.version === VERSION && Array.isArray(saved.bright) ? saved : null
+  print = saved && saved.version === VERSION && Array.isArray(saved.word) ? saved : null
   watching = w
   timer ??= setInterval(() => void look(w), EVERY_MS)
 }
@@ -194,4 +198,3 @@ async function look(w: DutyScreenWatch): Promise<void> {
     busy = false
   }
 }
-
