@@ -43,11 +43,11 @@ function ranked(by: Record<string, number> | undefined): [string, number][] {
 const currencies = computed(() => Object.entries(props.session.currencies ?? {}).filter(([, n]) => n > 0))
 
 /** The dungeons (field bosses apart), by zone and mode, the last run first, each's runs the latest first; the field bosses, the latest first. */
-/** The Nightmares, whatever their boss and level: one group, opened to each run. */
-const TOGETHER = new Set(['nightmare', 'bosschallenge'])
-const together = (g: DungeonRun[]): boolean => TOGETHER.has(g[0]!.kind)
+/** Kinds shown as one group whatever their dungeon (the Nightmares, whatever their boss and level; the arenas, Solo and Co-op), opened to each run. */
+const TOGETHER: Record<string, string> = { nightmare: 'nightmare', bosschallenge: 'nightmare', arena: 'arena' }
+const togetherAs = (g: DungeonRun[]): string | undefined => TOGETHER[g[0]!.kind]
 /** A group of several dungeons (the Nightmares): its kind's name for title, each run's own in its line, closed until clicked. */
-const mixed = (g: DungeonRun[]): boolean => g.some((r) => runName(r, t) !== runName(g[0]!, t))
+const mixed = (g: DungeonRun[]): boolean => togetherAs(g) !== undefined || g.some((r) => runName(r, t) !== runName(g[0]!, t))
 const openGroups = ref(new Set<string>())
 const groupKey = (g: DungeonRun[]): string => `${g[0]!.world}:${g[0]!.name}`
 function toggleGroup(g: DungeonRun[]): void {
@@ -57,16 +57,26 @@ function toggleGroup(g: DungeonRun[]): void {
   openGroups.value = next
 }
 const groups = computed(() =>
-  joinNightmares(runGroups((props.session.runs ?? []).filter((r) => !runIsOneOff(r))))
+  joinTogether(runGroups((props.session.runs ?? []).filter((r) => !runIsOneOff(r))))
     .map((g) => [...g].reverse())
     .sort((a, b) => b[0]!.start - a[0]!.start),
 )
-/** The Nightmares' groups as one, where the first of them was. */
-function joinNightmares(gs: DungeonRun[][]): DungeonRun[][] {
-  const at = gs.findIndex(together)
-  if (at < 0) return gs
-  const all = gs.filter(together).flat().sort((a, b) => a.start - b.start)
-  return [...gs.slice(0, at).filter((g) => !together(g)), all, ...gs.slice(at).filter((g) => !together(g))]
+/** The groups of a kind shown together (TOGETHER) as one each, where the first of them was. */
+function joinTogether(gs: DungeonRun[][]): DungeonRun[][] {
+  const out: DungeonRun[][] = []
+  const joined = new Map<string, DungeonRun[]>()
+  for (const g of gs) {
+    const as = togetherAs(g)
+    if (!as) out.push(g)
+    else if (joined.has(as)) joined.get(as)!.push(...g)
+    else {
+      const all = [...g]
+      joined.set(as, all)
+      out.push(all)
+    }
+  }
+  for (const all of joined.values()) all.sort((a, b) => a.start - b.start)
+  return out
 }
 const bosses = computed(() => (props.session.runs ?? []).filter((r) => r.kind === 'fieldboss').reverse())
 const hiddenCubes = computed(() => (props.session.runs ?? []).filter((r) => r.kind === 'hiddencube').reverse())
