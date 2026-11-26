@@ -7,6 +7,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import { weekdayTime, amount } from '@/lib/format.ts'
 import { computed } from 'vue'
 import DutyAdvice from '@/components/DutyAdvice.vue'
+import DutyRewards from '@/components/DutyRewards.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'
 import { gradeClass } from '@/lib/grades.ts'
@@ -64,14 +65,7 @@ const DUTY_EMPTY_HINT = "With the overlay open, open the duty board in game: tod
             <span v-if="picked.has(m.quest)" class="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">{{ t('Recommended') }}</span>
             <span class="ml-auto tabular-nums" :class="m.value > 0 ? 'font-semibold' : 'text-darkest'">{{ kina(m.value) }}</span>
           </div>
-          <div class="mt-1 flex flex-wrap gap-1.5 text-xs">
-            <span v-for="r in m.rewards" :key="r.key" :class="['flex items-center gap-1 rounded-md px-1.5 py-0.5 tabular-nums', r.counts ? 'bg-dark' : 'opacity-50']" :title="r.name">
-              <img v-if="r.icon" :src="r.icon" alt="" class="size-4 rounded-sm" draggable="false" loading="lazy" />
-              <span :class="gradeClass(r.grade)">{{ r.name }}</span>
-              <span v-if="r.amount > 1">×{{ amount(r.amount) }}</span>
-              <span class="text-darker">{{ r.chance }}%</span>
-            </span>
-          </div>
+          <DutyRewards :rewards="m.rewards" class="mt-1 text-xs" />
         </div>
       </div>
 

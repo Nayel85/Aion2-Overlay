@@ -2,10 +2,10 @@
 // The duty board's advice over the game, in a window of its own as the merchant's: main opens it as
 // you open the board in game, reroll it or take a mission (main/index.ts), it moves by its header,
 // and the X closes it until the next time. The offered missions in the game's order, the ones to take
-// highlighted, each with the rewards that count for you; above them, whether to reroll.
+// highlighted, each with all its rewards (those that count for you on a chip); above them, whether to reroll.
 import { computed, nextTick, onMounted, watch } from 'vue'
 import DutyAdvice from '@/components/DutyAdvice.vue'
-import { gradeClass } from '@/lib/grades.ts'
+import DutyRewards from '@/components/DutyRewards.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { dutyRows, useDuty } from '@/lib/duty.ts'
 import { t } from '@/lib/i18n.ts'
@@ -65,12 +65,7 @@ onMounted(() => report())
               <span :class="['truncate', picked.has(m.quest) ? 'font-semibold' : 'font-medium text-dark']">{{ m.name }}</span>
               <span class="ml-auto shrink-0 tabular-nums" :class="m.value > 0 ? 'font-semibold' : 'text-darkest'">{{ kina(m.value) }}</span>
             </div>
-            <div v-if="m.rewards.some((r) => r.counts)" class="mt-0.5 flex flex-wrap gap-x-2 text-[11px] tabular-nums">
-              <span v-for="r in m.rewards.filter((x) => x.counts)" :key="r.key">
-                <span :class="gradeClass(r.grade)">{{ r.name }}</span><template v-if="r.amount > 1"> ×{{ compact(r.amount) }}</template>
-                <span class="text-darker"> {{ r.chance }}%</span>
-              </span>
-            </div>
+            <DutyRewards :rewards="m.rewards" class="mt-1 text-[11px]" />
           </li>
         </ul>
       </div>
