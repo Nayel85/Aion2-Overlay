@@ -120,8 +120,9 @@ pub struct Tracker {
     pending_subscriptions: Option<(i64, Vec<(u32, u64)>)>,
     /// The login's Kina and bound Kina (`11 56`), the same way.
     pending_wallet: Option<(i64, Option<u64>, Option<u64>)>,
-    /// The season's points the login's item list said, told with the wallet.
-    pending_season: Option<u64>,
+    /// The balances (Oath Coins, Abyss Points) and the season's weekly progress a login said, told with the wallet.
+    pending_balances: Vec<(u32, u64)>,
+    pending_week: Option<u32>,
     /// The login's whole item list, waiting with the wallet for the record naming its character.
     pending_depot: Vec<p::DepotItem>,
     /// The Abyss Points total the game just sent (when, points, limit), waiting to know whose.
@@ -254,7 +255,8 @@ impl Tracker {
             pending_counter: Vec::new(),
             pending_subscriptions: None,
             pending_wallet: None,
-            pending_season: None,
+            pending_balances: Vec::new(),
+            pending_week: None,
             pending_depot: Vec::new(),
             pending_abyss: None,
             abyss_balance: HashMap::new(),
@@ -1131,6 +1133,9 @@ impl Tracker {
                 if let Some(balance) = p::bound_kina(f) {
                     (self.emit)(json!({ "type": "boundKina", "ts": ts, "balance": balance, "name": owner, "server": server }));
                 }
+                for (item, balance) in p::balances(f) {
+                    (self.emit)(json!({ "type": "balance", "ts": ts, "item": item, "balance": balance, "name": owner, "server": server }));
+                }
                 for (item, balance) in p::currencies(f) {
                     (self.emit)(json!({ "type": "currency", "ts": ts, "item": item, "balance": balance, "name": owner, "server": server }));
                 }
@@ -1184,13 +1189,27 @@ impl Tracker {
                     self.pending_counters = Some((ts, list));
                 }
             }
+            // The season's weekly rewards' progress: at login (its list, waiting with the wallet for the
+            // character's name), and as it moves (yours: the one playing).
+            p::OP_PROGRESS_LIST => {
+                if let Some(week) = p::progress(f, p::SEASON_WEEK) {
+                    self.pending_week = Some(week);
+                }
+            }
+            p::OP_PROGRESS => {
+                if let Some(week) = p::progress(f, p::SEASON_WEEK) {
+                    let owner = if self.pending_wallet.is_some() { None } else { self.store.current.clone() };
+                    let server = owner.as_ref().and_then(|n| self.store.characters.get(n)).and_then(|c| c.server);
+                    (self.emit)(json!({ "type": "seasonWeek", "ts": ts, "value": week, "name": owner, "server": server }));
+                }
+            }
             p::OP_ITEM_LIST => {
                 if let Some((kina, bound)) = p::wallet(f) {
                     // Sent a few seconds before the record naming the character (a switch's new
                     // one): it waits for it, as the counters do.
                     tracing::info!("wallet: kina {kina:?}, bound {bound:?}");
                     self.pending_wallet = Some((ts, kina, bound));
-                    self.pending_season = p::season_points(f);
+                    self.pending_balances = p::balances(f);
                     self.pending_depot = p::depot(f);
                     tracing::info!("item list: {} items", self.pending_depot.len());
                 }
@@ -1432,8 +1451,9 @@ impl Tracker {
     /// The login's Kina and bound Kina, for `name`.
     fn wallet_read(&mut self, name: &str, server: Option<u16>) {
         let Some((at, kina, bound)) = self.pending_wallet.take() else { return };
-        let season = self.pending_season.take();
-        (self.emit)(json!({ "type": "wallet", "ts": at, "name": name, "server": server, "kina": kina, "boundKina": bound, "seasonPoints": season }));
+        let balances: serde_json::Map<String, Value> = std::mem::take(&mut self.pending_balances).into_iter().map(|(id, v)| (id.to_string(), json!(v))).collect();
+        let week = self.pending_week.take();
+        (self.emit)(json!({ "type": "wallet", "ts": at, "name": name, "server": server, "kina": kina, "boundKina": bound, "balances": balances, "seasonWeek": week }));
         // And everything they have, where it lies (the Inventory page).
         let items: Vec<Value> = std::mem::take(&mut self.pending_depot).iter().map(depot_json).collect();
         if !items.is_empty() {

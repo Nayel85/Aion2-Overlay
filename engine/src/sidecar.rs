@@ -39,7 +39,9 @@
 //!   {"type": "loot", "ts": ms, "source": 2, "items": [{"item": 631800004, "amount": 1}]}
 //!                                                     a reward cube opened: everything it gave
 //!                                                     a quest handed in: what it gave (after the items' changes)
-//!   {"type": "wallet", "ts": ms, "name": "Ksix", "server": 1104, "kina": 12800000, "boundKina": 0, "seasonPoints": 44920}
+//!   {"type": "wallet", "ts": ms, "name": "Ksix", "server": 1104, "kina": 12800000, "boundKina": 0, "balances": {"930100019": 44920, "930100003": 1200}, "seasonWeek": 320}
+//!   {"type": "balance", "ts": ms, "item": 930100019 | 930100003, "balance", "name", "server"}   an Oath Coins or Abyss Points balance, as it changes
+//!   {"type": "seasonWeek", "ts": ms, "value": 320, "name", "server"}   the season's weekly rewards' progress (0-8000), as it moves
 //!                                                     your Kina and bound Kina, at login (null: not listed)
 //!   {"type": "subscriptions", "ts": ms, "name": "Ksix", "server": 1104, "list": [{"id": 1, "end": ms}]}
 //!                                                     your memberships and the like, at login

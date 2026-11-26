@@ -47,8 +47,12 @@ export interface TrackedCharacter {
   kina?: { balance: number; at: number }
   /** Their bound Kina, the same way. */
   boundKina?: { balance: number; at: number }
-  /** The season's points (the season missions'), as last seen. */
+  /** The season's Oath Coins (its points), as last seen. */
   seasonPoints?: { balance: number; at: number }
+  /** The Abyss Points, as last seen. */
+  abyssPoints?: { balance: number; at: number }
+  /** The season's weekly rewards' progress (out of SEASON_WEEK_MAX), as last seen: 0 again at the weekly reset. */
+  seasonWeek?: { value: number; at: number }
   /** The subscriptions the game listed at their last login (`3B E3`): each id and its end (unix ms). */
   subscriptions?: { list: { id: number; end: number }[]; at: number }
 }
@@ -203,6 +207,12 @@ export const WEEKLY_RESET = DAILY_DUNGEON
  * weekly Shugo Festival mission came, not its steps.
  */
 export const SHUGO_MISSION = { name: 'Festival-Loving Daeva', steps: [3, 6, 9], reward: '20,000 Abyss Points' } as const
+
+/** The season's weekly rewards' bar: 0 to 8,000, back to 0 at the weekly reset (the game's, 2026-11-26). */
+export const SEASON_WEEK_MAX = 8000
+/** A character's weekly progress now: as last seen this week, 0 when last seen before the reset. */
+export const seasonWeekNow = (c: { seasonWeek?: { value: number; at: number } }, now: number): number | null =>
+  c.seasonWeek ? (c.seasonWeek.at >= lastRefill(WEEKLY_RESET, now) ? c.seasonWeek.value : 0) : null
 
 export interface CounterNow {
   /** As the game last said (at login, or as it changed since). */

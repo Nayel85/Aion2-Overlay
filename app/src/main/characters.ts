@@ -6,7 +6,7 @@
  *
  * Kept across restarts in `<userData>/characters.json`.
  */
-import { SEASON_POINTS } from '../shared/sessions.ts'
+import { ABYSS_POINTS, SEASON_POINTS } from '../shared/sessions.ts'
 import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
@@ -234,19 +234,33 @@ export function startCharacters(): void {
     if (kina !== null) c.kina = { balance: kina, at }
     // Not in the list: none.
     c.boundKina = { balance: bound ?? 0, at }
-    if (ev.seasonPoints != null) {
-      // Logged with the last one seen, the reset's doing between them (a weekly payout, a reset to 0).
-      log(`characters: ${c.name}'s season points ${ev.seasonPoints} at login (last seen ${c.seasonPoints ? `${c.seasonPoints.balance}, ${new Date(c.seasonPoints.at).toISOString()}` : 'never'})`)
-      c.seasonPoints = { balance: ev.seasonPoints, at }
-    }
+    // Logged with the last ones seen: what the weekly reset did between them.
+    const oath = ev.balances?.[SEASON_POINTS]
+    const abyss = ev.balances?.[ABYSS_POINTS]
+    log(`characters: ${c.name} at login: Oath Coins ${oath ?? '?'} (last ${c.seasonPoints?.balance ?? '?'}), Abyss Points ${abyss ?? '?'}, season week ${ev.seasonWeek ?? '?'} (last ${c.seasonWeek?.value ?? '?'})`)
+    if (oath !== undefined) c.seasonPoints = { balance: oath, at }
+    if (abyss !== undefined) c.abyssPoints = { balance: abyss, at }
+    if (ev.seasonWeek != null) c.seasonWeek = { value: ev.seasonWeek, at }
     changed()
   })
-  // The season's points as they change (a mission done): the character's.
-  tracker.onEvent('currency', (ev) => {
-    if (ev.item !== SEASON_POINTS || ev.server === null || !ev.name) return
+  // The Oath Coins and the Abyss Points as they change: the character's.
+  tracker.onEvent('balance', (ev) => {
+    if (ev.server === null || !ev.name) return
     const c = entry(ev.server, ev.name)
-    log(`characters: ${c.name}'s season points ${c.seasonPoints?.balance ?? '?'} -> ${ev.balance}`)
-    c.seasonPoints = { balance: ev.balance, at: ev.ts ?? Date.now() }
+    const at = ev.ts ?? Date.now()
+    if (ev.item === SEASON_POINTS) {
+      log(`characters: ${c.name}'s Oath Coins ${c.seasonPoints?.balance ?? '?'} -> ${ev.balance}`)
+      c.seasonPoints = { balance: ev.balance, at }
+    } else if (ev.item === ABYSS_POINTS) c.abyssPoints = { balance: ev.balance, at }
+    else return
+    changed()
+  })
+  // The season's weekly progress as it moves (a mission done).
+  tracker.onEvent('seasonWeek', (ev) => {
+    if (ev.server === null || !ev.name) return
+    const c = entry(ev.server, ev.name)
+    log(`characters: ${c.name}'s season week ${c.seasonWeek?.value ?? '?'} -> ${ev.value}`)
+    c.seasonWeek = { value: ev.value, at: ev.ts ?? Date.now() }
     changed()
   })
   // Your subscriptions, at login: the account's, kept on the character that logged in (the newest

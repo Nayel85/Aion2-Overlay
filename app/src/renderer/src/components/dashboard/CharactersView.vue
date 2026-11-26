@@ -16,7 +16,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { ASCENSION, characterId, lastRefill, SHUGO_MISSION, WEEKLY_RESET, CORRIDORS, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
+import { ASCENSION, characterId, lastRefill, SEASON_WEEK_MAX, seasonWeekNow, SHUGO_MISSION, WEEKLY_RESET, CORRIDORS, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
 import { formatKina } from '@shared/kina.ts'
 import { serverLabel } from '@shared/servers.ts'
 
@@ -33,7 +33,13 @@ const store = useApp()
 const now = useNow(1000)
 
 /** The game's item icons (questlog.gg's copies, in public/items): energy, and the boss entry ticket. */
-const ICONS = { energy: 'items/odyle-energy.webp', ticket: 'items/boss-ticket.webp' }
+const ICONS = {
+  energy: 'items/odyle-energy.webp',
+  ticket: 'items/boss-ticket.webp',
+  kina: 'items/loot/Icon_Currency_Coin_GoldNonbinding.webp',
+  abyss: 'items/loot/Icon_abysspoint.webp',
+  oath: 'items/loot/Icon_Season.webp',
+}
 /** The game's colour for charged energy. */
 const CHARGED = '#3ce0d0'
 
@@ -52,8 +58,11 @@ interface Row {
   kinaTotal: number | null
   /** The Shugo Festival's games since the weekly reset (the season mission Festival-Loving Daeva). */
   shugoWeek: number
-  /** The season's points, as last seen; null while never seen. */
-  season: number | null
+  /** The Oath Coins and Abyss Points, as last seen; null while never seen. */
+  oath: number | null
+  abyss: number | null
+  /** The season's weekly progress this week (0 after the reset); null while never seen. */
+  week: number | null
 }
 
 /** What a server's characters share, with each one's bar colour. */
@@ -87,7 +96,9 @@ const servers = computed(() => {
       boundKina,
       kinaTotal: kina === null && boundKina === null ? null : (kina ?? 0) + (boundKina ?? 0),
       shugoWeek: shugoWeek.value.get(id) ?? 0,
-      season: c.seasonPoints?.balance ?? null,
+      oath: c.seasonPoints?.balance ?? null,
+      abyss: c.abyssPoints?.balance ?? null,
+      week: seasonWeekNow(c, now.value),
     }
   })
   const by = new Map<number, Row[]>()
@@ -290,8 +301,8 @@ function corridorTitle(list: CorridorState[]): string {
               <th class="w-48 whitespace-nowrap px-5 text-left font-medium">
                 <span class="flex items-center gap-1.5"><img :src="ICONS.ticket" alt="" draggable="false" class="size-5" />{{ t('Ascension Trial') }}</span>
               </th>
-              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('The season: each character\'s points, as the game last said them, and the Shugo Festival\'s games this week for the mission Festival-Loving Daeva (since the weekly reset, Wednesday 07:00 UTC).')">{{ t('Season') }}</th>
-              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('Kina and bound Kina')">Kina</th>
+              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('The season: the weekly rewards\' bar (back to 0 at the weekly reset, Wednesday 07:00 UTC), and the Shugo Festival\'s games this week for the mission Festival-Loving Daeva.')">{{ t('Season (week)') }}</th>
+              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('Kina (and bound Kina), Abyss Points and Oath Coins, as last seen')">{{ t('Wallet') }}</th>
               <th class="w-40 whitespace-nowrap px-5 text-center font-medium" :title="t('The Abyss\'s Artifact corridors, back as the Artifact siege starts (Thursdays and Saturdays at 21:00 in Europe).')">{{ t('Corridors') }}</th>
               <th class="w-px whitespace-nowrap pl-5 pr-4 text-right font-medium">{{ t('Last read') }}</th>
             </tr>
@@ -348,13 +359,19 @@ function corridorTitle(list: CorridorState[]): string {
                   </div>
                   <span v-else class="text-darkest">–</span>
                 </td>
-                <!-- The season: its points, and the week's Shugo games of Festival-Loving Daeva, a mark at each step (3, 6, 9). -->
-                <td class="whitespace-nowrap px-4 py-2 text-right tabular-nums">
-                  <div :title="r.c.seasonPoints ? t('Read {when}', { when: stamp(r.c.seasonPoints.at) }) : ''">
-                    <span v-if="r.season !== null" class="font-semibold">{{ amount(r.season) }}</span>
-                    <span v-else class="text-darkest">–</span>
+                <!-- The season: the weekly rewards' bar, and the week's Shugo games of Festival-Loving Daeva, a mark at each step (3, 6, 9). -->
+                <td class="w-44 whitespace-nowrap px-4 py-2 tabular-nums">
+                  <div v-if="r.week !== null" :title="r.c.seasonWeek ? t('Read {when}', { when: stamp(r.c.seasonWeek.at) }) : ''">
+                    <div class="flex items-baseline gap-1">
+                      <span :class="['font-semibold', r.week >= SEASON_WEEK_MAX && 'text-green']">{{ amount(r.week) }}</span>
+                      <span class="text-xs text-darkest">/ {{ amount(SEASON_WEEK_MAX) }}</span>
+                    </div>
+                    <div class="mt-0.5 h-1.5 overflow-hidden rounded-full bg-dark">
+                      <div :class="['h-full rounded-full', r.week >= SEASON_WEEK_MAX ? 'bg-green' : 'bg-accent']" :style="{ width: `${Math.min(100, (r.week / SEASON_WEEK_MAX) * 100)}%` }" />
+                    </div>
                   </div>
-                  <div class="mt-1 flex items-center justify-end gap-1.5 text-[11px]" :title="t('Shugo Festival games since the weekly reset, {when}', { when: stamp(lastRefill(WEEKLY_RESET, now)) })">
+                  <span v-else class="text-darkest">–</span>
+                  <div class="mt-1 flex items-center gap-1.5 text-[11px]" :title="t('Shugo Festival games since the weekly reset, {when}', { when: stamp(lastRefill(WEEKLY_RESET, now)) })">
                     <span class="text-darker">Shugo</span>
                     <span :class="r.shugoWeek >= SHUGO_DONE ? 'font-semibold text-green' : r.shugoWeek ? 'text-default' : 'text-darkest'">{{ r.shugoWeek }}/{{ SHUGO_DONE }}</span>
                     <span class="flex gap-0.5">
@@ -367,12 +384,18 @@ function corridorTitle(list: CorridorState[]): string {
                     </span>
                   </div>
                 </td>
-                <td
-                  class="whitespace-nowrap px-4 text-right font-semibold tabular-nums"
-                  :title="r.kinaTotal !== null ? t('{kina} Kina, {bound} bound', { kina: r.kina === null ? '?' : formatKina(r.kina), bound: r.boundKina === null ? '?' : formatKina(r.boundKina) }) : ''"
-                >
-                  <span v-if="r.kinaTotal !== null">{{ formatKina(r.kinaTotal) }}</span>
-                  <span v-else class="text-darkest">–</span>
+                <!-- The wallet: Kina (with bound), Abyss Points, Oath Coins, each its icon. -->
+                <td class="whitespace-nowrap px-4 py-1.5 text-right tabular-nums">
+                  <div class="flex flex-col items-end gap-0.5 text-xs">
+                    <span
+                      class="flex items-center gap-1 font-semibold"
+                      :title="r.kinaTotal !== null ? t('{kina} Kina, {bound} bound', { kina: r.kina === null ? '?' : formatKina(r.kina), bound: r.boundKina === null ? '?' : formatKina(r.boundKina) }) : ''"
+                    >
+                      {{ r.kinaTotal !== null ? formatKina(r.kinaTotal) : '–' }}<img :src="ICONS.kina" alt="" draggable="false" class="size-4" />
+                    </span>
+                    <span class="flex items-center gap-1" :title="t('Abyss Points')">{{ r.abyss !== null ? formatKina(r.abyss) : '–' }}<img :src="ICONS.abyss" alt="" draggable="false" class="size-4" /></span>
+                    <span class="flex items-center gap-1" :title="r.c.seasonPoints ? `${t('Oath Coins')} · ${t('Read {when}', { when: stamp(r.c.seasonPoints.at) })}` : t('Oath Coins')">{{ r.oath !== null ? amount(r.oath) : '–' }}<img :src="ICONS.oath" alt="" draggable="false" class="size-4" /></span>
+                  </div>
                 </td>
                 <td class="px-5 py-2" :title="corridorTitle(r.corridors)">
                   <div class="flex items-center justify-center gap-2">

@@ -46,7 +46,12 @@ export type EngineEvents = {
   rewardBoard: { ts?: number; entries?: { name: string | null; items: ItemAmount[] }[] }
   playerDied: { at: number; name: string | null; you: boolean }
   loot: { ts?: number; source?: number; items?: ItemAmount[] }
-  wallet: Login & { kina: number | null; boundKina: number | null; seasonPoints?: number | null }
+  /** `balances`: the Oath Coins and Abyss Points by item id; `seasonWeek`: the season's weekly progress (0-8000). */
+  wallet: Login & { kina: number | null; boundKina: number | null; balances?: Record<string, number>; seasonWeek?: number | null }
+  /** An Oath Coins or Abyss Points balance, as it changes (`name` null while a login waits for its character). */
+  balance: Whose & { item: number; balance: number }
+  /** The season's weekly rewards' progress, as it moves. */
+  seasonWeek: Whose & { value: number }
   subscriptions: Login & { list: { id: number; end: number }[] }
   abyss: { ts?: number; name: string | null; points: number; limit: number; gained: number }
   abyssGain: { name: string | null; gained: number }

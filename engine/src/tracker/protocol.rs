@@ -46,6 +46,8 @@ pub const OP_COUNTER: [u8; 2] = [0x0C, 0x61];
 pub const OP_ABYSS_POINTS: [u8; 2] = [0xAB, 0xFF];
 pub const OP_SUBSCRIPTIONS: [u8; 2] = [0x3B, 0xE3];
 pub const OP_ITEM_LIST: [u8; 2] = [0x11, 0x56];
+pub const OP_PROGRESS_LIST: [u8; 2] = [0x83, 0x56];
+pub const OP_PROGRESS: [u8; 2] = [0x84, 0x56];
 pub const OP_SUPPLY_DONE: [u8; 2] = [0x3F, 0xE2];
 pub const OP_DUNGEON_START: [u8; 2] = [0x01, 0x40];
 pub const OP_DUNGEON_CLEAR: [u8; 2] = [0x01, 0x61];
@@ -656,19 +658,44 @@ pub fn wallet(frame: &[u8]) -> Option<(Option<u64>, Option<u64>)> {
     (kina.is_some() || bound.is_some()).then_some((kina, bound))
 }
 
-/// The season's points: an item of their own, each character's (the owner's 2026-11-26 log: 44,920 in
-/// the login's list, 45,820 in the `1B 56` of the 900 a mission gave).
+/// The season's Oath Coins (its points): an item of their own, each character's (the owner's 2026-11-26
+/// log: 44,920 in the login's list, 45,820 in the `1B 56` of the 900 a mission gave).
 pub const SEASON_POINTS: u32 = 930_100_019;
+/// The Abyss Points, as an item (`ABYSS_ITEM`'s id).
+pub const ABYSS_POINTS: u32 = 930_100_003;
+/// The balances each character's row shows (with Kina): the Oath Coins and the Abyss Points.
+pub const BALANCES: [u32; 2] = [SEASON_POINTS, ABYSS_POINTS];
+
+/// The season's weekly rewards' progress, one of the `83 56` / `84 56` progress records (0 to 8,000,
+/// back to 0 at the weekly reset: Nayoul's 8,000 on 2026-11-23, 0 after the reset, 320 after a mission).
+pub const SEASON_WEEK: u32 = 210_000_100;
 
 /// The currencies the Session page counts besides Kina and Abyss Points (questlog.gg's item ids):
 /// the Enhance Stones (dailies, quests), the Phantasmal Fragments (the Nightmares), the season's points.
 pub const SESSION_CURRENCIES: [u32; 3] = [930_100_023, 930_100_017, SEASON_POINTS];
 
-/// The season's points in the login's item list (`11 56`), as Kina's.
-pub fn season_points(frame: &[u8]) -> Option<u64> {
-    let b = body(frame, OP_ITEM_LIST)?;
-    let at = b.windows(4).position(|w| w == SEASON_POINTS.to_le_bytes())?;
-    u64_at(b, at + 4)
+/// BALANCES in a message listing items (the login's `11 56`, a change's `1B 56`), as Kina's: each id
+/// followed by its amount (u64).
+pub fn balances(frame: &[u8]) -> Vec<(u32, u64)> {
+    let Some(b) = body(frame, OP_ITEM_LIST).or_else(|| body(frame, OP_ITEM)) else { return Vec::new() };
+    BALANCES
+        .iter()
+        .filter_map(|&id| {
+            let at = b.windows(4).position(|w| w == id.to_le_bytes())?;
+            Some((id, u64_at(b, at + 4)?))
+        })
+        .collect()
+}
+
+/// A progress record's value: in the login's list (`83 56`, records of `<id u32> <value u32> <at u64>
+/// <step u8>`) or a change (`84 56 01 <id u32> <value u32> <at u64> <step u8>`).
+pub fn progress(frame: &[u8], id: u32) -> Option<u32> {
+    if let Some(b) = body(frame, OP_PROGRESS) {
+        return (b.first() == Some(&1) && u32_at(b, 1) == Some(id)).then(|| u32_at(b, 5)).flatten();
+    }
+    let b = body(frame, OP_PROGRESS_LIST)?;
+    let at = b.windows(4).position(|w| w == id.to_le_bytes())?;
+    u32_at(b, at + 4)
 }
 
 /// The balances of SESSION_CURRENCIES a `1B 56` changes: found by their item ids, each followed by
@@ -1393,8 +1420,12 @@ mod tests {
         // The owner's 2026-11-26 11:04 log: a season mission's 900 points, 44,920 to 45,820.
         let change = frame(OP_ITEM, &hex("020100a683040000a7000033337037fcb2000000000000010800000000000088dd7da20100000200000100d572040000910000418ee91f0603000000000000011d000000000000000000000000020000"));
         assert!(currencies(&change).contains(&(SEASON_POINTS, 45_820)));
-        let login = frame(OP_ITEM_LIST, &hex("1002960200 33337037 78af000000000000 00"));
-        assert_eq!(season_points(&login), Some(44_920));
+        let login = frame(OP_ITEM_LIST, &hex("1002960200 33337037 78af000000000000 00 23337037 0a00000000000000"));
+        assert_eq!(balances(&login), vec![(SEASON_POINTS, 44_920), (ABYSS_POINTS, 10)]);
+        // The weekly rewards' bar: 320 after the mission (84 56), 0 in the login's list after the reset (83 56).
+        assert_eq!(progress(&frame(OP_PROGRESS, &hex("01e458840c40010000273b5017a201000000")), SEASON_WEEK), Some(320));
+        assert_eq!(progress(&frame(OP_PROGRESS, &hex("01a86cf2118e000000bb844f17a201000003")), SEASON_WEEK), None);
+        assert_eq!(progress(&frame(OP_PROGRESS_LIST, &hex("0002 a86cf2118e000000bb844f17a201000003 e458840c401f0000273b5017a201000000")), SEASON_WEEK), Some(8_000));
     }
 
     #[test]
