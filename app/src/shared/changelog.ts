@@ -11,6 +11,21 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.18',
+    items: [
+      "Personal bests redone: a tab per kind of content (Expeditions, Transcendence, Nightmares, Ascension Trials, Sanctuaries), each a grid of every instance and boss in the game's order with the item level each mode asks, best DPS or fastest run, each character on their own line, each value a link to its fight.",
+      "New Aggro overlay: the monsters on you, the bosses first, as soon as one takes you as its target; and the party frames show whom the boss is on, at once.",
+      "Party frames show each member's debuffs, as the Buffs overlay shows yours.",
+      "Duty board: today's missions ranked by what you are after, in a window as you open the board in game.",
+      "Characters page: each expedition's cubes toward its guaranteed chest, the season's weekly bar and the Shugo Festival's games for Festival-Loving Daeva, and a wallet (Kina, Abyss Points, Oath Coins).",
+      "Pets: where each comes from (a boss, an instance, the Black Cloud Merchant), a filter by it, and the dungeons' maps with their spawns.",
+      "Sessions: each run's DPS, a run timed on the game's own clock (the countdown left out), each entry of a daily, a Nightmare or a trial its own run, and a run going on when the app restarts.",
+      "An Overlays page lists every overlay with its settings; a search finds any setting (Ctrl+F); the overlays have English names that say what they do.",
+      "DPS meter: ten rows in a raid, and a fight keeps only the players who took part in it.",
+      "Fixed: an expedition's chest counted one cube of two with the membership; the group's deaths counted monsters; data could be lost on closing the app.",
+    ],
+  },
+  {
     version: '0.3.17',
     items: [
       "What comes into your characters' hands is journaled, with when and where from (a Hidden Cube, a dungeon's cube, a box, a duty mission); the Inventory page shows what came lately, and a searched item when it last came.",
