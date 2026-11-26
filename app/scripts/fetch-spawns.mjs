@@ -14,7 +14,7 @@
  *
  * Coordinates: a world's `sectors` [x0, y0, nx, ny, size] say it spans x0..x0+nx*size and
  * y0..y0+ny*size, drawn as nx*1024 by ny*1024 pixels. questlog.gg stores y negated, so on the
- * image u = (x - x0) / (nx*size) and v = 1 + (y0 - y) / (ny*size). Checked against their own
+ * image u = (x - x0) / (nx*size) and v = -(y + y0) / (ny*size) (their map client's). Checked against their own
  * render of Meadow Sparkie's spawns.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -80,10 +80,8 @@ const WORLDS = {
 const IMAGE_WORLDS = new Set(['World_L_Starter', 'World_L_A', 'World_L_B', 'World_D_Starter', 'World_D_A', 'World_D_B', 'Abyss_Reshanta_A'])
 
 /**
- * The instances (expeditions, Transcendences, raids): one frame for all of an instance's modes
- * (questlog.gg's map client, 2026-11-26: its `St` table). Their spawns are kept, drawn on no image
- * (`map: false`): the tiles questlog serves for them (SharedMap/) are a decorated background whose
- * tiles do not even join (Draupnir's four), not the dungeon's layout, and would mislead.
+ * The instances (expeditions, Transcendences, raids): one map for all of an instance's modes, its
+ * tiles under the CDN's SharedMap/, 2048 px each (questlog.gg's map client, 2026-11-26: its `St` table).
  */
 const SHARED = [
   ['Krao Cave', 'KraoCave', [600001, 600002, 600004], [-76466.96, -34473.18, 1, 1, 102000]],
@@ -236,10 +234,6 @@ for (const w of [...usedWorlds].sort((a, b) => a - b)) {
   const [name, group, key, sectors] = WORLDS[w]
   const [, , nx, ny] = sectors
   const image = IMAGE_WORLDS.has(key)
-  if (SHARED_KEYS.has(key)) {
-    outWorlds[w] = { name, group, key, sectors, image: false, map: false }
-    continue
-  }
   outWorlds[w] = { name, group, key, sectors, image }
   console.log(`map ${name} (${key})…`)
   if (image) {
@@ -248,7 +242,7 @@ for (const w of [...usedWorlds].sort((a, b) => a - b)) {
     for (let x = 0; x < nx; x++)
       for (let y = 0; y < ny; y++) {
         const xy = `${String(x).padStart(2, '0')}_${String(y).padStart(2, '0')}`
-        bytes += await download(`${TILE_CDN}/${key}/Res/${key}_${xy}.webp`, join(OUT, key, `${xy}.webp`))
+        bytes += await download(`${TILE_CDN}/${SHARED_KEYS.has(key) ? 'SharedMap/' : ''}${key}/Res/${key}_${xy}.webp`, join(OUT, key, `${xy}.webp`))
       }
   }
 }

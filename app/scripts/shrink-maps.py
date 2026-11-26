@@ -26,9 +26,6 @@ def main() -> None:
     for wid, w in spawns["worlds"].items():
         key = w["key"]
         out = MAPS / f"{key}.webp"
-        # An instance: drawn on no image (fetch-spawns.mjs).
-        if w.get("map") is False:
-            continue
         # A map several zones share: made once, from its tiles (gone after it).
         if key in done:
             w["image"] = True
@@ -37,14 +34,16 @@ def main() -> None:
         if w["image"]:
             img = Image.open(out)
         else:
-            # Tiles: <key>/<x>_<y>.webp, 1024 px each, x across and y down.
+            # Tiles: <key>/<x>_<y>.webp, x across and y down, all one size (the open world's 1024 px,
+            # the instances' 2048): taken from the first.
             _, _, nx, ny, _ = w["sectors"]
-            img = Image.new("RGBA", (nx * 1024, ny * 1024))
+            side = Image.open(MAPS / key / "00_00.webp").size[0]
+            img = Image.new("RGBA", (nx * side, ny * side))
             for x in range(nx):
                 for y in range(ny):
                     tile = MAPS / key / f"{x:02d}_{y:02d}.webp"
                     if tile.exists():
-                        img.paste(Image.open(tile), (x * 1024, y * 1024))
+                        img.paste(Image.open(tile), (x * side, y * side))
             w["image"] = True
         before = img.size
         if max(img.size) > MAX_SIDE:

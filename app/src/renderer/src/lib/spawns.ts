@@ -12,8 +12,6 @@ export interface World {
   key: string
   /** [x0, y0, nx, ny, size]: the zone spans x0..x0+nx*size and y0..y0+ny*size. */
   sectors: [number, number, number, number, number]
-  /** false: no map image (an instance's: its spawns on a plain frame). */
-  map?: boolean
 }
 
 export interface DropperWorld {
@@ -53,12 +51,13 @@ export function loadSpawns(): Promise<SpawnData> {
 export const mapImage = (w: World): string => `maps/${w.key}.webp`
 
 /**
- * A spawn's place on the zone image, 0..1 from the top left. questlog.gg stores y negated,
- * hence the flip (checked against their own render).
+ * A spawn's place on the zone image, 0..1 from the top left: questlog.gg's map client's (its world's
+ * game bounds x0..x0+nx*size and -y0..-(y0+ny*size) over the image), y stored negated. The open world's
+ * zones are centred on 0, where 1 + (y0 - y)/(ny*size) said the same; the instances are not (Krao Cave).
  */
 export function project(w: World, [x, y]: [number, number]): [number, number] {
   const [x0, y0, nx, ny, size] = w.sectors
-  return [(x - x0) / (nx * size), 1 + (y0 - y) / (ny * size)]
+  return [(x - x0) / (nx * size), -(y + y0) / (ny * size)]
 }
 
 /** questlog.gg's page for a monster: its drops, and a map of where it spawns. */

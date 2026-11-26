@@ -44,11 +44,11 @@ const emit = defineEmits<{ zoom: [zoom: number] }>()
 const SIZE = 1000
 const box = ref<HTMLElement | null>(null)
 const view = ref({ k: 1, x: 0, y: 0 })
-const loaded = ref(props.world.map === false)
-// Another zone: loading its image again (an instance's has none).
+const loaded = ref(false)
+// Another zone: loading its image again.
 watch(
   () => props.world.key,
-  () => (loaded.value = props.world.map === false),
+  () => (loaded.value = false),
 )
 
 const youXY = computed(() => (props.you ? project(props.world, props.you).map((v) => v * SIZE) : null))
@@ -281,15 +281,12 @@ defineExpose({ fit, recentre })
       :style="{ width: `${SIZE}px`, height: `${SIZE}px`, transform: `translate(${view.x}px, ${view.y}px) scale(${view.k})` }"
     >
       <img
-        v-if="world.map !== false"
         :src="mapImage(world)"
         alt=""
         draggable="false"
         class="absolute inset-0 size-full select-none"
         @load="loaded = true"
       />
-      <!-- An instance: no map of its layout to be had, its spawns on a plain frame with a grid. -->
-      <div v-else class="absolute inset-0 bg-[#1b1f27] [background-image:linear-gradient(#ffffff10_1px,transparent_1px),linear-gradient(90deg,#ffffff10_1px,transparent_1px)] [background-size:50px_50px]" />
       <svg :viewBox="`0 0 ${SIZE} ${SIZE}`" class="absolute inset-0 size-full overflow-visible">
         <!-- Inactive layers first, so the selected monster's dots draw on top. -->
         <template v-for="layer in [...shownLayers].sort((a, b) => Number(a.active) - Number(b.active))" :key="layer.key">
