@@ -12,5 +12,9 @@ export const DUTY_CATEGORIES: { id: DutyCategory; label: string; hint: string }[
   { id: 'pureCraft', label: 'Pure crafting materials', hint: 'Each Pure (purple) gemstone, ore or log.' },
 ]
 export type DutyValues = Record<DutyCategory, number>
-/** Kina, gold crafting materials and Theostones (the owner's choice); the rest left out. */
-export const DEFAULT_DUTY_VALUES: DutyValues = { kina: 1, goldCraft: 150_000, theostone: 150_000, goldEquipment: 0, cubeKey: 0, shugoKey: 0, tickets: 0, pureCraft: 0 }
+/**
+ * Kina, gold crafting materials and Theostones (the owner's choice), and a Hidden Cube's key at what
+ * a cube gives sold to a merchant (~60,000: 11-12 Silentium at 5,000 and a Resurrection Spiritstone
+ * at 1,000, two cubes of 2026-11-24/25, questlog's sell prices); the rest left out.
+ */
+export const DEFAULT_DUTY_VALUES: DutyValues = { kina: 1, goldCraft: 150_000, theostone: 150_000, goldEquipment: 0, cubeKey: 60_000, shugoKey: 0, tickets: 0, pureCraft: 0 }

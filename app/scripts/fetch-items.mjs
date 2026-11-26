@@ -34,19 +34,22 @@ const PAUSE_MS = 250
 /** The most pages questlog serves a list. */
 const MAX_PAGES = 25
 /**
- * Each main category, the least grade whose icons are fetched (null: none), and its sub-categories
- * (more are found on the way). Every grade is listed (the Inventory page names all you have); the
- * lesser equipment without its icon, to keep the app light.
+ * Each main category, the least grade whose icons are fetched (null: none), its sub-categories (more
+ * are found on the way, but only in the first pages questlog serves) and searches for the items with
+ * none. Every grade is listed (the Inventory page names all you have); the lesser equipment without
+ * its icon, to keep the app light. Found missing 2026-11-26 (a Hidden Cube's Resurrection
+ * Spiritstone): `rebirth`, `customize`, the Sync Stones (no sub-category) and the Pantheon's artworks.
  */
 const CATEGORIES = [
   ['currency', 0, []],
   ['misc', 0, []],
-  ['usable', null, ['gather', 'skinshop', 'rewardbox', 'kinabox', 'food', 'potion', 'drink', 'scroll', 'magicstone', 'polymorph', 'gettitle']],
+  ['usable', null, ['gather', 'skinshop', 'rewardbox', 'kinabox', 'food', 'potion', 'drink', 'scroll', 'magicstone', 'polymorph', 'gettitle', 'rebirth', 'customize'], ['Sync Stone']],
   ['weapon', 41, ['greatsword', 'sword', 'magicbook', 'staff', 'guarder', 'dagger', 'bow', 'orb', 'mace']],
   ['armor', 41, ['torso', 'pants', 'helmet', 'shoulder', 'gloves', 'boots', 'cape']],
   ['accessory', 41, ['necklace', 'earring', 'ring', 'bracelet']],
   ['equip', 41, ['belt', 'amulet', 'rune']],
   ['arcana', null, []],
+  ['pantheon', null, []],
 ]
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
@@ -93,11 +96,12 @@ async function list(filter) {
   return { items, whole: first.pageCount <= MAX_PAGES }
 }
 
-/** Every item of a main category: whole, else a sub-category at a time, else by their names' brackets. */
-async function category(mainCategory, subs) {
+/** Every item of a main category: whole, else a sub-category at a time, else by their names' brackets; and those `searches` find. */
+async function category(mainCategory, subs, searches = []) {
   const top = await list({ mainCategory })
   if (top.whole) return top.items
   const found = new Map(top.items.map((i) => [i.id, i]))
+  for (const searchTerm of searches) for (const i of (await list({ mainCategory, searchTerm })).items) found.set(i.id, i)
   for (const subCategory of new Set([...subs, ...top.items.map((i) => i.subCategory).filter(Boolean)])) {
     const sub = await list({ mainCategory, subCategory })
     for (const i of sub.items) found.set(i.id, i)
@@ -114,8 +118,8 @@ async function category(mainCategory, subs) {
 
 mkdirSync(ICONS, { recursive: true })
 const items = {}
-for (const [main, iconFrom, subs] of CATEGORIES) {
-  for (const i of await category(main, subs)) {
+for (const [main, iconFrom, subs, searches] of CATEGORIES) {
+  for (const i of await category(main, subs, searches)) {
     if (i.mainCategory !== main || i.isDisabled) continue
     const withIcon = iconFrom !== null && (i.grade ?? 0) >= iconFrom
     items[i.id] = [i.name, i.grade ?? 11, withIcon ? await icon(i.icon) : remoteIcon(i.icon), main === 'currency' || main === 'arcana' ? main : (i.subCategory ?? main)]

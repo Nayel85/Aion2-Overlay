@@ -51,6 +51,7 @@ export const settings = {
  *   2: the Hidden Cube's sound leaves the pets HUD's settings for its own (`cubes`): as it was set.
  *   3: the party frames show their members' debuffs (their icons were off by default).
  *   4: the Aggro overlay's button on the Unified HUD (it came without one).
+ *   5: a Hidden Cube key worth what a cube sells for (it counted 0 on the duty board).
  */
 export function applyLayoutUpdates(): void {
   if (settings.get('layoutVersion') < 1) layoutUpdate1()
@@ -67,6 +68,11 @@ export function applyLayoutUpdates(): void {
     const u = settings.get('unified')
     if (!u.widgets.includes('aggro')) settings.set('unified', { ...u, widgets: HUD_WIDGETS.filter((w) => w === 'aggro' || u.widgets.includes(w)) })
     settings.set('layoutVersion', 4)
+  }
+  if (settings.get('layoutVersion') < 5) {
+    const d = settings.get('duty')
+    if (!d.values.cubeKey) settings.set('duty', { ...d, values: { ...d.values, cubeKey: SETTINGS_DEFAULTS.duty.values.cubeKey } })
+    settings.set('layoutVersion', 5)
   }
 }
 function layoutUpdate1(): void {

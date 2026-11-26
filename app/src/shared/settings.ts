@@ -479,7 +479,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1181, y: 345 }, ccDebuffs: false, hideIdle: false, idleSeconds: 30 },
   meter: { enabled: true, position: { x: 362, y: 72 }, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 321, height: 328, hideIdle: true, idleSeconds: 15, power: 'below', gear: 'below', deaths: true, style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
-  layoutVersion: 4,
+  layoutVersion: 5,
   language: 'en',
   faction: 'elyos',
   playerLevel: 45,

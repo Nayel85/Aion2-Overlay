@@ -22,6 +22,8 @@ import { recipeOf } from '../shared/gather.ts'
 import { BOSS_RUNS } from '../shared/bossRuns.ts'
 import { AP_ITEM, apSource, GATHER_FAILED, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
 
+/** A Hidden Cube's loot told this long after its first burst is still its own. */
+const HIDDEN_CUBE_MS = 10_000
 const HISTORY_MAX = 200
 const CONTINUE_MS = 6 * 3_600_000
 const SAVE_AFTER_MS = 3000
@@ -294,6 +296,15 @@ export function startSessions(): void {
     const s = sessions.current
     if (a.source !== 'hiddencube' || !s) return
     const loot = notableLoot(Object.entries(a.items).map(([item, amount]) => ({ item: Number(item), amount })))
+    // Its loot can come in two bursts (2026-11-25: 6 s apart, the second its Manastones and Soulstones): one cube.
+    const same = [...(s.runs ?? [])].reverse().find((r) => r.kind === 'hiddencube' && a.at - r.start <= HIDDEN_CUBE_MS)
+    if (same) {
+      same.loot ??= {}
+      for (const [id, n] of Object.entries(loot)) same.loot[id] = (same.loot[id] ?? 0) + n
+      log(`session: the Hidden Cube also gave ${JSON.stringify(loot)}`)
+      changed()
+      return
+    }
     const done: DungeonRun = { world: tracker.nearby().world ?? 0, name: 'Hidden Cube', kind: 'hiddencube', start: a.at, end: a.at, ap: 0, kina: 0, currencies: {}, loot }
     const run = openRun()
     const runs = s.runs ?? []
