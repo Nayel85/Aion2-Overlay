@@ -75,6 +75,8 @@ let paidRun: DungeonRun | null = null
 function runAgain(s: PlaySession, run: DungeonRun, at: number, started = false): DungeonRun {
   closeRun(s, at)
   const again: DungeonRun = { world: run.world, name: run.name, kind: run.kind, start: at, end: null, ap: 0, kina: 0, currencies: {}, deaths: 0, partyDeaths: 0 }
+  // The same instance, the same Nightmare's boss (not told again for a second entry, 2026-11-26); its level not known.
+  if (run.boss !== undefined) again.boss = run.boss
   if (started) again.started = at
   s.runs = [...(s.runs ?? []), again]
   log(`session: ${run.name} again`)
