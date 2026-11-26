@@ -131,6 +131,11 @@ function corridorSeen(c: TrackedCharacter, id: string, ms: number, at: number): 
   const old = c.corridors.left[id]
   if (old && old.at > at) return false
   c.corridors.left[id] = { ms, at }
+  // A passage time given: that corridor is open this time (for the server's every character).
+  if (ms > 0) {
+    const offer = c.corridors.offer && c.corridors.offer.at >= corridorReset(at) ? c.corridors.offer : { at, ids: [] }
+    if (!offer.ids.includes(id)) c.corridors.offer = { at, ids: [...offer.ids, id] }
+  }
   if (old?.ms !== ms) log(`characters: ${c.name}'s corridor ${id}: ${ms ? `${ms} ms of passage` : 'none'}`)
   return old?.ms !== ms || !old || old.at < corridorReset(at)
 }

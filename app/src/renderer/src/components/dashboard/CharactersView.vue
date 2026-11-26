@@ -16,7 +16,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { ASCENSION, characterId, lastRefill, SEASON_WEEK_MAX, WALLET_MORE, seasonWeekNow, SHUGO_MISSION, WEEKLY_RESET, CORRIDORS, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
+import { ASCENSION, characterId, lastRefill, SEASON_WEEK_MAX, WALLET_MORE, seasonWeekNow, SHUGO_MISSION, WEEKLY_RESET, CORRIDORS, corridorOffer, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
 import { formatKina } from '@shared/kina.ts'
 import { serverLabel } from '@shared/servers.ts'
 
@@ -91,7 +91,7 @@ const servers = computed(() => {
       energy: counterNow(ENERGY, c.counters, now.value),
       nightmare: counterNow(NIGHTMARE, c.counters, now.value),
       ascension: counterNow(ASCENSION, c.counters, now.value),
-      corridors: corridorStates(c.corridors, now.value),
+      corridors: corridorStates(c.corridors, now.value, corridorOffer(Object.values(store.characters), c.server, now.value)),
       kina,
       boundKina,
       kinaTotal: kina === null && boundKina === null ? null : (kina ?? 0) + (boundKina ?? 0),
@@ -153,8 +153,9 @@ const CORRIDOR: Record<CorridorState, string> = {
   open: 'still to do',
   done: 'done',
   unknown: 'not seen since the reset (likely still to do: enter the Abyss to check)',
+  closed: 'not open this time (seen by a character of the server)',
 }
-const corridorsLeft = (list: CorridorState[]): number => list.filter((x) => x !== 'done').length
+const corridorsLeft = (list: CorridorState[]): number => list.filter((x) => x !== 'done' && x !== 'closed').length
 function corridorTitle(list: CorridorState[]): string {
   const lines = CORRIDORS.map((k, i) => `${k.name}: ${t(CORRIDOR[list[i]!])}`)
   lines.push(t('Back {when}', { when: stamp(nextCorridorReset(now.value)) }))
@@ -402,8 +403,10 @@ function corridorTitle(list: CorridorState[]): string {
                 <td class="px-5 py-2" :title="corridorTitle(r.corridors)">
                   <div class="flex items-center justify-center gap-2">
                     <div class="flex gap-1">
+                      <!-- A corridor not open this time: not shown. -->
                       <span
                         v-for="(st, i) in r.corridors"
+                        v-show="st !== 'closed'"
                         :key="i"
                         :class="[
                           'size-3 rounded-full',

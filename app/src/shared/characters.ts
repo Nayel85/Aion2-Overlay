@@ -107,6 +107,25 @@ export interface CorridorLog {
   left: Record<string, { ms: number; at: number }>
   /** When you were last in the Abyss (your Abyss time ticking). */
   abyssAt: number | null
+  /** The corridors given a passage time since the reset (`at`): the ones open this time, for every character of the server. */
+  offer?: { at: number; ids: string[] }
+}
+
+/**
+ * The corridors open this time on a server: those any of its characters was given a passage time
+ * for since the reset (all are given at once, as you enter the Abyss: the owner's 2026-11-27, one of
+ * three); null while none was seen.
+ */
+export function corridorOffer(all: TrackedCharacter[], server: number | null, now: number): Set<string> | null {
+  const since = corridorReset(now)
+  const ids = all
+    .filter((c) => c.server === server)
+    .flatMap((c) => [
+      ...(c.corridors?.offer && c.corridors.offer.at >= since ? c.corridors.offer.ids : []),
+      // A passage time still there since the reset (kept before the offer was).
+      ...Object.entries(c.corridors?.left ?? {}).filter(([, v]) => v.ms > 0 && v.at >= since).map(([id]) => id),
+    ])
+  return ids.length ? new Set(ids) : null
 }
 
 /** When the corridors last came back (the player's region). */
@@ -123,14 +142,16 @@ export function nextCorridorReset(now: number): number {
  * A corridor now: open (its passage time is there), done (none, and you were in the Abyss since
  * the reset, where it would have been given, or another corridor has its time), or unknown (not seen since the reset: likely open).
  */
-export type CorridorState = 'open' | 'done' | 'unknown'
+export type CorridorState = 'open' | 'done' | 'unknown' | 'closed'
 
-export function corridorStates(log: CorridorLog | undefined, now: number): CorridorState[] {
+/** `offer`: the corridors open this time on the server (corridorOffer); the others are closed, for everyone. */
+export function corridorStates(log: CorridorLog | undefined, now: number, offer: Set<string> | null = null): CorridorState[] {
   const since = corridorReset(now)
   // The passage times are all given at once: one seen since the reset means they were, and one
   // without its time since then has been done.
   const given = (log?.abyssAt ?? 0) >= since || CORRIDORS.some(({ id }) => (log?.left[id]?.at ?? 0) >= since && log!.left[id]!.ms > 0)
   return CORRIDORS.map(({ id }) => {
+    if (offer && !offer.has(id)) return 'closed'
     const seen = log?.left[id]
     if (!seen || seen.at < since) return 'unknown'
     if (seen.ms > 0) return 'open'
