@@ -32,6 +32,8 @@ const KIND_ICON: Record<string, string> = {
   abyssartifact: 'M2.5 13.5 6 10M4 8l4 4M5.5 6.5l6-4 2 2-4 6M11 5l-1.5 1.5',
   party: 'M6 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM1.5 14c0-2.5 2-4.5 4.5-4.5s4.5 2 4.5 4.5M11 7a2 2 0 1 0 0-4M12.5 9.7c1.2.6 2 1.9 2 3.3',
   raid: 'M3 13 13 3M9.5 3H13v3.5M3 3l4 4M13 13l-3-3',
+  // An arena: two swords crossed in a ring.
+  arena: 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM5 11l6-6M5 5l6 6',
   awaken: 'M9 1.5 3.5 9h4l-1 5.5L12.5 7h-4z',
   exploration: 'M8 14.5a6.5 6.5 0 1 0 0-13 6.5 6.5 0 0 0 0 13zM10.5 5.5 9 9l-3.5 1.5L7 7z',
   transcendence: 'M8 1.5l1.9 4 4.4.5-3.3 3 .9 4.4L8 11.2l-3.9 2.2.9-4.4-3.3-3 4.4-.5z',

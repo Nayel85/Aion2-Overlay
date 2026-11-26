@@ -41,7 +41,7 @@ const you = ref<Record<string, FightYou>>({})
 const NIGHTMARE = NIGHTMARE_ZONE
 /** Kinds where only the clear time counts (the catalogue's: the Ascension Trials). */
 const FAST_ONLY = (Object.keys(CONTENT) as ContentKind[]).filter((k) => CONTENT[k].timeOnly) as string[]
-const NOT_TIMED = ['fieldevent', 'shugo', 'invasion', 'fieldboss', 'hiddencube', 'other']
+const NOT_TIMED = ['fieldevent', 'shugo', 'invasion', 'fieldboss', 'hiddencube', 'arena', 'other']
 /** A zone's tab: its kind of content in the catalogue (shared/instances.ts), else its dungeon type. */
 const kindOf = (world: number): string => instanceAt(world)?.instance.kind ?? zoneType(world) ?? 'other'
 const kindLabel = (kind: string): string => CONTENT[kind as ContentKind]?.label ?? runKindLabel(kind)

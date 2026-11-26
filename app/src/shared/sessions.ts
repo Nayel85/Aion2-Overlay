@@ -317,6 +317,7 @@ export const RUN_KIND_LABELS: Record<string, string> = {
   invasion: 'Dimensional Invasion',
   fieldevent: 'Field events',
   fieldboss: 'Field bosses',
+  arena: 'Arenas',
   conquest: 'Conquest',
   transcendence: 'Transcendence',
   raid: 'Raids',
@@ -371,13 +372,15 @@ const NOT_DUNGEONS = new Set(['instancelayer', 'guild', 'personalagit', 'abyss']
 const FIELD_EVENT_WORLDS = 500_000
 
 /**
- * The dungeon a zone is, or null: [its name, its type]. Arenas and the open world are none. A party
+ * The dungeon a zone is, or null: [its name, its type]. An arena is one (its type `arena`); the open world is none. A party
  * dungeon's type is its mode: Exploration (questlog's `easy`), Conquest (`normal`, `advanced`: its
  * Normal and Hard) or Transcendence (`hard`, stages 1-4: Deus Research Base, Shattered Arkanis...).
  */
 export function dungeonOf(world: number | null): [string, string] | null {
   const z = world === null ? undefined : ZONES[world]
-  if (!z || !z[2] || NOT_DUNGEONS.has(z[2]) || z[1]?.startsWith('arena')) return null
+  if (!z || !z[2] || NOT_DUNGEONS.has(z[2])) return null
+  // An arena's match: a run of its own (its Abyss Points, its time), whatever kind of arena.
+  if (z[1]?.startsWith('arena')) return [z[0], 'arena']
   if (z[2] === 'fieldevent' && world! < FIELD_EVENT_WORLDS) return null
   if (z[2] !== 'party') return [z[0], z[2]]
   return [z[0], z[4] !== null ? 'transcendence' : z[3] === 'easy' ? 'exploration' : z[3] ? 'conquest' : 'party']
@@ -385,11 +388,11 @@ export function dungeonOf(world: number | null): [string, string] | null {
 
 /**
  * A PvE instance: a dungeon (Expeditions, Transcendences, Nightmares...) but the Abyss Corridors,
- * where the other side can come. Its other players are your party (other servers'), not enemies.
+ * where the other side can come, and the arenas. Its other players are your party (other servers'), not enemies.
  */
 export function pveInstance(world: number | null): boolean {
   const dungeon = dungeonOf(world)
-  return dungeon !== null && dungeon[1] !== 'abyssartifact'
+  return dungeon !== null && dungeon[1] !== 'abyssartifact' && dungeon[1] !== 'arena'
 }
 
 /** A session's resources gathered: [name, grade, how many], the best first. */

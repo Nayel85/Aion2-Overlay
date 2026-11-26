@@ -66,7 +66,7 @@ test("a dungeon's gains are the dungeon's, by its name, its rewards too", () => 
   assert.deepEqual(s.kinaSources, { 'dungeon:220022': 300_000 })
 })
 
-test('a dungeon is a zone the game gives a dungeon type; arenas and the open world are not', () => {
+test('a dungeon is a zone the game gives a dungeon type, an arena too; the open world is not', () => {
   assert.deepEqual(dungeonOf(220022), ['Fire Temple', 'quest'])
   assert.deepEqual(dungeonOf(503001), ['Abyss Corridor', 'abyssartifact'])
   assert.deepEqual(dungeonOf(900001), ['Daeva Bio-Research Base', 'daily'])
@@ -80,9 +80,9 @@ test('a dungeon is a zone the game gives a dungeon type; arenas and the open wor
   assert.equal(runName({ ...run, world: 610062, name: 'Shattered Arkanis' }), 'Shattered Arkanis · Stage 4')
   assert.equal(runName({ ...run, world: 600023, name: 'Fire Temple' }), 'Fire Temple · Hard')
   assert.equal(runName({ ...run, world: 600021, name: 'Fire Temple' }), 'Fire Temple')
-  // An arena, an open-world layer, the open world: none.
+  // An arena's match: a run of its own. An open-world layer, the open world: none.
+  assert.deepEqual(dungeonOf(7), ['Fire Temple Arena', 'arena'])
   assert.equal(dungeonOf(39), null)
-  assert.equal(dungeonOf(7), null)
   assert.equal(dungeonOf(1010), null)
   assert.equal(dungeonOf(null), null)
 })

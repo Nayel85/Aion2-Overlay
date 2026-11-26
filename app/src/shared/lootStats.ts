@@ -13,7 +13,7 @@ import { DUNGEON_BOSSES } from './dungeonBosses.ts'
 import { goldKind, itemInfo, runCounts, runKindLabel, runName, type DungeonRun, type GoldKind, type LootCounts, type PlaySession } from './sessions.ts'
 
 /** Runs whose loot is not a dungeon's cubes. */
-const NOT_DUNGEON_KINDS = new Set(['shugo', 'invasion', 'fieldevent', 'fieldboss', 'hiddencube'])
+const NOT_DUNGEON_KINDS = new Set(['shugo', 'invasion', 'fieldevent', 'fieldboss', 'hiddencube', 'arena'])
 export type LootUnit = 'run' | 'cube' | 'hour'
 export interface LootFilter {
   /** The characters (all when empty). */
