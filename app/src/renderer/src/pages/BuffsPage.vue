@@ -7,7 +7,7 @@ import { useNow, useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onMounted, watch } from 'vue'
 import BuffIcon from '@/components/BuffIcon.vue'
 import { t } from '@/lib/i18n.ts'
-import { buffName, consumable, hiddenBuff, remaining } from '@/lib/buffs.ts'
+import { buffName, consumable, effectsOrder, remaining, shownEffects } from '@/lib/buffs.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import type { Buff } from '@shared/buffs.ts'
@@ -21,18 +21,9 @@ const idle = useIdle(() => store.settings.buffs)
 // Ticking while there are effects to count down (or the sample to place).
 const now = useNow(100, () => store.buffs.length > 0 || store.panelVisible)
 
-/** Timed ones first, the soonest to run out first; then the ones without a timer. */
-const order = (a: Buff, b: Buff): number => (a.endsAt ?? Infinity) - (b.endsAt ?? Infinity) || a.id - b.id
-// The ones the game does not show either (no icon, no name, system regen) stay hidden.
-const live = computed(() =>
-  store.buffs.filter(
-    (b) =>
-      (cfg.value.passives || !b.passive) &&
-      (cfg.value.consumables || !consumable(b.id)) &&
-      (b.endsAt === null || b.endsAt > now.value - 500) &&
-      !hiddenBuff(b.id, b.skill, b.endsAt !== null, (b.endsAt ?? 0) - b.startedAt),
-  ),
-)
+const order = effectsOrder
+// The ones worth showing (lib/buffs.ts shownEffects), as set: passives, consumables.
+const live = computed(() => shownEffects(store.buffs, now.value).filter((b) => (cfg.value.passives || !b.passive) && (cfg.value.consumables || !consumable(b.id))))
 /**
  * Nothing on you while the dashboard is up: a sample to place it by, as every overlay has. Common
  * buffs of the owner's fights (A2Tools' ids, their icons bundled), each running down over and over.

@@ -13,7 +13,8 @@ import { useNow, useIdle } from '@/lib/now.ts'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import CloseButton from '@/components/CloseButton.vue'
 import CollapseButton from '@/components/CollapseButton.vue'
-import { buffIcon, buffName, ccKind, hiddenBuff, isShield } from '@/lib/buffs.ts'
+import { buffName, ccKind, effectsOrder, isShield, remaining, shownEffects } from '@/lib/buffs.ts'
+import BuffIcon from '@/components/BuffIcon.vue'
 import { t } from '@/lib/i18n.ts'
 import { panelStyle } from '@/lib/overlayLook.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
@@ -48,16 +49,17 @@ interface Row {
   bossOn: boolean
 }
 const live = (d: PartyDebuff): boolean => d.endsAt === null || d.endsAt > now.value
+/** A member's debuffs, as the Buffs overlay shows yours (lib/buffs.ts shownEffects): the controls first, then the soonest to run out. */
 const shownDebuffs = (list: PartyDebuff[]): PartyDebuff[] =>
-  list
-    .filter((d) => d.debuff !== false && !hiddenBuff(d.id, d.skill, d.endsAt !== null, d.endsAt !== null ? d.endsAt - d.startedAt : 0) && (d.endsAt === null || d.endsAt > now.value))
-    .sort((a, b) => Number(!!ccKind(b.id)) - Number(!!ccKind(a.id)))
+  shownEffects(list, now.value)
+    .filter((d) => d.debuff)
+    .sort((a, b) => Number(!!ccKind(b.id)) - Number(!!ccKind(a.id)) || effectsOrder(a, b))
 /** Afflicted, as the setting says: any debuff, or one taking control. */
 const afflicted = (r: Row): boolean => (cfg.value.afflictedBy === 'control' ? r.debuffs.some((d) => ccKind(d.id)) : r.debuffs.length > 0)
 
 /** The sample: a Stun (ICON_Abnormal_Stun) of 4 s on one, over and over. */
 const SAMPLE = computed<Row[]>(() => {
-  const stun: PartyDebuff = { id: 12000001, stacks: 1, endsAt: now.value + 4000 - (now.value % 4000), startedAt: now.value - 1000, skill: null }
+  const stun: PartyDebuff = { id: 12000001, stacks: 1, endsAt: now.value + 4000 - (now.value % 4000), startedAt: now.value - 1000, skill: null, by: 0, mine: false, debuff: true, passive: false }
   const at = now.value
   return [
     { member: { name: t('You'), slot: 1, level: 45, combatPower: 0, server: 0, className: 'Cleric', entity: -1 }, vitals: { hp: 26_672, maxHp: 26_672, flight: 0, maxFlight: 0, at }, you: true, debuffs: [], shielded: true, bossOn: false },
@@ -100,7 +102,6 @@ const hpText = (v: Vitals | null): string => {
   return ''
 }
 const fill = (r: Row): string => (down(r.vitals) ? 'transparent' : afflicted(r) ? cfg.value.afflictedColor : cfg.value.hpColor)
-const secondsLeft = (d: PartyDebuff): string => (d.endsAt === null ? '' : String(Math.max(0, Math.ceil((d.endsAt - now.value) / 1000))))
 
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('party', { ...cfg.value, ...patch })
 const drag = windowDrag({ overlay: 'party' })
@@ -154,8 +155,8 @@ onMounted(() => {
             </div>
             <div v-if="cfg.debuffIcons && r.debuffs.length && !down(r.vitals)" class="mt-0.5 flex flex-wrap gap-0.5">
               <span v-for="d in r.debuffs.slice(0, 8)" :key="d.id" class="relative size-[18px]" :title="buffName(d.id)">
-                <img v-if="buffIcon(d.id, d.skill)" :src="buffIcon(d.id, d.skill)!" alt="" draggable="false" :class="['size-[18px] rounded-sm', ccKind(d.id) ? 'ring-1 ring-red' : 'ring-1 ring-black/60']" />
-                <span v-if="secondsLeft(d)" class="absolute -bottom-0.5 right-0 text-[8px] font-bold tabular-nums leading-none text-white [text-shadow:0_0_2px_#000,0_0_2px_#000]">{{ secondsLeft(d) }}</span>
+                <BuffIcon :id="d.id" :skill="d.skill" :size="18" :class="ccKind(d.id) ? 'ring-1 ring-red' : 'ring-1 ring-black/60'" />
+                <span v-if="d.endsAt !== null" class="absolute -bottom-0.5 right-0 text-[8px] font-bold tabular-nums leading-none text-white [text-shadow:0_0_2px_#000,0_0_2px_#000]">{{ remaining(d.endsAt - now) }}</span>
               </span>
             </div>
           </li>

@@ -1,3 +1,4 @@
+import type { Buff } from './buffs.ts'
 /**
  * Your party, for its frames over the game (pages/PartyPage.vue): who is in it, as the game's roster
  * says (`02 97`, A2Tools: name, class, level, combat power, slot), and each member's HP as the game
@@ -26,16 +27,8 @@ export interface Vitals {
 }
 
 /** A debuff on a member, as the engine's buffs are (a monster's). */
-export interface PartyDebuff {
-  id: number
-  stacks: number
-  /** ms, null when not known. */
-  endsAt: number | null
-  startedAt: number
-  skill: number | null
-  /** A debuff (a monster's or the other faction's); else a buff, a shield among them. */
-  debuff?: boolean
-}
+/** What is on a party member: the engine's same records as on you (`buffs_of`), shared/buffs.ts's. */
+export type PartyDebuff = Buff
 
 export interface Party {
   members: PartyMember[]

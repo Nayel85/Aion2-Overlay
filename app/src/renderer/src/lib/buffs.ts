@@ -3,6 +3,7 @@
  * with the icons bundled in public/buffs (scripts/fetch-buff-icons.mjs). A buff without an icon
  * of its own shows the icon of the skill that applied it, as upstream does.
  */
+import type { Buff } from '@shared/buffs.ts'
 import table from '@shared/abnormals.json'
 import { skillIcon } from './skillIcons.ts'
 
@@ -109,6 +110,16 @@ export function ccKind(id: number): CcKind | null {
   if (name) for (const [re, kind] of CC_NAMES) if (re.test(name)) return kind
   return null
 }
+
+/**
+ * The effects worth showing out of a list (yours, a party member's): still running (half a second's
+ * grace: the server's end and ours), and not one the game hides either (hiddenBuff). Every overlay of
+ * effects starts from it: the Buffs overlay, the CC panel's debuffs, the party frames.
+ */
+export const shownEffects = <B extends Buff>(list: B[], now: number): B[] =>
+  list.filter((b) => (b.endsAt === null || b.endsAt > now - 500) && !hiddenBuff(b.id, b.skill, b.endsAt !== null, (b.endsAt ?? 0) - b.startedAt))
+/** Timed ones first, the soonest to run out first; then the ones without a timer. */
+export const effectsOrder = (a: Buff, b: Buff): number => (a.endsAt ?? Infinity) - (b.endsAt ?? Infinity) || a.id - b.id
 
 /** What is left, as the overlay shows it: "1:05", "42", "9.5"; empty when it never runs out. */
 export function remaining(ms: number | null): string {

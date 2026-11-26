@@ -49,6 +49,7 @@ export const settings = {
  *   1: the Unified HUD takes over: it is turned on and the other widgets are closed (the DPS meter
  *      and the pets HUD keep whatever the player set). They are still a click away on the HUD.
  *   2: the Hidden Cube's sound leaves the pets HUD's settings for its own (`cubes`): as it was set.
+ *   3: the party frames show their members' debuffs (their icons were off by default).
  */
 export function applyLayoutUpdates(): void {
   if (settings.get('layoutVersion') < 1) layoutUpdate1()
@@ -56,6 +57,10 @@ export function applyLayoutUpdates(): void {
     const was = (db().get('hud') ?? {}) as { cubeSound?: unknown; cubeSoundId?: unknown; cubeVolume?: unknown; cubeCustomName?: unknown }
     settings.set('cubes', { sound: was.cubeSound, soundId: was.cubeSoundId, volume: was.cubeVolume, customName: was.cubeCustomName })
     settings.set('layoutVersion', 2)
+  }
+  if (settings.get('layoutVersion') < 3) {
+    settings.set('party', { ...settings.get('party'), debuffIcons: true })
+    settings.set('layoutVersion', 3)
   }
 }
 function layoutUpdate1(): void {

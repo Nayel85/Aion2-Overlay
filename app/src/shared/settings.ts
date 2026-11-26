@@ -463,7 +463,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   applicants: { enabled: true, position: { x: 872, y: 220 }, opacity: 0.85, collapsed: false, hideAfter: 60 },
   aggro: { enabled: true, position: null, opacity: 0.8, collapsed: false },
   party: {
-    enabled: true, position: { x: 1709, y: 165 }, opacity: 0.85, collapsed: false, self: false, header: false, icon: true, hpText: 'none', debuffIcons: false, shields: true, bossTarget: true,
+    enabled: true, position: { x: 1709, y: 165 }, opacity: 0.85, collapsed: false, self: false, header: false, icon: true, hpText: 'none', debuffIcons: true, shields: true, bossTarget: true,
     width: 180, barHeight: 22, gap: 2, fontSize: 12, hpColor: PARTY_DEFAULT_COLORS.hp, afflictedColor: PARTY_DEFAULT_COLORS.afflicted, afflictedBy: 'any',
     hideIdle: false, idleSeconds: 30,
   },
@@ -479,7 +479,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1181, y: 345 }, ccDebuffs: false, hideIdle: false, idleSeconds: 30 },
   meter: { enabled: true, position: { x: 362, y: 72 }, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 321, height: 328, hideIdle: true, idleSeconds: 15, power: 'below', gear: 'below', deaths: true, style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
-  layoutVersion: 2,
+  layoutVersion: 3,
   language: 'en',
   faction: 'elyos',
   playerLevel: 45,
