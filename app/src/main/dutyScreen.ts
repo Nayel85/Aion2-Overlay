@@ -2,9 +2,10 @@
  * The game's Journal open on its Duty tab, told by looking at the screen: once the board is loaded,
  * opening it again sends nothing the app can read (its `41 8D` comes as it closes, 2026-11-26), so the
  * duty window opens as the tab is seen. The Journal's top band (its title, the Duty tab lit, Mission
- * under it) is learned once, the tab open (`learn`): its bright spots, the text the game draws white.
- * Then, while the game is in front and you are not fighting, the band is looked at a few times a
- * second: most of those spots bright again, and few others, is the tab. Seen, the window opens;
+ * under it) is learned once, the tab open (`learn`): its bright spots, the text the game draws white,
+ * grouped into its words (Journal, Duty and its glow, Mission). Then, while the game is in front and
+ * you are not fighting, the band is looked at a few times a second: every word bright again, and few
+ * other spots, is the tab (the Journal alone, opening or on another tab, has some of them only). Seen, the window opens;
  * gone, it closes. Closed by its X while the tab is up, it waits for the tab to go and come back.
  */
 import { screen, type Display } from 'electron'
@@ -13,14 +14,20 @@ import { screenGrey } from './screenGrey.ts'
 import { log } from './tracker.ts'
 import { overlayBounds, shownOverlayBounds } from './windows.ts'
 
-/** The picture: half the display's size, its top band (the Journal's title and tabs). */
+/** The picture: half the display's size, its top band (the Journal's title, its tabs and Mission under them: 12% down on a 1152-high screen). */
 const SCALE = 0.5
-const BAND = 0.11
+const BAND = 0.16
+/** What a learned picture is: one of another version (a narrower band) is learned again. */
+const VERSION = 2
 const EVERY_MS = 600
 /** A learned spot counts as bright from this share of the band's brightest. */
 const BRIGHT = 0.72
-/** The tab: this share of the learned bright spots bright again... */
+/** The tab: this share of each word's bright spots bright again... */
 const MATCH = 0.7
+/** A word: bright spots this close (in spots) are one; fewer than PART_MIN of them, a speck, not counted. */
+const GAP_X = 4
+const GAP_Y = 2
+const PART_MIN = 6
 /** ...and at most this many others (a share of the learned): another tab lit, a bright scene. */
 const EXTRA = 0.35
 /** Too few bright spots learned: not the Journal (learned with something else in front). */
@@ -30,13 +37,35 @@ const WAIT_MS = 15_000
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 
 interface Print {
+  version: number
   /** The display it was learned on: another size, and it is learned again. */
   display: { width: number; height: number }
   width: number
   height: number
   level: number
   bright: number[]
+  /** `bright` by word (learned before, found from it). */
+  parts?: number[][]
   at: number
+}
+
+/** The bright spots grouped into words: those close enough to each other, one. */
+function wordsOf(bright: number[], width: number): number[][] {
+  const at = new Map(bright.map((i, n) => [i, n]))
+  const root = bright.map((_, n) => n)
+  const find = (n: number): number => (root[n] === n ? n : (root[n] = find(root[n]!)))
+  bright.forEach((i, n) => {
+    const x = i % width
+    for (let dy = 0; dy <= GAP_Y; dy++)
+      for (let dx = -GAP_X; dx <= GAP_X; dx++) {
+        if ((dy === 0 && dx <= 0) || x + dx < 0 || x + dx >= width) continue
+        const m = at.get(i + dy * width + dx)
+        if (m !== undefined) root[find(m)] = find(n)
+      }
+  })
+  const words = new Map<number, number[]>()
+  bright.forEach((i, n) => words.set(find(n), [...(words.get(find(n)) ?? []), i]))
+  return [...words.values()].filter((w) => w.length >= PART_MIN)
 }
 
 const file = dataFile('duty-screen.json')
@@ -91,9 +120,12 @@ export const dutyScreen = {
       log(`duty screen: not learned, ${bright.length} bright spots`)
       return { ok: false, spots: bright.length }
     }
-    print = { display: { width: display.size.width, height: display.size.height }, width: pic.width, height: pic.height, level, bright, at: Date.now() }
+    const parts = wordsOf(bright, pic.width)
+    print = { version: VERSION, display: { width: display.size.width, height: display.size.height }, width: pic.width, height: pic.height, level, bright, parts, at: Date.now() }
     file.save(() => print)
-    log(`duty screen: learned, ${bright.length} bright spots at ${level}+ on ${display.size.width}x${display.size.height}`)
+    // Each word where it is (its left, % of the width) and how big: to tell what was learned.
+    const where = parts.map((w) => `${Math.round(((Math.min(...w.map((i) => i % pic.width)) / pic.width) * 100))}%:${w.length}`).join(' ')
+    log(`duty screen: learned, ${bright.length} bright spots at ${level}+ on ${display.size.width}x${display.size.height}, ${parts.length} words (${where})`)
     return { ok: true, spots: bright.length }
   },
   forget(): void {
@@ -111,22 +143,31 @@ async function isTab(): Promise<boolean | null> {
   if (!pic || pic.width !== print.width || pic.height !== print.height) return null
   const learned = new Set(print.bright)
   let total = 0
-  let lit = 0
-  for (const i of print.bright) {
-    const v = pic.spots[i]!
-    if (v < 0) continue
-    total++
-    if (v >= print.level) lit++
+  let words = 0
+  for (const word of (print.parts ??= wordsOf(print.bright, print.width))) {
+    let seen = 0
+    let lit = 0
+    for (const i of word) {
+      const v = pic.spots[i]!
+      if (v < 0) continue
+      seen++
+      if (v >= print.level) lit++
+    }
+    total += seen
+    // Under one of this app's windows: not told either way.
+    if (seen < PART_MIN) continue
+    if (lit / seen < MATCH) return false
+    words++
   }
   let extra = 0
   pic.spots.forEach((v, i) => v >= print!.level && !learned.has(i) && extra++)
-  if (total < FEWEST) return null
-  return lit / total >= MATCH && extra <= total * EXTRA
+  if (total < FEWEST || !words) return null
+  return extra <= total * EXTRA
 }
 
 export function watchDutyScreen(w: DutyScreenWatch): void {
   const saved = file.read() as Print | null
-  print = saved && Array.isArray(saved.bright) ? saved : null
+  print = saved && saved.version === VERSION && Array.isArray(saved.bright) ? saved : null
   watching = w
   timer ??= setInterval(() => void look(w), EVERY_MS)
 }
