@@ -1788,4 +1788,12 @@ export const FR: Record<string, string> = {
   'The Unified HUD has the Aggro overlay\'s button.': 'Le HUD unifié a le bouton de l\'overlay Aggro.',
   'Duty board: its window opens each time you open the board in game, not only the first.': 'Tableau des duty : sa fenêtre s\'ouvre à chaque ouverture du tableau en jeu, pas seulement la première.',
   'The app\'s last Lokthar names are Nayel\'s (the engine, the update\'s folder). Updating from Settings works from this version on.': 'Les derniers noms Lokthar de l\'app deviennent Nayel (le moteur, le dossier des mises à jour). La mise à jour depuis les réglages marche à partir de cette version.',
+  'Waiting for the game…': 'En attente du jeu…',
+  'Not found: open the Journal on Duty and try again': 'Pas trouvé : ouvre le Journal sur Duty et réessaie',
+  'Learned {when}': 'Appris le {when}',
+  'Forget': 'Oublier',
+  'The Journal\'s Duty tab': 'L\'onglet Duty du Journal',
+  'Opened again, the board sends nothing the app can read: it looks for the Journal\'s Duty tab on the screen instead. Click Learn, go back to the game and open the Journal on Duty (Mission) within 15 seconds.': 'Quand tu rouvres le tableau, le jeu n\'envoie rien que l\'app puisse lire : elle cherche donc l\'onglet Duty du Journal à l\'écran. Clique sur Apprendre, retourne dans le jeu et ouvre le Journal sur Duty (Mission) dans les 15 secondes.',
+  'Learn': 'Apprendre',
+  'Learn again': 'Réapprendre',
 }

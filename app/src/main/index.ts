@@ -25,6 +25,7 @@ import { registerIpc } from './ipc.ts'
 import { applyLayoutUpdates, settings } from './settings.ts'
 import { startIdleWatch } from './idle.ts'
 import { startLokthar } from './lokthar.ts'
+import { dutyScreen, watchDutyScreen } from './dutyScreen.ts'
 import { join } from 'node:path'
 import { copyDataFolder, moveDataFolder, OLD_NAMES } from './migrate.ts'
 import { startHotkeys, stopHotkeys } from './hotkeys.ts'
@@ -51,6 +52,8 @@ const copied = copyDataFolder(join(app.getPath('appData'), LOKTHAR_FOLDER), app.
 const SHOP_SETTLE_MS = 1_500
 /** The duty board's screen drawn whole, its opening over. */
 const DUTY_SETTLE_MS = 1_500
+/** The Duty tab not looked for in a fight, nor this long after it. */
+const FIGHT_QUIET_MS = 3_000
 const migrated = OLD_NAMES.map((name) => moveDataFolder(join(app.getPath('appData'), name), app.getPath('userData')))
   .filter((m) => m !== 'nothing to move')
   .join('; ')
@@ -124,6 +127,8 @@ if (!app.requestSingleInstanceLock()) {
       // The duty board slides in: its picture taken once it is all there (taken as it came in, the board's
       // own drawing read as it gone, 2-4 s after it opened, 2026-11-26).
       const settle = id === 'duty' ? DUTY_SETTLE_MS : undefined
+      // The duty board's tab learned: dutyScreen.ts tells when it is gone.
+      if (id === 'duty' && dutyScreen.learned()) return
       if (overlayOpen(id)) watchShopScreen({ open: () => overlayOpen(id), window: () => overlayBounds(id), gameInFront: () => gameInFront, gone: (share) => left(id, `its screen is gone (${Math.round(share * 100)}% changed)`, true), settle })
     }
     // `seen`: told by the screen itself, so taken at once (the settling is for the packets' signs).
@@ -139,7 +144,15 @@ if (!app.requestSingleInstanceLock()) {
     tracker.onShop(() => openedBy('merchant'))
     tracker.onEvent('dutyBoard', (ev) => ev.opened === true && openedBy('duty'))
     tracker.onEvent('dutyTaken', () => openedBy('duty'))
-    tracker.onEvent('dutyOpened', () => openedBy('duty'))
+    // The board opened again, its board already loaded: the game says nothing then (its `41 8D` comes
+    // as it closes), so the Journal's Duty tab is looked for on the screen, once learned.
+    let fightAt = 0
+    tracker.onEvent('combat', () => (fightAt = Date.now()))
+    watchDutyScreen({
+      looking: () => gameInFront && Date.now() - fightAt > FIGHT_QUIET_MS && settings.get('duty').overlay,
+      seen: () => openedBy('duty'),
+      gone: () => left('duty', "the Journal's Duty tab is gone", true),
+    })
     tracker.onEvent('nearby', () => SCREENS.forEach((id) => screenAt[id] && String(tracker.nearby().position) !== screenAt[id]!.position && left(id, 'you moved')))
     tracker.onEvent('combat', () => leftAll('you are fighting'))
     onGameMapStatus((status, was) => status === 'found' && was !== 'found' && leftAll("the game's map is back"))

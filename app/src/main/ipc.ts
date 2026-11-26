@@ -1,4 +1,5 @@
 /** Every invoke handler, typed against the contract in shared/ipc.ts. */
+import { dutyScreen } from './dutyScreen.ts'
 import { app, ipcMain, shell } from 'electron'
 import { mkdir } from 'node:fs/promises'
 import { STORAGE_CLEARABLE, type StorageId } from '../shared/storage.ts'
@@ -147,6 +148,9 @@ export function registerIpc(): void {
   handle('expeditions:get', () => expeditionsStore.get())
   handle('merchant:seen', () => merchantSeen.get())
   handle('duty:close', () => closeOverlay('duty'))
+  handle('duty:screenLearned', () => dutyScreen.learned())
+  handle('duty:learnScreen', () => dutyScreen.learn())
+  handle('duty:forgetScreen', () => dutyScreen.forget())
   handle('inventory:arrivals', () => inventoryStore.arrivals())
   handle('items:details', (item: number) => itemDetails(item))
   handle('characters:refresh', (id) => characterStore.refresh(id))

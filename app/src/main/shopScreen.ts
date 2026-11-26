@@ -8,7 +8,8 @@
  * the window closes (its X, the setting off), and takes no pictures while the window is hidden or
  * the game is not in front (an alt-tab away and back takes the picture again).
  */
-import { desktopCapturer, screen, type Rectangle } from 'electron'
+import { screen, type Rectangle } from 'electron'
+import { screenGrey } from './screenGrey.ts'
 
 /** The picture: small, and smoothed by the shrinking (an item's tooltip, a player walking by, barely count). */
 const W = 64
@@ -101,25 +102,5 @@ async function look(): Promise<void> {
 
 /** The screen the merchant window is on, W × H grey, with the window's own spot as -1. */
 async function picture(hole: Rectangle): Promise<Int16Array | null> {
-  const display = screen.getDisplayMatching(hole)
-  const sources = await desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: W * 2, height: H * 2 } })
-  const shot = (sources.find((s) => s.display_id === String(display.id)) ?? sources[0])?.thumbnail
-  if (!shot || shot.isEmpty()) return null
-  const bgra = shot.resize({ width: W, height: H, quality: 'good' }).toBitmap()
-  if (bgra.length !== W * H * 4) return null
-  const b = display.bounds
-  // A spot's worth around it too: the spots the window's edge cuts through change with it.
-  const padX = b.width / W
-  const padY = b.height / H
-  const out = new Int16Array(W * H)
-  for (let y = 0; y < H; y++) {
-    const sy = b.y + ((y + 0.5) * b.height) / H
-    for (let x = 0; x < W; x++) {
-      const sx = b.x + ((x + 0.5) * b.width) / W
-      const inHole = sx >= hole.x - padX && sx < hole.x + hole.width + padX && sy >= hole.y - padY && sy < hole.y + hole.height + padY
-      const i = (y * W + x) * 4
-      out[y * W + x] = inHole ? -1 : Math.round(0.114 * bgra[i]! + 0.587 * bgra[i + 1]! + 0.299 * bgra[i + 2]!)
-    }
-  }
-  return out
+  return (await screenGrey(screen.getDisplayMatching(hole), { width: W, height: H }, [hole]))?.spots ?? null
 }

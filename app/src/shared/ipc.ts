@@ -78,6 +78,11 @@ export interface InvokeChannels {
   'merchant:seen': { args: []; result: MerchantSeen }
   /** The duty board's window closed by its X (it opens again with the board). */
   'duty:close': { args: []; result: void }
+  /** The Journal's Duty tab as the app knows it on the screen (main/dutyScreen.ts): when it was learned, or null. */
+  'duty:screenLearned': { args: []; result: number | null }
+  /** Learn it, once the game is back in front with the tab open: done, and how many bright spots it found. */
+  'duty:learnScreen': { args: []; result: { ok: boolean; spots: number } }
+  'duty:forgetScreen': { args: []; result: void }
   /** What came into your characters' hands, the oldest first (the latest 1000). */
   'inventory:arrivals': { args: []; result: Arrival[] }
   /** An equipment's base stats and enchantment bonuses (questlog's, asked once: main/itemDetails.ts). */
@@ -296,7 +301,7 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'inventory:arrivals',
   'app:info', 'app:quit', 'app:openPath',
   'settings:all', 'settings:set',
-  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'duty:get', 'history:you', 'expeditions:get', 'merchant:seen', 'duty:close', 'items:details', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
+  'tracker:get', 'gamemap:pick', 'gamemap:setRegion', 'gamemap:report', 'gamemap:requestPreview', 'gamemap:get', 'gamemap:log', 'gamemap:openLog', 'gamemap:restart', 'gamemap:detail', 'gamemap:saveFeatures', 'gamemap:display', 'gamemap:grab', 'characters:get', 'sessions:get', 'inventory:get', 'duty:get', 'history:you', 'expeditions:get', 'merchant:seen', 'duty:close', 'duty:screenLearned', 'duty:learnScreen', 'duty:forgetScreen', 'items:details', 'characters:refresh', 'characters:forget', 'tracker:setSouls', 'tracker:setName', 'tracker:restart', 'tracker:resetSession', 'tracker:clearPvp',
   'killfeed:open', 'killfeed:close', 
   
   'panel:open', 'panel:characters',

@@ -826,6 +826,8 @@ export const openOverlay = (id: OverlayId): void => OVERLAYS[id].create()
 export const closeOverlay = (id: OverlayId): void => OVERLAYS[id].close()
 export const overlayOpen = (id: OverlayId): boolean => OVERLAYS[id].win() !== null
 export const overlayBounds = (id: OverlayId): Rectangle | null => OVERLAYS[id].bounds()
+/** Where the overlays showing are: what the screen watchers leave out of their pictures. */
+export const shownOverlayBounds = (): Rectangle[] => Object.values(OVERLAYS).map((o) => o.bounds()).filter((b): b is Rectangle => b !== null)
 export const overlayMove = (id: OverlayId, to: Point): void => OVERLAYS[id].move(to)
 export const overlayDragEnded = (id: OverlayId): void => OVERLAYS[id].dragEnded()
 export const overlayResetPosition = (id: OverlayId): void => OVERLAYS[id].resetPosition()
