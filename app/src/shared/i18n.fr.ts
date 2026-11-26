@@ -1643,8 +1643,6 @@ export const FR: Record<string, string> = {
   'Each Key: Hidden Cube.': 'Chaque Key: Hidden Cube.',
   'Shugo Festival keys': 'Clés du Shugo Festival',
   'Each Shugo Festival Reward Key.': 'Chaque Shugo Festival Reward Key.',
-  'Tickets and Odyle Energy': 'Tickets et énergie d\'Odyle',
-  'Each Nightmare, Ascension Trial or Unknown Fissure ticket, or Odyle Energy.': 'Chaque ticket Nightmare, Ascension Trial ou Unknown Fissure, ou énergie d\'Odyle.',
   'Pure crafting materials': 'Matériaux de craft Pure',
   'Each Pure (purple) gemstone, ore or log.': 'Chaque pierre, minerai ou bûche Pure (violette).',
   'What 1 Kina is worth: 1 to count Kina, 0 to leave it out.': 'Ce que vaut 1 Kina : 1 pour compter les Kina, 0 pour les ignorer.',
@@ -1803,4 +1801,7 @@ export const FR: Record<string, string> = {
   '{kina} expected in all, {more} more than taking {free} now.': '{kina} attendus en tout, {more} de plus que d\'en prendre {free} maintenant.',
   'Take, then reroll · {cost}': 'Prends, puis reroll · {cost}',
   'Reroll all · {cost}': 'Reroll tout · {cost}',
+  'Tickets': 'Tickets',
+  'Each Nightmare, Ascension Trial or Unknown Fissure ticket.': 'Chaque ticket Nightmare, Ascension Trial ou Unknown Fissure.',
+  'Each Odyle Energy, or Small Odyle Energy.': 'Chaque Odyle Energy, ou Small Odyle Energy.',
 }

@@ -63,7 +63,8 @@ export function dutyCategory(item: number): DutyCategory | null {
   if (sub === 'getgodstone' || info.name.startsWith('Theostone')) return 'theostone'
   if (info.name.startsWith('Key: Hidden Cube')) return 'cubeKey'
   if (info.name.startsWith('Shugo Festival Reward Key')) return 'shugoKey'
-  if (sub === 'addcontentsticketcount') return 'tickets'
+  // The same sub-category, the tickets and Odyle Energy: told apart by name.
+  if (sub === 'addcontentsticketcount') return /Odyle Energy/.test(info.name) ? 'odyle' : 'tickets'
   const gold = goldKind(item)
   if (gold === 'craft') return 'goldCraft'
   if (gold === 'equipment') return 'goldEquipment'
