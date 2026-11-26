@@ -131,8 +131,9 @@ export interface DungeonRun {
   /** Your deaths in it, and the group's (yours with them). */
   deaths?: number
   partyDeaths?: number
-  /** An arena's match: the most opponents seen at once (one: Solo, more: Co-op). */
-  foes?: number
+  /** An arena's match: your group's size in it, at most (one, or none: Solo; more: Co-op), and your kills, deaths and assists. */
+  team?: number
+  kda?: { kills: number; deaths: number; assists: number }
 }
 
 /**
@@ -362,8 +363,8 @@ export function runName(run: DungeonRun, tr: Translate = untranslated): string {
   if (run.boss === undefined) {
     // A Shugo Festival's or an invasion's game: the event, then which.
     if (run.kind === 'shugo' || run.kind === 'invasion') return `${tr(runKindLabel(run.kind))} · ${run.name}`
-    // An arena by its mode, not its map: Solo (one opponent) or Co-op (a team).
-    if (run.kind === 'arena') return run.foes ? `${tr('Arena')} · ${tr(run.foes > 1 ? 'Co-op' : 'Solo')}` : tr('Arena')
+    // An arena by its mode, not its map: Co-op with a group (5v5), else Solo.
+    if (run.kind === 'arena') return `${tr('Arena')} · ${tr((run.team ?? 0) > 1 ? 'Co-op' : 'Solo')}`
     const mode = zoneMode(run.world, tr)
     return mode ? `${run.name} · ${mode}` : run.name
   }

@@ -1822,4 +1822,5 @@ export const FR: Record<string, string> = {
   'Arena': 'Arène',
   'Co-op': 'Coop',
   'Solo': 'Solo',
+  'Kills / deaths / assists': 'Kills / morts / assistances',
 }

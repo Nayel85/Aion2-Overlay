@@ -11,6 +11,7 @@
  * restarted mid-game goes on with the session it had, unless nothing came in it for CONTINUE_MS
  * (another day's).
  */
+import { partyStore } from './party.ts'
 import type { EngineEvents } from './engineEvents.ts'
 import { dataFile } from './dataFile.ts'
 import { abyss } from './abyss.ts'
@@ -227,6 +228,7 @@ export function startSessions(): void {
       const paid = counterDrop && at - counterDrop.at <= COUNTER_BEFORE_MS ? counterDrop.kind : null
       counterDrop = null
       s.runs = [...(s.runs ?? []), { world, name: dungeon[0], kind: paid ?? dungeon[1], start: at, end: null, ap: 0, kina: 0, currencies: {}, deaths: 0, partyDeaths: 0 }]
+      if (dungeon[1] === 'arena') arenaTeam(partyStore.all().members.length)
       log(`session: into ${dungeon[0]} (${paid ?? dungeon[1]})`)
     }
     changed()
@@ -256,12 +258,23 @@ export function startSessions(): void {
     } else return
     changed()
   })
-  // An arena's opponents in view: their most at once tells its mode (one: Solo, more: Co-op).
-  tracker.onEvent('enemies', (ev) => {
+  // An arena's mode: your group in it (a Co-op's five), at its most.
+  const arenaTeam = (members: number): void => {
     const run = openRun()
-    const foes = (ev.players ?? []).filter((p) => p.pvp !== false).length
-    if (run?.kind !== 'arena' || foes <= (run.foes ?? 0)) return
-    run.foes = foes
+    if (run?.kind !== 'arena' || members <= (run.team ?? 0)) return
+    run.team = members
+    changed()
+  }
+  tracker.onEvent('party', (ev) => arenaTeam(ev.members?.length ?? 0))
+  // An arena's kills, deaths and assists (a kill of a player you were fighting): yours.
+  tracker.onEvent('pvpKill', (ev) => {
+    const run = openRun()
+    if (run?.kind !== 'arena') return
+    const kda = (run.kda ??= { kills: 0, deaths: 0, assists: 0 })
+    if (ev.died === true) kda.deaths++
+    else if (ev.mine === true) kda.kills++
+    else if (typeof ev.fight === 'string') kda.assists++
+    else return
     changed()
   })
   // A player down: yours and the group's deaths in the run going on.

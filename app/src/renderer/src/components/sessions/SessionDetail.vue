@@ -208,7 +208,9 @@ function toggle(r: DungeonRun): void {
                 <span v-if="abandoned(r)" class="ml-1 text-darker">{{ t('abandoned') }}</span>
               </td>
               <td class="py-1">
-                <template v-if="runBest(r)"><FightLink as="dps" :value="fightDps(runBest(r)!)" :fight="runBest(r)!.id" :title="t('Your DPS on {boss}', { boss: runBest(r)!.bossName })" /> DPS</template>
+                <!-- An arena: your kills, deaths and assists. -->
+                <span v-if="r.kda" class="font-semibold" :title="t('Kills / deaths / assists')"><span class="text-green">{{ r.kda.kills }}</span> / <span class="text-red">{{ r.kda.deaths }}</span> / <span class="text-blue">{{ r.kda.assists }}</span> <span class="font-normal text-darker">KDA</span></span>
+                <template v-else-if="runBest(r)"><FightLink as="dps" :value="fightDps(runBest(r)!)" :fight="runBest(r)!.id" :title="t('Your DPS on {boss}', { boss: runBest(r)!.bossName })" /> DPS</template>
               </td>
               <td class="py-1" :title="t('Your deaths')">
                 <span class="flex items-center gap-0.5"><svg viewBox="0 0 16 16" class="size-3 text-red" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.skull" /></svg><span :class="r.deaths ? 'font-semibold text-red' : 'text-darker'">{{ r.deaths ?? '-' }}</span></span>
