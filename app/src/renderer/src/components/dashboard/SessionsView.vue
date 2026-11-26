@@ -92,7 +92,7 @@ const selected = computed(() => shown.value.find((s) => keyOf(s) === picked.valu
             <span class="ml-auto flex items-center gap-3 tabular-nums text-darker">
               <span v-if="d.ap" class="text-blue">{{ formatAmount(d.ap) }}</span>
               <span v-if="d.kina" class="text-yellow">{{ formatKina(d.kina) }}</span>
-              <span v-if="d.runs" class="flex items-center gap-1"><svg viewBox="0 0 16 16" class="size-3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.dungeon" /></svg>{{ d.runs }}</span>
+              <span v-if="d.runs" class="flex items-center gap-1" :title="t('Dungeons, Shugo games and the like run')"><svg viewBox="0 0 16 16" class="size-3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.dungeon" /></svg>{{ d.runs }}</span>
             </span>
           </div>
           <button

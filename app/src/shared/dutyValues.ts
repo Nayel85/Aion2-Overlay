@@ -10,7 +10,7 @@ export const DUTY_CATEGORIES: { id: DutyCategory; label: string; hint: string }[
   { id: 'shugoKey', label: 'Shugo Festival keys', hint: 'Each Shugo Festival Reward Key.' },
   { id: 'nightmareTicket', label: 'Nightmare tickets', hint: 'Each Nightmare Dungeon Challenge Ticket.' },
   { id: 'trialTicket', label: 'Ascension Trial tickets', hint: 'Each Ascension Trial Challenge Ticket.' },
-  { id: 'fissureTicket', label: 'Unknown Fissure tickets', hint: 'Each Unknown Fissure Challenge Ticket.' },
+  { id: 'fissureTicket', label: 'Daily Dungeon tickets', hint: "Each Unknown Fissure Challenge Ticket: the daily dungeons' entry." },
   { id: 'odyle', label: 'Odyle Energy', hint: 'Each Odyle Energy; a Small Odyle Energy counts a quarter of one.' },
   { id: 'pureCraft', label: 'Pure crafting materials', hint: 'Each Pure (purple) gemstone, ore or log.' },
 ]

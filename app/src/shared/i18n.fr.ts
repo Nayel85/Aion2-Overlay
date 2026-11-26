@@ -1816,6 +1816,7 @@ export const FR: Record<string, string> = {
   'Each Nightmare Dungeon Challenge Ticket.': 'Chaque Nightmare Dungeon Challenge Ticket.',
   'Ascension Trial tickets': 'Tickets Ascension Trial',
   'Each Ascension Trial Challenge Ticket.': 'Chaque Ascension Trial Challenge Ticket.',
-  'Unknown Fissure tickets': 'Tickets Unknown Fissure',
-  'Each Unknown Fissure Challenge Ticket.': 'Chaque Unknown Fissure Challenge Ticket.',
+  'Daily Dungeon tickets': 'Tickets Daily Dungeon',
+  'Each Unknown Fissure Challenge Ticket: the daily dungeons\' entry.': 'Chaque Unknown Fissure Challenge Ticket : l\'entrée des donjons quotidiens.',
+  'Dungeons, Shugo games and the like run': 'Donjons, parties de Shugo et autres runs faits',
 }

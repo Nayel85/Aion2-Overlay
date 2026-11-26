@@ -154,7 +154,7 @@ function toggle(r: DungeonRun): void {
         <template v-for="k in LOOT_KINDS" :key="k.key">
           <span v-if="counts[k.key]" :class="['flex items-center gap-1.5 font-semibold', LOOT_KIND_STYLE[k.key]!.class]" :title="t(k.label)"><svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="LOOT_KIND_STYLE[k.key]!.icon" /></svg>{{ counts[k.key] }} <span class="text-xs font-normal text-darker">{{ t(k.label) }}</span></span>
         </template>
-        <span v-if="countedRuns(session).length" class="flex items-center gap-1.5 text-dark"><svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.dungeon" /></svg>{{ countedRuns(session).length }}</span>
+        <span v-if="countedRuns(session).length" class="flex items-center gap-1.5 text-dark" :title="t('Dungeons, Shugo games and the like run')"><svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.dungeon" /></svg>{{ countedRuns(session).length }} <span class="text-xs font-normal text-darker">{{ t('Runs') }}</span></span>
         <span v-if="deaths" class="flex items-center gap-1.5 text-red" :title="t('Your deaths')"><svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.skull" /></svg>{{ deaths }}</span>
       </div>
       <div v-if="currencies.length" class="mt-1.5 flex flex-wrap items-center gap-4 text-xs">
