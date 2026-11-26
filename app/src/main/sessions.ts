@@ -18,7 +18,7 @@ import { broadcast } from './broadcast.ts'
 import { log, lootCubes, tracker } from './tracker.ts'
 import { onCrafted, onGathered } from './gather.ts'
 import { onArrival } from './inventory.ts'
-import { recipeOf } from '../shared/gather.ts'
+import { gatherBonus, recipeOf } from '../shared/gather.ts'
 import { BOSS_RUNS } from '../shared/bossRuns.ts'
 import { AP_ITEM, apSource, GATHER_FAILED, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
 
@@ -314,11 +314,11 @@ export function startSessions(): void {
     log(`session: a Hidden Cube gave ${JSON.stringify(loot)}`)
     changed()
   })
-  // What a gathering gave besides its resource (its resource is counted as gathered): a find of the session's.
+  // A gathering's bonus (a Poko's Skin Bundle: questlog's bonus drops) reaching the bags just after it: a find of the session's.
   onArrival((a) => {
     const s = sessions.current
     if (a.source !== 'gather' || !s) return
-    const finds = Object.entries(a.items).filter(([id]) => !(id in (s.gathered ?? {})) && itemInfo(id)?.kind !== 'currency')
+    const finds = Object.entries(a.items).filter(([id, n]) => gatherBonus(id, n))
     if (!finds.length) return
     s.gatherFinds ??= {}
     for (const [id, n] of finds) s.gatherFinds[id] = (s.gatherFinds[id] ?? 0) + n

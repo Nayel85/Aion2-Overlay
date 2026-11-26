@@ -1797,4 +1797,5 @@ export const FR: Record<string, string> = {
   'Learn': 'Apprendre',
   'Learn again': 'Réapprendre',
   'Also found': 'Trouvé aussi',
+  'Bonus: {name}': 'Bonus : {name}',
 }

@@ -15,13 +15,16 @@ import { join } from 'node:path'
 import { resourceOf } from '../shared/sessions.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
+import { onArrival } from './inventory.ts'
 import { craftOutcome, gatherFlow, gatherOutcome, type CraftOver, type GatheringOver } from '../shared/gatherFlow.ts'
-import { craftItem, gatherItem, GATHER_TEMPLATES_SEED, plainItem, type GatherForecast, type GatherTemplates, plainItemByName } from '../shared/gather.ts'
+import { craftItem, gatherBonus, gatherItem, GATHER_TEMPLATES_SEED, plainItem, type GatherForecast, type GatherTemplates, plainItemByName } from '../shared/gather.ts'
 
 /** Gone this long after it should have ended, if nothing said it did. */
 const FORGET_AFTER_MS = 2_000
 /** And without a duration told, this long after its start (a long craft takes 16 s). */
 const FORGET_MS = 25_000
+/** A bonus shown this long. */
+const BONUS_SHOWN_MS = 5_000
 const gatheredListeners: ((g: GatheringOver) => void)[] = []
 const craftedListeners: ((c: CraftOver) => void)[] = []
 export const onGathered = (f: (g: GatheringOver) => void): void => void gatheredListeners.push(f)
@@ -34,6 +37,8 @@ const flow = gatherFlow({
 })
 
 let state: GatherForecast | null = null
+/** The last gathering shown, for its bonus told after it. */
+let last: GatherForecast | null = null
 let timer: NodeJS.Timeout | null = null
 let templates: GatherTemplates = { ...GATHER_TEMPLATES_SEED }
 const file = dataFile('gather-spots.json')
@@ -42,6 +47,7 @@ function set(next: GatherForecast | null): void {
   if (timer) clearTimeout(timer)
   timer = next ? setTimeout(() => set(null), next.durationMs !== null ? next.durationMs + FORGET_AFTER_MS : FORGET_MS) : null
   state = next
+  if (next?.kind === 'gather') last = next
   broadcast('gather:changed', state)
 }
 
@@ -86,6 +92,14 @@ function keep(): void {
 }
 
 export function startGather(): void {
+  // A bonus (a Poko's Skin Bundle) reaching your bags just after a gathering: shown a moment with its item.
+  onArrival((a) => {
+    if (a.source !== 'gather' || !last) return
+    const bonus = Object.entries(a.items).map(([id, n]) => gatherBonus(id, n)).find((b) => b !== null)
+    if (!bonus) return
+    log(`gather: bonus ${bonus.name} x${bonus.count}`)
+    set({ ...last, bonus, at: Date.now(), durationMs: BONUS_SHOWN_MS, rolls: [] })
+  })
   templates = { ...GATHER_TEMPLATES_SEED, ...((file.read() as GatherTemplates | null) ?? {}) }
   tracker.onEvent('spot', (ev) => {
     const template = ev.template

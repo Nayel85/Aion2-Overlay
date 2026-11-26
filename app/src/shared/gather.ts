@@ -1,4 +1,4 @@
-import { GATHERABLES, type GatherDrop } from './gatherables.ts'
+import { GATHER_BONUSES, GATHERABLES, type GatherDrop } from './gatherables.ts'
 import { asItem, type ForecastItem } from './itemRef.ts'
 import { RECIPES } from './recipes.ts'
 
@@ -23,6 +23,8 @@ export interface GatherForecast {
   durationMs: number | null
   /** A gathering's rolls, as the game rolled them (the engine's `gather_rolls`); none for a craft. */
   rolls: GatherRoll[]
+  /** What came with it besides its item, seldom (a Poko's Skin Bundle): told as it reaches your bags, after the result. */
+  bonus?: ForecastItem
 }
 
 /** One roll of a gathering: how long it plays, what it adds to each gauge, Lady Luck's or the doubling. */
@@ -66,6 +68,13 @@ export function gatherItem(plain: number | undefined, grade: number): ForecastIt
   const groups = BY_PLAIN.get(plain)
   const drop = groups?.[String(grade)] ?? groups?.['1']
   return drop ? asItem(drop) : null
+}
+
+const BONUSES = new Map(GATHER_BONUSES.map((d) => [d[0], d]))
+/** A gathering's bonus, as it shows (`count` of it), or null: not one (questlog's bonus drops). */
+export function gatherBonus(id: number | string, count: number): ForecastItem | null {
+  const d = BONUSES.get(Number(id))
+  return d ? { ...asItem(d), count } : null
 }
 
 /** A recipe (recipes.ts): its product and proc product ([item id, quantity, name, grade, icon]), its proc chance and craft; null when unknown. */
