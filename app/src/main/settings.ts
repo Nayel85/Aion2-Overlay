@@ -6,7 +6,7 @@
  * to every window so all three stay in step.
  */
 import ElectronStore from 'electron-store'
-import { normalise, SETTINGS_DEFAULTS, type SettingKey, type Settings } from '../shared/settings.ts'
+import { HUD_WIDGETS, normalise, SETTINGS_DEFAULTS, type SettingKey, type Settings } from '../shared/settings.ts'
 
 // electron-store is ESM-only and the main bundle is CommonJS: the class sits on `.default`.
 const Store = ((ElectronStore as unknown as { default?: typeof ElectronStore }).default ??
@@ -50,6 +50,7 @@ export const settings = {
  *      and the pets HUD keep whatever the player set). They are still a click away on the HUD.
  *   2: the Hidden Cube's sound leaves the pets HUD's settings for its own (`cubes`): as it was set.
  *   3: the party frames show their members' debuffs (their icons were off by default).
+ *   4: the Aggro overlay's button on the Unified HUD (it came without one).
  */
 export function applyLayoutUpdates(): void {
   if (settings.get('layoutVersion') < 1) layoutUpdate1()
@@ -61,6 +62,11 @@ export function applyLayoutUpdates(): void {
   if (settings.get('layoutVersion') < 3) {
     settings.set('party', { ...settings.get('party'), debuffIcons: true })
     settings.set('layoutVersion', 3)
+  }
+  if (settings.get('layoutVersion') < 4) {
+    const u = settings.get('unified')
+    if (!u.widgets.includes('aggro')) settings.set('unified', { ...u, widgets: HUD_WIDGETS.filter((w) => w === 'aggro' || u.widgets.includes(w)) })
+    settings.set('layoutVersion', 4)
   }
 }
 function layoutUpdate1(): void {

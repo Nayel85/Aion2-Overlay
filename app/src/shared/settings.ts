@@ -53,11 +53,11 @@ export const PARTY_DEFAULT_COLORS = { hp: '#c0392b', afflicted: '#2ea043' } as c
 export const KINA_ICONS = ['game', 'bound', 'gold', 'drawn', 'word'] as const
 export type KinaIcon = (typeof KINA_ICONS)[number]
 
-export const HUD_WIDGETS = ['party', 'buffs', 'cc', 'flight', 'gather', 'applicants', 'training'] as const
+export const HUD_WIDGETS = ['party', 'aggro', 'buffs', 'cc', 'flight', 'gather', 'applicants', 'training'] as const
 export type HudWidget = (typeof HUD_WIDGETS)[number]
 /** Their names, as the Overlays page has them. */
 export const WIDGET_LABELS: Record<HudWidget, string> = {
-  party: 'Party Frames', buffs: 'Buffs', cc: 'CC / Debuffs', flight: 'Flight Timer', gather: 'Gathering Outcome', applicants: 'Join Requests', training: 'Training',
+  party: 'Party Frames', aggro: 'Aggro', buffs: 'Buffs', cc: 'CC / Debuffs', flight: 'Flight Timer', gather: 'Gathering Outcome', applicants: 'Join Requests', training: 'Training',
 }
 
 /** Hidden after `idleSeconds` with no fight (no hit, heal or damage taken, yours or your party's). */
@@ -456,7 +456,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   merchantWindow: { x: 446, y: 755 },
   detailsWindow: { x: 449, y: 251 },
   timerBar: { enabled: true, position: { x: 0, y: 394 }, opacity: 0.92, layout: 'list' },
-  unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, rift: false, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, clock: true, odyle: true, replace: false, kinaSession: true, kinaIcon: 'game', apIcon: 'icon', logo: false, widgets: ['party', 'buffs', 'cc', 'flight', 'gather', 'applicants'], applicants: true, bests: true, corridors: true },
+  unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, rift: false, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, clock: true, odyle: true, replace: false, kinaSession: true, kinaIcon: 'game', apIcon: 'icon', logo: false, widgets: ['party', 'aggro', 'buffs', 'cc', 'flight', 'gather', 'applicants'], applicants: true, bests: true, corridors: true },
   muted: false,
   rates: { kinaDungeons: false, abyssDungeons: false },
   duty: { values: DEFAULT_DUTY_VALUES, overlay: true, position: null, opacity: 0.95 },
@@ -479,7 +479,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   buffs: { enabled: false, position: { x: 1178, y: 800 }, opacity: 0.92, size: 34, perRow: 10, debuffs: true, passives: false, consumables: false, cc: true, ccPosition: { x: 1181, y: 345 }, ccDebuffs: false, hideIdle: false, idleSeconds: 30 },
   meter: { enabled: true, position: { x: 362, y: 72 }, targetMode: 'bossTargets', players: 'party', stat: 'damage', rows: 8, opacity: 0.92, collapsed: false, width: 321, height: 328, hideIdle: true, idleSeconds: 15, power: 'below', gear: 'below', deaths: true, style: 'compact', barsOnly: false, barsBackground: 0.6 },
   hideFromCapture: false,
-  layoutVersion: 3,
+  layoutVersion: 4,
   language: 'en',
   faction: 'elyos',
   playerLevel: 45,
