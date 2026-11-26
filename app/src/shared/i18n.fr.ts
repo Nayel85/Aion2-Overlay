@@ -1796,4 +1796,5 @@ export const FR: Record<string, string> = {
   'Opened again, the board sends nothing the app can read: it looks for the Journal\'s Duty tab on the screen instead. Click Learn, go back to the game and open the Journal on Duty (Mission) within 15 seconds.': 'Quand tu rouvres le tableau, le jeu n\'envoie rien que l\'app puisse lire : elle cherche donc l\'onglet Duty du Journal à l\'écran. Clique sur Apprendre, retourne dans le jeu et ouvre le Journal sur Duty (Mission) dans les 15 secondes.',
   'Learn': 'Apprendre',
   'Learn again': 'Réapprendre',
+  'Also found': 'Trouvé aussi',
 }

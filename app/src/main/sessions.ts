@@ -314,6 +314,17 @@ export function startSessions(): void {
     log(`session: a Hidden Cube gave ${JSON.stringify(loot)}`)
     changed()
   })
+  // What a gathering gave besides its resource (its resource is counted as gathered): a find of the session's.
+  onArrival((a) => {
+    const s = sessions.current
+    if (a.source !== 'gather' || !s) return
+    const finds = Object.entries(a.items).filter(([id]) => !(id in (s.gathered ?? {})) && itemInfo(id)?.kind !== 'currency')
+    if (!finds.length) return
+    s.gatherFinds ??= {}
+    for (const [id, n] of finds) s.gatherFinds[id] = (s.gatherFinds[id] ?? 0) + n
+    log(`session: a gathering also gave ${JSON.stringify(Object.fromEntries(finds))}`)
+    changed()
+  })
   // A field boss that fell in view: when it fell, for its loot chest opened after.
   tracker.onEvent('bossKilled', (ev) => {
     bossDown = { npc: ev.npc, at: Date.now() }

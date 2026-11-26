@@ -8,6 +8,7 @@
  * where it came from when an event said so just before or after (a Hidden Cube opened, a dungeon's
  * cube, a box, a duty mission); a login's list, against the one kept, what came while the app was off.
  */
+import { onGathered } from './gather.ts'
 import { dataFile } from './dataFile.ts'
 import { app } from 'electron'
 import { appendFile, readFileSync } from 'node:fs'
@@ -129,6 +130,7 @@ export function startInventory(): void {
   tracker.onEvent('loot', () => noteSource('cube'))
   tracker.onEvent('boxOpened', () => noteSource('box'))
   tracker.onEvent('dutyDone', () => noteSource('duty'))
+  onGathered(() => noteSource('gather'))
   // A login: all of it, anew.
   tracker.onEvent('inventory', (ev) => {
     const who = whose(ev)

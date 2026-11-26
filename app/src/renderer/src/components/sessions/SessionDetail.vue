@@ -60,6 +60,8 @@ const kinaOf = (r: DungeonRun): number => Math.max(r.kina, r.loot?.['930100031']
 
 /** The gathering by resource (shared/sessions.ts). */
 const resources = computed(() => gatheredByResource(props.session))
+/** What the gatherings gave besides their resources, as a run's rewards. */
+const finds = computed(() => runRewards({ world: 0, name: 'Gathering', kind: 'other', start: 0, end: 0, ap: 0, kina: 0, currencies: {}, loot: props.session.gatherFinds ?? {} }))
 /** Each resource's gatherings and failures, when some have them (counted since 2026-11-23). */
 const countsShown = computed(() => resources.value.some((r) => r.counts))
 /** A resource's grades in their columns: plain (white), Fine (green), Pure (blue), Radiant (gold and above). */
@@ -358,6 +360,14 @@ function toggle(r: DungeonRun): void {
             <span v-else class="text-darkest" :title="t('Gathered before they were counted')">{{ t('? gatherings') }}</span>
           </span>
         </template>
+      </div>
+      <!-- What the gatherings gave besides their resources. -->
+      <div v-if="finds.length" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark pt-1.5">
+        <span class="text-darker">{{ t('Also found') }}</span>
+        <span v-for="x in finds" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
+          <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+          <span :class="gradeClass(x.grade)">{{ x.name.replace(' (Bound)', '') }}</span> ×{{ x.amount }}
+        </span>
       </div>
     </div>
 

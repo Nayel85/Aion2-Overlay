@@ -526,6 +526,8 @@ export interface PlaySession {
   /** The resources gathered (`33 8D`: ores, plants, logs, Odyle...), by item id, and the gatherings' stats. */
   gathered?: Record<string, number>
   gathering?: GatherStats
+  /** What gatherings gave besides their resource (a Poko's Skin Bundle with an Odyle, 2026-11-26), by item id. */
+  gatherFinds?: Record<string, number>
   /** The duty missions handed in, in order. */
   duties?: DutyDone[]
   /** The supply requests handed in, with what each gave (the game's set rewards). */

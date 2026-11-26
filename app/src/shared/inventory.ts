@@ -72,13 +72,14 @@ export function addChanges(into: Record<string, number>, before: Record<string, 
   }
 }
 
-/** Where items that came in came from, when it is known: a Hidden Cube opened, a dungeon's cube, a box from your bags, a duty mission; or while the app was off. */
-export type ArrivalSource = 'hiddencube' | 'cube' | 'box' | 'duty' | 'away'
+/** Where items that came in came from, when it is known: a Hidden Cube opened, a dungeon's cube, a box from your bags, a duty mission, a gathering; or while the app was off. */
+export type ArrivalSource = 'hiddencube' | 'cube' | 'box' | 'duty' | 'gather' | 'away'
 export const ARRIVAL_SOURCES: Record<ArrivalSource, string> = {
   hiddencube: 'Hidden Cube',
   cube: "A dungeon's cube",
   box: 'A box opened',
   duty: 'Duty mission',
+  gather: 'Gathering',
   away: 'While the app was off',
 }
 /** Items that came into a character's hands together (`<userData>/inventory-log.jsonl`, one a line). */
