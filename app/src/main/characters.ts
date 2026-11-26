@@ -68,6 +68,8 @@ async function fetchCombatPower(c: TrackedCharacter): Promise<number | null> {
   const plain = (s: string): string => s.replace(/<[^>]*>/g, '')
   const hit = list.find((e) => (c.key && e.profileImageUrl?.endsWith(`charKey=${c.key}`)) || (e.serverId === c.server && plain(e.name) === c.name))
   if (!hit) return null
+  // A character the overlay never saw on the selection screen has no key there: their search's portrait link has it.
+  c.key ??= hit.profileImageUrl?.match(/charKey=(\d+)/)?.[1] ?? null
   const info = await getJson(INFO_URL, { region, serverId: c.server, characterId: decodeURIComponent(hit.characterId), lang: 'en-US' })
   const power = (info['profile'] as { combatPower?: unknown } | undefined)?.combatPower
   return typeof power === 'number' ? power : null
@@ -86,12 +88,14 @@ async function fetchPortrait(c: TrackedCharacter): Promise<string | null> {
 
 /** Ask NCSoft about one character: its combat power and portrait, each kept when the other fails. */
 async function fetchOne(c: TrackedCharacter): Promise<void> {
-  const [power, portrait] = await Promise.allSettled([fetchCombatPower(c), fetchPortrait(c)])
+  // The search first: it may give the key the portrait needs.
+  const power = (await Promise.allSettled([fetchCombatPower(c)]))[0]
+  const portrait = (await Promise.allSettled([fetchPortrait(c)]))[0]
   const got = <T>(r: PromiseSettledResult<T | null>): T | null => (r.status === 'fulfilled' ? r.value : null)
   c.combatPower = got(power) ?? c.combatPower
   c.portrait = got(portrait) ?? c.portrait
   // Done for the day only with both: a missing portrait is asked again after RETRY_MS.
-  if (got(power) !== null && (got(portrait) !== null || !c.key)) c.fetchedAt = Date.now()
+  if (got(power) !== null && got(portrait) !== null) c.fetchedAt = Date.now()
   const why = (r: PromiseSettledResult<unknown>): string => (r.status === 'rejected' ? ` (${(r.reason as Error).message})` : '')
   log(`characters: ${c.name} from NCSoft: combat power ${got(power) ?? '?'}${why(power)}, portrait ${got(portrait) ? 'yes' : 'no'}${why(portrait)}`)
   changed()
@@ -109,7 +113,7 @@ async function fetchMissing(): Promise<void> {
       again = false
       for (const [id, c] of Object.entries(characters)) {
         const now = Date.now()
-        const due = !c.fetchedAt || now - c.fetchedAt >= FETCH_EVERY_MS || (!c.portrait && !!c.key)
+        const due = !c.fetchedAt || now - c.fetchedAt >= FETCH_EVERY_MS || !c.portrait
         if (!due || (asked.get(id) ?? 0) > now) continue
         asked.set(id, now + RETRY_MS)
         await fetchOne(c)
