@@ -73,7 +73,13 @@ export function dutyCategory(item: number): DutyCategory | null {
   if (info.name.startsWith('Key: Hidden Cube')) return 'cubeKey'
   if (info.name.startsWith('Shugo Festival Reward Key')) return 'shugoKey'
   // The same sub-category, the tickets and Odyle Energy: told apart by name.
-  if (sub === 'addcontentsticketcount') return /Odyle Energy/.test(info.name) ? 'odyle' : 'tickets'
+  if (sub === 'addcontentsticketcount') {
+    if (/Odyle Energy/.test(info.name)) return 'odyle'
+    if (/^Nightmare/.test(info.name)) return 'nightmareTicket'
+    if (/^Ascension Trial/.test(info.name)) return 'trialTicket'
+    if (/^Unknown Fissure/.test(info.name)) return 'fissureTicket'
+    return null
+  }
   const gold = goldKind(item)
   if (gold === 'craft') return 'goldCraft'
   if (gold === 'equipment') return 'goldEquipment'

@@ -19,7 +19,7 @@ import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
-import { countedRuns, CURRENCY_LABELS, gatheredByResource, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsOneOff, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type GatheredResource, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
+import { AP_ITEM, countedRuns, CURRENCY_LABELS, currencyIcon, KINA_ITEM, gatheredByResource, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsOneOff, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type GatheredResource, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
 import { recipeOf } from '@shared/gather.ts'
 
 const props = withDefaults(defineProps<{ session: PlaySession; live?: boolean; header?: boolean }>(), { live: false, header: true })
@@ -149,8 +149,8 @@ function toggle(r: DungeonRun): void {
         <div class="mt-0.5 text-xs text-darker first-letter:uppercase">{{ longDate(session.start) }} · {{ timeOfDay(session.start) }}–{{ timeOfDay(session.last) }} · {{ lasting(session.last - session.start) }}</div>
       </template>
       <div :class="['flex flex-wrap items-center gap-x-5 gap-y-1.5 tabular-nums', header && 'mt-3']">
-        <span v-if="session.ap" class="flex items-center gap-1.5 font-semibold text-blue"><img :src="'items/abyss-point.webp'" alt="" class="size-4" draggable="false" />{{ formatAmount(session.ap) }} AP</span>
-        <span v-if="session.kina" class="flex items-center gap-1.5 font-semibold text-yellow"><svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path :d="ICON.coin" /></svg>{{ formatKina(session.kina) }}</span>
+        <span v-if="session.ap" class="flex items-center gap-1.5 font-semibold text-blue"><img :src="currencyIcon(AP_ITEM) ?? undefined" alt="" class="size-4" draggable="false" />{{ formatAmount(session.ap) }} AP</span>
+        <span v-if="session.kina" class="flex items-center gap-1.5 font-semibold text-yellow"><img :src="currencyIcon(KINA_ITEM) ?? undefined" alt="" class="size-4" draggable="false" />{{ formatKina(session.kina) }}</span>
         <template v-for="k in LOOT_KINDS" :key="k.key">
           <span v-if="counts[k.key]" :class="['flex items-center gap-1.5 font-semibold', LOOT_KIND_STYLE[k.key]!.class]" :title="t(k.label)"><svg viewBox="0 0 16 16" class="size-4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="LOOT_KIND_STYLE[k.key]!.icon" /></svg>{{ counts[k.key] }} <span class="text-xs font-normal text-darker">{{ t(k.label) }}</span></span>
         </template>
@@ -159,7 +159,8 @@ function toggle(r: DungeonRun): void {
       </div>
       <div v-if="currencies.length" class="mt-1.5 flex flex-wrap items-center gap-4 text-xs">
         <span v-for="[id, n] in currencies" :key="id" class="flex items-center gap-1">
-          <svg viewBox="0 0 16 16" class="size-3.5 text-green" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="CURRENCY_ICON[id] ?? ICON.stone" /></svg>
+          <img v-if="currencyIcon(id)" :src="currencyIcon(id)!" alt="" class="size-4" draggable="false" />
+          <svg v-else viewBox="0 0 16 16" class="size-3.5 text-green" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="CURRENCY_ICON[id] ?? ICON.stone" /></svg>
           {{ t(CURRENCY_LABELS[id] ?? id) }} <span class="font-semibold tabular-nums text-green">+{{ n.toLocaleString('en-US') }}</span>
         </span>
       </div>

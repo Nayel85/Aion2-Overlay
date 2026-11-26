@@ -551,7 +551,9 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
     }
     case 'duty': {
       const v = (value ?? {}) as Partial<Settings['duty']>
-      const given = (v.values ?? {}) as Partial<DutyValues>
+      // The tickets had one worth together (before 2026-11-27): each takes it.
+      const old = (v.values as { tickets?: number } | undefined)?.tickets
+      const given = { nightmareTicket: old, trialTicket: old, fissureTicket: old, ...(v.values ?? {}) } as Partial<DutyValues>
       return {
         values: Object.fromEntries(DUTY_CATEGORIES.map((c) => [c.id, num(given[c.id], 0, 1e9, d.duty.values[c.id])])),
         overlay: bool(v.overlay, d.duty.overlay),

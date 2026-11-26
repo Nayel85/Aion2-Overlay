@@ -22,6 +22,8 @@ import { gatherBonus, recipeOf } from '../shared/gather.ts'
 import { BOSS_RUNS } from '../shared/bossRuns.ts'
 import { AP_ITEM, apSource, GATHER_FAILED, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
 
+/** Let in again this long after the last boss fell, at least, for a new run: before, it is the run's own end. */
+const AGAIN_AFTER_MS = 5_000
 /** A Hidden Cube's loot told this long after its first burst is still its own. */
 const HIDDEN_CUBE_MS = 10_000
 const HISTORY_MAX = 200
@@ -234,7 +236,9 @@ export function startSessions(): void {
   tracker.onEvent('dungeonStart', () => {
     let run = openRun()
     const s = sessions.current
-    if (s && run && run.cleared !== undefined) run = runAgain(s, run, Date.now())
+    // Not right after its end: a Shugo Festival's game is let in again as it ends (2026-11-26: 0.3 s
+    // after, its rewards then going to a second run of nothing).
+    if (s && run && run.cleared !== undefined && Date.now() - run.cleared > AGAIN_AFTER_MS) run = runAgain(s, run, Date.now())
     if (run && run.started === undefined) {
       run.started = Date.now()
       changed()

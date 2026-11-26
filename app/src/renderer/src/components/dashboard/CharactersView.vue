@@ -4,7 +4,7 @@
 // Odyle energy, entry counts, Kina and Abyss corridors at a glance, and what a server's characters share
 // (Daily Dungeon, Shugo and invasion keys). Counters are read at each login and worked out from the
 // game's refill times since: a character not logged in with the overlay yet shows greyed out.
-import { runsSince } from '@shared/sessions.ts'
+import { ABYSS_POINTS, currencyIcon, KINA_ITEM, runsSince, SEASON_POINTS } from '@shared/sessions.ts'
 import { useNow } from '@/lib/now.ts'
 import { ago as timeAgo, weekdayTime, amount } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -36,9 +36,9 @@ const now = useNow(1000)
 const ICONS = {
   energy: 'items/odyle-energy.webp',
   ticket: 'items/boss-ticket.webp',
-  kina: 'items/loot/Icon_Currency_Coin_GoldNonbinding.webp',
-  abyss: 'items/loot/Icon_abysspoint.webp',
-  oath: 'items/loot/Icon_Season.webp',
+  kina: currencyIcon(KINA_ITEM) ?? undefined,
+  abyss: currencyIcon(ABYSS_POINTS) ?? undefined,
+  oath: currencyIcon(SEASON_POINTS) ?? undefined,
 }
 /** The game's colour for charged energy. */
 const CHARGED = '#3ce0d0'

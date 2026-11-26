@@ -270,6 +270,8 @@ export const LOOT_KINDS: { key: keyof LootCounts; label: string }[] = [
  * process, which fetches it once and keeps it (main/icons.ts).
  */
 export { itemIcon }
+/** A currency's (or any item's) game icon: Kina, Abyss Points, Oath Coins, Enhance Stones... */
+export const currencyIcon = (id: number | string): string | null => itemIcon(itemInfo(id)?.icon)
 
 /** One line of what a run gave: an item, how many, and whether it is a currency (Kina, Abyss Points...). */
 export interface RewardRow {
