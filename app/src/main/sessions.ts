@@ -295,7 +295,8 @@ export function startSessions(): void {
   onArrival((a) => {
     const s = sessions.current
     if (a.source !== 'hiddencube' || !s) return
-    const loot = notableLoot(Object.entries(a.items).map(([item, amount]) => ({ item: Number(item), amount })))
+    // All it gave, the least things too: what a cube is worth is the point.
+    const loot = { ...a.items }
     // Its loot can come in two bursts (2026-11-25: 6 s apart, the second its Manastones and Soulstones): one cube.
     const same = [...(s.runs ?? [])].reverse().find((r) => r.kind === 'hiddencube' && a.at - r.start <= HIDDEN_CUBE_MS)
     if (same) {

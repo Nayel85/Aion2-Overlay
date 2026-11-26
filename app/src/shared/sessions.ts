@@ -298,8 +298,9 @@ export function runRewards(run: DungeonRun): RewardRow[] {
     .filter(([, n]) => n > 0)
     .map(([id, n]) => row(id, n))
     .sort((a, b) => rank(a.id) - rank(b.id) || a.name.localeCompare(b.name))
+  // An item the catalogue lacks still shown, as its number (a Hidden Cube keeps all it gave).
   const items = Object.entries(run.loot ?? {})
-    .filter(([id]) => itemInfo(id) && itemInfo(id)!.kind !== 'currency')
+    .filter(([id]) => itemInfo(id)?.kind !== 'currency' && !(id in totals))
     .map(([id, n]) => row(id, n))
     .sort((a, b) => b.grade - a.grade || a.name.localeCompare(b.name))
   return [...currencies, ...items]

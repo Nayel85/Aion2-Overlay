@@ -31,6 +31,8 @@ interface Watch {
   window: () => Rectangle | null
   gameInFront: () => boolean
   gone: (share: number) => void
+  /** How long its screen takes to be drawn before its picture is taken (SETTLE_MS by default). */
+  settle?: number
 }
 
 let watch: Watch | null = null
@@ -66,7 +68,7 @@ async function look(): Promise<void> {
     looks = 0
     return
   }
-  if (Date.now() - since < SETTLE_MS) return
+  if (Date.now() - since < (watch.settle ?? SETTLE_MS)) return
   busy = true
   try {
     const now = await picture(window)

@@ -121,6 +121,8 @@ function toggleDuty(d: DutyDone): void {
   openDuties.value = next
 }
 
+/** A Hidden Cube's line: its best few, the rest in its list. */
+const CUBE_SHOWN = 3
 /** The runs whose own loot is shown, by start. */
 const open = ref(new Set<number>())
 /** Over with nothing from it: not one still going (a Shugo game gives its rewards at its end). */
@@ -245,14 +247,20 @@ function toggle(r: DungeonRun): void {
         <svg viewBox="0 0 16 16" class="size-3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M8 1.8l5.5 3.1v6.2L8 14.2l-5.5-3.1V4.9zM2.5 4.9L8 8l5.5-3.1M8 8v6.2" /></svg>{{ t('Hidden Cubes') }}
         <span class="font-semibold tabular-nums text-default">{{ hiddenCubes.length }}</span>
       </div>
-      <div v-for="r in hiddenCubes" :key="r.start" class="flex flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 first:border-t-0">
-        <span class="tabular-nums text-darker">{{ timeOfDay(r.start) }}</span>
-        <span v-if="!runRewards(r).length" class="text-darker">{{ t('Nothing worth keeping') }}</span>
-        <span v-for="x in runRewards(r)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
-          <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
-          <span :class="gradeClass(x.grade)">{{ x.name.replace(' (Bound)', '') }}</span> ×{{ x.amount }}
-        </span>
-      </div>
+      <!-- Each a line with its best few, opened to all it gave as a run's list. -->
+      <template v-for="r in hiddenCubes" :key="r.start">
+        <button type="button" class="flex w-full flex-wrap items-center gap-x-3 gap-y-0.5 border-t border-dark py-1 text-left first:border-t-0 hover:bg-dark/50" @click="toggle(r)">
+          <span class="tabular-nums text-darker">{{ timeOfDay(r.start) }}</span>
+          <span v-if="!runRewards(r).length" class="text-darker">{{ t('Nothing worth keeping') }}</span>
+          <span v-for="x in runRewards(r).slice(0, CUBE_SHOWN)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
+            <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
+            <span :class="gradeClass(x.grade)">{{ x.name.replace(' (Bound)', '') }}</span> ×{{ x.amount }}
+          </span>
+          <span v-if="runRewards(r).length > CUBE_SHOWN" class="text-darker">{{ t('+{n} more', { n: runRewards(r).length - CUBE_SHOWN }) }}</span>
+          <svg v-if="runRewards(r).length" viewBox="0 0 16 16" :class="['ml-auto size-3 text-darker transition-transform', open.has(r.start) && 'rotate-90']" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.chevron" /></svg>
+        </button>
+        <RunLoot v-if="open.has(r.start)" :run="r" class="mb-1" />
+      </template>
     </div>
 
     <!-- Its crafts, by recipe (the most made first): how many, how many procced, and what they made. -->

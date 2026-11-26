@@ -49,6 +49,8 @@ registerIconScheme()
 const copied = copyDataFolder(join(app.getPath('appData'), LOKTHAR_FOLDER), app.getPath('userData'))
 /** A moment after a merchant tab or the duty board opens before anything is taken as you having left it (a position the same traffic brings). */
 const SHOP_SETTLE_MS = 1_500
+/** The duty board's screen drawn whole, its opening over. */
+const DUTY_SETTLE_MS = 1_500
 const migrated = OLD_NAMES.map((name) => moveDataFolder(join(app.getPath('appData'), name), app.getPath('userData')))
   .filter((m) => m !== 'nothing to move')
   .join('; ')
@@ -119,7 +121,10 @@ if (!app.requestSingleInstanceLock()) {
     const openedBy = (id: Screen): void => {
       openOverlay(id)
       screenAt[id] = { at: Date.now(), position: String(tracker.nearby().position) }
-      if (overlayOpen(id)) watchShopScreen({ open: () => overlayOpen(id), window: () => overlayBounds(id), gameInFront: () => gameInFront, gone: (share) => left(id, `its screen is gone (${Math.round(share * 100)}% changed)`, true) })
+      // The duty board slides in: its picture taken once it is all there (taken as it came in, the board's
+      // own drawing read as it gone, 2-4 s after it opened, 2026-11-26).
+      const settle = id === 'duty' ? DUTY_SETTLE_MS : undefined
+      if (overlayOpen(id)) watchShopScreen({ open: () => overlayOpen(id), window: () => overlayBounds(id), gameInFront: () => gameInFront, gone: (share) => left(id, `its screen is gone (${Math.round(share * 100)}% changed)`, true), settle })
     }
     // `seen`: told by the screen itself, so taken at once (the settling is for the packets' signs).
     const left = (id: Screen, why: string, seen = false): void => {
