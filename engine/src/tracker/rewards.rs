@@ -46,6 +46,8 @@ impl Tracker {
                 }
             }
             p::OP_DUTY_OPEN | p::OP_DUTY_REROLL => self.duty_opened_at = ts,
+            // Opened again: the board is the one already told.
+            p::OP_DUTY_REOPEN => (self.emit)(json!({ "type": "dutyOpened", "ts": ts })),
             p::OP_DUTY_TAKEN => {
                 self.duty_opened_at = ts;
                 if let Some(mission) = p::duty_taken(f) {

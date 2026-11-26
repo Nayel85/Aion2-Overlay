@@ -76,6 +76,9 @@ pub const OP_DUTY_BOARD: [u8; 2] = [0x1C, 0x8D];
 /// The duty board opened (`1B 8D 00 00`), rerolled (`1E 8D 00 00`): its new board follows.
 pub const OP_DUTY_OPEN: [u8; 2] = [0x1B, 0x8D];
 pub const OP_DUTY_REROLL: [u8; 2] = [0x1E, 0x8D];
+/// The duty board opened again, its board already sent (`41 8D 00 00`, no board after it: the owner's
+/// 2026-11-26 log, opened three times).
+pub const OP_DUTY_REOPEN: [u8; 2] = [0x41, 0x8D];
 pub const OP_DUTY_DONE: [u8; 2] = [0x0F, 0x8D];
 /// A Nightmare's end (`38 E2`): its boss and stage too, but after fields of varying length (71 and
 /// 68 bytes in the owner's two runs); only logged, `35 E2` says the same as you enter.

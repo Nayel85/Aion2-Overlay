@@ -72,6 +72,8 @@ export type EngineEvents = {
   inventorySlots: Whose & { slots?: DepotItem[] }
   dutyDone: { quest: number; rewards?: ItemAmount[]; offered?: { item: number; amount: number; chance: number; got: boolean }[] }
   dutyTaken: { quest: number; place: number }
+  /** The duty board opened again, its board the one already told. */
+  dutyOpened: Record<string, never>
   dutyBoard: { opened?: boolean; rerolls: number; expires: number | null; missions?: { quest: number; place: number; rewards: { item: number; amount: number; chance: number }[] }[] }
   boxOpened: { items?: { item: number; spent: boolean; amount: number }[] }
   pvpKill: { killer: PvpKill['killer']; victim?: PvpKill['victim']; mine?: boolean; died?: boolean; legion?: boolean; fight?: string | null }

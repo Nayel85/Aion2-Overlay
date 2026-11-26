@@ -134,6 +134,7 @@ if (!app.requestSingleInstanceLock()) {
     tracker.onShop(() => openedBy('merchant'))
     tracker.onEvent('dutyBoard', (ev) => ev.opened === true && openedBy('duty'))
     tracker.onEvent('dutyTaken', () => openedBy('duty'))
+    tracker.onEvent('dutyOpened', () => openedBy('duty'))
     tracker.onEvent('nearby', () => SCREENS.forEach((id) => screenAt[id] && String(tracker.nearby().position) !== screenAt[id]!.position && left(id, 'you moved')))
     tracker.onEvent('combat', () => leftAll('you are fighting'))
     onGameMapStatus((status, was) => status === 'found' && was !== 'found' && leftAll("the game's map is back"))

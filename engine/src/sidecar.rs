@@ -41,6 +41,7 @@
 //!                                                     a quest handed in: what it gave (after the items' changes)
 //!   {"type": "wallet", "ts": ms, "name": "Ksix", "server": 1104, "kina": 12800000, "boundKina": 0, "balances": {"930100019": 44920, "930100003": 1200}, "seasonWeek": 320}
 //!   {"type": "balance", "ts": ms, "item": 930100019 | 930100003, "balance", "name", "server"}   an Oath Coins or Abyss Points balance, as it changes
+//!   {"type": "dutyOpened", "ts": ms}   the duty board opened again (its board already told)
 //!   {"type": "seasonWeek", "ts": ms, "value": 320, "name", "server"}   the season's weekly rewards' progress (0-8000), as it moves
 //!                                                     your Kina and bound Kina, at login (null: not listed)
 //!   {"type": "subscriptions", "ts": ms, "name": "Ksix", "server": 1104, "list": [{"id": 1, "end": ms}]}
