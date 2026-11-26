@@ -24,7 +24,8 @@ const { report, drag } = useOverlay('duty', () => state.value.board !== null)
 
 const values = computed(() => store.settings.duty.values)
 const rows = computed(() => dutyRows(state.value, values.value).offered)
-const picked = computed(() => new Set(dutyAdvice(state.value, values.value)?.picks ?? []))
+const advice = computed(() => dutyAdvice(state.value, values.value))
+const picked = computed(() => new Set(advice.value?.picks ?? []))
 const kina = (n: number): string => compact(Math.round(n))
 const close = (): void => void bridge().invoke('duty:close')
 
@@ -40,6 +41,12 @@ onMounted(() => report())
         <header class="flex cursor-move items-center gap-2 border-b border-card px-3 py-2" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
           <span class="size-1.5 rounded-full bg-accent" />
           <span class="text-[11px] font-semibold uppercase tracking-wide text-accent">{{ t('Duty board') }}</span>
+          <!-- The best way: the lit ones taken, then a reroll for the slots left (its cost). -->
+          <span
+            v-if="advice?.reroll"
+            class="rounded-full bg-green/20 px-2 py-0.5 text-[11px] font-semibold text-green"
+            :title="t('{kina} expected in all, {more} more than taking {free} now.', { kina: kina(advice.expected), more: kina(advice.expected - advice.takeAll), free: advice.free })"
+          >{{ advice.picks.length ? t('Take, then reroll · {cost}', { cost: kina(advice.nextCost!) }) : t('Reroll all · {cost}', { cost: kina(advice.nextCost!) }) }}</span>
           <button
             type="button"
             class="ml-auto flex size-6 items-center justify-center rounded text-darker hover:bg-dark hover:text-default"
@@ -52,7 +59,7 @@ onMounted(() => report())
         </header>
 
         <!-- One line a mission, the ones to take lit: its name, its rewards, what it is worth to you. A fixed cap, not vh: the window is sized to this list. -->
-        <ul class="max-h-[640px] space-y-0.5 overflow-y-auto p-1.5">
+        <ul class="max-h-[720px] space-y-0.5 overflow-y-auto p-1.5">
           <li
             v-for="m in rows"
             :key="m.quest"

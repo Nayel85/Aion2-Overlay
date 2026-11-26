@@ -1617,7 +1617,6 @@ export const FR: Record<string, string> = {
   'Nothing on this board is worth anything to you: reroll it, or change what each reward is worth below.': 'Rien sur ce tableau n\'a de valeur pour toi : reroll, ou change la valeur des récompenses plus bas.',
   'Not enough boards seen yet to tell what a reroll is worth ({n} of 3).': 'Pas encore assez de tableaux vus pour juger un reroll ({n} sur 3).',
   'Reroll for {cost} Kina:': 'Reroll pour {cost} Kina :',
-  'a new board is worth {kina} on average, {more} more.': 'un nouveau tableau vaut {kina} en moyenne, {more} de plus.',
   'Keep this board:': 'Garde ce tableau :',
   'a reroll costs {cost} Kina, a new board is worth {kina} on average.': 'un reroll coûte {cost} Kina, un nouveau tableau vaut {kina} en moyenne.',
   'A reroll pays if it costs less than {gain} Kina (a new board: {kina} on average).': 'Un reroll est rentable s\'il coûte moins de {gain} Kina (un nouveau tableau : {kina} en moyenne).',
@@ -1798,4 +1797,10 @@ export const FR: Record<string, string> = {
   'Learn again': 'Réapprendre',
   'Also found': 'Trouvé aussi',
   'Bonus: {name}': 'Bonus : {name}',
+  'Then reroll for {cost} Kina': 'Puis reroll pour {cost} Kina',
+  'Reroll it all for {cost} Kina': 'Reroll tout pour {cost} Kina',
+  'for the {n} slots left: {kina} expected in all, {more} more than taking {free} now.': 'pour les {n} places restantes : {kina} attendus en tout, {more} de plus que d\'en prendre {free} maintenant.',
+  '{kina} expected in all, {more} more than taking {free} now.': '{kina} attendus en tout, {more} de plus que d\'en prendre {free} maintenant.',
+  'Take, then reroll · {cost}': 'Prends, puis reroll · {cost}',
+  'Reroll all · {cost}': 'Reroll tout · {cost}',
 }

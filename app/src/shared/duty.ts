@@ -3,8 +3,10 @@
  * 5 missions a day between them): the missions taken and the 15 offered, each
  * with its 5 rewards (each drawn on its own, at its chance), how many times it was rerolled today
  * and when it is replaced. What each reward is worth to you (settings.duty: Kina, gold crafting
- * materials, Theostones...) ranks the missions; the best ones for your free slots are the advice, and
- * a reroll is advised when a new board is worth more, on average over the boards seen, than its cost.
+ * materials, Theostones...) ranks the missions. The advice weighs every way to play the board: take
+ * its best few now (none to all your free slots), then reroll for the rest or not, each reroll at its
+ * cost, a new board worth what the boards seen were (each played the same way in turn, as far as the
+ * rerolls' costs are known). The best way is the advice: these to take, then a reroll or not.
  */
 import { goldKind, itemInfo } from './sessions.ts'
 import { ITEMS } from './items.ts'
@@ -88,7 +90,7 @@ const best = (board: DutyBoard, values: DutyValues, n: number): number => ranked
 export interface DutyAdvice {
   /** Slots still free (5 less those taken). */
   free: number
-  /** The missions to take, by quest: the best ones for the free slots, worth something. */
+  /** The missions to take now, by quest: the best ones, as many as the best way takes. */
   picks: number[]
   /** What they are worth together. */
   value: number
@@ -96,8 +98,47 @@ export interface DutyAdvice {
   newBoard: number | null
   /** The next reroll's cost, if known. */
   nextCost: number | null
-  /** Reroll: a new board is worth more than this one by more than its cost; null when not told. */
+  /** Reroll once these are taken (for the slots left); null when not told (too few boards seen, its cost unknown). */
   reroll: boolean | null
+  /** The best way's worth in all, what comes after a reroll on average, the rerolls paid off; and taking all the free slots now instead. */
+  expected: number
+  takeAll: number
+}
+
+/**
+ * What `slots` free slots are worth on a new board, `done` rerolls bought today, played the best way
+ * (`play`), on average over the boards seen (each its missions' worths, the best first).
+ */
+function lookAhead(boards: number[][], cost: (n: number) => number | null): (slots: number, done: number) => number {
+  const memo = new Map<string, number>()
+  const ahead = (slots: number, done: number): number => {
+    if (slots <= 0 || !boards.length) return 0
+    const key = `${slots}:${done}`
+    const known = memo.get(key)
+    if (known !== undefined) return known
+    const worth = boards.reduce((n, b) => n + play(b, slots, done, cost, ahead).worth, 0) / boards.length
+    memo.set(key, worth)
+    return worth
+  }
+  return ahead
+}
+
+/** A board's best way: how many of its best to take now, whether to reroll then, and what it is worth in all. */
+function play(worths: number[], slots: number, done: number, cost: (n: number) => number | null, ahead: (slots: number, done: number) => number): { take: number; reroll: boolean; worth: number } {
+  const next = cost(done + 1)
+  let bestWay = { take: 0, reroll: false, worth: 0 }
+  let took = 0
+  // Only missions worth something are taken; none is worth taking to fill a slot.
+  const takeable = Math.min(slots, worths.filter((v) => v > 0).length)
+  for (let take = 0; take <= takeable; take++) {
+    if (take > 0) took += worths[take - 1]!
+    if (took > bestWay.worth || (take === 0 && bestWay.worth === 0)) bestWay = { take, reroll: false, worth: took }
+    if (take < slots && next !== null) {
+      const worth = took - next + ahead(slots - take, done + 1)
+      if (worth > bestWay.worth) bestWay = { take, reroll: true, worth }
+    }
+  }
+  return bestWay
 }
 
 /** The next reroll's cost: learned, else as the owner paid it, else unknown. */
@@ -110,14 +151,25 @@ export function dutyAdvice(state: DutyState, values: DutyValues): DutyAdvice | n
   const board = state.board
   if (!board) return null
   const free = Math.max(0, DUTY_SLOTS - board.missions.filter((m) => m.place !== 0).length)
-  const top = ranked(board, values).slice(0, free).filter((m) => m.value > 0)
-  const value = top.reduce((n, m) => n + m.value, 0)
-  // A new board: the other boards seen (not this one), each one's best for as many slots.
+  const offered = ranked(board, values)
+  const all = offered.slice(0, free).filter((m) => m.value > 0)
+  const takeAll = all.reduce((n, m) => n + m.value, 0)
+  // A new board: the other boards seen (not this one).
   const others = state.history.filter((b) => sameBoard(b, board) === false)
   const newBoard = free && others.length >= BOARDS_FOR_AVERAGE ? others.reduce((n, b) => n + best(b, values, free), 0) / others.length : null
   const nextCost = nextRerollCost(board, state.rerollCosts)
-  const reroll = free === 0 || newBoard === null || nextCost === null ? null : newBoard - value > nextCost
-  return { free, picks: top.map((m) => m.quest), value, newBoard, nextCost, reroll }
+  if (!free || newBoard === null || nextCost === null) return { free, picks: all.map((m) => m.quest), value: takeAll, newBoard, nextCost, reroll: null, expected: takeAll, takeAll }
+  const cost = (n: number): number | null => state.rerollCosts[n] ?? KNOWN_REROLL_COSTS[n] ?? null
+  const boards = others.map((b) => ranked(b, values).map((m) => m.value))
+  const way = play(
+    offered.map((m) => m.value),
+    free,
+    board.rerolls,
+    cost,
+    lookAhead(boards, cost),
+  )
+  const picks = offered.slice(0, way.take)
+  return { free, picks: picks.map((m) => m.quest), value: picks.reduce((n, m) => n + m.value, 0), newBoard, nextCost, reroll: way.reroll, expected: way.worth, takeAll }
 }
 
 /** The same offer: the same missions with the same rewards (sent again as it opens, or as one is taken). */

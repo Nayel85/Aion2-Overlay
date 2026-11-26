@@ -21,12 +21,13 @@ const kina = (n: number): string => compact(Math.round(n))
         <span class="font-semibold">{{ advice.picks.map(questName).join(', ') }}</span>
         <span class="text-darker"> · {{ t('worth {kina} Kina on average', { kina: kina(advice.value) }) }}</span>
       </div>
-      <div v-else>{{ t('Nothing on this board is worth anything to you: reroll it, or change what each reward is worth below.') }}</div>
+      <div v-else-if="advice.reroll !== true">{{ t('Nothing on this board is worth anything to you: reroll it, or change what each reward is worth below.') }}</div>
       <div class="mt-1">
         <span v-if="advice.newBoard === null" class="text-darker">{{ t('Not enough boards seen yet to tell what a reroll is worth ({n} of 3).', { n: state.history.length }) }}</span>
+        <!-- The best way: take these, then reroll for the slots left; or take them and keep the board. -->
         <template v-else-if="advice.reroll === true">
-          <span class="font-semibold text-green">{{ t('Reroll for {cost} Kina:', { cost: kina(advice.nextCost!) }) }}</span>
-          {{ t('a new board is worth {kina} on average, {more} more.', { kina: kina(advice.newBoard), more: kina(advice.newBoard - advice.value) }) }}
+          <span class="font-semibold text-green">{{ advice.picks.length ? t('Then reroll for {cost} Kina', { cost: kina(advice.nextCost!) }) : t('Reroll it all for {cost} Kina', { cost: kina(advice.nextCost!) }) }}</span>
+          {{ t('for the {n} slots left: {kina} expected in all, {more} more than taking {free} now.', { n: advice.free - advice.picks.length, kina: kina(advice.expected), more: kina(advice.expected - advice.takeAll), free: advice.free }) }}
         </template>
         <template v-else-if="advice.reroll === false">
           <span class="font-semibold">{{ t('Keep this board:') }}</span>
