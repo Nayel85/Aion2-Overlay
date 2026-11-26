@@ -41,6 +41,7 @@
 //!                                                     a quest handed in: what it gave (after the items' changes)
 //!   {"type": "wallet", "ts": ms, "name": "Ksix", "server": 1104, "kina": 12800000, "boundKina": 0, "balances": {"930100019": 44920, "930100003": 1200}, "seasonWeek": 320}
 //!   {"type": "balance", "ts": ms, "item": 930100019 | 930100003, "balance", "name", "server"}   an Oath Coins or Abyss Points balance, as it changes
+//!   {"type": "arenaTeams", "ts": ms, "mates": ["Nayel", ...], "foes": [...]}   an arena's teams: yours (you in it), the other
 //!   {"type": "arenaKill", "ts": ms, "killer": "Wolfert", "victim": "v45Darkside2", "assists": ["Nayel"]}   a kill in an arena's match
 //!   {"type": "dutyOpened", "ts": ms}   the duty board opened again (its board already told)
 //!   {"type": "seasonWeek", "ts": ms, "value": 320, "name", "server"}   the season's weekly rewards' progress (0-8000), as it moves

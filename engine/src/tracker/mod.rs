@@ -841,9 +841,10 @@ impl Tracker {
             return;
         }
         let (first, second) = players.split_at(half);
-        let foes = if first.contains(&me) { second } else if second.contains(&me) { first } else { return };
+        let (mates, foes) = if first.contains(&me) { (first, second) } else if second.contains(&me) { (second, first) } else { return };
         self.arena_foes = foes.iter().cloned().collect();
         tracing::info!("arena: enemies {:?}", foes);
+        (self.emit)(json!({ "type": "arenaTeams", "ts": ts, "mates": mates, "foes": foes }));
         self.enemies = self.players.iter().filter(|(_, p)| self.arena_foes.contains(&p.name)).map(|(e, p)| (*e, p.clone())).collect();
         self.enemies_changed(ts);
     }

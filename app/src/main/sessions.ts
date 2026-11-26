@@ -281,6 +281,8 @@ export function startSessions(): void {
     changed()
   }
   tracker.onEvent('party', (ev) => arenaTeam(ev.members?.length ?? 0))
+  // The match's own teams (the party is not told there, 2026-11-27): yours, you among them.
+  tracker.onEvent('arenaTeams', (ev) => arenaTeam(ev.mates?.length ?? 0))
   // An arena's kills, deaths and assists: yours, as its score has them (the engine's `arenaKill`).
   tracker.onEvent('arenaKill', (ev) => {
     const run = openRun()

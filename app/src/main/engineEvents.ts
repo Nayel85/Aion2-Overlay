@@ -75,6 +75,8 @@ export type EngineEvents = {
   /** The duty board opened again, its board the one already told. */
   dutyOpened: Record<string, never>
   /** A kill in an arena's match: who killed whom, who assisted (names; null when not among its players). */
+  /** An arena's teams, by name: yours (you among them), the other. */
+  arenaTeams: { mates?: string[]; foes?: string[] }
   arenaKill: { killer: string | null; victim: string | null; assists?: string[] }
   dutyBoard: { opened?: boolean; rerolls: number; expires: number | null; missions?: { quest: number; place: number; rewards: { item: number; amount: number; chance: number }[] }[] }
   boxOpened: { items?: { item: number; spent: boolean; amount: number }[] }
