@@ -4,6 +4,7 @@
 // Odyle energy, entry counts, Kina and Abyss corridors at a glance, and what a server's characters share
 // (Daily Dungeon, Shugo and invasion keys). Counters are read at each login and worked out from the
 // game's refill times since: a character not logged in with the overlay yet shows greyed out.
+import { runsSince } from '@shared/sessions.ts'
 import { useNow } from '@/lib/now.ts'
 import { ago as timeAgo, weekdayTime } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -15,7 +16,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { ASCENSION, characterId, CORRIDORS, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
+import { ASCENSION, characterId, lastRefill, WEEKLY_RESET, CORRIDORS, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
 import { formatKina } from '@shared/kina.ts'
 import { serverLabel } from '@shared/servers.ts'
 
@@ -49,6 +50,8 @@ interface Row {
   boundKina: number | null
   /** The two together; null while neither was seen. */
   kinaTotal: number | null
+  /** The Shugo Festival's games since the weekly reset (the season mission Festival-Loving Daeva). */
+  shugoWeek: number
 }
 
 /** What a server's characters share, with each one's bar colour. */
@@ -59,6 +62,10 @@ const SHARED: { r: Refill; bar: string }[] = [
 ]
 
 /** By server (the one playing first), each in the game's order. */
+/** Each character's Shugo Festival games since the weekly reset, from every session kept. */
+const shugoWeek = computed(() =>
+  runsSince([...(store.sessions.current ? [store.sessions.current] : []), ...store.sessions.history], 'shugo', lastRefill(WEEKLY_RESET, now.value)),
+)
 const servers = computed(() => {
   const playing = store.status?.character && store.status.server ? characterId(store.status.server, store.status.character) : null
   const rows: Row[] = Object.entries(store.characters).map(([id, c]) => {
@@ -75,6 +82,7 @@ const servers = computed(() => {
       kina,
       boundKina,
       kinaTotal: kina === null && boundKina === null ? null : (kina ?? 0) + (boundKina ?? 0),
+      shugoWeek: shugoWeek.value.get(id) ?? 0,
     }
   })
   const by = new Map<number, Row[]>()
@@ -277,6 +285,7 @@ function corridorTitle(list: CorridorState[]): string {
               <th class="w-48 whitespace-nowrap px-5 text-left font-medium">
                 <span class="flex items-center gap-1.5"><img :src="ICONS.ticket" alt="" draggable="false" class="size-5" />{{ t('Ascension Trial') }}</span>
               </th>
+              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('The Shugo Festival\'s games each character played since the weekly reset (Wednesday 07:00 UTC): the season mission Festival-Loving Daeva\'s progress.')">{{ t('Shugo (week)') }}</th>
               <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('Kina and bound Kina')">Kina</th>
               <th class="w-40 whitespace-nowrap px-5 text-center font-medium" :title="t('The Abyss\'s Artifact corridors, back as the Artifact siege starts (Thursdays and Saturdays at 21:00 in Europe).')">{{ t('Corridors') }}</th>
               <th class="w-px whitespace-nowrap pl-5 pr-4 text-right font-medium">{{ t('Last read') }}</th>
@@ -333,6 +342,9 @@ function corridorTitle(list: CorridorState[]): string {
                     </div>
                   </div>
                   <span v-else class="text-darkest">–</span>
+                </td>
+                <td class="whitespace-nowrap px-4 text-right tabular-nums" :title="t('Since the weekly reset, {when}', { when: stamp(lastRefill(WEEKLY_RESET, now)) })">
+                  <span :class="r.shugoWeek ? 'font-semibold' : 'text-darkest'">{{ r.shugoWeek }}</span>
                 </td>
                 <td
                   class="whitespace-nowrap px-4 text-right font-semibold tabular-nums"

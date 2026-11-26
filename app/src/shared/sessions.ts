@@ -9,6 +9,7 @@
  * Spacetime Rift's window. A quest's rewards come a moment after their gains (`3F E2`, after the
  * items' `1B 56`): `questReward` moves them to the quests then.
  */
+import { characterId } from './characters.ts'
 import { riftOf, RIFT_WORLDS } from './abyss.ts'
 import { ABYSS_WORLDS, CONTINENT_WORLDS, DUNGEON_WORLDS } from './worlds.ts'
 import { LOOT } from './loot.ts'
@@ -480,6 +481,21 @@ export function noteGathering(s: PlaySession, item: number, amount: number, resu
   const grade = String(ITEMS[item]?.[1] ?? 11)
   g.byGrade[grade] = (g.byGrade[grade] ?? 0) + 1
   s.gathered = { ...s.gathered, [item]: (s.gathered?.[item] ?? 0) + amount + bonus }
+}
+
+/**
+ * Each character's runs of a kind since a time (the weekly reset: the Shugo Festival's games of a week,
+ * for its season mission), by character id (shared/characters.ts characterId): every session's runs
+ * but the noise (in and straight out).
+ */
+export function runsSince(all: PlaySession[], kind: string, since: number): Map<string, number> {
+  const by = new Map<string, number>()
+  for (const s of all) {
+    if (s.server === null || s.last < since) continue
+    const id = characterId(s.server, s.name)
+    for (const r of s.runs ?? []) if (r.kind === kind && r.start >= since && !runIsNoise(r)) by.set(id, (by.get(id) ?? 0) + 1)
+  }
+  return by
 }
 
 /** The counters whose drop marks a run's kind as you enter it (shared/characters.ts ids). */

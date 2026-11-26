@@ -190,6 +190,10 @@ export const refillsBetween = (r: Refill, from: number, to: number): number =>
 
 /** When the next refill comes. */
 export const nextRefill = (r: Refill, now: number): number => (Math.floor((now - r.offset) / r.every) + 1) * r.every + r.offset
+/** When the last refill came (the weekly counters': the weekly reset). */
+export const lastRefill = (r: Refill, now: number): number => nextRefill(r, now) - r.every
+/** The weekly reset (Wednesday 07:00 UTC): the Daily Dungeon's refill. */
+export const WEEKLY_RESET = DAILY_DUNGEON
 
 export interface CounterNow {
   /** As the game last said (at login, or as it changed since). */

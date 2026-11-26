@@ -1765,4 +1765,7 @@ export const FR: Record<string, string> = {
   'Start a packet log (the game messages, to a file in recordings)': 'Démarrer un journal de paquets (les messages du jeu, dans un fichier de recordings)',
   'Stop log': 'Arrêter',
   'Log': 'Log',
+  'The Shugo Festival\'s games each character played since the weekly reset (Wednesday 07:00 UTC): the season mission Festival-Loving Daeva\'s progress.': 'Les parties du Shugo Festival jouées par chaque perso depuis le reset hebdomadaire (mercredi 07:00 UTC) : l\'avancement de la mission de saison Festival-Loving Daeva.',
+  'Shugo (week)': 'Shugo (semaine)',
+  'Since the weekly reset, {when}': 'Depuis le reset hebdomadaire, {when}',
 }
