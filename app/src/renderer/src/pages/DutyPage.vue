@@ -20,24 +20,26 @@ const live = useDuty()
  * as every overlay has.
  */
 const state = computed<DutyState>(() => (live.value.board || !store.panelVisible ? live.value : { ...live.value, board: live.value.history.at(-1) ?? null }))
-const { report, drag } = useOverlay('duty', () => state.value.board !== null)
-
 const values = computed(() => store.settings.duty.values)
-const rows = computed(() => dutyRows(state.value, values.value).offered)
 const advice = computed(() => dutyAdvice(state.value, values.value))
+/** Something to take: the 5 missions of the day taken, nothing to advise, and it closes (the sample shows whatever). */
+const open = computed(() => state.value.board !== null && (store.panelVisible || (advice.value?.free ?? 0) > 0))
+const { report, drag } = useOverlay('duty', () => open.value)
+
+const rows = computed(() => dutyRows(state.value, values.value).offered)
 const picked = computed(() => new Set(advice.value?.picks ?? []))
 const kina = (n: number): string => compact(Math.round(n))
 const close = (): void => void bridge().invoke('duty:close')
 
 /** Tell main how big the window is; no board measures 0, and main keeps it hidden. */
-watch([rows, picked, () => store.ready], () => void nextTick(report), { deep: true })
+watch([rows, picked, open, () => store.ready], () => void nextTick(report), { deep: true })
 onMounted(() => report())
 </script>
 
 <template>
   <div class="inline-block">
     <div ref="root" class="inline-block">
-      <div v-if="state.board" class="m-1.5 w-[460px] rounded-lg border border-accent/40 bg-darker/95 shadow-card" :style="{ opacity: store.settings.duty.opacity }">
+      <div v-if="open" class="m-1.5 w-[460px] rounded-lg border border-accent/40 bg-darker/95 shadow-card" :style="{ opacity: store.settings.duty.opacity }">
         <header class="flex cursor-move items-center gap-2 border-b border-card px-3 py-2" :title="t('Drag to move')" @pointerdown="drag.onPointerDown">
           <span class="size-1.5 rounded-full bg-accent" />
           <span class="text-[11px] font-semibold uppercase tracking-wide text-accent">{{ t('Duty board') }}</span>
