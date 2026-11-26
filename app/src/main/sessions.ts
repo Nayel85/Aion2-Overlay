@@ -61,6 +61,19 @@ const RESUME_MS = 10 * 60_000
 const counterSeen = new Map<string, number>()
 let counterDrop: { kind: string; at: number } | null = null
 
+/** The run whose entry was paid last (a run counter's drop): a second drop in it is a new run. */
+let paidRun: DungeonRun | null = null
+
+/** The same dungeon again without leaving it: the run going on ends, a new one of it starts (`started`: under way at once). */
+function runAgain(s: PlaySession, run: DungeonRun, at: number, started = false): DungeonRun {
+  closeRun(s, at)
+  const again: DungeonRun = { world: run.world, name: run.name, kind: run.kind, start: at, end: null, ap: 0, kina: 0, currencies: {}, deaths: 0, partyDeaths: 0 }
+  if (started) again.started = at
+  s.runs = [...(s.runs ?? []), again]
+  log(`session: ${run.name} again`)
+  return again
+}
+
 /** The dungeon run going on in the current session, if any. */
 const openRun = (): DungeonRun | null => {
   const run = sessions.current?.runs?.at(-1)
@@ -177,9 +190,14 @@ export function startSessions(): void {
     const before = counterSeen.get(id)
     counterSeen.set(id, now)
     if (before === undefined || now >= before) return
-    const run = openRun()
-    if (run) run.kind = kind
-    else counterDrop = { kind, at: Date.now() }
+    let run = openRun()
+    const s = sessions.current
+    // A second entry paid in the same instance (Crobakhi's daily: you stay in it between runs): a new run.
+    if (s && run && run === paidRun) run = runAgain(s, run, Date.now(), true)
+    if (run) {
+      run.kind = kind
+      paidRun = run
+    } else counterDrop = { kind, at: Date.now() }
     log(`session: a ${kind} entered`)
     changed()
   })
@@ -214,14 +232,7 @@ export function startSessions(): void {
   tracker.onEvent('dungeonStart', () => {
     let run = openRun()
     const s = sessions.current
-    if (s && run && run.cleared !== undefined) {
-      const at = Date.now()
-      closeRun(s, at)
-      const again: DungeonRun = { world: run.world, name: run.name, kind: run.kind, start: at, end: null, ap: 0, kina: 0, currencies: {}, deaths: 0, partyDeaths: 0 }
-      s.runs = [...(s.runs ?? []), again]
-      log(`session: ${run.name} again`)
-      run = again
-    }
+    if (s && run && run.cleared !== undefined) run = runAgain(s, run, Date.now())
     if (run && run.started === undefined) {
       run.started = Date.now()
       changed()
