@@ -113,7 +113,10 @@ export function meterRows(
   const total = shown.reduce((n, r) => n + value(r), 0) || 1
   return shown
     .map((r) => ({ ...r, value: value(r), perSecond: stat === 'damage' ? r.dps : stat === 'healing' ? r.hps : r.taken / seconds, part: (value(r) / total) * 100 }))
-    .filter((r) => stat === 'damage' || r.value > 0)
+    // Nothing to show for one who did none of it (in a raid, those around who never hit it, some not
+    // even named: rows of 0 and numbers, 2026-11-26); you and your party always (a row each, the meter
+    // keeping its size), and their healing or damage taken only when there is some.
+    .filter((r) => r.value > 0 || (stat === 'damage' && (r.you || r.party)))
     .sort((a, b) => b.value - a.value || a.id - b.id)
 }
 
