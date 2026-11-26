@@ -281,7 +281,7 @@ function corridorTitle(list: CorridorState[]): string {
           <thead class="bg-card text-xs uppercase tracking-wide text-darker">
             <tr class="border-b border-card">
               <th class="py-2.5 pl-4 text-left font-medium">{{ t('Character') }}</th>
-              <th class="min-w-[17rem] px-3 text-left font-medium">
+              <th class="min-w-[15rem] px-3 text-left font-medium">
                 <span class="flex items-center gap-1.5"><img :src="ICONS.energy" alt="" draggable="false" class="size-5" />{{ t('Odyle Energy') }}</span>
               </th>
               <th class="w-48 whitespace-nowrap px-5 text-left font-medium">
@@ -290,8 +290,7 @@ function corridorTitle(list: CorridorState[]): string {
               <th class="w-48 whitespace-nowrap px-5 text-left font-medium">
                 <span class="flex items-center gap-1.5"><img :src="ICONS.ticket" alt="" draggable="false" class="size-5" />{{ t('Ascension Trial') }}</span>
               </th>
-              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('The Shugo Festival\'s games each character played since the weekly reset (Wednesday 07:00 UTC): the season mission Festival-Loving Daeva\'s progress.')">{{ t('Shugo (week)') }}</th>
-              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('The season missions\' points, as the game last said them')">{{ t('Season') }}</th>
+              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('The season: each character\'s points, as the game last said them, and the Shugo Festival\'s games this week for the mission Festival-Loving Daeva (since the weekly reset, Wednesday 07:00 UTC).')">{{ t('Season') }}</th>
               <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('Kina and bound Kina')">Kina</th>
               <th class="w-40 whitespace-nowrap px-5 text-center font-medium" :title="t('The Abyss\'s Artifact corridors, back as the Artifact siege starts (Thursdays and Saturdays at 21:00 in Europe).')">{{ t('Corridors') }}</th>
               <th class="w-px whitespace-nowrap pl-5 pr-4 text-right font-medium">{{ t('Last read') }}</th>
@@ -349,24 +348,24 @@ function corridorTitle(list: CorridorState[]): string {
                   </div>
                   <span v-else class="text-darkest">–</span>
                 </td>
-                <td class="whitespace-nowrap px-4 text-right tabular-nums" :title="t('Since the weekly reset, {when}', { when: stamp(lastRefill(WEEKLY_RESET, now)) })">
-                  <!-- The mission's progress: its games of the week, a mark at each step (3, 6, 9). -->
-                  <div class="flex items-baseline justify-end gap-1">
-                    <span :class="r.shugoWeek >= SHUGO_DONE ? 'font-semibold text-green' : r.shugoWeek ? 'font-semibold' : 'text-darkest'">{{ r.shugoWeek }}</span>
-                    <span class="text-xs text-darkest">/ {{ SHUGO_DONE }}</span>
+                <!-- The season: its points, and the week's Shugo games of Festival-Loving Daeva, a mark at each step (3, 6, 9). -->
+                <td class="whitespace-nowrap px-4 py-2 text-right tabular-nums">
+                  <div :title="r.c.seasonPoints ? t('Read {when}', { when: stamp(r.c.seasonPoints.at) }) : ''">
+                    <span v-if="r.season !== null" class="font-semibold">{{ amount(r.season) }}</span>
+                    <span v-else class="text-darkest">–</span>
                   </div>
-                  <div class="mt-1 flex justify-end gap-0.5">
-                    <span
-                      v-for="step in SHUGO_MISSION.steps"
-                      :key="step"
-                      :class="['h-1.5 w-4 rounded-full', r.shugoWeek >= step ? 'bg-green' : 'bg-dark']"
-                      :title="t('{n} games: {reward}', { n: step, reward: SHUGO_MISSION.reward })"
-                    />
+                  <div class="mt-1 flex items-center justify-end gap-1.5 text-[11px]" :title="t('Shugo Festival games since the weekly reset, {when}', { when: stamp(lastRefill(WEEKLY_RESET, now)) })">
+                    <span class="text-darker">Shugo</span>
+                    <span :class="r.shugoWeek >= SHUGO_DONE ? 'font-semibold text-green' : r.shugoWeek ? 'text-default' : 'text-darkest'">{{ r.shugoWeek }}/{{ SHUGO_DONE }}</span>
+                    <span class="flex gap-0.5">
+                      <span
+                        v-for="step in SHUGO_MISSION.steps"
+                        :key="step"
+                        :class="['h-1.5 w-3 rounded-full', r.shugoWeek >= step ? 'bg-green' : 'bg-dark']"
+                        :title="t('{n} games: {reward}', { n: step, reward: SHUGO_MISSION.reward })"
+                      />
+                    </span>
                   </div>
-                </td>
-                <td class="whitespace-nowrap px-4 text-right font-semibold tabular-nums" :title="r.c.seasonPoints ? t('Read {when}', { when: stamp(r.c.seasonPoints.at) }) : ''">
-                  <span v-if="r.season !== null">{{ amount(r.season) }}</span>
-                  <span v-else class="text-darkest">–</span>
                 </td>
                 <td
                   class="whitespace-nowrap px-4 text-right font-semibold tabular-nums"
