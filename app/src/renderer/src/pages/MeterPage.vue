@@ -56,8 +56,15 @@ const all = computed(() => meterRows(meter.value, cfg.value.players, cfg.value.s
  * the meter's rows or height, so the whole group shows without resizing it on entering.
  */
 const partySize = computed(() => store.groupSize)
-/** A height of its own shows every row it fits (scrolling past them); otherwise as many as set, the whole party at least. */
-const rows = computed(() => all.value.slice(0, height.value === null ? Math.max(cfg.value.rows, partySize.value) : 24))
+/**
+ * A height of its own shows every row it fits (scrolling past them); otherwise as many as set, the whole
+ * party at least. In an instance no more than its group: none but the group is in there (an expedition's
+ * five), the players left over from outside are not (2026-11-26, ten rows in one).
+ */
+const rows = computed(() => {
+  const most = height.value === null ? Math.max(cfg.value.rows, partySize.value) : 24
+  return all.value.slice(0, store.inInstance && partySize.value > 0 ? Math.min(most, partySize.value) : most)
+})
 /** Its height grows past the one set while its rows are no more than the party's: nothing to scroll for them. */
 const growsForParty = computed(() => height.value !== null && partySize.value > 1 && rows.value.length <= partySize.value)
 const top = computed(() => Math.max(1, ...all.value.map((r) => r.value)))
