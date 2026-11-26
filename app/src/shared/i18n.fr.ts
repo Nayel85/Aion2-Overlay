@@ -1823,4 +1823,5 @@ export const FR: Record<string, string> = {
   'Co-op': 'Coop',
   'Solo': 'Solo',
   'Kills / deaths / assists': 'Kills / morts / assistances',
+  'Shugo': 'Shugo',
 }

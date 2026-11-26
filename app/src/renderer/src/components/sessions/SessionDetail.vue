@@ -43,8 +43,11 @@ function ranked(by: Record<string, number> | undefined): [string, number][] {
 const currencies = computed(() => Object.entries(props.session.currencies ?? {}).filter(([, n]) => n > 0))
 
 /** The dungeons (field bosses apart), by zone and mode, the last run first, each's runs the latest first; the field bosses, the latest first. */
-/** Kinds shown as one group whatever their dungeon (the Nightmares, whatever their boss and level; the arenas, Solo and Co-op), opened to each run. */
-const TOGETHER: Record<string, string> = { nightmare: 'nightmare', bosschallenge: 'nightmare', arena: 'arena' }
+/**
+ * Kinds shown as one group whatever their dungeon, by its title (the Nightmares, whatever their boss
+ * and level; the arenas, Solo and Co-op; the Shugo Festival's games), opened to each run.
+ */
+const TOGETHER: Record<string, string> = { nightmare: 'Nightmares', bosschallenge: 'Nightmares', arena: 'Arenas', shugo: 'Shugo' }
 const togetherAs = (g: DungeonRun[]): string | undefined => TOGETHER[g[0]!.kind]
 /** A group of several dungeons (the Nightmares): its kind's name for title, each run's own in its line, closed until clicked. */
 const mixed = (g: DungeonRun[]): boolean => togetherAs(g) !== undefined || g.some((r) => runName(r, t) !== runName(g[0]!, t))
@@ -212,7 +215,7 @@ function toggle(r: DungeonRun): void {
     <div v-for="g in groups" :key="groupKey(g)" class="rounded-lg bg-card p-3">
       <div :class="['flex flex-wrap items-baseline gap-x-2 text-xs', mixed(g) && 'cursor-pointer']" @click="mixed(g) && toggleGroup(g)">
         <svg viewBox="0 0 16 16" class="size-3.5 shrink-0 self-center text-darker" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="kindIcon(g[0]!.kind)" /></svg>
-        <span class="text-sm font-semibold">{{ mixed(g) ? t(runKindLabel(g[0]!.kind)) : runName(g[0]!, t) }}</span>
+        <span class="text-sm font-semibold">{{ mixed(g) ? t(togetherAs(g) ?? runKindLabel(g[0]!.kind)) : runName(g[0]!, t) }}</span>
         <span v-if="g.length > 1" class="font-semibold text-accent">×{{ g.length }}</span>
         <span v-if="!mixed(g)" class="text-darker">{{ t(runKindLabel(g[0]!.kind)) }}</span>
         <svg v-if="mixed(g)" viewBox="0 0 16 16" :class="['ml-auto size-3 self-center text-darker transition-transform', openGroups.has(groupKey(g)) && 'rotate-90']" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.chevron" /></svg>
