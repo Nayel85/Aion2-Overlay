@@ -177,7 +177,8 @@ test("a Shugo Festival's game is a run; the chests you opened are its rewards", 
   // The open world's events are not.
   assert.equal(dungeonOf(78), null)
   const run = { world: 500035, name: 'Up! Up! Up!', kind: 'shugo', start: 0, end: 1, ap: 1320, kina: 0, currencies: { '930100023': 2100 } }
-  assert.equal(runName(run), 'Shugo Festival · Up! Up! Up!')
+  // Named Shugo, whichever game: one group of them all in the session.
+  assert.equal(runName(run), 'Shugo')
   // The owner's three chests, in part: Centuryroot Tokens, Odyle, a Pure Odyle; the lesser equipment is not kept.
   const loot = notableLoot([{ item: 930100011, amount: 50 }, { item: 610610013, amount: 3 }, { item: 610610015, amount: 1 }, { item: 115060034, amount: 1 }])
   assert.deepEqual(loot, { '930100011': 50, '610610013': 3, '610610015': 1 })

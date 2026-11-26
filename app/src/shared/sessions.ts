@@ -361,8 +361,9 @@ export function zoneMode(world: number, tr: Translate = untranslated): string | 
 /** A run's name: a Nightmare's by its boss and level, else its zone's, with its mode (`tr` translating it). */
 export function runName(run: DungeonRun, tr: Translate = untranslated): string {
   if (run.boss === undefined) {
-    // A Shugo Festival's or an invasion's game: the event, then which.
-    if (run.kind === 'shugo' || run.kind === 'invasion') return `${tr(runKindLabel(run.kind))} · ${run.name}`
+    // A Shugo Festival's game: Shugo, whichever game (Up! Up! Up!...); an invasion's: the event, then which.
+    if (run.kind === 'shugo') return tr('Shugo')
+    if (run.kind === 'invasion') return `${tr(runKindLabel(run.kind))} · ${run.name}`
     // An arena by its mode, not its map: Co-op with a group (5v5), else Solo.
     if (run.kind === 'arena') return `${tr('Arena')} · ${tr((run.team ?? 0) > 1 ? 'Co-op' : 'Solo')}`
     const mode = zoneMode(run.world, tr)
