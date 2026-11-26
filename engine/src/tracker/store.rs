@@ -237,7 +237,7 @@ mod tests {
                 "Alt": {"server": 2104, "pets": {"1006": {"souls": 1, "votes": {"Meadow Sparkie": 9}}}}
             }
         });
-        let dir = std::env::temp_dir().join(format!("lokthar-store-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nayel-store-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("collection.json");
         std::fs::write(&path, v1.to_string()).unwrap();

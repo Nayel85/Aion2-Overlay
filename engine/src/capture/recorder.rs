@@ -34,7 +34,7 @@ impl Recorder {
         fs::create_dir_all(&self.dir).map_err(|e| e.to_string())?;
         let path = self.dir.join(format!("{}.log", chrono::Local::now().format("%Y-%m-%d_%H-%M-%S")));
         let mut file = BufWriter::new(File::create(&path).map_err(|e| e.to_string())?);
-        writeln!(file, "# Lokthar recording: the game's traffic after the lock (A2Tools DPS Meter's packet log)").map_err(|e| e.to_string())?;
+        writeln!(file, "# Nayel recording: the game's traffic after the lock (A2Tools DPS Meter's packet log)").map_err(|e| e.to_string())?;
         self.open = Some((file, path.clone(), 0));
         Ok(path)
     }
@@ -89,7 +89,7 @@ mod tests {
 
     #[test]
     fn a_recording_reads_back_as_what_came_from_the_game() {
-        let dir = std::env::temp_dir().join(format!("lokthar-rec-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nayel-rec-{}", std::process::id()));
         let mut rec = Recorder::new(dir.clone());
         let path = rec.start().unwrap();
         let payload = |src: u16, dst: u16, data: &[u8]| CapturedPayload {

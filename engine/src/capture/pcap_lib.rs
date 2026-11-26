@@ -1,7 +1,7 @@
 // Copied from A2Tools DPS Meter (GPL-3.0), https://github.com/taengu/A2Tools-DPS-Meter
 // src-tauri/src/platform/{win32,linux}/pcap.rs at 08b249d49ef18be9ac9b41d8dd35596ae99aacfd.
 // Changed: the two merged into one file by cfg; the Npcap installer and
-// library_available left out (Lokthar's installer asks for Npcap).
+// library_available left out (the app's installer asks for Npcap).
 
 //! Which packet-capture library to load. The API is libpcap's on every OS;
 //! on Windows it comes from Npcap.

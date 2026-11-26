@@ -1,5 +1,5 @@
 /**
- * Persisted settings: `%APPDATA%\Lokthar\settings.json`.
+ * Persisted settings: `%APPDATA%\Nayel Overlay\settings.json`.
  *
  * As in marnis-app: the store is created on first use, never at import, because electron-store
  * fixes the `userData` path when it is constructed. And every write is normalised, then broadcast

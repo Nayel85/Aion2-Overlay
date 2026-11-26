@@ -7,9 +7,9 @@ import vue from '@vitejs/plugin-vue'
 // `@shared` resolves from all three, so the IPC contract is one file rather than three copies.
 const shared = resolve(__dirname, 'src/shared')
 // The releases' repository is private: the updater reads it with a read-only token, built in from
-// update-token.txt (git ignores it) or LOKTHAR_UPDATE_TOKEN; none, and the updater finds nothing.
+// update-token.txt (git ignores it) or NAYEL_UPDATE_TOKEN; none, and the updater finds nothing.
 const tokenFile = resolve(__dirname, 'update-token.txt')
-const updateToken = process.env.LOKTHAR_UPDATE_TOKEN ?? (existsSync(tokenFile) ? readFileSync(tokenFile, 'utf8').trim() : '')
+const updateToken = process.env.NAYEL_UPDATE_TOKEN ?? (existsSync(tokenFile) ? readFileSync(tokenFile, 'utf8').trim() : '')
 
 export default defineConfig({
   main: {

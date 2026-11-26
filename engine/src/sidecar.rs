@@ -2,7 +2,7 @@
 //! and commands are the Python tracker's (sidecar.py, which this replaces),
 //! plus the DPS meter's.
 //!
-//!   lokthar-engine [--data collection.json] [--app-pid N] [--paused] [--replay X.pcap [--speed 4]]
+//!   nayel-engine [--data collection.json] [--app-pid N] [--paused] [--replay X.pcap [--speed 4]]
 //!
 //! stdout, one JSON object per line (nothing else is ever written there):
 //!

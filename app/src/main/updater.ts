@@ -14,9 +14,7 @@
  * waits for the app to close, copies the new files over this folder and starts it again. The data
  * is in %APPDATA%\Nayel Overlay either way, untouched.
  *
- * The exe was renamed in 0.3.7 (Aion2DropTracker.exe -> lokthar-overlay.exe): a zip with either name
- * is taken, its exe is the one started, and the old one is deleted. Copies before 0.3.7 look for
- * their own name only, so they update to 0.3.7 by hand once (the Updates page's zip link).
+ * A zip with any of EXE_NAMES is taken, its exe is the one started, and the old one is deleted.
  */
 import { app } from 'electron'
 import { execFile, spawn } from 'node:child_process'
@@ -51,7 +49,7 @@ async function releaseAsset(version: string, name: string): Promise<Response> {
   return fetch(asset.url, { headers: { ...auth, accept: 'application/octet-stream' }, redirect: 'follow' })
 }
 
-/** An installed copy has its uninstaller next to it ("Uninstall Lokthar.exe"); one unpacked from the zip does not. */
+/** An installed copy has its uninstaller next to it ("Uninstall Nayel Overlay.exe"); one unpacked from the zip does not. */
 function isPortable(): boolean {
   if (process.platform !== 'win32' || !app.isPackaged) return false
   try {
@@ -84,14 +82,14 @@ let andInstall = false
 /** The portable copy's update, unpacked and ready: the folder holding the new exe, and its name. */
 let portableReady: { dir: string; exe: string } | null = null
 /** The exe's names, newest first (electron-builder.yml's executableName). */
-const EXE_NAMES = ['Nayel-Overlay.exe', 'nayel-overlay.exe', 'lokthar-overlay.exe', 'Aion2DropTracker.exe']
+const EXE_NAMES = ['Nayel-Overlay.exe', 'nayel-overlay.exe']
 
 const run = promisify(execFile)
 
 /** The release's zip, downloaded with progress, checked against its `.sha256`, unpacked. */
 async function downloadPortable(version: string): Promise<{ dir: string; exe: string }> {
   const name = `Nayel-Overlay-${version}-portable.zip`
-  const dir = join(app.getPath('temp'), `lokthar-update-${version}`)
+  const dir = join(app.getPath('temp'), `nayel-update-${version}`)
   await rawFs.rm(dir, { recursive: true, force: true })
   await mkdir(dir, { recursive: true })
   const zip = join(dir, name)

@@ -1,10 +1,10 @@
-//! Lokthar's engine: captures the game's traffic, runs A2Tools DPS Meter's
+//! Nayel Overlay's engine: captures the game's traffic, runs A2Tools DPS Meter's
 //! parser on it, and tracks the pet collection and the rest the overlay shows.
 //! Two ways to run it:
 //!
-//!   lokthar-engine [--data collection.json] [--paused] [--replay X.pcap [--speed 4]]
+//!   nayel-engine [--data collection.json] [--paused] [--replay X.pcap [--speed 4]]
 //!       the app's helper: JSON lines on stdin and stdout (sidecar.rs)
-//!   lokthar-engine replay <file> [--every <s>] [--mode <target mode>]
+//!   nayel-engine replay <file> [--every <s>] [--mode <target mode>]
 //!       a recording through the meter and the tracker as fast as it reads,
 //!       timed by capture time: the tracker's events and a `dps` line every
 //!       `--every` seconds of the recording (and at its end) on stdout, the

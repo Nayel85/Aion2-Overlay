@@ -35,7 +35,7 @@ import { tr } from './i18n.ts'
 import { pveInstance } from '../shared/sessions.ts'
 
 const RESTART_DELAYS_MS = [1000, 3000, 10000, 30000]
-const EXE = process.platform === 'win32' ? 'lokthar-engine.exe' : 'lokthar-engine'
+const EXE = process.platform === 'win32' ? 'nayel-engine.exe' : 'nayel-engine'
 
 let child: ChildProcessWithoutNullStreams | null = null
 /** Whether the sidecar should be capturing: only while the game runs (see idle.ts). */

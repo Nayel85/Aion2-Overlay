@@ -54,7 +54,7 @@ jobs:
         run: npm run dist
         # The read-only token the app reads its private releases with (Settings → Secrets → UPDATE_TOKEN).
         env:
-          LOKTHAR_UPDATE_TOKEN: ${{ secrets.UPDATE_TOKEN }}
+          NAYEL_UPDATE_TOKEN: ${{ secrets.UPDATE_TOKEN }}
 
       - name: Checksum
         id: sum

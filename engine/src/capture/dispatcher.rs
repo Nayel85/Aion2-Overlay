@@ -289,7 +289,7 @@ impl CaptureDispatcher {
             if self.replay {
                 clock::set_override(Some(cap.captured_at_ms));
             }
-            // Lokthar runs the engine only while the game is open (the app's
+            // The app runs the engine only while the game is open (the app's
             // idle watcher), so there is no window check here.
             let now = now_ms();
 

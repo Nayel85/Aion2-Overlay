@@ -35,7 +35,7 @@ async function sizeOf(path: string): Promise<number> {
 /** The update installers the updater left in the temp folder. */
 async function updateFolders(): Promise<string[]> {
   try {
-    return (await readdir(app.getPath('temp'))).filter((n) => /^lokthar-update-/.test(n)).map((n) => join(app.getPath('temp'), n))
+    return (await readdir(app.getPath('temp'))).filter((n) => /^(nayel|lokthar)-update-/.test(n)).map((n) => join(app.getPath('temp'), n))
   } catch {
     return []
   }

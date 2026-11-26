@@ -25,11 +25,11 @@ only warns on the first, hand-installed copy.
 
 The releases are read through GitHub's API with a **read-only token built into the app**:
 
-- At build time, `app/electron.vite.config.ts` takes it from the `LOKTHAR_UPDATE_TOKEN`
+- At build time, `app/electron.vite.config.ts` takes it from the `NAYEL_UPDATE_TOKEN`
   environment variable, else from `app/update-token.txt` (ignored by git), and builds it in as
   `__UPDATE_TOKEN__`.
 - The release workflow passes the repository secret `UPDATE_TOKEN` (Settings → Secrets and
-  variables → Actions) as `LOKTHAR_UPDATE_TOKEN`.
+  variables → Actions) as `NAYEL_UPDATE_TOKEN`.
 - `app/src/main/updater.ts` gives it to electron-updater (`private: true`) and uses it for the
   release files it fetches itself (the portable zip).
 

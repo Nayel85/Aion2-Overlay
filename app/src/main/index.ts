@@ -1,5 +1,5 @@
 /**
- * Lokthar (an Aion 2 overlay: pet collection, timers, the guild's field boss sync): a tray app with a floating bubble, a panel and an in-game HUD, fed by the
+ * Nayel Overlay (an Aion 2 overlay: pet collection, timers, the guild's field boss sync): a tray app with a floating bubble, a panel and an in-game HUD, fed by the
  * engine (engine/, Rust) running as a child process.
  */
 import { flushJsonFiles } from './jsonFile.ts'

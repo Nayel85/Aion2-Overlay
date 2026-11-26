@@ -378,7 +378,7 @@ struct Shared {
     /// Set by the safety net (`SafetyNet`): every device captures without a
     /// filter for the rest of the session.
     unfiltered: AtomicBool,
-    /// Lokthar: devices opened, and why the capture could not start, for the
+    /// Nayel Overlay: devices opened, and why the capture could not start, for the
     /// app's status.
     opened: AtomicU64,
     start_error: Mutex<Option<String>>,
@@ -558,18 +558,18 @@ impl PcapCapturer {
         self.running.load(Ordering::SeqCst)
     }
 
-    /// Lokthar: the capture could not start, and why.
+    /// Nayel Overlay: the capture could not start, and why.
     fn fail(&self, why: String) {
         *self.shared.start_error.lock().unwrap_or_else(|p| p.into_inner()) = Some(why);
         self.running.store(false, Ordering::SeqCst);
     }
 
-    /// Lokthar: why the capture did not start, if it did not.
+    /// Nayel Overlay: why the capture did not start, if it did not.
     pub fn start_error(&self) -> Option<String> {
         self.shared.start_error.lock().unwrap_or_else(|p| p.into_inner()).clone()
     }
 
-    /// Lokthar: how many network devices are capturing (or have been).
+    /// Nayel Overlay: how many network devices are capturing (or have been).
     pub fn opened(&self) -> u64 {
         self.shared.opened.load(Ordering::Relaxed)
     }
@@ -638,7 +638,7 @@ fn start_capture_thread(
             if pcap.filter.is_some() && !filter_failed && !shared.unfiltered.load(Ordering::Relaxed) {
                 if now - last_game_check >= GAME_CHECK_MS {
                     last_game_check = now;
-                    // Lokthar runs the engine only while the game is open
+                    // The app runs the engine only while the game is open
                     // (the app's idle watcher stops it otherwise).
                     game_open = true;
                 }

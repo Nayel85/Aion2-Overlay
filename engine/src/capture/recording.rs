@@ -134,7 +134,7 @@ mod tests {
 
     #[test]
     fn a_packet_log_line_reads_as_the_server_sending() {
-        let dir = std::env::temp_dir().join(format!("lokthar-engine-test-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nayel-engine-test-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = dir.join("packets.log");
         std::fs::write(

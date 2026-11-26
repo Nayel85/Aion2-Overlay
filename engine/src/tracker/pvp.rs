@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn history_reads_legacy_and_drains_individual_writes_on_shutdown() {
-        let dir = std::env::temp_dir().join(format!("lokthar-pvp-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nayel-pvp-{}", std::process::id()));
         fs::create_dir_all(&dir).unwrap();
         let file = dir.join("pvp-fights.json");
         let make = |at| fight(format!("pvp-{at}-2"), at, "kill", Side::default(), Side::default(), &[]);

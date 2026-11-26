@@ -8,7 +8,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const exe = process.platform === 'win32' ? 'lokthar-engine.exe' : 'lokthar-engine'
+const exe = process.platform === 'win32' ? 'nayel-engine.exe' : 'nayel-engine'
 execFileSync('cargo', ['build', '--release', '--locked'], { cwd: join(ROOT, 'engine'), stdio: 'inherit' })
 const out = join(ROOT, 'build', 'engine')
 mkdirSync(out, { recursive: true })

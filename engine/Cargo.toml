@@ -1,7 +1,7 @@
 [package]
-name = "lokthar-engine"
+name = "nayel-engine"
 version = "0.1.0"
-description = "Lokthar overlay's capture and DPS engine: a sidecar that talks JSON lines with the app"
+description = "Nayel Overlay's capture and DPS engine: a sidecar that talks JSON lines with the app"
 edition = "2024"
 license = "GPL-3.0-only"
 publish = false

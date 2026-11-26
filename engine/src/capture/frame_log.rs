@@ -39,7 +39,7 @@ impl FrameLog {
         fs::create_dir_all(&self.dir).map_err(|e| e.to_string())?;
         let path = self.dir.join(format!("packets-{}.txt", chrono::Local::now().format("%Y-%m-%d_%H-%M-%S")));
         let mut file = BufWriter::new(File::create(&path).map_err(|e| e.to_string())?);
-        writeln!(file, "# Lokthar packet log, started {}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S %:z")).map_err(|e| e.to_string())?;
+        writeln!(file, "# Nayel packet log, started {}", chrono::Local::now().format("%Y-%m-%d %H:%M:%S %:z")).map_err(|e| e.to_string())?;
         writeln!(file, "# Each game message: local time | opcode | length | bytes (hex, from the opcode on). Marks: ### time MARK text").map_err(|e| e.to_string())?;
         self.open = Some((file, path.clone(), 0));
         Ok(path)
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn writes_messages_and_marks_as_lines() {
-        let dir = std::env::temp_dir().join(format!("lokthar-frames-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("nayel-frames-{}", std::process::id()));
         let mut log = FrameLog::new(dir.clone());
         log.note(1_760_000_000_000, &[5, 1, 0x91, 7]); // not on: nothing
         let path = log.start().unwrap();

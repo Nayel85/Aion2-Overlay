@@ -23,7 +23,7 @@ export function glog(line: string): void {
     if (!started) {
       mkdirSync(dirname(file), { recursive: true })
       if (existsSync(file) && statSync(file).size > LIMIT) renameSync(file, join(dirname(file), 'gamemap.old.log'))
-      appendFileSync(file, `\n=== ${new Date().toISOString()} Lokthar ${app.getVersion()} (${app.isPackaged ? 'installed' : 'development'})\n`)
+      appendFileSync(file, `\n=== ${new Date().toISOString()} Nayel Overlay ${app.getVersion()} (${app.isPackaged ? 'installed' : 'development'})\n`)
       started = true
     }
     appendFileSync(file, `${new Date().toISOString()} ${line}\n`)
