@@ -1783,4 +1783,7 @@ export const FR: Record<string, string> = {
   'An Overlays page lists every overlay with its settings; a search finds any setting (Ctrl+F); the overlays have English names that say what they do.': 'Une page Overlays liste chaque overlay avec ses réglages ; une recherche trouve n\'importe quel réglage (Ctrl+F) ; les overlays ont des noms anglais qui disent ce qu\'ils font.',
   'DPS meter: ten rows in a raid, and a fight keeps only the players who took part in it.': 'Compteur DPS : dix lignes en raid, et un combat ne garde que les joueurs qui y ont participé.',
   'Fixed: an expedition\'s chest counted one cube of two with the membership; the group\'s deaths counted monsters; data could be lost on closing the app.': 'Corrigé : le coffre d\'expédition ne comptait qu\'un cube sur deux avec l\'abonnement ; les morts du groupe comptaient des monstres ; des données pouvaient être perdues à la fermeture de l\'app.',
+  'Updating from Settings works again: a retry no longer fails on the earlier attempt\'s files.': 'La mise à jour depuis les réglages remarche : un nouvel essai n\'échoue plus sur les fichiers de l\'essai précédent.',
+  'Characters page: the portrait of a character the overlay never saw on the selection screen, and its refresh button, work.': 'Page Personnages : le portrait d\'un perso que l\'overlay n\'a jamais vu sur l\'écran de sélection, et son bouton pour le redemander, fonctionnent.',
+  'The Unified HUD has the Aggro overlay\'s button.': 'Le HUD unifié a le bouton de l\'overlay Aggro.',
 }

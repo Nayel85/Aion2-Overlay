@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.19',
+    items: [
+      "Updating from Settings works again: a retry no longer fails on the earlier attempt's files.",
+      "Characters page: the portrait of a character the overlay never saw on the selection screen, and its refresh button, work.",
+      "The Unified HUD has the Aggro overlay's button.",
+    ],
+  },
+  {
     version: '0.3.18',
     items: [
       "Personal bests redone: a tab per kind of content (Expeditions, Transcendence, Nightmares, Ascension Trials, Sanctuaries), each a grid of every instance and boss in the game's order with the item level each mode asks, best DPS or fastest run, each character on their own line, each value a link to its fight.",
