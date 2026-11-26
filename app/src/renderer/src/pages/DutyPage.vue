@@ -6,7 +6,7 @@
 import { computed, nextTick, onMounted, watch } from 'vue'
 import DutyRewards from '@/components/DutyRewards.vue'
 import { bridge } from '@/lib/bridge.ts'
-import { dutyRows, useDuty, useMarket } from '@/lib/duty.ts'
+import { dutyRows, useDuty, useDutyPricing } from '@/lib/duty.ts'
 import { t } from '@/lib/i18n.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { useApp } from '@/stores/app.ts'
@@ -21,13 +21,13 @@ const live = useDuty()
  */
 const state = computed<DutyState>(() => (live.value.board || !store.panelVisible ? live.value : { ...live.value, board: live.value.history.at(-1) ?? null }))
 const values = computed(() => store.settings.duty.values)
-const prices = useMarket(() => store.settings.duty.market)
-const advice = computed(() => dutyAdvice(state.value, values.value, prices.value))
+const pricing = useDutyPricing(() => store.settings.duty.market, () => store.settings.duty.excluded)
+const advice = computed(() => dutyAdvice(state.value, values.value, pricing.value))
 /** Something to take: the 5 missions of the day taken, nothing to advise, and it closes (the sample shows whatever). */
 const open = computed(() => state.value.board !== null && (store.panelVisible || (advice.value?.free ?? 0) > 0))
 const { report, drag } = useOverlay('duty', () => open.value)
 
-const rows = computed(() => dutyRows(state.value, values.value, prices.value).offered)
+const rows = computed(() => dutyRows(state.value, values.value, pricing.value).offered)
 const picked = computed(() => new Set(advice.value?.picks ?? []))
 const kina = (n: number): string => compact(Math.round(n))
 const close = (): void => void bridge().invoke('duty:close')

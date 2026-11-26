@@ -44,3 +44,14 @@ test('the slots already taken left out, and no reroll whose cost is not known', 
   assert.equal(a.reroll, null)
   assert.equal(a.picks.length, 3)
 })
+
+test('a reward left out counts for nothing, whatever its price; a kind at 0 too, even on the market', () => {
+  const seen = [board([1]), board([1]), board([1])]
+  const s = state(board([50_000, 40_000]), seen)
+  const prices = { [KINA]: { minPrice: 9, median7d: 9, listings: 1, at: 0 } }
+  // Kina at its market price (9 a Kina), and as your worth (1) when the market is not asked.
+  assert.equal(dutyAdvice(s, values, { prices })!.takeAll, 90_000 * 9)
+  assert.equal(dutyAdvice(s, values)!.takeAll, 90_000)
+  assert.equal(dutyAdvice(s, values, { prices, excluded: [KINA] })!.takeAll, 0)
+  assert.equal(dutyAdvice(s, { ...values, kina: 0 }, { prices })!.takeAll, 0)
+})

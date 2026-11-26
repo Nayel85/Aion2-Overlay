@@ -271,9 +271,10 @@ export interface Settings {
   /**
    * The duty board: what each kind of reward is worth to you, in Kina (0: left out); its window over
    * the game as you open the board (`overlay`), where it was left and how opaque; `market`: what can
-   * be sold at its price on your server's market (main/market.ts) rather than these worths.
+   * be sold at its price on your server's market (main/market.ts) rather than these worths; `excluded`:
+   * the items you left out (none of them counts).
    */
-  duty: { values: DutyValues; overlay: boolean; position: Point | null; opacity: number; market: boolean }
+  duty: { values: DutyValues; overlay: boolean; position: Point | null; opacity: number; market: boolean; excluded: number[] }
 
   /** The kill feed over the game: open (from the PvP page), and where (null = top right). */
   /**
@@ -460,7 +461,7 @@ export const SETTINGS_DEFAULTS: Settings = {
   unified: { enabled: true, position: { x: 1334, y: 0 }, opacity: 0.94, scale: 1, events: false, countdownMinutes: 10, ping: true, target: true, targetSeconds: 8, targetStyle: 'inline', targetMode: 'always', kina: true, abyssRate: true, season: true, rift: false, cubes: false, death: true, deathMinutes: 10, enemies: true, bosses: false, clock: true, odyle: true, replace: false, kinaSession: true, kinaIcon: 'game', apIcon: 'icon', logo: false, widgets: ['party', 'aggro', 'buffs', 'cc', 'flight', 'gather', 'applicants'], applicants: true, bests: true, corridors: true },
   muted: false,
   rates: { kinaDungeons: false, abyssDungeons: false },
-  duty: { values: DEFAULT_DUTY_VALUES, overlay: true, position: null, opacity: 0.95, market: true },
+  duty: { values: DEFAULT_DUTY_VALUES, overlay: true, position: null, opacity: 0.95, market: true, excluded: [] },
   applicants: { enabled: true, position: { x: 872, y: 220 }, opacity: 0.85, collapsed: false, hideAfter: 60 },
   aggro: { enabled: true, position: null, opacity: 0.8, collapsed: false },
   party: {
@@ -557,6 +558,7 @@ export function normalise<K extends SettingKey>(key: K, value: unknown): Setting
         position: point(v.position),
         opacity: num(v.opacity, 0.3, 1, d.duty.opacity),
         market: bool(v.market, d.duty.market),
+        excluded: Array.isArray(v.excluded) ? v.excluded.filter((x): x is number => typeof x === 'number') : [],
       } as Settings[K]
     }
     case 'rates': {

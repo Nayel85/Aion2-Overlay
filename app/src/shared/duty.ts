@@ -13,6 +13,12 @@ import { ITEMS } from './items.ts'
 import type { DutyCategory, DutyValues } from './dutyValues.ts'
 import { marketValue, type MarketPrices } from './market.ts'
 
+/** How the rewards are priced besides your worths: the market's prices (none: your worths alone), and the items you left out. */
+export interface DutyPricing {
+  prices?: MarketPrices
+  excluded?: number[]
+}
+
 export { DEFAULT_DUTY_VALUES, DUTY_CATEGORIES, type DutyCategory, type DutyValues } from './dutyValues.ts'
 
 export interface DutyReward {
@@ -79,29 +85,32 @@ const SMALL_ODYLE = 0.25
 const shareOf = (item: number): number => (/^Small Odyle Energy/.test(itemInfo(item)?.name ?? '') ? SMALL_ODYLE : 1)
 
 /**
- * What one of a reward is worth: its price on your server's market (`prices`, when given: questlog's
- * median over 7 days), else what its kind is worth to you; null: neither (not counted).
+ * What one of a reward is worth: nothing if you left it out (the item, or its kind at 0); else its
+ * price on your server's market (`pricing.prices`, when given: questlog's median over 7 days), else
+ * what its kind is worth to you; null: not counted.
  */
-export function unitValue(item: number, values: DutyValues, prices?: MarketPrices): number | null {
-  const market = prices ? marketValue(prices[item]) : null
-  if (market !== null) return market
+export function unitValue(item: number, values: DutyValues, pricing?: DutyPricing): number | null {
+  if (pricing?.excluded?.includes(item)) return null
   const c = dutyCategory(item)
+  if (c && !values[c]) return null
+  const market = pricing?.prices ? marketValue(pricing.prices[item]) : null
+  if (market !== null) return market
   return c ? values[c] * shareOf(item) : null
 }
 /** A reward's worth on average: how many, at its chance, at what one is worth. */
-export function rewardValue(r: DutyReward, values: DutyValues, prices?: MarketPrices): number {
-  return r.amount * r.chance * (unitValue(r.item, values, prices) ?? 0)
+export function rewardValue(r: DutyReward, values: DutyValues, pricing?: DutyPricing): number {
+  return r.amount * r.chance * (unitValue(r.item, values, pricing) ?? 0)
 }
-export const missionValue = (m: DutyMission, values: DutyValues, prices?: MarketPrices): number => m.rewards.reduce((n, r) => n + rewardValue(r, values, prices), 0)
+export const missionValue = (m: DutyMission, values: DutyValues, pricing?: DutyPricing): number => m.rewards.reduce((n, r) => n + rewardValue(r, values, pricing), 0)
 
 /** The offered missions, the best first: [quest, worth]. */
-function ranked(board: DutyBoard, values: DutyValues, prices?: MarketPrices): { quest: number; value: number }[] {
+function ranked(board: DutyBoard, values: DutyValues, pricing?: DutyPricing): { quest: number; value: number }[] {
   return board.missions
     .filter((m) => m.place === 0)
-    .map((m) => ({ quest: m.quest, value: missionValue(m, values, prices) }))
+    .map((m) => ({ quest: m.quest, value: missionValue(m, values, pricing) }))
     .sort((a, b) => b.value - a.value || a.quest - b.quest)
 }
-const best = (board: DutyBoard, values: DutyValues, n: number, prices?: MarketPrices): number => ranked(board, values, prices).slice(0, n).reduce((s, m) => s + m.value, 0)
+const best = (board: DutyBoard, values: DutyValues, n: number, pricing?: DutyPricing): number => ranked(board, values, pricing).slice(0, n).reduce((s, m) => s + m.value, 0)
 
 export interface DutyAdvice {
   /** Slots still free (5 less those taken). */
@@ -163,20 +172,20 @@ export function nextRerollCost(board: DutyBoard, costs: Record<number, number>):
   return costs[n] ?? KNOWN_REROLL_COSTS[n] ?? null
 }
 
-export function dutyAdvice(state: DutyState, values: DutyValues, prices?: MarketPrices): DutyAdvice | null {
+export function dutyAdvice(state: DutyState, values: DutyValues, pricing?: DutyPricing): DutyAdvice | null {
   const board = state.board
   if (!board) return null
   const free = Math.max(0, DUTY_SLOTS - board.missions.filter((m) => m.place !== 0).length)
-  const offered = ranked(board, values, prices)
+  const offered = ranked(board, values, pricing)
   const all = offered.slice(0, free).filter((m) => m.value > 0)
   const takeAll = all.reduce((n, m) => n + m.value, 0)
   // A new board: the other boards seen (not this one).
   const others = state.history.filter((b) => sameBoard(b, board) === false)
-  const newBoard = free && others.length >= BOARDS_FOR_AVERAGE ? others.reduce((n, b) => n + best(b, values, free, prices), 0) / others.length : null
+  const newBoard = free && others.length >= BOARDS_FOR_AVERAGE ? others.reduce((n, b) => n + best(b, values, free, pricing), 0) / others.length : null
   const nextCost = nextRerollCost(board, state.rerollCosts)
   if (!free || newBoard === null || nextCost === null) return { free, picks: all.map((m) => m.quest), value: takeAll, newBoard, nextCost, reroll: null, expected: takeAll, takeAll }
   const cost = (n: number): number | null => state.rerollCosts[n] ?? KNOWN_REROLL_COSTS[n] ?? null
-  const boards = others.map((b) => ranked(b, values, prices).map((m) => m.value))
+  const boards = others.map((b) => ranked(b, values, pricing).map((m) => m.value))
   const way = play(
     offered.map((m) => m.value),
     free,

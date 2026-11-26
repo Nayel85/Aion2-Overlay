@@ -12,11 +12,12 @@ import DutyRewards from '@/components/DutyRewards.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import Section from '@/components/ui/Section.vue'
 import { gradeClass } from '@/lib/grades.ts'
-import { dutyRows, useDuty, useMarket } from '@/lib/duty.ts'
+import { dutyRows, useDuty, useDutyPricing } from '@/lib/duty.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { compact } from '@shared/format.ts'
 import { DUTY_CATEGORIES, dutyAdvice, type DutyCategory } from '@shared/duty.ts'
+import { itemIcon, itemInfo } from '@shared/sessions.ts'
 
 const store = useApp()
 const state = useDuty()
@@ -25,10 +26,15 @@ const values = computed(() => cfg.value.values)
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('duty', { ...cfg.value, ...patch })
 const setValue = (id: DutyCategory, v: number): void => set({ values: { ...values.value, [id]: Number.isFinite(v) && v >= 0 ? v : 0 } })
 
-const prices = useMarket(() => cfg.value.market)
+const pricing = useDutyPricing(() => cfg.value.market, () => cfg.value.excluded)
+/** A reward left out, or counted again (a click on it). */
+const toggleExcluded = (item: number): void =>
+  set({ excluded: cfg.value.excluded.includes(item) ? cfg.value.excluded.filter((x) => x !== item) : [...cfg.value.excluded, item] })
+/** The items left out, named, for their list. */
+const excludedItems = computed(() => cfg.value.excluded.map((id) => ({ id, name: (itemInfo(id)?.name ?? `#${id}`).replace(' (Bound)', ''), icon: itemIcon(itemInfo(id)?.icon) })))
 const board = computed(() => state.value.board)
-const picked = computed(() => new Set(dutyAdvice(state.value, values.value, prices.value)?.picks ?? []))
-const rows = computed(() => dutyRows(state.value, values.value, prices.value))
+const picked = computed(() => new Set(dutyAdvice(state.value, values.value, pricing.value)?.picks ?? []))
+const rows = computed(() => dutyRows(state.value, values.value, pricing.value))
 
 const kina = (n: number): string => compact(Math.round(n))
 const when = weekdayTime
@@ -47,7 +53,7 @@ const DUTY_EMPTY_HINT = "With the overlay open, open the duty board in game: tod
     <EmptyState v-if="!board" title="No duty board yet today." :hint="DUTY_EMPTY_HINT" />
 
     <template v-else>
-      <DutyAdvice :state="state" :values="values" :prices="prices" class="mb-4 text-sm" />
+      <DutyAdvice :state="state" :values="values" :pricing="pricing" class="mb-4 text-sm" />
 
       <div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-darker">
         <span>{{ plural(board.rerolls, '{n} reroll today', '{n} rerolls today') }}</span>
@@ -67,7 +73,7 @@ const DUTY_EMPTY_HINT = "With the overlay open, open the duty board in game: tod
             <span v-if="picked.has(m.quest)" class="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">{{ t('Recommended') }}</span>
             <span class="ml-auto tabular-nums" :class="m.value > 0 ? 'font-semibold' : 'text-darkest'">{{ kina(m.value) }}</span>
           </div>
-          <DutyRewards :rewards="m.rewards" class="mt-1" />
+          <DutyRewards :rewards="m.rewards" class="mt-1" @toggle="toggleExcluded" />
         </div>
       </div>
 
@@ -103,6 +109,13 @@ const DUTY_EMPTY_HINT = "With the overlay open, open the duty board in game: tod
             @change="setValue(c.id, Number(($event.target as HTMLInputElement).value))"
           />
         </label>
+      </div>
+      <!-- The items left out (a click on a reward above): none of them counts, whatever its kind or price. -->
+      <div v-if="excludedItems.length" class="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+        <span class="text-darker">{{ t('Left out:') }}</span>
+        <button v-for="x in excludedItems" :key="x.id" type="button" class="flex items-center gap-1 rounded-md bg-card px-1.5 py-0.5 text-dark line-through hover:bg-dark" :title="t('Count it again')" @click="toggleExcluded(x.id)">
+          <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />{{ x.name }}
+        </button>
       </div>
       <p class="mt-3 text-xs text-darker">
         {{ plural(state.history.length, '{n} board seen', '{n} boards seen') }}<template v-if="costs.length"> · {{ t('Rerolls paid:') }} {{ costs.map(([n, c]) => `${n}: ${kina(c)}`).join(', ') }}</template>
