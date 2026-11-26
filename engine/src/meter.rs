@@ -203,12 +203,19 @@ impl Meter {
         let party = self.storage.get_party_members();
         let me = self.storage.local_player_id().and_then(|id| i32::try_from(id).ok());
         let profile = self.storage.local_profile();
+        // A row keeps the name known when it began: one told later (a player met as a run starts again,
+        // the 2026-11-26 Fire Temples, rows left as their number) is the storage's, as a saved fight's.
+        let names = self.storage.get_nicknames();
         for (id, row) in &data.map {
             let (crits, hits) = row.analyzed_data.values().fold((0i64, 0i64), |(c, h), s| (c + i64::from(s.crit_times), h + i64::from(s.times)));
-            let member = party.get(&row.nickname);
+            let nick = names.get(id).filter(|n| !n.is_empty()).unwrap_or(&row.nickname);
+            let member = party.get(nick);
             let you = me == Some(*id);
             let entry = &mut out["map"][id.to_string()];
             if entry.is_object() {
+                if *nick != row.nickname {
+                    entry["nickname"] = serde_json::json!(nick);
+                }
                 entry["critRate"] = serde_json::json!(if hits > 0 { crits as f64 / hits as f64 } else { 0.0 });
                 entry["taken"] = serde_json::json!(row.damage_received);
                 entry["party"] = serde_json::json!(member.is_some());
