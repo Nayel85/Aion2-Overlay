@@ -79,6 +79,13 @@ pub const OP_DUTY_REROLL: [u8; 2] = [0x1E, 0x8D];
 /// The duty board opened again, its board already sent (`41 8D 00 00`, no board after it: the owner's
 /// 2026-11-26 log, opened three times).
 pub const OP_DUTY_REOPEN: [u8; 2] = [0x41, 0x8D];
+/// An arena's match (the owner's 2026-11-27 Co-op, 5v5): its players (`19 E3`: each `<id u32> 00 00
+/// <server u16> <name len u8> <name>`...), each kill (`25 E3`: the killer's `<id u32> 00 00 <server
+/// u16>`, the victim's), and the score of those it changed (`26 E3`: right after a kill, the killer,
+/// the victim and those who assisted).
+pub const OP_ARENA_PLAYERS: [u8; 2] = [0x19, 0xE3];
+pub const OP_ARENA_KILL: [u8; 2] = [0x25, 0xE3];
+pub const OP_ARENA_SCORE: [u8; 2] = [0x26, 0xE3];
 pub const OP_DUTY_DONE: [u8; 2] = [0x0F, 0x8D];
 /// A Nightmare's end (`38 E2`): its boss and stage too, but after fields of varying length (71 and
 /// 68 bytes in the owner's two runs); only logged, `35 E2` says the same as you enter.
@@ -115,6 +122,38 @@ fn u64_at(b: &[u8], at: usize) -> Option<u64> {
 
 fn f32_at(b: &[u8], at: usize) -> Option<f32> {
     Some(f32::from_le_bytes(b.get(at..at + 4)?.try_into().ok()?))
+}
+
+/// An arena's players: `(id, name)` each, found as `<id u32> 00 00 <server u16> <len u8> <name>` (the
+/// fields between them not read).
+pub fn arena_players(frame: &[u8]) -> Vec<(u32, String)> {
+    let Some(b) = body(frame, OP_ARENA_PLAYERS) else { return Vec::new() };
+    let mut out = Vec::new();
+    let mut at = 0;
+    while at + 9 < b.len() {
+        let len = b[at + 8] as usize;
+        let name = b.get(at + 9..at + 9 + len).filter(|_| b[at + 4] == 0 && b[at + 5] == 0 && (3..=16).contains(&len));
+        match name.and_then(|n| std::str::from_utf8(n).ok()).filter(|n| n.chars().all(|c| c.is_alphanumeric())) {
+            Some(name) => {
+                out.push((u32_at(b, at).unwrap_or(0), name.to_string()));
+                at += 9 + len;
+            }
+            None => at += 1,
+        }
+    }
+    out
+}
+
+/// An arena's kill: the killer's id and the victim's.
+pub fn arena_kill(frame: &[u8]) -> Option<(u32, u32)> {
+    let b = body(frame, OP_ARENA_KILL)?;
+    Some((u32_at(b, 0)?, u32_at(b, 8)?))
+}
+
+/// An arena's score update: which of `players` it names (by their ids in it).
+pub fn arena_scored(frame: &[u8], players: &[u32]) -> Vec<u32> {
+    let Some(b) = body(frame, OP_ARENA_SCORE) else { return Vec::new() };
+    players.iter().copied().filter(|id| b.windows(6).any(|w| w[..4] == id.to_le_bytes() && w[4..] == [0, 0])).collect()
 }
 
 /// The frame's opcode.
@@ -1767,6 +1806,16 @@ mod tests {
     fn you_come_with_your_class_level_and_gear_score() {
         let me = character(&frame(OP_SELF, &hex("c9445f81e32b37044b7369787e0506000000012d000000ac0a0000ac0a00002d000000"))).unwrap();
         assert_eq!((me.name.as_str(), me.server, me.class, me.level, me.gear_score), ("Ksix", 1406, Some(6), Some(45), Some(2732)));
+    }
+
+    #[test]
+    fn an_arena_kill_and_who_assisted() {
+        // The owner's 2026-11-27 Co-op: Wolfert (a5820200) kills v45Darkside2 (d9530300), Nayel (2a1a0300) and Katunga assisting.
+        let players = frame(OP_ARENA_PLAYERS, &hex("87bb0202000000 2a1a030000001905054e6179656c1e000000 d9530300000020050c7634354461726b736964653206000000"));
+        assert_eq!(arena_players(&players), vec![(0x00031a2a, "Nayel".to_string()), (0x000353d9, "v45Darkside2".to_string())]);
+        assert_eq!(arena_kill(&frame(OP_ARENA_KILL, &hex("a582020000001b05d953030000002005"))), Some((0x000282a5, 0x000353d9)));
+        let score = frame(OP_ARENA_SCORE, &hex("05a582020000001b050001000201d953030000002005000100002a1a03000000190500010100d36c02000000030902010100f9b303000000fd080000000201"));
+        assert_eq!(arena_scored(&score, &[0x000282a5, 0x000353d9, 0x00031a2a, 0x00012345]), vec![0x000282a5, 0x000353d9, 0x00031a2a]);
     }
 
     fn hex(s: &str) -> Vec<u8> {

@@ -23,6 +23,8 @@ import { gatherBonus, recipeOf } from '../shared/gather.ts'
 import { BOSS_RUNS } from '../shared/bossRuns.ts'
 import { AP_ITEM, apSource, GATHER_FAILED, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
 
+/** An arena's reward comes this long after its match, at most. */
+const ARENA_REWARD_MS = 30_000
 /** Let in again this long after the last boss fell, at least, for a new run: before, it is the run's own end. */
 const AGAIN_AFTER_MS = 5_000
 /** A Hidden Cube's loot told this long after its first burst is still its own. */
@@ -249,7 +251,18 @@ export function startSessions(): void {
   // The run's own clock (the game's): under way at the end of its countdown, over as its reward comes.
   // Its time is the game's run alone, the countdown before and the reward's wait after left out.
   tracker.onEvent('dungeonState', (ev) => {
-    const run = openRun()
+    let run = openRun()
+    // An arena's match: the zone you are in is not told there (0), its own state is (2026-11-27,
+    // Impetusium Arena 8): its run starts with it.
+    const arena = dungeonOf(ev.zone)
+    const s = sessions.current
+    if (s && arena?.[1] === 'arena' && run?.world !== ev.zone) {
+      closeRun(s, Date.now())
+      run = { world: ev.zone, name: arena[0], kind: 'arena', start: Date.now(), end: null, ap: 0, kina: 0, currencies: {}, deaths: 0, partyDeaths: 0 }
+      s.runs = [...(s.runs ?? []), run]
+      log(`session: into ${arena[0]} (arena)`)
+      arenaTeam(partyStore.all().members.length)
+    }
     if (!run || run.world !== ev.zone || !ev.at) return
     if (ev.state === 2) run.started = ev.at
     else if (ev.state === 3 && run.started !== undefined && ev.at >= run.started) {
@@ -266,14 +279,15 @@ export function startSessions(): void {
     changed()
   }
   tracker.onEvent('party', (ev) => arenaTeam(ev.members?.length ?? 0))
-  // An arena's kills, deaths and assists (a kill of a player you were fighting): yours.
-  tracker.onEvent('pvpKill', (ev) => {
+  // An arena's kills, deaths and assists: yours, as its score has them (the engine's `arenaKill`).
+  tracker.onEvent('arenaKill', (ev) => {
     const run = openRun()
-    if (run?.kind !== 'arena') return
+    const me = sessions.current?.name
+    if (run?.kind !== 'arena' || !me) return
     const kda = (run.kda ??= { kills: 0, deaths: 0, assists: 0 })
-    if (ev.died === true) kda.deaths++
-    else if (ev.mine === true) kda.kills++
-    else if (typeof ev.fight === 'string') kda.assists++
+    if (ev.killer === me) kda.kills++
+    else if (ev.victim === me) kda.deaths++
+    else if (ev.assists?.includes(me)) kda.assists++
     else return
     changed()
   })
@@ -506,17 +520,27 @@ export function startSessions(): void {
   tracker.onEvent('pvpKill', (ev) => {
     if (ev.died !== true && (ev.mine === true || typeof ev.fight === 'string')) pvpAt = Date.now()
   })
+  /** An arena's match just over (its reward comes as you are sent back: 800 Abyss Points in the next zone, 2026-11-27). */
+  const arenaJustOver = (at: number): DungeonRun | null => {
+    const run = sessions.current?.runs?.at(-1)
+    const over = run?.cleared ?? run?.end
+    return run?.kind === 'arena' && over != null && at - over >= 0 && at - over <= ARENA_REWARD_MS ? run : null
+  }
+  /** Your zone for a gain: the one you are in, else the last one known (just logged in or sent somewhere: not told yet). */
+  const zoneNow = (): number | null => tracker.nearby().world ?? worldSeen
   tracker.onEvent('abyssGain', (ev) => {
     const name = ev.name
     const gained = ev.gained
     if (!name || !(gained > 0)) return
     const at = Date.now()
     const s = sessionOf(name, tracker.status().server, at)
-    const source = apSource(gained, at, tracker.nearby().world, pvpAt)
+    const arena = arenaJustOver(at)
+    const source = arena ? 'arena' : apSource(gained, at, zoneNow(), pvpAt)
     s.ap += gained
     s.sources[source] = (s.sources[source] ?? 0) + gained
     s.last = at
-    toRun((run) => (run.ap += gained))
+    if (arena && arena.end !== null) arena.ap += gained
+    else toRun((run) => (run.ap += gained))
     noteGain({ at, kind: 'ap', gained, source })
     changed()
   })
@@ -541,11 +565,13 @@ export function startSessions(): void {
     const seen = kinaSeen[which]
     if (seen !== null && balance > seen) {
       const gained = balance - seen
-      const source = kinaSource(Date.now(), tracker.nearby().world)
+      const arena = arenaJustOver(Date.now())
+      const source = arena ? 'arena' : kinaSource(Date.now(), zoneNow())
       s.kina += gained
       s.kinaSources = { ...s.kinaSources, [source]: (s.kinaSources?.[source] ?? 0) + gained }
       s.last = Date.now()
-      toRun((run) => (run.kina += gained))
+      if (arena && arena.end !== null) arena.kina += gained
+      else toRun((run) => (run.kina += gained))
       noteGain({ at: s.last, kind: 'kina', gained, source })
       changed()
     }

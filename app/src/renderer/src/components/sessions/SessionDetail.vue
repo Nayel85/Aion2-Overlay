@@ -43,11 +43,31 @@ function ranked(by: Record<string, number> | undefined): [string, number][] {
 const currencies = computed(() => Object.entries(props.session.currencies ?? {}).filter(([, n]) => n > 0))
 
 /** The dungeons (field bosses apart), by zone and mode, the last run first, each's runs the latest first; the field bosses, the latest first. */
+/** The Nightmares, whatever their boss and level: one group, opened to each run. */
+const TOGETHER = new Set(['nightmare', 'bosschallenge'])
+const together = (g: DungeonRun[]): boolean => TOGETHER.has(g[0]!.kind)
+/** A group of several dungeons (the Nightmares): its kind's name for title, each run's own in its line, closed until clicked. */
+const mixed = (g: DungeonRun[]): boolean => g.some((r) => runName(r, t) !== runName(g[0]!, t))
+const openGroups = ref(new Set<string>())
+const groupKey = (g: DungeonRun[]): string => `${g[0]!.world}:${g[0]!.name}`
+function toggleGroup(g: DungeonRun[]): void {
+  const next = new Set(openGroups.value)
+  if (next.has(groupKey(g))) next.delete(groupKey(g))
+  else next.add(groupKey(g))
+  openGroups.value = next
+}
 const groups = computed(() =>
-  runGroups((props.session.runs ?? []).filter((r) => !runIsOneOff(r)))
+  joinNightmares(runGroups((props.session.runs ?? []).filter((r) => !runIsOneOff(r))))
     .map((g) => [...g].reverse())
     .sort((a, b) => b[0]!.start - a[0]!.start),
 )
+/** The Nightmares' groups as one, where the first of them was. */
+function joinNightmares(gs: DungeonRun[][]): DungeonRun[][] {
+  const at = gs.findIndex(together)
+  if (at < 0) return gs
+  const all = gs.filter(together).flat().sort((a, b) => a.start - b.start)
+  return [...gs.slice(0, at).filter((g) => !together(g)), all, ...gs.slice(at).filter((g) => !together(g))]
+}
 const bosses = computed(() => (props.session.runs ?? []).filter((r) => r.kind === 'fieldboss').reverse())
 const hiddenCubes = computed(() => (props.session.runs ?? []).filter((r) => r.kind === 'hiddencube').reverse())
 /** A group's clears' mean time, or null. */
@@ -179,12 +199,13 @@ function toggle(r: DungeonRun): void {
     </div>
 
     <!-- Its dungeons: each zone and mode, what its runs gave in all, then each run. -->
-    <div v-for="g in groups" :key="`${g[0]!.world}:${g[0]!.name}`" class="rounded-lg bg-card p-3">
-      <div class="flex flex-wrap items-baseline gap-x-2 text-xs">
+    <div v-for="g in groups" :key="groupKey(g)" class="rounded-lg bg-card p-3">
+      <div :class="['flex flex-wrap items-baseline gap-x-2 text-xs', mixed(g) && 'cursor-pointer']" @click="mixed(g) && toggleGroup(g)">
         <svg viewBox="0 0 16 16" class="size-3.5 shrink-0 self-center text-darker" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path :d="kindIcon(g[0]!.kind)" /></svg>
-        <span class="text-sm font-semibold">{{ runName(g[0]!, t) }}</span>
+        <span class="text-sm font-semibold">{{ mixed(g) ? t(runKindLabel(g[0]!.kind)) : runName(g[0]!, t) }}</span>
         <span v-if="g.length > 1" class="font-semibold text-accent">×{{ g.length }}</span>
-        <span class="text-darker">{{ t(runKindLabel(g[0]!.kind)) }}</span>
+        <span v-if="!mixed(g)" class="text-darker">{{ t(runKindLabel(g[0]!.kind)) }}</span>
+        <svg v-if="mixed(g)" viewBox="0 0 16 16" :class="['ml-auto size-3 self-center text-darker transition-transform', openGroups.has(groupKey(g)) && 'rotate-90']" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.chevron" /></svg>
         <span v-if="meanClear(g)" class="text-darker">· {{ t('mean clear {time}', { time: meanClear(g)! }) }}</span>
       </div>
       <!-- What they gave in all, in a row. -->
@@ -195,12 +216,13 @@ function toggle(r: DungeonRun): void {
           <span :class="r.currency ? 'text-default' : gradeClass(r.grade)">{{ r.currency ? (r.id === '930100031' ? formatKina(r.amount) : r.amount.toLocaleString('en-US')) : `×${r.amount}` }}</span>
         </span>
       </div>
-      <!-- Each run. -->
-      <table class="mt-2 w-full text-xs tabular-nums">
+      <!-- Each run (a group of several dungeons: once opened, each with its own name). -->
+      <table v-if="!mixed(g) || openGroups.has(groupKey(g))" class="mt-2 w-full text-xs tabular-nums">
         <tbody>
           <template v-for="r in g" :key="r.start">
             <tr :class="['cursor-pointer border-t border-dark hover:bg-dark/50', abandoned(r) && 'text-darker line-through']" @click="toggle(r)">
               <td class="py-1 pl-1 text-dark">{{ timeOfDay(r.start) }}</td>
+              <td v-if="mixed(g)" class="py-1 font-medium">{{ runName(r, t) }}</td>
               <td class="py-1">
                 <span v-if="!runIsTimed(r)" class="text-darker">–</span>
                 <span v-else-if="r.end === null && r.cleared === undefined" class="text-accent">{{ t('in progress') }}</span>

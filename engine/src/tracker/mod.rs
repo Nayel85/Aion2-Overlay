@@ -191,6 +191,9 @@ pub struct Tracker {
     /// When you last opened the duty board, rerolled it or took or handed in a mission: the board after
     /// it is one you are looking at (not the one sent as you log in).
     duty_opened_at: i64,
+    /// An arena's players by id, and its last kill (its score update names who assisted).
+    arena_players: std::collections::HashMap<u32, String>,
+    arena_kill: Option<(i64, u32, u32)>,
     /// The party as last told the app (its members' names, classes and entities), and when checked.
     party_told: Value,
     party_checked: i64,
@@ -292,6 +295,8 @@ impl Tracker {
             duty: HashMap::new(),
             duty_pending: Vec::new(),
             duty_opened_at: i64::MIN,
+            arena_players: std::collections::HashMap::new(),
+            arena_kill: None,
             party_told: json!([]),
             party_checked: 0,
             objects: HashMap::new(),

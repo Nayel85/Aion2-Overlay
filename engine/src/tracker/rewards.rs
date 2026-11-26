@@ -48,6 +48,23 @@ impl Tracker {
             p::OP_DUTY_OPEN | p::OP_DUTY_REROLL => self.duty_opened_at = ts,
             // Opened again: the board is the one already told.
             p::OP_DUTY_REOPEN => (self.emit)(json!({ "type": "dutyOpened", "ts": ts })),
+            // An arena: its players, then each kill and the score it changed (killer, victim, assists).
+            p::OP_ARENA_PLAYERS => {
+                let players = p::arena_players(f);
+                tracing::info!("arena players: {:?}", players.iter().map(|(_, n)| n).collect::<Vec<_>>());
+                self.arena_players = players.into_iter().collect();
+            }
+            p::OP_ARENA_KILL => self.arena_kill = p::arena_kill(f).map(|(k, v)| (ts, k, v)),
+            p::OP_ARENA_SCORE => {
+                // The update right after a kill: those it names but the killer and the victim assisted.
+                if let Some((at, killer, victim)) = self.arena_kill.take().filter(|(at, _, _)| ts - at <= 1_000) {
+                    let ids: Vec<u32> = self.arena_players.keys().copied().collect();
+                    let name = |id: u32| self.arena_players.get(&id).cloned();
+                    let assists: Vec<String> = p::arena_scored(f, &ids).into_iter().filter(|&id| id != killer && id != victim).filter_map(name).collect();
+                    tracing::info!("arena kill: {:?} killed {:?}, assists {:?}", name(killer), name(victim), assists);
+                    (self.emit)(json!({ "type": "arenaKill", "ts": at, "killer": name(killer), "victim": name(victim), "assists": assists }));
+                }
+            }
             p::OP_DUTY_TAKEN => {
                 self.duty_opened_at = ts;
                 if let Some(mission) = p::duty_taken(f) {
