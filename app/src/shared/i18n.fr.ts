@@ -1807,8 +1807,11 @@ export const FR: Record<string, string> = {
   'Market prices (questlog.gg)': 'Prix du marché (questlog.gg)',
   'What can be sold counts at its price on your server\'s market (questlog.gg: the median of the last 7 days), fetched as the board shows; the rest at the worths below. Off: the worths below for all.': 'Ce qui se vend compte à son prix sur le marché de ton serveur (questlog.gg : la médiane des 7 derniers jours), récupéré quand le tableau s\'affiche ; le reste aux valeurs ci-dessous. Désactivé : les valeurs ci-dessous pour tout.',
   'Left out:': 'Écartés :',
-  'Count it again': 'Le compter à nouveau',
   'left out': 'écarté',
   'click to count it again': 'clic pour le compter à nouveau',
   'click to leave it out': 'clic pour l\'écarter',
+  'Wanted first:': 'En priorité :',
+  'Count it as usual': 'Le compter normalement',
+  'wanted first': 'en priorité',
+  'click to want it first': 'clic pour le mettre en priorité',
 }

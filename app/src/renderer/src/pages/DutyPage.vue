@@ -21,7 +21,7 @@ const live = useDuty()
  */
 const state = computed<DutyState>(() => (live.value.board || !store.panelVisible ? live.value : { ...live.value, board: live.value.history.at(-1) ?? null }))
 const values = computed(() => store.settings.duty.values)
-const pricing = useDutyPricing(() => store.settings.duty.market, () => store.settings.duty.excluded)
+const pricing = useDutyPricing(() => store.settings.duty.market, () => store.settings.duty.excluded, () => store.settings.duty.priority)
 const advice = computed(() => dutyAdvice(state.value, values.value, pricing.value))
 /** Something to take: the 5 missions of the day taken, nothing to advise, and it closes (the sample shows whatever). */
 const open = computed(() => state.value.board !== null && (store.panelVisible || (advice.value?.free ?? 0) > 0))

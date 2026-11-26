@@ -55,3 +55,15 @@ test('a reward left out counts for nothing, whatever its price; a kind at 0 too,
   assert.equal(dutyAdvice(s, values, { prices, excluded: [KINA] })!.takeAll, 0)
   assert.equal(dutyAdvice(s, { ...values, kina: 0 }, { prices })!.takeAll, 0)
 })
+
+test('a mission giving an item wanted first is taken first, whatever its worth', () => {
+  const seen = [board([1]), board([1]), board([1])]
+  const now = board([50_000, 40_000, 30_000, 20_000, 10_000, 5_000])
+  // The sixth mission (5,000) gives a Hidden Cube key, wanted first.
+  now.missions.at(-10)!.rewards.push({ item: 630900003, amount: 1, chance: 1 })
+  // The key worth nothing to you: only its being wanted first takes it.
+  const a = dutyAdvice(state(now, seen), { ...values, cubeKey: 0 }, { priority: [630900003] })!
+  assert.equal(a.picks[0], 1005)
+  assert.equal(a.picks.length, 5)
+  assert.ok(!a.picks.includes(1004))
+})

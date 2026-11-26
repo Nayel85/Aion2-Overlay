@@ -11,12 +11,14 @@
 import { goldKind, itemInfo } from './sessions.ts'
 import { ITEMS } from './items.ts'
 import type { DutyCategory, DutyValues } from './dutyValues.ts'
-import { marketValue, type MarketPrices } from './market.ts'
+import { priceOf, type MarketPrices } from './market.ts'
 
-/** How the rewards are priced besides your worths: the market's prices (none: your worths alone), and the items you left out. */
+/** How the rewards are priced besides your worths: the market's prices (none: your worths alone), the items you left out, and those you want first. */
 export interface DutyPricing {
   prices?: MarketPrices
   excluded?: number[]
+  /** A mission giving one of these is taken first, whatever its worth. */
+  priority?: number[]
 }
 
 export { DEFAULT_DUTY_VALUES, DUTY_CATEGORIES, type DutyCategory, type DutyValues } from './dutyValues.ts'
@@ -93,7 +95,7 @@ export function unitValue(item: number, values: DutyValues, pricing?: DutyPricin
   if (pricing?.excluded?.includes(item)) return null
   const c = dutyCategory(item)
   if (c && !values[c]) return null
-  const market = pricing?.prices ? marketValue(pricing.prices[item]) : null
+  const market = pricing?.prices ? priceOf(pricing.prices, item) : null
   if (market !== null) return market
   return c ? values[c] * shareOf(item) : null
 }
@@ -175,15 +177,23 @@ export function nextRerollCost(board: DutyBoard, costs: Record<number, number>):
 export function dutyAdvice(state: DutyState, values: DutyValues, pricing?: DutyPricing): DutyAdvice | null {
   const board = state.board
   if (!board) return null
-  const free = Math.max(0, DUTY_SLOTS - board.missions.filter((m) => m.place !== 0).length)
-  const offered = ranked(board, values, pricing)
+  const slots = Math.max(0, DUTY_SLOTS - board.missions.filter((m) => m.place !== 0).length)
+  // The missions giving what you want first are taken first, the best of them if more than the slots.
+  const wanted = new Set(pricing?.priority ?? [])
+  const first = new Set(board.missions.filter((m) => m.place === 0 && m.rewards.some((r) => wanted.has(r.item))).map((m) => m.quest))
+  const ranks = ranked(board, values, pricing)
+  const firsts = ranks.filter((m) => first.has(m.quest)).slice(0, slots)
+  const sure = firsts.reduce((n, m) => n + m.value, 0)
+  const free = slots - firsts.length
+  const offered = ranks.filter((m) => !first.has(m.quest))
   const all = offered.slice(0, free).filter((m) => m.value > 0)
-  const takeAll = all.reduce((n, m) => n + m.value, 0)
+  const takeAll = sure + all.reduce((n, m) => n + m.value, 0)
   // A new board: the other boards seen (not this one).
   const others = state.history.filter((b) => sameBoard(b, board) === false)
   const newBoard = free && others.length >= BOARDS_FOR_AVERAGE ? others.reduce((n, b) => n + best(b, values, free, pricing), 0) / others.length : null
   const nextCost = nextRerollCost(board, state.rerollCosts)
-  if (!free || newBoard === null || nextCost === null) return { free, picks: all.map((m) => m.quest), value: takeAll, newBoard, nextCost, reroll: null, expected: takeAll, takeAll }
+  const firstPicks = firsts.map((m) => m.quest)
+  if (!free || newBoard === null || nextCost === null) return { free: slots, picks: [...firstPicks, ...all.map((m) => m.quest)], value: takeAll, newBoard, nextCost, reroll: null, expected: takeAll, takeAll }
   const cost = (n: number): number | null => state.rerollCosts[n] ?? KNOWN_REROLL_COSTS[n] ?? null
   const boards = others.map((b) => ranked(b, values, pricing).map((m) => m.value))
   const way = play(
@@ -194,7 +204,7 @@ export function dutyAdvice(state: DutyState, values: DutyValues, pricing?: DutyP
     lookAhead(boards, cost),
   )
   const picks = offered.slice(0, way.take)
-  return { free, picks: picks.map((m) => m.quest), value: picks.reduce((n, m) => n + m.value, 0), newBoard, nextCost, reroll: way.reroll, expected: way.worth, takeAll }
+  return { free: slots, picks: [...firstPicks, ...picks.map((m) => m.quest)], value: sure + picks.reduce((n, m) => n + m.value, 0), newBoard, nextCost, reroll: way.reroll, expected: sure + way.worth, takeAll }
 }
 
 /** The same offer: the same missions with the same rewards (sent again as it opens, or as one is taken). */

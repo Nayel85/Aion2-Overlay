@@ -3,7 +3,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, type ComputedRef, type Ref } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
 import { missionValue, NO_DUTY, unitValue, type DutyMission, type DutyPricing, type DutyState, type DutyValues } from '@shared/duty.ts'
-import { marketValue, type MarketPrices } from '@shared/market.ts'
+import { priceOf, type MarketPrices } from '@shared/market.ts'
 import { itemIcon, itemInfo, questName } from '@shared/sessions.ts'
 
 /** The duty board's state, from main, as it changes. */
@@ -22,8 +22,8 @@ export interface DutyRow {
   quest: number
   name: string
   value: number
-  /** Each reward: `unit` what one is worth (null: not counted), `market` whether that is its market price, `excluded` left out by you. */
-  rewards: { key: number; item: number; name: string; icon: string | null; grade: number; amount: number; chance: number; counts: boolean; unit: number | null; market: boolean; excluded: boolean }[]
+  /** Each reward: `unit` what one is worth (null: not counted), `market` whether that is its market price, `excluded` left out by you, `priority` wanted first. */
+  rewards: { key: number; item: number; name: string; icon: string | null; grade: number; amount: number; chance: number; counts: boolean; unit: number | null; market: boolean; excluded: boolean; priority: boolean }[]
 }
 export function dutyRow(m: DutyMission, values: DutyValues, pricing?: DutyPricing): DutyRow {
   return {
@@ -33,8 +33,8 @@ export function dutyRow(m: DutyMission, values: DutyValues, pricing?: DutyPricin
     rewards: m.rewards.map((r, i) => {
       const info = itemInfo(r.item)
       const unit = unitValue(r.item, values, pricing)
-      const market = unit !== null && !!pricing?.prices && marketValue(pricing.prices[r.item]) !== null
-      return { key: i, item: r.item, excluded: !!pricing?.excluded?.includes(r.item), name: (info?.name ?? `#${r.item}`).replace(' (Bound)', ''), icon: itemIcon(info?.icon), grade: info?.grade ?? 11, amount: r.amount, chance: Math.round(r.chance * 100), counts: (unit ?? 0) > 0, unit, market }
+      const market = unit !== null && !!pricing?.prices && priceOf(pricing.prices, r.item) !== null
+      return { key: i, item: r.item, excluded: !!pricing?.excluded?.includes(r.item), priority: !!pricing?.priority?.includes(r.item), name: (info?.name ?? `#${r.item}`).replace(' (Bound)', ''), icon: itemIcon(info?.icon), grade: info?.grade ?? 11, amount: r.amount, chance: Math.round(r.chance * 100), counts: (unit ?? 0) > 0, unit, market }
     }),
   }
 }
@@ -45,7 +45,7 @@ export function dutyRows(state: DutyState, values: DutyValues, pricing?: DutyPri
 }
 
 /** The rewards' pricing as the settings say: your server's market prices, from main as they come (none with the setting off), and the items left out. */
-export function useDutyPricing(market: () => boolean, excluded: () => number[]): ComputedRef<DutyPricing> {
+export function useDutyPricing(market: () => boolean, excluded: () => number[], priority: () => number[]): ComputedRef<DutyPricing> {
   const prices = ref<MarketPrices>({})
   let off: (() => void) | null = null
   onMounted(async () => {
@@ -53,5 +53,5 @@ export function useDutyPricing(market: () => boolean, excluded: () => number[]):
     prices.value = await bridge().invoke('market:get')
   })
   onBeforeUnmount(() => off?.())
-  return computed(() => ({ prices: market() ? prices.value : undefined, excluded: excluded() }))
+  return computed(() => ({ prices: market() ? prices.value : undefined, excluded: excluded(), priority: priority() }))
 }

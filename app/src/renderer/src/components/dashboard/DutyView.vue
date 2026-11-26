@@ -26,12 +26,19 @@ const values = computed(() => cfg.value.values)
 const set = (patch: Partial<typeof cfg.value>): void => void store.set('duty', { ...cfg.value, ...patch })
 const setValue = (id: DutyCategory, v: number): void => set({ values: { ...values.value, [id]: Number.isFinite(v) && v >= 0 ? v : 0 } })
 
-const pricing = useDutyPricing(() => cfg.value.market, () => cfg.value.excluded)
-/** A reward left out, or counted again (a click on it). */
-const toggleExcluded = (item: number): void =>
-  set({ excluded: cfg.value.excluded.includes(item) ? cfg.value.excluded.filter((x) => x !== item) : [...cfg.value.excluded, item] })
-/** The items left out, named, for their list. */
-const excludedItems = computed(() => cfg.value.excluded.map((id) => ({ id, name: (itemInfo(id)?.name ?? `#${id}`).replace(' (Bound)', ''), icon: itemIcon(itemInfo(id)?.icon) })))
+const pricing = useDutyPricing(() => cfg.value.market, () => cfg.value.excluded, () => cfg.value.priority)
+/** A click on a reward: counted as worth it, then wanted first, then left out, then counted again. */
+function cycle(item: number): void {
+  const { excluded, priority } = cfg.value
+  if (priority.includes(item)) set({ priority: priority.filter((x) => x !== item), excluded: [...excluded, item] })
+  else if (excluded.includes(item)) set({ excluded: excluded.filter((x) => x !== item) })
+  else set({ priority: [...priority, item] })
+}
+/** Back to counted as worth it (a click in the lists). */
+const reset = (item: number): void => set({ priority: cfg.value.priority.filter((x) => x !== item), excluded: cfg.value.excluded.filter((x) => x !== item) })
+const named = (ids: number[]): { id: number; name: string; icon: string | null }[] => ids.map((id) => ({ id, name: (itemInfo(id)?.name ?? `#${id}`).replace(' (Bound)', ''), icon: itemIcon(itemInfo(id)?.icon) }))
+const excludedItems = computed(() => named(cfg.value.excluded))
+const priorityItems = computed(() => named(cfg.value.priority))
 const board = computed(() => state.value.board)
 const picked = computed(() => new Set(dutyAdvice(state.value, values.value, pricing.value)?.picks ?? []))
 const rows = computed(() => dutyRows(state.value, values.value, pricing.value))
@@ -73,7 +80,7 @@ const DUTY_EMPTY_HINT = "With the overlay open, open the duty board in game: tod
             <span v-if="picked.has(m.quest)" class="rounded-full bg-accent px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">{{ t('Recommended') }}</span>
             <span class="ml-auto tabular-nums" :class="m.value > 0 ? 'font-semibold' : 'text-darkest'">{{ kina(m.value) }}</span>
           </div>
-          <DutyRewards :rewards="m.rewards" class="mt-1" @toggle="toggleExcluded" />
+          <DutyRewards :rewards="m.rewards" class="mt-1" @toggle="cycle" />
         </div>
       </div>
 
@@ -110,10 +117,16 @@ const DUTY_EMPTY_HINT = "With the overlay open, open the duty board in game: tod
           />
         </label>
       </div>
-      <!-- The items left out (a click on a reward above): none of them counts, whatever its kind or price. -->
-      <div v-if="excludedItems.length" class="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+      <!-- The items wanted first and those left out (a click on a reward above): a click here, counted as usual again. -->
+      <div v-if="priorityItems.length" class="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+        <span class="text-darker">{{ t('Wanted first:') }}</span>
+        <button v-for="x in priorityItems" :key="x.id" type="button" class="flex items-center gap-1 rounded-md bg-card px-1.5 py-0.5 text-yellow hover:bg-dark" :title="t('Count it as usual')" @click="reset(x.id)">
+          <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />★ {{ x.name }}
+        </button>
+      </div>
+      <div v-if="excludedItems.length" class="mt-2 flex flex-wrap items-center gap-1.5 text-xs">
         <span class="text-darker">{{ t('Left out:') }}</span>
-        <button v-for="x in excludedItems" :key="x.id" type="button" class="flex items-center gap-1 rounded-md bg-card px-1.5 py-0.5 text-dark line-through hover:bg-dark" :title="t('Count it again')" @click="toggleExcluded(x.id)">
+        <button v-for="x in excludedItems" :key="x.id" type="button" class="flex items-center gap-1 rounded-md bg-card px-1.5 py-0.5 text-dark line-through hover:bg-dark" :title="t('Count it as usual')" @click="reset(x.id)">
           <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />{{ x.name }}
         </button>
       </div>

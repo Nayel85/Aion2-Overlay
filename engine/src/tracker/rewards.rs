@@ -74,8 +74,8 @@ impl Tracker {
                     (self.emit)(json!({ "type": "dutyBoard", "ts": ts, "opened": opened, "rerolls": board.rerolls, "expires": board.expires_ms, "missions": missions }));
                 }
             }
+            // Handed in at its NPC, not looking at the board: its board after it is not one opened.
             p::OP_DUTY_DONE => {
-                self.duty_opened_at = ts;
                 if let Some((place, indexes)) = p::duty_done(f) {
                     self.duty_done(ts, place, indexes);
                 }

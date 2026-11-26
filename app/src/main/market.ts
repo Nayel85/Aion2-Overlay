@@ -7,7 +7,7 @@
 import { broadcast } from './broadcast.ts'
 import { dataFile } from './dataFile.ts'
 import { log, tracker } from './tracker.ts'
-import type { MarketPrice, MarketPrices } from '../shared/market.ts'
+import { marketItem, type MarketPrice, type MarketPrices } from '../shared/market.ts'
 
 const API = 'https://questlog.gg/aion-2/api/trpc'
 const HEADERS = { 'user-agent': 'nayel-overlay (personal Aion 2 overlay)', accept: 'application/json' }
@@ -51,7 +51,7 @@ export function wantPrices(items: number[]): void {
   const s = server()
   if (s === null) return
   const known = saved.byServer[s] ?? {}
-  for (const item of items) if (due(known[item])) queue.add(item)
+  for (const item of new Set(items.map(marketItem))) if (due(known[item])) queue.add(item)
   void work()
 }
 
