@@ -656,9 +656,20 @@ pub fn wallet(frame: &[u8]) -> Option<(Option<u64>, Option<u64>)> {
     (kina.is_some() || bound.is_some()).then_some((kina, bound))
 }
 
+/// The season's points: an item of their own, each character's (the owner's 2026-11-26 log: 44,920 in
+/// the login's list, 45,820 in the `1B 56` of the 900 a mission gave).
+pub const SEASON_POINTS: u32 = 930_100_019;
+
 /// The currencies the Session page counts besides Kina and Abyss Points (questlog.gg's item ids):
-/// the Enhance Stones (dailies, quests) and the Phantasmal Fragments (the Nightmares).
-pub const SESSION_CURRENCIES: [u32; 2] = [930_100_023, 930_100_017];
+/// the Enhance Stones (dailies, quests), the Phantasmal Fragments (the Nightmares), the season's points.
+pub const SESSION_CURRENCIES: [u32; 3] = [930_100_023, 930_100_017, SEASON_POINTS];
+
+/// The season's points in the login's item list (`11 56`), as Kina's.
+pub fn season_points(frame: &[u8]) -> Option<u64> {
+    let b = body(frame, OP_ITEM_LIST)?;
+    let at = b.windows(4).position(|w| w == SEASON_POINTS.to_le_bytes())?;
+    u64_at(b, at + 4)
+}
 
 /// The balances of SESSION_CURRENCIES a `1B 56` changes: found by their item ids, each followed by
 /// its amount (u64), as Kina's (a record can list several items, with equipment of varying length).
@@ -1375,6 +1386,15 @@ mod tests {
         assert_eq!(one, selection(&frame(OP_SELECTION, &hex("bc44 00 b01a"))));
         assert!(selection(&frame(OP_SELECTION, &hex("ddd001 0000"))).is_some());
         assert_eq!(selection(&frame(OP_SELECTION, &hex("bc44"))), None);
+    }
+
+    #[test]
+    fn the_season_points_read_as_a_currency() {
+        // The owner's 2026-11-26 11:04 log: a season mission's 900 points, 44,920 to 45,820.
+        let change = frame(OP_ITEM, &hex("020100a683040000a7000033337037fcb2000000000000010800000000000088dd7da20100000200000100d572040000910000418ee91f0603000000000000011d000000000000000000000000020000"));
+        assert!(currencies(&change).contains(&(SEASON_POINTS, 45_820)));
+        let login = frame(OP_ITEM_LIST, &hex("1002960200 33337037 78af000000000000 00"));
+        assert_eq!(season_points(&login), Some(44_920));
     }
 
     #[test]

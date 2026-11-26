@@ -47,6 +47,8 @@ export interface TrackedCharacter {
   kina?: { balance: number; at: number }
   /** Their bound Kina, the same way. */
   boundKina?: { balance: number; at: number }
+  /** The season's points (the season missions'), as last seen. */
+  seasonPoints?: { balance: number; at: number }
   /** The subscriptions the game listed at their last login (`3B E3`): each id and its end (unix ms). */
   subscriptions?: { list: { id: number; end: number }[]; at: number }
 }

@@ -6,7 +6,7 @@
 // game's refill times since: a character not logged in with the overlay yet shows greyed out.
 import { runsSince } from '@shared/sessions.ts'
 import { useNow } from '@/lib/now.ts'
-import { ago as timeAgo, weekdayTime } from '@/lib/format.ts'
+import { ago as timeAgo, weekdayTime, amount } from '@/lib/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import CharacterExpeditions from '@/components/dashboard/CharacterExpeditions.vue'
 import type { Expeditions } from '@shared/expeditions.ts'
@@ -52,6 +52,8 @@ interface Row {
   kinaTotal: number | null
   /** The Shugo Festival's games since the weekly reset (the season mission Festival-Loving Daeva). */
   shugoWeek: number
+  /** The season's points, as last seen; null while never seen. */
+  season: number | null
 }
 
 /** What a server's characters share, with each one's bar colour. */
@@ -85,6 +87,7 @@ const servers = computed(() => {
       boundKina,
       kinaTotal: kina === null && boundKina === null ? null : (kina ?? 0) + (boundKina ?? 0),
       shugoWeek: shugoWeek.value.get(id) ?? 0,
+      season: c.seasonPoints?.balance ?? null,
     }
   })
   const by = new Map<number, Row[]>()
@@ -288,6 +291,7 @@ function corridorTitle(list: CorridorState[]): string {
                 <span class="flex items-center gap-1.5"><img :src="ICONS.ticket" alt="" draggable="false" class="size-5" />{{ t('Ascension Trial') }}</span>
               </th>
               <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('The Shugo Festival\'s games each character played since the weekly reset (Wednesday 07:00 UTC): the season mission Festival-Loving Daeva\'s progress.')">{{ t('Shugo (week)') }}</th>
+              <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('The season missions\' points, as the game last said them')">{{ t('Season') }}</th>
               <th class="w-px whitespace-nowrap px-4 text-right font-medium" :title="t('Kina and bound Kina')">Kina</th>
               <th class="w-40 whitespace-nowrap px-5 text-center font-medium" :title="t('The Abyss\'s Artifact corridors, back as the Artifact siege starts (Thursdays and Saturdays at 21:00 in Europe).')">{{ t('Corridors') }}</th>
               <th class="w-px whitespace-nowrap pl-5 pr-4 text-right font-medium">{{ t('Last read') }}</th>
@@ -359,6 +363,10 @@ function corridorTitle(list: CorridorState[]): string {
                       :title="t('{n} games: {reward}', { n: step, reward: SHUGO_MISSION.reward })"
                     />
                   </div>
+                </td>
+                <td class="whitespace-nowrap px-4 text-right font-semibold tabular-nums" :title="r.c.seasonPoints ? t('Read {when}', { when: stamp(r.c.seasonPoints.at) }) : ''">
+                  <span v-if="r.season !== null">{{ amount(r.season) }}</span>
+                  <span v-else class="text-darkest">–</span>
                 </td>
                 <td
                   class="whitespace-nowrap px-4 text-right font-semibold tabular-nums"

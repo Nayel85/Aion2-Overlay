@@ -6,6 +6,7 @@
  *
  * Kept across restarts in `<userData>/characters.json`.
  */
+import { SEASON_POINTS } from '../shared/sessions.ts'
 import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
 import { log, tracker } from './tracker.ts'
@@ -233,6 +234,13 @@ export function startCharacters(): void {
     if (kina !== null) c.kina = { balance: kina, at }
     // Not in the list: none.
     c.boundKina = { balance: bound ?? 0, at }
+    if (ev.seasonPoints != null) c.seasonPoints = { balance: ev.seasonPoints, at }
+    changed()
+  })
+  // The season's points as they change (a mission done): the character's.
+  tracker.onEvent('currency', (ev) => {
+    if (ev.item !== SEASON_POINTS || ev.server === null || !ev.name) return
+    entry(ev.server, ev.name).seasonPoints = { balance: ev.balance, at: ev.ts ?? Date.now() }
     changed()
   })
   // Your subscriptions, at login: the account's, kept on the character that logged in (the newest

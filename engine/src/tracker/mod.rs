@@ -120,6 +120,8 @@ pub struct Tracker {
     pending_subscriptions: Option<(i64, Vec<(u32, u64)>)>,
     /// The login's Kina and bound Kina (`11 56`), the same way.
     pending_wallet: Option<(i64, Option<u64>, Option<u64>)>,
+    /// The season's points the login's item list said, told with the wallet.
+    pending_season: Option<u64>,
     /// The login's whole item list, waiting with the wallet for the record naming its character.
     pending_depot: Vec<p::DepotItem>,
     /// The Abyss Points total the game just sent (when, points, limit), waiting to know whose.
@@ -252,6 +254,7 @@ impl Tracker {
             pending_counter: Vec::new(),
             pending_subscriptions: None,
             pending_wallet: None,
+            pending_season: None,
             pending_depot: Vec::new(),
             pending_abyss: None,
             abyss_balance: HashMap::new(),
@@ -1187,6 +1190,7 @@ impl Tracker {
                     // one): it waits for it, as the counters do.
                     tracing::info!("wallet: kina {kina:?}, bound {bound:?}");
                     self.pending_wallet = Some((ts, kina, bound));
+                    self.pending_season = p::season_points(f);
                     self.pending_depot = p::depot(f);
                     tracing::info!("item list: {} items", self.pending_depot.len());
                 }
@@ -1428,7 +1432,8 @@ impl Tracker {
     /// The login's Kina and bound Kina, for `name`.
     fn wallet_read(&mut self, name: &str, server: Option<u16>) {
         let Some((at, kina, bound)) = self.pending_wallet.take() else { return };
-        (self.emit)(json!({ "type": "wallet", "ts": at, "name": name, "server": server, "kina": kina, "boundKina": bound }));
+        let season = self.pending_season.take();
+        (self.emit)(json!({ "type": "wallet", "ts": at, "name": name, "server": server, "kina": kina, "boundKina": bound, "seasonPoints": season }));
         // And everything they have, where it lies (the Inventory page).
         let items: Vec<Value> = std::mem::take(&mut self.pending_depot).iter().map(depot_json).collect();
         if !items.is_empty() {

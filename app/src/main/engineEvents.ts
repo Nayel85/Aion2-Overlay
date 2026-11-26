@@ -46,7 +46,7 @@ export type EngineEvents = {
   rewardBoard: { ts?: number; entries?: { name: string | null; items: ItemAmount[] }[] }
   playerDied: { at: number; name: string | null; you: boolean }
   loot: { ts?: number; source?: number; items?: ItemAmount[] }
-  wallet: Login & { kina: number | null; boundKina: number | null }
+  wallet: Login & { kina: number | null; boundKina: number | null; seasonPoints?: number | null }
   subscriptions: Login & { list: { id: number; end: number }[] }
   abyss: { ts?: number; name: string | null; points: number; limit: number; gained: number }
   abyssGain: { name: string | null; gained: number }

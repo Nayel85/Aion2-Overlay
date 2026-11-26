@@ -35,9 +35,12 @@ export const KINA_ITEM = 930100031
 /** The other currencies a session counts (the engine's SESSION_CURRENCIES), by item id. */
 export const ENHANCE_STONE = 930100023
 export const PHANTASMAL_FRAGMENT = 930100017
+/** The season's points (each character's; the engine's SEASON_POINTS). */
+export const SEASON_POINTS = 930100019
 export const CURRENCY_LABELS: Record<string, string> = {
   [ENHANCE_STONE]: 'Enhance Stones',
   [PHANTASMAL_FRAGMENT]: 'Phantasmal Fragments',
+  [SEASON_POINTS]: 'Season points',
 }
 /** A quest's reward is the gain it came with, this long before it at most (they come together). */
 export const QUEST_WITHIN_MS = 3_000

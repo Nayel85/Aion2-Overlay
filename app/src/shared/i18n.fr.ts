@@ -1769,4 +1769,7 @@ export const FR: Record<string, string> = {
   'Shugo (week)': 'Shugo (semaine)',
   'Since the weekly reset, {when}': 'Depuis le reset hebdomadaire, {when}',
   '{n} games: {reward}': '{n} parties : {reward}',
+  'The season missions\' points, as the game last said them': 'Les points des missions de saison, tels que le jeu les a donnés en dernier',
+  'Season': 'Saison',
+  'Season points': 'Points de saison',
 }
