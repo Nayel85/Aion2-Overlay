@@ -1786,4 +1786,6 @@ export const FR: Record<string, string> = {
   'Updating from Settings works again: a retry no longer fails on the earlier attempt\'s files.': 'La mise à jour depuis les réglages remarche : un nouvel essai n\'échoue plus sur les fichiers de l\'essai précédent.',
   'Characters page: the portrait of a character the overlay never saw on the selection screen, and its refresh button, work.': 'Page Personnages : le portrait d\'un perso que l\'overlay n\'a jamais vu sur l\'écran de sélection, et son bouton pour le redemander, fonctionnent.',
   'The Unified HUD has the Aggro overlay\'s button.': 'Le HUD unifié a le bouton de l\'overlay Aggro.',
+  'Duty board: its window opens each time you open the board in game, not only the first.': 'Tableau des duty : sa fenêtre s\'ouvre à chaque ouverture du tableau en jeu, pas seulement la première.',
+  'The app\'s last Lokthar names are Nayel\'s (the engine, the update\'s folder). Updating from Settings works from this version on.': 'Les derniers noms Lokthar de l\'app deviennent Nayel (le moteur, le dossier des mises à jour). La mise à jour depuis les réglages marche à partir de cette version.',
 }

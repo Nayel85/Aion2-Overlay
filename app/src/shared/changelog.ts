@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.20',
+    items: [
+      "Duty board: its window opens each time you open the board in game, not only the first.",
+      "The app's last Lokthar names are Nayel's (the engine, the update's folder). Updating from Settings works from this version on.",
+    ],
+  },
+  {
     version: '0.3.19',
     items: [
       "Updating from Settings works again: a retry no longer fails on the earlier attempt's files.",
