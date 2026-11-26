@@ -22,10 +22,13 @@ import { app } from 'electron'
 import { execFile, spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync } from 'node:fs'
-import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { promisify } from 'node:util'
 import electronUpdater from 'electron-updater'
+// Electron's fs reads an .asar as a folder: the update's own app.asar could not be removed with it
+// (EBUSY on rmdir, the owner's 2026-11-26 retry over an earlier attempt's files).
+import { promises as rawFs } from 'original-fs'
 import { broadcast } from './broadcast.ts'
 import { log } from './tracker.ts'
 import { RELEASE_REPO, type UpdateState } from '../shared/update.ts'
@@ -89,7 +92,7 @@ const run = promisify(execFile)
 async function downloadPortable(version: string): Promise<{ dir: string; exe: string }> {
   const name = `Nayel-Overlay-${version}-portable.zip`
   const dir = join(app.getPath('temp'), `lokthar-update-${version}`)
-  await rm(dir, { recursive: true, force: true })
+  await rawFs.rm(dir, { recursive: true, force: true })
   await mkdir(dir, { recursive: true })
   const zip = join(dir, name)
 
@@ -119,7 +122,7 @@ async function downloadPortable(version: string): Promise<{ dir: string; exe: st
   const out = join(dir, 'files')
   await mkdir(out, { recursive: true })
   await run('tar.exe', ['-xf', zip, '-C', out], { windowsHide: true })
-  await rm(zip, { force: true })
+  await rawFs.rm(zip, { force: true })
   // The exe at the top of the zip, or in one folder there: this copy's name, or any the app has had.
   const names = [...new Set([...EXE_NAMES, basename(app.getPath('exe'))])]
   for (const dir of [out, ...readdirSync(out).map((d) => join(out, d))]) {

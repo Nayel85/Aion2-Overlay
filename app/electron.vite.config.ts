@@ -16,6 +16,8 @@ export default defineConfig({
     plugins: [externalizeDepsPlugin()],
     resolve: { alias: { '@shared': shared } },
     define: { __UPDATE_TOKEN__: JSON.stringify(updateToken) },
+    // Electron's own module (fs without its .asar reading), there at run time.
+    build: { rollupOptions: { external: ['original-fs'] } },
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
