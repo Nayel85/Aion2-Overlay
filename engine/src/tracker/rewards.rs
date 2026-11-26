@@ -51,8 +51,10 @@ impl Tracker {
             // An arena: its players, then each kill and the score it changed (killer, victim, assists).
             p::OP_ARENA_PLAYERS => {
                 let players = p::arena_players(f);
-                tracing::info!("arena players: {:?}", players.iter().map(|(_, n)| n).collect::<Vec<_>>());
+                let names: Vec<String> = players.iter().map(|(_, n)| n.clone()).collect();
+                tracing::info!("arena players: {names:?}");
                 self.arena_players = players.into_iter().collect();
+                self.arena_teams(ts, &names);
             }
             p::OP_ARENA_KILL => self.arena_kill = p::arena_kill(f).map(|(k, v)| (ts, k, v)),
             p::OP_ARENA_SCORE => {

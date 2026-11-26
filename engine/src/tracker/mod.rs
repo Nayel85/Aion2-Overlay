@@ -194,6 +194,8 @@ pub struct Tracker {
     /// An arena's players by id, and its last kill (its score update names who assisted).
     arena_players: std::collections::HashMap<u32, String>,
     arena_kill: Option<(i64, u32, u32)>,
+    /// An arena's other team, by name: your enemies there, whatever their race or server; none out of one.
+    arena_foes: std::collections::HashSet<String>,
     /// The party as last told the app (its members' names, classes and entities), and when checked.
     party_told: Value,
     party_checked: i64,
@@ -297,6 +299,7 @@ impl Tracker {
             duty_opened_at: i64::MIN,
             arena_players: std::collections::HashMap::new(),
             arena_kill: None,
+            arena_foes: std::collections::HashSet::new(),
             party_told: json!([]),
             party_checked: 0,
             objects: HashMap::new(),
@@ -829,6 +832,22 @@ impl Tracker {
         }
     }
 
+    /// An arena's teams, its players in their order (yours, then the other, as many each): the other one
+    /// your enemies, those in view already told again.
+    fn arena_teams(&mut self, ts: i64, players: &[String]) {
+        let half = players.len() / 2;
+        let Some(me) = self.store.current.clone() else { return };
+        if half == 0 || players.len() % 2 != 0 {
+            return;
+        }
+        let (first, second) = players.split_at(half);
+        let foes = if first.contains(&me) { second } else if second.contains(&me) { first } else { return };
+        self.arena_foes = foes.iter().cloned().collect();
+        tracing::info!("arena: enemies {:?}", foes);
+        self.enemies = self.players.iter().filter(|(_, p)| self.arena_foes.contains(&p.name)).map(|(e, p)| (*e, p.clone())).collect();
+        self.enemies_changed(ts);
+    }
+
     fn clear_cubes(&mut self) {
         if !self.cubes.is_empty() {
             self.cubes.clear();
@@ -1038,6 +1057,7 @@ impl Tracker {
                     self.classes.clear();
                     self.legions.clear();
                     self.clear_enemies(ts);
+                    self.arena_foes.clear();
                     self.nearby_dirty = true;
                 }
             }
@@ -1298,7 +1318,12 @@ impl Tracker {
             }
             p::OP_PLAYER => {
                 if let Some(player) = p::player(f) {
-                    let enemy = matches!((player.faction, self.my_faction()), (Some(theirs), Some(mine)) if theirs != mine);
+                    // In an arena, the other team; elsewhere, the other side.
+                    let enemy = if self.arena_foes.is_empty() {
+                        matches!((player.faction, self.my_faction()), (Some(theirs), Some(mine)) if theirs != mine)
+                    } else {
+                        self.arena_foes.contains(&player.name)
+                    };
                     if let Some(class) = player.class.and_then(p::roster_class) {
                         self.classes.entry(player.entity).or_insert(class);
                     }
