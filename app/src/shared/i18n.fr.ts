@@ -1819,4 +1819,7 @@ export const FR: Record<string, string> = {
   'Daily Dungeon tickets': 'Tickets Daily Dungeon',
   'Each Unknown Fissure Challenge Ticket: the daily dungeons\' entry.': 'Chaque Unknown Fissure Challenge Ticket : l\'entrée des donjons quotidiens.',
   'Dungeons, Shugo games and the like run': 'Donjons, parties de Shugo et autres runs faits',
+  'Arena': 'Arène',
+  'Co-op': 'Coop',
+  'Solo': 'Solo',
 }

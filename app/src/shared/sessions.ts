@@ -131,6 +131,8 @@ export interface DungeonRun {
   /** Your deaths in it, and the group's (yours with them). */
   deaths?: number
   partyDeaths?: number
+  /** An arena's match: the most opponents seen at once (one: Solo, more: Co-op). */
+  foes?: number
 }
 
 /**
@@ -162,7 +164,8 @@ export function mergeRuns(runs: DungeonRun[]): DungeonRun & { count: number } {
 /** A session's runs by zone and name (one dungeon in one mode; one field boss), in the order first run: each group's runs, oldest first. */
 export function runGroups(runs: DungeonRun[]): DungeonRun[][] {
   const by = new Map<string, DungeonRun[]>()
-  for (const r of runs) by.set(`${r.world}:${r.name}`, [...(by.get(`${r.world}:${r.name}`) ?? []), r])
+  // By zone and its name as shown (an arena's Solo and Co-op apart).
+  for (const r of runs) by.set(`${r.world}:${runName(r)}`, [...(by.get(`${r.world}:${runName(r)}`) ?? []), r])
   return [...by.values()]
 }
 /**
@@ -359,6 +362,8 @@ export function runName(run: DungeonRun, tr: Translate = untranslated): string {
   if (run.boss === undefined) {
     // A Shugo Festival's or an invasion's game: the event, then which.
     if (run.kind === 'shugo' || run.kind === 'invasion') return `${tr(runKindLabel(run.kind))} · ${run.name}`
+    // An arena by its mode, not its map: Solo (one opponent) or Co-op (a team).
+    if (run.kind === 'arena') return run.foes ? `${tr('Arena')} · ${tr(run.foes > 1 ? 'Co-op' : 'Solo')}` : tr('Arena')
     const mode = zoneMode(run.world, tr)
     return mode ? `${run.name} · ${mode}` : run.name
   }

@@ -256,6 +256,14 @@ export function startSessions(): void {
     } else return
     changed()
   })
+  // An arena's opponents in view: their most at once tells its mode (one: Solo, more: Co-op).
+  tracker.onEvent('enemies', (ev) => {
+    const run = openRun()
+    const foes = (ev.players ?? []).filter((p) => p.pvp !== false).length
+    if (run?.kind !== 'arena' || foes <= (run.foes ?? 0)) return
+    run.foes = foes
+    changed()
+  })
   // A player down: yours and the group's deaths in the run going on.
   tracker.onEvent('playerDied', (ev) => {
     const run = openRun()
