@@ -1768,4 +1768,5 @@ export const FR: Record<string, string> = {
   'The Shugo Festival\'s games each character played since the weekly reset (Wednesday 07:00 UTC): the season mission Festival-Loving Daeva\'s progress.': 'Les parties du Shugo Festival jouées par chaque perso depuis le reset hebdomadaire (mercredi 07:00 UTC) : l\'avancement de la mission de saison Festival-Loving Daeva.',
   'Shugo (week)': 'Shugo (semaine)',
   'Since the weekly reset, {when}': 'Depuis le reset hebdomadaire, {when}',
+  '{n} games: {reward}': '{n} parties : {reward}',
 }

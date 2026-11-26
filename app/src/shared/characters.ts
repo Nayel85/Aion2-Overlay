@@ -195,6 +195,13 @@ export const lastRefill = (r: Refill, now: number): number => nextRefill(r, now)
 /** The weekly reset (Wednesday 07:00 UTC): the Daily Dungeon's refill. */
 export const WEEKLY_RESET = DAILY_DUNGEON
 
+/**
+ * The weekly season mission Festival-Loving Daeva (from the 2026-11-11 patch): 20,000 Abyss Points at
+ * 3, 6 and 9 Shugo Festival games in a week. Aion2Maps' Season 1 guide (2026-11-26); NC's notes say a
+ * weekly Shugo Festival mission came, not its steps.
+ */
+export const SHUGO_MISSION = { name: 'Festival-Loving Daeva', steps: [3, 6, 9], reward: '20,000 Abyss Points' } as const
+
 export interface CounterNow {
   /** As the game last said (at login, or as it changed since). */
   read: number

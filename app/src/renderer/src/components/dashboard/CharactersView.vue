@@ -16,7 +16,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { ASCENSION, characterId, lastRefill, WEEKLY_RESET, CORRIDORS, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
+import { ASCENSION, characterId, lastRefill, SHUGO_MISSION, WEEKLY_RESET, CORRIDORS, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
 import { formatKina } from '@shared/kina.ts'
 import { serverLabel } from '@shared/servers.ts'
 
@@ -63,6 +63,8 @@ const SHARED: { r: Refill; bar: string }[] = [
 
 /** By server (the one playing first), each in the game's order. */
 /** Each character's Shugo Festival games since the weekly reset, from every session kept. */
+/** The season mission's last step: the week's games done. */
+const SHUGO_DONE = SHUGO_MISSION.steps.at(-1)!
 const shugoWeek = computed(() =>
   runsSince([...(store.sessions.current ? [store.sessions.current] : []), ...store.sessions.history], 'shugo', lastRefill(WEEKLY_RESET, now.value)),
 )
@@ -344,7 +346,19 @@ function corridorTitle(list: CorridorState[]): string {
                   <span v-else class="text-darkest">–</span>
                 </td>
                 <td class="whitespace-nowrap px-4 text-right tabular-nums" :title="t('Since the weekly reset, {when}', { when: stamp(lastRefill(WEEKLY_RESET, now)) })">
-                  <span :class="r.shugoWeek ? 'font-semibold' : 'text-darkest'">{{ r.shugoWeek }}</span>
+                  <!-- The mission's progress: its games of the week, a mark at each step (3, 6, 9). -->
+                  <div class="flex items-baseline justify-end gap-1">
+                    <span :class="r.shugoWeek >= SHUGO_DONE ? 'font-semibold text-green' : r.shugoWeek ? 'font-semibold' : 'text-darkest'">{{ r.shugoWeek }}</span>
+                    <span class="text-xs text-darkest">/ {{ SHUGO_DONE }}</span>
+                  </div>
+                  <div class="mt-1 flex justify-end gap-0.5">
+                    <span
+                      v-for="step in SHUGO_MISSION.steps"
+                      :key="step"
+                      :class="['h-1.5 w-4 rounded-full', r.shugoWeek >= step ? 'bg-green' : 'bg-dark']"
+                      :title="t('{n} games: {reward}', { n: step, reward: SHUGO_MISSION.reward })"
+                    />
+                  </div>
                 </td>
                 <td
                   class="whitespace-nowrap px-4 text-right font-semibold tabular-nums"
