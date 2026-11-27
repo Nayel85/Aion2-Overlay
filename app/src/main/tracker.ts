@@ -30,7 +30,7 @@ import { pvpLog } from './pvpLog.ts'
 import { abyss } from './abyss.ts'
 import type { AbyssSession, RiftFarm } from '../shared/abyss.ts'
 import { serverFaction, serverRegion } from '../shared/servers.ts'
-import { GAME_ACTIVE_S, NO_NEARBY, type AggroMob, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type PvpKill, type ShopStock, type SoulToast, type TrackerStatus } from '../shared/tracker.ts'
+import { concernsYou, GAME_ACTIVE_S, NO_NEARBY, type AggroMob, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type PvpKill, type ShopStock, type SoulToast, type TrackerStatus } from '../shared/tracker.ts'
 import { tr } from './i18n.ts'
 import { pveInstance } from '../shared/sessions.ts'
 
@@ -453,7 +453,9 @@ function handleLine(line: string): void {
         fight: msg.fight ?? null,
       }
       if (kill.died && nearby.world !== null && nearby.position) kill.place = { world: nearby.world, position: nearby.position }
-      pvpLog.add(kill)
+      // Kept only when it concerns you (the PvP page's list); the others only pass on the kill feed.
+      if (concernsYou(kill)) pvpLog.add(kill)
+      else pvpLog.seen(kill)
       log(`pvp: ${kill.killer.name} (${kill.killer.server}) killed ${kill.victim ? `${kill.victim.name} (${kill.victim.server ?? '?'})` : 'a player out of view'}${kill.mine ? ' [you]' : kill.died ? ' [you died]' : ''}`)
       break
     }

@@ -43,6 +43,7 @@ function setSession(next: AbyssSession): void {
 export const abyss = {
   session: (): AbyssSession => withSeason(session),
   rifts: (): RiftFarm[] => (farms ??= riftFarms(all())),
+  gains: (): AbyssGain[] => all(),
 
   /**
    * The engine's `abyss` event: the weekly figure the game sends (`ab ff`) and its limit. It did

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 // Copied from Nyerk (GPL-3.0), https://github.com/xCROv/aion2-nyerk
 // app/src/renderer/src/components/panel/PvpLogTab.vue at ddcdc48 (0.2.17).
-// The PvP kill feed: every player killed by a player around you this session, newest first, as the
-// game credits it (the killing blow). Your kills in green, your deaths in red; players from other
-// servers carry their server's tag ([LUM]).
+// The PvP kill feed: the kills that concern you (yours, your deaths, those of players you fought,
+// your legion's), newest first, as the game credits them (the killing blow), each kill or assist with
+// the Abyss Points it earned. Your kills in green, your deaths in red; players from other servers
+// carry their server's tag ([LUM]).
 // Lokthar: the rift farms on top (shared/abyss.ts), each the Abyss Points one character earned in a
 // Spacetime Rift's window, with your kills, deaths and assists in it; picking one lists those.
 import { combatPower } from '@shared/format.ts'
@@ -16,21 +17,28 @@ import Button from '@/components/Button.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { PVP_LIMIT, type PvpKill } from '@shared/tracker.ts'
-import { attributeGains, RIFT_MIN_POINTS as RIFT_MIN, RIFT_MS, type RiftFarm } from '@shared/abyss.ts'
+import { concernsYou, PVP_LIMIT, type PvpKill } from '@shared/tracker.ts'
+import { attributeGains, RIFT_MIN_POINTS as RIFT_MIN, RIFT_MS, type AbyssGain, type RiftFarm } from '@shared/abyss.ts'
 import { formatAmount } from '@shared/earnings.ts'
 
 const store = useApp()
 const history = shallowRef<PvpKill[]>([])
 const api = bridge()
-const offHistory = api.on('tracker:pvp', (list) => (history.value = list))
+// Those that concern you (the others kept before 2026-11-27 left out).
+const offHistory = api.on('tracker:pvp', (list) => (history.value = list.filter(concernsYou)))
 const offKill = api.on('tracker:pvpKill', (kill) => {
+  if (!concernsYou(kill)) return
   if (history.value.length >= PVP_LIMIT) history.value.shift()
   history.value.push(kill)
   triggerRef(history)
 })
-void api.invoke('tracker:get', true).then((s) => (history.value = s.pvp))
-onBeforeUnmount(() => { offHistory(); offKill() })
+void api.invoke('tracker:get', true).then((s) => (history.value = s.pvp.filter(concernsYou)))
+// The Abyss Points gains, for what each kill earned: read again as one comes (the rifts are told then).
+const gains = shallowRef<AbyssGain[]>([])
+const loadGains = (): void => void api.invoke('abyss:gains').then((g) => (gains.value = g))
+loadGains()
+const offGains = api.on('tracker:rifts', loadGains)
+onBeforeUnmount(() => { offHistory(); offKill(); offGains() })
 
 /** Combat power as the game rounds it: 115485 → 115.4K. */
 const cp = combatPower
@@ -94,7 +102,15 @@ const riftAp = computed(() => {
   const { byEvent, other } = attributeGains(farm.gains ?? [], events)
   return { byEvent, other, fromKills: farm.points - other }
 })
-const apOf = (k: PvpKill): number => riftAp.value?.byEvent.get(k) ?? 0
+/** Every kill or assist of yours with the Abyss Points that came in right after it (out of a rift too). */
+const allAp = computed(() => {
+  const events = history.value.filter((k) => k.mine || isAssist(k))
+  if (!events.length) return new Map<PvpKill, number>()
+  const from = events[0]!.at - 60_000
+  const near = gains.value.filter(([at]) => at >= from).map(([at, gained]): [number, number] => [at, gained])
+  return attributeGains(near, events).byEvent
+})
+const apOf = (k: PvpKill): number => (riftAp.value ?? { byEvent: allAp.value }).byEvent.get(k) ?? 0
 const total = computed(() => (filtered.value ?? history.value).length)
 const PAGE = 200
 const limit = ref(PAGE)
@@ -220,7 +236,7 @@ const toggleHud = (): void => void bridge().invoke(hudOpen.value ? 'killfeed:clo
           </div>
           <div v-if="k.killer.guild" class="truncate text-[11px] text-darker">{{ k.killer.guild }}</div>
         </div>
-        <span v-if="riftAp && (k.mine || isAssist(k))" :class="['shrink-0 text-[11px] font-semibold tabular-nums', apOf(k) ? 'text-blue' : 'text-darkest']" :title="t('Abyss Points this earned (the points that came in right after it)')">{{ apOf(k) ? `+${formatAmount(apOf(k))} AP` : '- AP' }}</span>
+        <span v-if="k.mine || isAssist(k)" :class="['shrink-0 text-[11px] font-semibold tabular-nums', apOf(k) ? 'text-blue' : 'text-darkest']" :title="t('Abyss Points this earned (the points that came in right after it)')">{{ apOf(k) ? `+${formatAmount(apOf(k))} AP` : '- AP' }}</span>
         <span v-if="k.fight && !k.mine && !k.died" class="shrink-0 rounded bg-accent/15 px-1.5 text-[10px] font-semibold text-accent" :title="t('You fought this player before someone else took the kill')">Assist</span>
         <span v-if="k.fight" class="shrink-0 text-[11px] font-medium text-accent">{{ t('Details') }} ›</span>
         <span class="shrink-0 text-[11px] tabular-nums text-darker" :title="timeOfDay(k.at)">{{ ago(k.at) }}</span>
@@ -240,7 +256,7 @@ const toggleHud = (): void => void bridge().invoke(hudOpen.value ? 'killfeed:clo
 
 
     <p class="text-[11px] text-darkest">
-      {{ t('Player kills around you, as the game credits them: the killing blow only, so an assist is not a kill here. Kept until you clear them, across restarts.') }}
+      {{ t('The player kills that concern you (yours, your deaths, those of players you fought, your legion\'s), as the game credits them: the killing blow only, so an assist is not a kill here. Kept until you clear them, across restarts.') }}
     </p>
   </div>
 </template>

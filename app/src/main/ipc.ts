@@ -1,4 +1,5 @@
 /** Every invoke handler, typed against the contract in shared/ipc.ts. */
+import { abyss } from './abyss.ts'
 import { marketStore } from './market.ts'
 import { dutyScreen } from './dutyScreen.ts'
 import { app, ipcMain, shell } from 'electron'
@@ -207,6 +208,7 @@ export function registerIpc(): void {
   })
   handle('recordings:get', () => meterState.recordings())
   handle('storage:get', () => storageUsage())
+  handle('abyss:gains', () => abyss.gains())
   handle('storage:clear', async (id) => {
     if (typeof id === 'string' && STORAGE_CLEARABLE.includes(id as StorageId)) await clearStorage(id as StorageId)
     return storageUsage()

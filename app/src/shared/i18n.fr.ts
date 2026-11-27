@@ -788,7 +788,7 @@ export const FR: Record<string, string> = {
   'Pinned pets': 'Familiers épinglés',
   'Player': 'Joueur',
   'Player kills around you': 'Kills de joueurs autour de toi',
-  'Player kills around you, as the game credits them: the killing blow only, so an assist is not a kill here. Kept until you clear them, across restarts.': 'Les kills de joueurs autour de toi, tels que le jeu les attribue : le coup fatal seulement, donc une assist n\'est pas un kill ici. Gardés jusqu\'à ce que tu les effaces, même après redémarrage.',
+  'The player kills that concern you (yours, your deaths, those of players you fought, your legion\'s), as the game credits them: the killing blow only, so an assist is not a kill here. Kept until you clear them, across restarts.': 'Les kills de joueurs qui te concernent (les tiens, tes morts, ceux des joueurs que tu as combattus, ceux de ta légion), tels que le jeu les crédite : le coup fatal seulement, donc une assistance n\'est pas un kill ici. Gardés jusqu\'à ce que tu les effaces, même après un redémarrage.',
   'Players': 'Joueurs',
   'Players listed': 'Joueurs listés',
   'Players of the other faction your game has loaded around you, with server, combat power and legion. Hidden while there are none; drag it while this window is open.': 'Les joueurs de l\'autre faction que ton jeu a chargés autour de toi, avec serveur, puissance de combat et légion. Caché quand il n\'y en a pas ; glisse-le tant que cette fenêtre est ouverte.',

@@ -19,7 +19,7 @@ import type { GameMapState, MapDetail } from './gameMap.ts'
 import type { DummyState } from './dummy.ts'
 import type { UpdateState } from './update.ts'
 import type { KinaSession } from './kina.ts'
-import type { AbyssSession, RiftFarm } from './abyss.ts'
+import type { AbyssGain, AbyssSession, RiftFarm } from './abyss.ts'
 import type { StorageId, StorageUsage } from './storage.ts'
 import type { DetailsSource, DetailsView, Encounter, FightSummary, FightYou, MeterData, NewBest, PacketLog, PersonalView, Recordings } from './meter.ts'
 import type { SyncResult } from './lokthar.ts'
@@ -161,6 +161,8 @@ export interface InvokeChannels {
   /** The engine's recordings of the game's traffic: the list, start or stop, and their folder. */
   'recordings:get': { args: []; result: Recordings }
   'storage:get': { args: []; result: StorageUsage }
+  /** Every Abyss Points gain kept (90 days), oldest first: what each PvP kill earned. */
+  'abyss:gains': { args: []; result: AbyssGain[] }
   'storage:clear': { args: [id: StorageId]; result: StorageUsage }
   'recordings:set': { args: [on: boolean]; result: void }
   'recordings:open': { args: []; result: void }
@@ -316,7 +318,7 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'meter:get', 'meter:reset', 
   
   'skills:get', 
-  'buffs:get', 'applicants:get', 'gather:get', 'flight:get', 'party:get', 'overlay:moveTo', 'overlay:dragEnd', 'overlay:resize', 'overlay:resetPosition', 'applicants:dismiss', 'applicants:clear', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
+  'buffs:get', 'applicants:get', 'gather:get', 'flight:get', 'party:get', 'overlay:moveTo', 'overlay:dragEnd', 'overlay:resize', 'overlay:resetPosition', 'applicants:dismiss', 'applicants:clear', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'abyss:gains', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
   'details:open', 'details:get', 'details:view', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:bests', 'history:delete',
 ]
 

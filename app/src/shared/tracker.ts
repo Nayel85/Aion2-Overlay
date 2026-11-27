@@ -158,6 +158,9 @@ export interface PvpKill {
   place?: { world: number; position: [number, number] } | null
 }
 
+/** A kill that concerns you: yours, your death, one of a player you fought, or your legion's. Only these are kept. */
+export const concernsYou = (k: PvpKill): boolean => k.mine || k.died || !!k.fight || k.legion
+
 /** Your last death whose place is known (the kill feed's skull, and the maps'). */
 export function lastDeath(kills: PvpKill[]): (PvpKill & { place: NonNullable<PvpKill['place']> }) | null {
   for (let i = kills.length - 1; i >= 0; i--) {

@@ -31,6 +31,10 @@ export const pvpLog = {
     broadcast('tracker:pvpSummary', current.summary(), views)
     broadcast('tracker:pvpKill', kill, ['panel', 'killfeed'])
   },
+  /** A kill that does not concern you: on the kill feed overlay as it happens, not kept. */
+  seen(kill: PvpKill): void {
+    broadcast('tracker:pvpKill', kill, ['killfeed'])
+  },
   flush: (): Promise<void> | null => history?.flush() ?? null,
   clear(): void {
     const current = feed()
