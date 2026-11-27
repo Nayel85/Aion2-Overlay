@@ -11,6 +11,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.23',
+    items: [
+      "Duty board window: no longer opened as you log in or switch character.",
+    ],
+  },
+  {
     version: '0.3.22',
     items: [
       "Updates from the menu: the app restarts on its own once the new files are copied (it closed and stayed closed). The update to this version still needs the step by hand: run nayel-install-update.ps1 from the %TEMP% folder once the app has closed.",
