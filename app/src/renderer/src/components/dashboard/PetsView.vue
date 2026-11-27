@@ -18,6 +18,7 @@ import Segmented from '@/components/ui/Segmented.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { plural, t } from '@/lib/i18n.ts'
+import { ago } from '@/lib/format.ts'
 import { CONTINENTS, formatDistance, nearbyPets, petContinents, petDistance, petWorlds, useSpawns, type NearbyPet } from '@/lib/spawns.ts'
 import { displayName, GENERA, GENUS_LABEL, monsterName, PET_DB_DATE, PET_DB_SIZE, PET_DB_SOURCE, petInfo, type Genus } from '@/lib/petDb.ts'
 import { useApp } from '@/stores/app.ts'
@@ -118,8 +119,16 @@ const positionAge = computed(() => {
   const min = Math.floor((now.value - at) / 60_000)
   return min < 1 ? t('updated just now') : min < 60 ? t('updated {n} min ago', { n: min }) : t('updated {n} h ago', { n: Math.floor(min / 60) })
 })
-const distance = (id: number): number | null =>
-  spawns.value && here.value ? petDistance(spawns.value, id, here.value.world, here.value.at) : null
+/** Each pet's distance from you, worked out once per position (the sort and its rows asked it again and again). */
+const distances = computed(() => {
+  void spawns.value, here.value
+  return new Map<number, number | null>()
+})
+const distance = (id: number): number | null => {
+  const known = distances.value
+  if (!known.has(id)) known.set(id, spawns.value && here.value ? petDistance(spawns.value, id, here.value.world, here.value.at) : null)
+  return known.get(id)!
+}
 const near = computed(
   () =>
     new Map<number, NearbyPet>(
@@ -211,12 +220,8 @@ const FILTERS = computed(() => [
   { id: 'nearby' as const, label: 'Nearby', count: near.value.size },
 ])
 
-const syncedAgo = computed(() => {
-  const s = store.status?.synced
-  if (!s) return null
-  const min = Math.round((Date.now() - s.at) / 60000)
-  return min < 1 ? t('just now') : t('{n} min ago', { n: min })
-})
+/** When the login's sync was, ageing as the panel stays open (the shared wording). */
+const syncedAgo = computed(() => (store.status?.synced ? ago(store.status.synced.at, now.value) : null))
 </script>
 
 <template>
