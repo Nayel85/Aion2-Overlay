@@ -16,7 +16,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { ASCENSION, characterId, lastRefill, SEASON_WEEK_MAX, WALLET_MORE, seasonWeekNow, SHUGO_MISSION, WEEKLY_RESET, CORRIDORS, corridorOffer, corridorsLeft, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
+import { ASCENSION, characterId, lastRefill, SEASON_WEEK_MAX, WALLET_MORE, seasonWeekNow, SHUGO_MISSION, WEEKLY_RESET, CORRIDORS, corridorsLeft, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
 import { formatKina } from '@shared/kina.ts'
 import { serverLabel } from '@shared/servers.ts'
 
@@ -79,11 +79,6 @@ const SHUGO_DONE = SHUGO_MISSION.steps.at(-1)!
 /** When this week began: a number, so what depends on it is counted again once a week, not each second. */
 const weekStart = computed(() => lastRefill(WEEKLY_RESET, now.value))
 const shugoWeek = computed(() => runsSince(store.allSessions, 'shugo', weekStart.value))
-/** The corridors open this time, once a server (not each character's again). */
-const offers = computed(() => {
-  const all = Object.values(store.characters)
-  return new Map([...new Set(all.map((c) => c.server))].map((server) => [server, corridorOffer(all, server, now.value)]))
-})
 const servers = computed(() => {
   const playing = store.status?.character && store.status.server ? characterId(store.status.server, store.status.character) : null
   const rows: Row[] = Object.entries(store.characters).map(([id, c]) => {
@@ -96,7 +91,7 @@ const servers = computed(() => {
       energy: counterNow(ENERGY, c.counters, now.value),
       nightmare: counterNow(NIGHTMARE, c.counters, now.value),
       ascension: counterNow(ASCENSION, c.counters, now.value),
-      corridors: corridorStates(c.corridors, now.value, offers.value.get(c.server) ?? null),
+      corridors: store.corridors[id] ?? [],
       kina,
       boundKina,
       kinaTotal: kina === null && boundKina === null ? null : (kina ?? 0) + (boundKina ?? 0),

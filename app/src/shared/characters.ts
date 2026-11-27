@@ -162,6 +162,16 @@ export function corridorStates(log: CorridorLog | undefined, now: number, offer:
 /** The corridors still to do: neither done nor closed this time. */
 export const corridorsLeft = (states: readonly CorridorState[]): number => states.filter((x) => x !== 'done' && x !== 'closed').length
 
+/**
+ * Every character's corridors now, by its id: each server's open ones taken once (corridorOffer),
+ * the others closed. What the Characters page and the HUD both read (the renderer store's).
+ */
+export function allCorridors(characters: Characters, now: number): Record<string, CorridorState[]> {
+  const all = Object.values(characters)
+  const offers = new Map([...new Set(all.map((c) => c.server))].map((server) => [server, corridorOffer(all, server, now)]))
+  return Object.fromEntries(Object.entries(characters).map(([id, c]) => [id, corridorStates(c.corridors, now, offers.get(c.server) ?? null)]))
+}
+
 /** By `<server>:<name>`. */
 export type Characters = Record<string, TrackedCharacter>
 

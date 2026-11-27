@@ -30,7 +30,7 @@ import { CLOCK_ICON, EVENT_ICONS } from '@/lib/timerView.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { riftOf } from '@shared/abyss.ts'
-import { characterId, CORRIDORS, corridorOffer, corridorsLeft, corridorStates, counterNow, ENERGY, nextCorridorReset } from '@shared/characters.ts'
+import { characterId, CORRIDORS, corridorsLeft, counterNow, ENERGY, nextCorridorReset } from '@shared/characters.ts'
 import { WIDGET_LABELS, type HudWidget, type KinaIcon } from '@shared/settings.ts'
 import { formatAmount, livePerHour } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
@@ -121,18 +121,13 @@ const BEST_MS = 10 * 60_000
 const best = ref<(NewBest & { at: number }) | null>(null)
 const bestShown = computed(() => (cfg.value.bests && best.value && now.value - best.value.at < BEST_MS ? best.value : null))
 const openBest = (): void => void (bestShown.value && api.invoke('details:open', { kind: 'saved', id: bestShown.value.fight }))
-/**
- * Each character's corridors since the last reset, as the Characters page has them: those not open
- * this time on its server are closed, neither shown nor to do. The one playing's to do bring the chip up.
- */
-const corridorRows = computed(() => {
-  const all = Object.values(store.characters)
-  const offers = new Map([...new Set(all.map((c) => c.server))].map((server) => [server, corridorOffer(all, server, now.value)]))
-  return all
-    .filter((c) => c.corridors)
-    .map((c) => ({ c, states: corridorStates(c.corridors, now.value, offers.get(c.server) ?? null) }))
-    .sort((a, b) => a.c.name.localeCompare(b.c.name))
-})
+/** Each character's corridors, the store's (the Characters page's too); the one playing's to do bring the chip up. */
+const corridorRows = computed(() =>
+  Object.entries(store.characters)
+    .filter(([, c]) => c.corridors)
+    .map(([id, c]) => ({ c, states: store.corridors[id] ?? [] }))
+    .sort((a, b) => a.c.name.localeCompare(b.c.name)),
+)
 const corridorsToDo = computed(() => {
   const s = store.status
   if (!cfg.value.corridors || !s?.character || !s.server) return 0

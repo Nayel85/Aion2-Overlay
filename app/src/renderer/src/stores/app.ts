@@ -13,7 +13,7 @@ import { NO_ABYSS, type AbyssSession, type RiftFarm } from '@shared/abyss.ts'
 import { perHour, series } from '@shared/earnings.ts'
 import type { FieldBosses, TimerAlert, TimerId } from '@shared/timers.ts'
 import type { Buff } from '@shared/buffs.ts'
-import type { Characters } from '@shared/characters.ts'
+import { allCorridors, type Characters } from '@shared/characters.ts'
 // Only its type: the sessions module brings the item, recipe and gathering tables, which only the
 // dashboard needs (each window loads its own page).
 import type { Sessions } from '@shared/sessions.ts'
@@ -82,6 +82,8 @@ export const useApp = defineStore('app', () => {
   const kina = ref<KinaSession>(NO_KINA)
   const now = ref(Date.now())
   setInterval(() => (now.value = Date.now()), 5000)
+  /** Every character's corridors now, by its id: the one place they are worked out (shared/characters.ts). */
+  const corridors = computed(() => allCorridors(characters.value, now.value))
   const kinaRate = computed(() => kinaPerHour(kina.value, now.value))
   /** Kina per hour over time, for the sparklines. */
   const kinaTimeline = computed(() => kinaSeries(kina.value, now.value))
@@ -262,7 +264,7 @@ export const useApp = defineStore('app', () => {
   }
 
   return {
-    inInstance, groupSize, aggro, settings, applicants, combatAt, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, allSessions, inventories, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
+    inInstance, groupSize, aggro, settings, applicants, combatAt, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, corridors, sessions, allSessions, inventories, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
     init, set, setHud, togglePin, openPet, hiddenPet,
   }
 })
