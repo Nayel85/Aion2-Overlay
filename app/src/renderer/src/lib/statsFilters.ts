@@ -26,6 +26,6 @@ export function fromOf(p: Period, now = Date.now()): number {
 /** Every session kept, the one going on first. */
 export function useSessions(): ComputedRef<PlaySession[]> {
   const store = useApp()
-  return computed(() => (store.sessions.current ? [store.sessions.current, ...store.sessions.history] : store.sessions.history))
+  return computed(() => store.allSessions)
 }
 

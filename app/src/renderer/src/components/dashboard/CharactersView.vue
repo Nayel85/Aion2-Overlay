@@ -76,9 +76,14 @@ const SHARED: { r: Refill; bar: string }[] = [
 /** Each character's Shugo Festival games since the weekly reset, from every session kept. */
 /** The season mission's last step: the week's games done. */
 const SHUGO_DONE = SHUGO_MISSION.steps.at(-1)!
-const shugoWeek = computed(() =>
-  runsSince([...(store.sessions.current ? [store.sessions.current] : []), ...store.sessions.history], 'shugo', lastRefill(WEEKLY_RESET, now.value)),
-)
+/** When this week began: a number, so what depends on it is counted again once a week, not each second. */
+const weekStart = computed(() => lastRefill(WEEKLY_RESET, now.value))
+const shugoWeek = computed(() => runsSince(store.allSessions, 'shugo', weekStart.value))
+/** The corridors open this time, once a server (not each character's again). */
+const offers = computed(() => {
+  const all = Object.values(store.characters)
+  return new Map([...new Set(all.map((c) => c.server))].map((server) => [server, corridorOffer(all, server, now.value)]))
+})
 const servers = computed(() => {
   const playing = store.status?.character && store.status.server ? characterId(store.status.server, store.status.character) : null
   const rows: Row[] = Object.entries(store.characters).map(([id, c]) => {
@@ -91,7 +96,7 @@ const servers = computed(() => {
       energy: counterNow(ENERGY, c.counters, now.value),
       nightmare: counterNow(NIGHTMARE, c.counters, now.value),
       ascension: counterNow(ASCENSION, c.counters, now.value),
-      corridors: corridorStates(c.corridors, now.value, corridorOffer(Object.values(store.characters), c.server, now.value)),
+      corridors: corridorStates(c.corridors, now.value, offers.value.get(c.server) ?? null),
       kina,
       boundKina,
       kinaTotal: kina === null && boundKina === null ? null : (kina ?? 0) + (boundKina ?? 0),
@@ -102,7 +107,11 @@ const servers = computed(() => {
     }
   })
   const by = new Map<number, Row[]>()
-  for (const r of rows) by.set(r.c.server, [...(by.get(r.c.server) ?? []), r])
+  for (const r of rows) {
+    const list = by.get(r.c.server)
+    if (list) list.push(r)
+    else by.set(r.c.server, [r])
+  }
   return [...by.entries()]
     .map(([server, list]) => ({
       server,

@@ -98,7 +98,7 @@ const bossesUp = computed(() => Object.entries(store.fieldBosses).filter(([id, b
 const pvp = computed(() => store.pvpStats)
 const myDps = computed(() => meter.value.rows.find((r) => r.you) ?? null)
 /** Every session kept, the one going on too: their crafts and gatherings, for the Stats card. */
-const allSessions = computed(() => (store.sessions.current ? [store.sessions.current, ...store.sessions.history] : store.sessions.history))
+const allSessions = computed(() => store.allSessions)
 const crafts = computed(() => allSessions.value.reduce((n, x) => n + (x.crafts?.length ?? 0), 0))
 const gatherings = computed(() => allSessions.value.reduce((n, x) => n + (x.gatherings?.length ?? 0), 0))
 /** Characters whose items the Inventory page has. */

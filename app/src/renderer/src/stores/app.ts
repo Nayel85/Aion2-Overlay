@@ -46,6 +46,8 @@ export const useApp = defineStore('app', () => {
   const characters = ref<Characters>({})
   /** The play sessions: the character playing's since their login, and the past ones. */
   const sessions = ref<Sessions>({ current: null, history: [] })
+  /** Every session kept, the one going on first: one array for every page. */
+  const allSessions = computed(() => (sessions.value.current ? [sessions.value.current, ...sessions.value.history] : sessions.value.history))
   /** Your characters' items, as of each one's last login. */
   const inventories = ref<Inventories>(NO_INVENTORIES)
   /** Join requests to your party (the Applicants widget). */
@@ -260,7 +262,7 @@ export const useApp = defineStore('app', () => {
   }
 
   return {
-    inInstance, groupSize, aggro, settings, applicants, combatAt, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, inventories, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
+    inInstance, groupSize, aggro, settings, applicants, combatAt, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, sessions, allSessions, inventories, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
     init, set, setHud, togglePin, openPet, hiddenPet,
   }
 })

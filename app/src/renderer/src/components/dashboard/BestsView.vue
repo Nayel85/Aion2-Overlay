@@ -48,12 +48,16 @@ const kindLabel = (kind: string): string => CONTENT[kind as ContentKind]?.label 
 
 // ---- the sessions' runs: a Nightmare's level, each dungeon's fastest ---------------------------------
 
-const allRuns = computed(() =>
-  [...store.sessions.history, ...(store.sessions.current ? [store.sessions.current] : [])].flatMap((s) => (s.runs ?? []).map((r) => ({ ...r, character: s.name }))),
-)
+const allRuns = computed(() => store.allSessions.flatMap((s) => (s.runs ?? []).map((r) => ({ ...r, character: s.name }))))
+/** The runs with a level (the Nightmares), by instance: a fight's level looked up among its own instance's only. */
+const levelled = computed(() => {
+  const by = new Map<number, (typeof allRuns.value)[number][]>()
+  for (const r of allRuns.value) if (r.level !== undefined) (by.get(r.world) ?? by.set(r.world, []).get(r.world)!).push(r)
+  return by
+})
 /** A Nightmare's level at a moment, in an instance: the session's run it was in. */
 const levelAt = (world: number, at: number): number | null =>
-  allRuns.value.find((r) => r.level !== undefined && r.world === world && at >= r.start && at <= (r.end ?? Infinity))?.level ?? null
+  levelled.value.get(world)?.find((r) => at >= r.start && at <= (r.end ?? Infinity))?.level ?? null
 
 // ---- whose ------------------------------------------------------------------------------------------
 
@@ -109,7 +113,7 @@ function dungeonName(id: number): string {
 
 const byDungeon = computed(() => {
   const by = new Map<number, Encounter[]>()
-  for (const e of shown.value) if (kindOf(e.dungeonId) === kind.value && mine(e.character)) by.set(e.dungeonId, [...(by.get(e.dungeonId) ?? []), e])
+  for (const e of shown.value) if (kindOf(e.dungeonId) === kind.value && mine(e.character)) (by.get(e.dungeonId) ?? by.set(e.dungeonId, []).get(e.dungeonId)!).push(e)
   return [...by]
     .sort((a, b) => a[0] - b[0])
     .map(([id, list]) => ({ id, name: dungeonName(id), list: list.sort((a, b) => a.bossName.localeCompare(b.bossName) || a.character.localeCompare(b.character)) }))
@@ -134,11 +138,16 @@ const fastest = computed(() => {
 const gridDef = computed(() => CONTENT[kind.value as ContentKind] ?? null)
 
 /** A mode's item level, in its column's header when every instance that has the mode asks the same (the Ascension Trials'). */
-function sameIlvl(mode: string): number | undefined {
-  const levels = new Set(fixed.value.filter((x) => x.instance.worlds[mode] !== undefined).map((x) => instanceIlvl(x.instance, mode)))
-  const [only] = [...levels]
-  return levels.size === 1 ? only : undefined
-}
+/** Each mode's item level when every instance of the grid asks the same, once a grid. */
+const sameIlvls = computed(() => {
+  const out = new Map<string, number | undefined>()
+  for (const m of gridDef.value?.modes ?? []) {
+    const levels = new Set(fixed.value.filter((x) => x.instance.worlds[m.id] !== undefined).map((x) => instanceIlvl(x.instance, m.id)))
+    out.set(m.id, levels.size === 1 ? [...levels][0] : undefined)
+  }
+  return out
+})
+const sameIlvl = (mode: string): number | undefined => sameIlvls.value.get(mode)
 /**
  * A mode's item level in its column's head, when every instance of the grid asks the same in each mode;
  * else every one in its cell (never some in the head, some in the cells: the raids' Normal differ).
@@ -169,7 +178,7 @@ const fixed = computed(() => {
   }
   for (const r of fastest.value) {
     const k = key(r.world)
-    if (k) runs.set(k, [...(runs.get(k) ?? []), r])
+    if (k) (runs.get(k) ?? runs.set(k, []).get(k)!).push(r)
   }
   for (const d of byDungeon.value) {
     const k = key(d.id)
