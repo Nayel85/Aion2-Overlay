@@ -135,11 +135,17 @@ const clearMs = (r: { started?: number; cleared?: number }): number => r.cleared
 const gridDef = computed(() => CONTENT[kind.value as ContentKind] ?? null)
 
 /** A mode's item level, in its column's header when every instance that has the mode asks the same (the Ascension Trials'). */
-function headIlvl(mode: string): number | undefined {
+function sameIlvl(mode: string): number | undefined {
   const levels = new Set(fixed.value.filter((x) => x.instance.worlds[mode] !== undefined).map((x) => instanceIlvl(x.instance, mode)))
   const [only] = [...levels]
   return levels.size === 1 ? only : undefined
 }
+/**
+ * A mode's item level in its column's head, when every instance of the grid asks the same in each mode;
+ * else every one in its cell (never some in the head, some in the cells: the raids' Normal differ).
+ */
+const ilvlsInHead = computed(() => (gridDef.value?.modes ?? []).every((m) => sameIlvl(m.id) !== undefined || !fixed.value.some((x) => x.instance.worlds[m.id] !== undefined)))
+const headIlvl = (mode: string): number | undefined => (ilvlsInHead.value ? sameIlvl(mode) : undefined)
 /** A character's fastest run among a cell's. */
 const fastOf = <R extends { character: string }>(runs: R[], who: string): R | undefined => runs.find((r) => r.character === who)
 /** A character's best DPS among a cell's. */
