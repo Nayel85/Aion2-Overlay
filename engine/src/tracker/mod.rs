@@ -860,9 +860,9 @@ impl Tracker {
             }
             p::OP_PLAYER => {
                 if let Some(player) = p::player(f) {
-                    // In an arena, the other team; elsewhere, the other side.
+                    // In an arena, the other team; elsewhere, the other side, and in the Abyss another server too.
                     let enemy = if self.arena_foes.is_empty() {
-                        matches!((player.faction, self.my_faction()), (Some(theirs), Some(mine)) if theirs != mine)
+                        p::hostile(player.faction, player.server, player.open_pvp, self.my_faction(), self.my_server())
                     } else {
                         self.arena_foes.contains(&player.name)
                     };

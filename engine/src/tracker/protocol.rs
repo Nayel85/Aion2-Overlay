@@ -554,6 +554,15 @@ mod tests {
     }
 
     #[test]
+    fn enemies_the_other_side_and_in_the_abyss_another_server() {
+        let (e, a) = (Some(ELYOS), Some(ASMODIAN));
+        assert!(hostile(a, Some(2304), false, e, Some(1305)));
+        assert!(!hostile(e, Some(1307), false, e, Some(1305)), "another Elyos server outside the Abyss");
+        assert!(hostile(e, Some(1307), true, e, Some(1305)), "another Elyos server in the Abyss");
+        assert!(!hostile(e, Some(1305), true, e, Some(1305)), "your own server in the Abyss");
+    }
+
+    #[test]
     fn your_resources_say_who_you_are() {
         // The owner's 2026-11-27 flight readings: entity 12360 (c8 60), one entry, FP.
         assert_eq!(resources_owner(&frame(OP_RESOURCES, &hex("c86001010668370800"))), Some(12_360));

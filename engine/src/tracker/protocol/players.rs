@@ -36,6 +36,13 @@ pub struct Player {
 pub const ELYOS: u8 = 1;
 pub const ASMODIAN: u8 = 2;
 
+/// Whether a player in view is an enemy: the other side, or where everyone can fight (the Abyss)
+/// another server's (the owner's 2026-11-27 Abyss: players of 1307 killed 1305's, Elyos all).
+pub fn hostile(faction: Option<u8>, server: Option<u16>, open_pvp: bool, my_faction: Option<u8>, my_server: Option<u16>) -> bool {
+    matches!((faction, my_faction), (Some(theirs), Some(mine)) if theirs != mine)
+        || (open_pvp && matches!((server, my_server), (Some(theirs), Some(mine)) if theirs != mine))
+}
+
 /// A server's faction: 1xxx Elyos, 2xxx Asmodian.
 pub fn server_faction(server: u16) -> Option<u8> {
     match server / 1000 {

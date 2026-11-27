@@ -223,6 +223,10 @@ impl Tracker {
     }
 
     /// Your faction, from the server of the character playing.
+    pub(super) fn my_server(&self) -> Option<u16> {
+        self.store.characters.get(self.store.current.as_ref()?)?.server
+    }
+
     pub(super) fn my_faction(&self) -> Option<u8> {
         let name = self.store.current.as_ref()?;
         self.store.characters.get(name)?.server.and_then(p::server_faction)
