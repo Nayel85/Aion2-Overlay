@@ -124,6 +124,15 @@ async function fetchMissing(): Promise<void> {
   }
 }
 
+/** A counter's change kept, if newer than what is (the login's counters can be told after changes): saved; false when not. */
+function setCounter(c: TrackedCharacter, id: string, values: number[], at: number): boolean {
+  if (!c.counters || at < (c.counters.changedAt?.[id] ?? c.counters.at)) return false
+  c.counters.values[id] = values
+  c.counters.changedAt = { ...c.counters.changedAt, [id]: at }
+  changed()
+  return true
+}
+
 /** A corridor's passage time, as the game said at `at` (only newer news counts: the login's counters can be told after changes). */
 function corridorSeen(c: TrackedCharacter, id: string, ms: number, at: number): boolean {
   if (!CORRIDORS.some((k) => k.id === id)) return false
@@ -211,23 +220,13 @@ export function startCharacters(): void {
       return
     }
     if (RUNS.has(id)) {
-      // Only newer news than what is kept (the login's counters can be told after changes).
-      if (!c.counters || at < (c.counters.changedAt?.[id] ?? c.counters.at)) return
-      const values = ev.values
-      c.counters.values[id] = values
-      c.counters.changedAt = { ...c.counters.changedAt, [id]: at }
-      log(`characters: ${c.name}'s ${id === NIGHTMARE.id ? 'Nightmare' : id === ENERGY.id ? 'Odyle energy' : 'Ascension Trial'} now ${JSON.stringify(values)}`)
-      changed()
+      if (setCounter(c, id, ev.values, at)) log(`characters: ${c.name}'s ${id === NIGHTMARE.id ? 'Nightmare' : id === ENERGY.id ? 'Odyle energy' : 'Ascension Trial'} now ${JSON.stringify(ev.values)}`)
       return
     }
     if (!CORRIDORS.some((k) => k.id === id)) {
       // Any other counter: kept up to date as it changes (a Daily Dungeon entered, keys used), and logged.
-      const values = ev.values
-      log(`characters: ${c.name}'s counter ${id} now ${JSON.stringify(values)} (was ${JSON.stringify(c.counters?.values[id] ?? null)})`)
-      if (!c.counters || at < (c.counters.changedAt?.[id] ?? c.counters.at)) return
-      c.counters.values[id] = values
-      c.counters.changedAt = { ...c.counters.changedAt, [id]: at }
-      changed()
+      log(`characters: ${c.name}'s counter ${id} now ${JSON.stringify(ev.values)} (was ${JSON.stringify(c.counters?.values[id] ?? null)})`)
+      setCounter(c, id, ev.values, at)
       return
     }
     if (corridorSeen(c, id, ev.values[0] ?? 0, at)) changed()
