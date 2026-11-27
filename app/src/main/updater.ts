@@ -155,7 +155,11 @@ async function handOverPortable(from: { dir: string; exe: string }): Promise<voi
     `Start-Process -FilePath ${psPath(exe)}`,
   ]
   await writeFile(script, lines.join('\r\n') + '\r\n')
-  spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', script], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
+  // Through `cmd /c start`: PowerShell spawned straight from the app, detached with no console, never
+  // started (2026-11-27: the 0.3.21 update downloaded, the app closed, nothing copied); started so, it
+  // runs, and outlives the app.
+  const ps = ['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-WindowStyle', 'Hidden', '-File', script]
+  spawn('cmd.exe', ['/c', 'start', '""', '/min', ...ps], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
 }
 
 function set(patch: Partial<UpdateState>): void {
