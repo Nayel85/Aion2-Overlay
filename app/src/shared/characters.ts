@@ -172,6 +172,23 @@ export function allCorridors(characters: Characters, now: number): Record<string
   return Object.fromEntries(Object.entries(characters).map(([id, c]) => [id, corridorStates(c.corridors, now, offers.get(c.server) ?? null)]))
 }
 
+/** A character's counters now: its Odyle energy, Nightmare and Ascension entries (null: never read). */
+export interface CountersNow {
+  energy: CounterNow | null
+  nightmare: CounterNow | null
+  ascension: CounterNow | null
+}
+
+/** Every character's counters now, by its id: what the Characters page and the HUD both read (the renderer store's). */
+export function allCounters(characters: Characters, now: number): Record<string, CountersNow> {
+  return Object.fromEntries(
+    Object.entries(characters).map(([id, c]) => [
+      id,
+      { energy: counterNow(ENERGY, c.counters, now), nightmare: counterNow(NIGHTMARE, c.counters, now), ascension: counterNow(ASCENSION, c.counters, now) },
+    ]),
+  )
+}
+
 /** By `<server>:<name>`. */
 export type Characters = Record<string, TrackedCharacter>
 

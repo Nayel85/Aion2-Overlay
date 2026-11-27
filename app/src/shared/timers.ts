@@ -463,3 +463,33 @@ export interface TimerAlert {
   id: TimerId
   at: number
 }
+
+/** Starts further away than this are left off the timer bar and the HUD. */
+export const TIMER_HORIZON_MS = 13 * 3600_000
+
+/** A timer on the bar: a field boss up (Alive, first), or its next start (the alert's while it alerts). */
+export interface TimerItem {
+  def: TimerDef
+  up: boolean
+  at: number
+}
+
+/**
+ * The timers with their alert on and shown, soonest first: a field boss the list says is up (not
+ * alerting), else the next start, within the horizon. The timer bar's and the HUD's (the store's).
+ */
+export function upcomingTimers(
+  cfg: { region: Region; enabled: Record<TimerId, boolean>; shown: Record<TimerId, boolean> },
+  alerting: readonly TimerAlert[],
+  bosses: FieldBosses,
+  now: number,
+): TimerItem[] {
+  const alerts = new Map(alerting.map((a) => [a.id, a.at]))
+  return TIMERS.filter((def) => cfg.enabled[def.id] && cfg.shown[def.id])
+    .map((def) => {
+      const up = !alerts.has(def.id) && def.schedule.kind === 'boss' && !!bossState(def.schedule.boss, bosses, now, cfg.region)?.up
+      return { def, up, at: up ? Number.NEGATIVE_INFINITY : (alerts.get(def.id) ?? nextStart(def.schedule, now, cfg.region, bosses)) }
+    })
+    .filter(({ at, up }) => up || (Number.isFinite(at) && at - now <= TIMER_HORIZON_MS))
+    .sort((a, b) => a.at - b.at)
+}

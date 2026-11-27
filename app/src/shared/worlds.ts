@@ -13,6 +13,8 @@ export const zoneType = (world: number | null | undefined): string | null => (wo
 export const knownZone = (world: number): boolean => !!ZONES[world]
 
 export const ABYSS_WORLDS: readonly number[] = [20, 22, 23]
+/** In the Abyss: where everyone can attack you. */
+export const abyssWorld = (world: number | null | undefined): boolean => world != null && ABYSS_WORLDS.includes(world)
 export const CONTINENT_WORLDS: readonly number[] = [1000, 1010, 1011, 1100, 1110, 1111]
 export const DUNGEON_WORLDS: readonly number[] = [
   200004, 200005, 200006,

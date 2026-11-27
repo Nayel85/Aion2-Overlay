@@ -7,13 +7,14 @@ import { groupSizeAt } from '@shared/instances.ts'
 import { defineStore } from 'pinia'
 import { computed, reactive, ref, toRaw } from 'vue'
 import { SETTINGS_DEFAULTS, type SettingKey, type Settings } from '@shared/settings.ts'
-import { MAX_LEVEL, pvpSummary, NO_NEARBY, type AggroMob, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type ShopStock, type SoulToast, type TrackerStatus } from '@shared/tracker.ts'
+import { canAttack, MAX_LEVEL, pvpSummary, NO_NEARBY, type AggroMob, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type ShopStock, type SoulToast, type TrackerStatus } from '@shared/tracker.ts'
 import { kinaPerHour, kinaSeries, NO_KINA, type KinaSession } from '@shared/kina.ts'
 import { NO_ABYSS, type AbyssSession, type RiftFarm } from '@shared/abyss.ts'
 import { perHour, series } from '@shared/earnings.ts'
-import type { FieldBosses, TimerAlert, TimerId } from '@shared/timers.ts'
+import { upcomingTimers, type FieldBosses, type TimerAlert, type TimerId } from '@shared/timers.ts'
 import type { Buff } from '@shared/buffs.ts'
-import { allCorridors, type Characters } from '@shared/characters.ts'
+import { allCorridors, allCounters, type Characters } from '@shared/characters.ts'
+import { abyssWorld } from '@shared/worlds.ts'
 // Only its type: the sessions module brings the item, recipe and gathering tables, which only the
 // dashboard needs (each window loads its own page).
 import type { Sessions } from '@shared/sessions.ts'
@@ -74,6 +75,12 @@ export const useApp = defineStore('app', () => {
   const pvpStats = ref(pvpSummary([]))
   const cubes = ref<Cube[]>([])
   const enemies = ref<Enemy[]>([])
+  /** In the Abyss: everyone there can attack you. */
+  const inAbyss = computed(() => abyssWorld(nearby.value.world))
+  /** Whether an enemy can attack you, here: every window asks this. */
+  const isThreat = (e: Enemy): boolean => canAttack(e, inAbyss.value)
+  /** The enemies around who can attack you. */
+  const threats = computed(() => enemies.value.filter(isThreat))
   const aggro = ref<AggroMob[]>([])
   const target = ref<TargetPlayer | null>(null)
   /** What is on your character (while the buffs overlay is on). */
@@ -84,6 +91,13 @@ export const useApp = defineStore('app', () => {
   setInterval(() => (now.value = Date.now()), 5000)
   /** Every character's corridors now, by its id: the one place they are worked out (shared/characters.ts). */
   const corridors = computed(() => allCorridors(characters.value, now.value))
+  /** Every character's Odyle energy, Nightmare and Ascension entries now, by its id (shared/characters.ts). */
+  const counters = computed(() => allCounters(characters.value, now.value))
+  /** The seconds, for the timers (their next starts, the bosses up): ticking here, read only by the windows showing them. */
+  const second = ref(Date.now())
+  setInterval(() => (second.value = Date.now()), 1000)
+  /** The timers with their alert on, up or starting within the horizon, soonest first: the timer bar's and the HUD's (shared/timers.ts). */
+  const timerItems = computed(() => upcomingTimers(settings.value.timers, alerting.value, fieldBosses.value, second.value))
   const kinaRate = computed(() => kinaPerHour(kina.value, now.value))
   /** Kina per hour over time, for the sparklines. */
   const kinaTimeline = computed(() => kinaSeries(kina.value, now.value))
@@ -264,7 +278,7 @@ export const useApp = defineStore('app', () => {
   }
 
   return {
-    inInstance, groupSize, aggro, settings, applicants, combatAt, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, corridors, sessions, allSessions, inventories, pvpStats, cubes, enemies, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
+    inInstance, groupSize, aggro, settings, applicants, combatAt, party, flight, gather, status, pets, toasts, fighting, collectionView, shop, kina, kinaRate, kinaTimeline, abyss, abyssRate, abyssTimeline, rifts, alerting, timerFocus, fieldBosses, characters, corridors, counters, timerItems, sessions, allSessions, inventories, pvpStats, cubes, enemies, inAbyss, isThreat, threats, target, buffs, hudEditing, panelVisible, ready, sessionSouls, recentPets, openPetId, nearby,
     init, set, setHud, togglePin, openPet, hiddenPet,
   }
 })

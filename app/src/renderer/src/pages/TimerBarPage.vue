@@ -13,10 +13,8 @@ import { EVENT_ICONS } from '@/lib/timerView.ts'
 import { t } from '@/lib/i18n.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
-import { bossPortrait, bossState, nextStart, TIMERS, type TimerDef, type TimerId } from '@shared/timers.ts'
+import { bossPortrait, nextStart, TIMERS, type TimerDef, type TimerId } from '@shared/timers.ts'
 
-/** Starts further away than this are left off the bar. */
-const HORIZON_MS = 13 * 3600_000
 
 const store = useApp()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
@@ -46,26 +44,8 @@ const list = computed(() => store.settings.timerBar.layout === 'list')
 
 const alerting = computed(() => new Map(store.alerting.map((a) => [a.id, a.at])))
 
-/** A field boss the list says is up now (it stays on the bar as Alive until it dies). */
-const isUp = (def: TimerDef): boolean =>
-  def.schedule.kind === 'boss' && !!bossState(def.schedule.boss, store.fieldBosses, now.value, cfg.value.region)?.up
-
-/** The timers to show: alert on, up or starting within the horizon (or alerting now), soonest first. */
-const alerted = computed(() =>
-  TIMERS.filter((def) => cfg.value.enabled[def.id] && cfg.value.shown[def.id])
-    .map((def) => {
-      const up = !alerting.value.has(def.id) && isUp(def)
-      return {
-        def,
-        up,
-        at: up
-          ? Number.NEGATIVE_INFINITY
-          : (alerting.value.get(def.id) ?? nextStart(def.schedule, now.value, cfg.value.region, store.fieldBosses)),
-      }
-    })
-    .filter(({ at, up }) => up || (Number.isFinite(at) && at - now.value <= HORIZON_MS))
-    .sort((a, b) => a.at - b.at),
-)
+/** The timers to show: alert on, up or starting within the horizon (or alerting now), soonest first (the store's, the HUD's too). */
+const alerted = computed(() => store.timerItems)
 /**
  * None within its hours while the overlays are being placed: a sample to place it by, as every
  * overlay has (the next three events, alert or not).

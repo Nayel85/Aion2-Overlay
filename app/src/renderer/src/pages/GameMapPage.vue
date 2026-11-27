@@ -12,7 +12,6 @@ import { useApp } from '@/stores/app.ts'
 import MapVision from '@/workers/mapVision.ts?worker'
 import { gameMapChanged, detailGroupAt, type GameMapState } from '@shared/gameMap.ts'
 import type { InvokeResult } from '@shared/ipc.ts'
-import { canAttack } from '@shared/tracker.ts'
 import { drawSkull } from '@/lib/skull.ts'
 
 /** Pictures are taken at most this often, and one at a time. */
@@ -536,7 +535,6 @@ function draw(): void {
   }
   // Enemies: pins with their names, red when they can attack you, grey when not (PvP off, outside the Abyss).
   if (cfg.value.enemies) {
-    const abyss = world.value?.group === 'abyss'
     ctx.font = '600 11px Inter Variable, Segoe UI, sans-serif'
     ctx.textAlign = 'center'
     for (const enemy of store.enemies) {
@@ -547,7 +545,7 @@ function draw(): void {
       ctx.arc(x, y - 14, 6, Math.PI * 0.85, Math.PI * 2.15)
       ctx.lineTo(x, y)
       ctx.closePath()
-      const threat = canAttack(enemy, abyss)
+      const threat = store.isThreat(enemy)
       ctx.fillStyle = threat ? '#ef4444' : '#9ca3af'
       ctx.strokeStyle = threat ? '#450a0a' : '#1f2937'
       ctx.lineWidth = 1.5

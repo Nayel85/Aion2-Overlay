@@ -13,7 +13,7 @@ import { useEnemyAlarm } from '@/lib/enemyAlarm.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { serverTag } from '@shared/servers.ts'
-import { canAttack, type Enemy } from '@shared/tracker.ts'
+import { type Enemy } from '@shared/tracker.ts'
 
 const store = useApp()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
@@ -27,7 +27,7 @@ const SAMPLE = computed<Enemy[]>(() => [
 ])
 /** Nobody around while the dashboard is up: a sample to place it by. */
 const preview = computed(() => !store.enemies.length && store.panelVisible)
-const threat = (e: Enemy): boolean => canAttack(e)
+const threat = (e: Enemy): boolean => store.isThreat(e)
 /** Those who can attack you first. */
 const list = computed(() => (store.enemies.length ? [...store.enemies].sort((a, b) => Number(threat(b)) - Number(threat(a))) : preview.value ? SAMPLE.value : []))
 

@@ -24,7 +24,7 @@ import { nearbyPets, PET_COLORS, useSpawns , useCurrentWorld } from '@/lib/spawn
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { MINIMAP_HEIGHT, MINIMAP_WIDTH, SETTINGS_DEFAULTS, type Settings } from '@shared/settings.ts'
-import { blankPet, canAttack } from '@shared/tracker.ts'
+import { blankPet } from '@shared/tracker.ts'
 
 /** The map overlay follows you rather than fitting anything. */
 const NO_FOCUS: [number, number][] = []
@@ -76,7 +76,7 @@ const icons = computed(() => (cfg.value.gatherables ? gatherLayers(gather.value,
 /** Enemy players in view whose place is known: red pins, grey with their PvP off outside the Abyss (PvP page, Enemies nearby). */
 const enemyPins = computed(() =>
   store.settings.enemies.mapPins
-    ? store.enemies.flatMap((e) => (e.position ? [{ name: e.name, position: e.position, threat: canAttack(e, world.value?.group === 'abyss') }] : []))
+    ? store.enemies.flatMap((e) => (e.position ? [{ name: e.name, position: e.position, threat: store.isThreat(e) }] : []))
     : [],
 )
 /** Where you last died, when it was in this zone. */

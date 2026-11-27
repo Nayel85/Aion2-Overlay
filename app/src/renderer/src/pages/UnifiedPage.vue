@@ -30,14 +30,14 @@ import { CLOCK_ICON, EVENT_ICONS } from '@/lib/timerView.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { riftOf } from '@shared/abyss.ts'
-import { characterId, CORRIDORS, corridorsLeft, counterNow, ENERGY, nextCorridorReset } from '@shared/characters.ts'
+import { characterId, CORRIDORS, corridorsLeft, nextCorridorReset } from '@shared/characters.ts'
 import { WIDGET_LABELS, type HudWidget, type KinaIcon } from '@shared/settings.ts'
 import { formatAmount, livePerHour } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
 import { CLASS_COLORS, meterRows, NO_METER, timeToKill, type MeterData, type NewBest } from '@shared/meter.ts'
 import { serverTag } from '@shared/servers.ts'
-import { bossPortrait, bossState, nextStart, TIMERS, type TimerDef } from '@shared/timers.ts'
-import { blankPet, canAttack, nextLevelSouls, type Pet } from '@shared/tracker.ts'
+import { bossPortrait, type TimerDef } from '@shared/timers.ts'
+import { blankPet, nextLevelSouls, type Pet } from '@shared/tracker.ts'
 
 /** What can be open under the bar: a peek at an overlay, or what a chip points at. */
 type PanelId = 'meter' | 'map' | 'pvp' | 'pets' | 'applicants' | 'corridors' | 'timers' | 'cube' | 'death' | 'enemies'
@@ -140,22 +140,8 @@ const openCharacters = (): void => void api.invoke('panel:characters')
 
 // ---- the events: the next two, and the field bosses alive ----------------------------------------
 
-/** Starts further away than this are left off the list (the timer bar's horizon). */
-const HORIZON_MS = 13 * 3600_000
-const timers = computed(() => store.settings.timers)
-const alerting = computed(() => new Map(store.alerting.map((a) => [a.id, a.at])))
-const isUp = (def: TimerDef): boolean =>
-  def.schedule.kind === 'boss' && !!bossState(def.schedule.boss, store.fieldBosses, now.value, timers.value.region)?.up
-/** The timers with their alert on: a boss that is up as Alive, the rest by their next start. */
-const timerItems = computed(() =>
-  TIMERS.filter((def) => timers.value.enabled[def.id] && timers.value.shown[def.id])
-    .map((def) => {
-      const up = !alerting.value.has(def.id) && isUp(def)
-      return { def, up, at: up ? Number.NEGATIVE_INFINITY : (alerting.value.get(def.id) ?? nextStart(def.schedule, now.value, timers.value.region, store.fieldBosses)) }
-    })
-    .filter(({ at, up }) => up || (Number.isFinite(at) && at - now.value <= HORIZON_MS))
-    .sort((a, b) => a.at - b.at),
-)
+/** The timers with their alert on: a boss that is up as Alive, the rest by their next start (the store's, the timer bar's too). */
+const timerItems = computed(() => store.timerItems)
 const aliveBosses = computed(() => (cfg.value.bosses ? timerItems.value.filter((i) => i.up).slice(0, 3) : []))
 const upcoming = computed(() => (cfg.value.events ? timerItems.value.filter((i) => !i.up).slice(0, 2) : []))
 const portrait = (def: TimerDef): string | null => (def.schedule.kind === 'boss' ? bossPortrait(def.schedule.boss) : null)
@@ -243,13 +229,12 @@ const meterMax = computed(() => Math.max(1, ...meterTop.value.map((r) => r.value
 
 const spawns = useSpawns()
 const { worldId, world } = useCurrentWorld(() => store.nearby)
-const inAbyss = computed(() => world.value?.group === 'abyss')
 
 const cube = computed(() => (cfg.value.cubes ? (cubeBearings(store.cubes, store.nearby.position)[0] ?? null) : null))
 const cubePins = computed(() => store.cubes.map((c) => c.position))
 
 /** The enemies who can attack you: their PvP on, or anyone in the Abyss. */
-const threats = computed(() => (cfg.value.enemies ? store.enemies.filter((e) => canAttack(e, inAbyss.value)) : []))
+const threats = computed(() => (cfg.value.enemies ? store.threats : []))
 const ENEMY_ROWS = 8
 const cp = combatPower
 // The alarm is Enemies nearby's: sounded from here whenever that overlay is not up (turned off, or
@@ -269,7 +254,7 @@ const ago = (at: number): string => timeAgo(at, now.value)
 const NO_FOCUS: [number, number][] = []
 const NO_LAYERS: never[] = []
 const enemyPins = computed(() =>
-  store.enemies.flatMap((e) => (e.position ? [{ name: e.name, position: e.position, threat: canAttack(e, inAbyss.value) }] : [])),
+  store.enemies.flatMap((e) => (e.position ? [{ name: e.name, position: e.position, threat: store.isThreat(e) }] : [])),
 )
 const deathHere = computed(() => {
   const d = store.pvpStats.death
@@ -305,7 +290,7 @@ const localTime = computed(() => timeOfDay(now.value))
 const odyle = computed(() => {
   const s = store.status
   if (!cfg.value.odyle || !s?.character || !s.server) return null
-  const c = counterNow(ENERGY, store.characters[characterId(s.server, s.character)]?.counters ?? null, now.value)
+  const c = store.counters[characterId(s.server, s.character)]?.energy
   return c ? c.now + c.extra : null
 })
 const drag = windowDrag({ overlay: 'unified' })

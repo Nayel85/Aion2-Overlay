@@ -7,12 +7,9 @@
 import { watch } from 'vue'
 import { playSound } from '@/lib/sound.ts'
 import { useApp } from '@/stores/app.ts'
-import { canAttack } from '@shared/tracker.ts'
 
 const AGAIN_MS = 60_000
 const GAP_MS = 5_000
-/** The Abyss's zones (Lower and Middle Reshanta): every enemy there can attack you, PvP flag or not. */
-const ABYSS_WORLDS = [20, 22]
 
 export function useEnemyAlarm(active: () => boolean = () => true): void {
   const store = useApp()
@@ -23,8 +20,7 @@ export function useEnemyAlarm(active: () => boolean = () => true): void {
     (now) => {
       const cfg = store.settings.enemies
       const t = Date.now()
-      const abyss = ABYSS_WORLDS.includes(store.nearby.world ?? -1)
-      const alarming = cfg.pvpOnly ? now.filter((e) => canAttack(e, abyss)) : now
+      const alarming = cfg.pvpOnly ? now.filter(store.isThreat) : now
       const fresh = alarming.filter((e) => t - (heard.get(e.name) ?? 0) > AGAIN_MS)
       for (const e of alarming) heard.set(e.name, t)
       if (!fresh.length || !active() || !store.ready || !cfg.sound || t - lastSound < GAP_MS) return
