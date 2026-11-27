@@ -31,3 +31,6 @@ export function duration(ms: number, up = false): string {
 
 /** A share as a percentage: 0.5 → 50%. */
 export const percent = (share: number, digits = 0): string => `${(share * 100).toFixed(digits)}%`
+
+/** A combat power, short: 192.3K (to a tenth of a thousand, never rounded up), as every page shows it. */
+export const combatPower = (v: number): string => (v >= 1000 ? `${(Math.floor(v / 100) / 10).toFixed(1)}K` : String(v))

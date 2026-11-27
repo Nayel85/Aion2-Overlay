@@ -6,6 +6,7 @@
 // servers carry their server's tag ([LUM]).
 // Lokthar: the rift farms on top (shared/abyss.ts), each the Abyss Points one character earned in a
 // Spacetime Rift's window, with your kills, deaths and assists in it; picking one lists those.
+import { combatPower } from '@shared/format.ts'
 import CharName from '@/components/CharName.vue'
 import Chip from '@/components/ui/Chip.vue'
 import { numericDate, timeOfDay } from '@/lib/format.ts'
@@ -32,7 +33,7 @@ void api.invoke('tracker:get', true).then((s) => (history.value = s.pvp))
 onBeforeUnmount(() => { offHistory(); offKill() })
 
 /** Combat power as the game rounds it: 115485 → 115.4K. */
-const cp = (v: number): string => `${(Math.floor(v / 100) / 10).toFixed(1)}K`
+const cp = combatPower
 // One filter at a time; clicking the active one shows everything again.
 type Filter = 'mine' | 'legion'
 const filters: { id: Filter; label: string; title: string; empty: string }[] = [

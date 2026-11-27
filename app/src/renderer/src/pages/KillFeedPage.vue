@@ -5,6 +5,7 @@
 // this session's kills and deaths (all it shows between kills), moves the window and closes it;
 // each player kill around you slides in under it and falls off after a few seconds, as the HUD's
 // soul lines do. Its skull opens a small map of where you last died.
+import { combatPower } from '@shared/format.ts'
 import CharName from '@/components/CharName.vue'
 import { ago as timeAgo } from '@/lib/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
@@ -66,7 +67,7 @@ const target = computed(() => {
   const tp = store.target
   return cfg.value.target && tp && clock.value - tp.at < TARGET_MS ? tp : null
 })
-const cp = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(1)}K` : String(v))
+const cp = combatPower
 
 /** The enemy sound (Enemies nearby's), muted or not from here: the same setting as the PvP page's. */
 const enemySound = computed(() => store.settings.enemies.sound)

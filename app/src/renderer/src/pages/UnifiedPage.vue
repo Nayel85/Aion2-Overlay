@@ -11,7 +11,7 @@
 import CharName from '@/components/CharName.vue'
 import { useNow } from '@/lib/now.ts'
 import { ago as timeAgo, timeOfDay, numericDate, countdown, weekdayTime } from '@/lib/format.ts'
-import { compact, duration } from '@shared/format.ts'
+import { compact, duration, combatPower } from '@shared/format.ts'
 import { useOverlay } from '@/lib/overlay.ts'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import ClassIcon from '@/components/ClassIcon.vue'
@@ -251,7 +251,7 @@ const cubePins = computed(() => store.cubes.map((c) => c.position))
 /** The enemies who can attack you: their PvP on, or anyone in the Abyss. */
 const threats = computed(() => (cfg.value.enemies ? store.enemies.filter((e) => canAttack(e, inAbyss.value)) : []))
 const ENEMY_ROWS = 8
-const cp = (v: number): string => (v >= 1000 ? `${(v / 1000).toFixed(1)}K` : String(v))
+const cp = combatPower
 // The alarm is Enemies nearby's: sounded from here whenever that overlay is not up (turned off, or
 // kept closed while this replaces it), so it always sounds once, from one of the two.
 useEnemyAlarm(() => !store.settings.enemies.enabled || cfg.value.replace)
