@@ -133,3 +133,41 @@ impl Tracker {
         true
     }
 }
+
+/// The duty board's missions handed in and known.
+impl Tracker {
+    /// A duty mission handed in at `place` with the rewards at `indexes` of its list: told when its
+    /// mission is known, else kept for the board that follows (dropped after 10 s).
+    pub(super) fn duty_done(&mut self, ts: i64, place: u32, indexes: Vec<u32>) {
+        let Some((quest, rewards)) = self.duty.get(&place) else {
+            self.duty_pending.retain(|(_, _, at)| ts - at < 10_000);
+            self.duty_pending.push((place, indexes, ts));
+            return;
+        };
+        let got: Vec<Value> = indexes.iter().filter_map(|&i| rewards.get(i as usize)).map(|&(item, amount, _)| json!({ "item": item, "amount": amount })).collect();
+        // Its whole list too, each with its chance (of 100,000,000) and whether it came.
+        let offered: Vec<Value> = rewards
+            .iter()
+            .enumerate()
+            .map(|(i, &(item, amount, chance))| json!({ "item": item, "amount": amount, "chance": chance, "got": indexes.contains(&(i as u32)) }))
+            .collect();
+        tracing::info!("duty mission {quest} handed in: {got:?}");
+        (self.emit)(json!({ "type": "dutyDone", "ts": ts, "quest": quest, "rewards": got, "offered": offered }));
+    }
+
+    /// The duty board's missions known: remember them, and tell the ones handed in waiting for them.
+    pub(super) fn duty_known(&mut self, ts: i64, missions: Vec<p::DutyMission>) {
+        for (quest, place, rewards) in missions {
+            self.duty.insert(place, (quest, rewards));
+        }
+        for (place, indexes, at) in std::mem::take(&mut self.duty_pending) {
+            if self.duty.contains_key(&place) {
+                self.duty_done(at, place, indexes);
+            } else if ts - at < 10_000 {
+                self.duty_pending.push((place, indexes, at));
+            } else {
+                tracing::info!("duty mission at {place} handed in, its mission never seen");
+            }
+        }
+    }
+}
