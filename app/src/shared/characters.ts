@@ -159,6 +159,9 @@ export function corridorStates(log: CorridorLog | undefined, now: number, offer:
   })
 }
 
+/** The corridors still to do: neither done nor closed this time. */
+export const corridorsLeft = (states: readonly CorridorState[]): number => states.filter((x) => x !== 'done' && x !== 'closed').length
+
 /** By `<server>:<name>`. */
 export type Characters = Record<string, TrackedCharacter>
 

@@ -30,7 +30,7 @@ import { CLOCK_ICON, EVENT_ICONS } from '@/lib/timerView.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { riftOf } from '@shared/abyss.ts'
-import { characterId, CORRIDORS, corridorStates, counterNow, ENERGY, nextCorridorReset } from '@shared/characters.ts'
+import { characterId, CORRIDORS, corridorOffer, corridorsLeft, corridorStates, counterNow, ENERGY, nextCorridorReset } from '@shared/characters.ts'
 import { WIDGET_LABELS, type HudWidget, type KinaIcon } from '@shared/settings.ts'
 import { formatAmount, livePerHour } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
@@ -121,18 +121,23 @@ const BEST_MS = 10 * 60_000
 const best = ref<(NewBest & { at: number }) | null>(null)
 const bestShown = computed(() => (cfg.value.bests && best.value && now.value - best.value.at < BEST_MS ? best.value : null))
 const openBest = (): void => void (bestShown.value && api.invoke('details:open', { kind: 'saved', id: bestShown.value.fight }))
-/** Each character's corridors since the last reset; the one playing's to do bring the chip up. */
-const corridorRows = computed(() =>
-  Object.values(store.characters)
+/**
+ * Each character's corridors since the last reset, as the Characters page has them: those not open
+ * this time on its server are closed, neither shown nor to do. The one playing's to do bring the chip up.
+ */
+const corridorRows = computed(() => {
+  const all = Object.values(store.characters)
+  const offers = new Map([...new Set(all.map((c) => c.server))].map((server) => [server, corridorOffer(all, server, now.value)]))
+  return all
     .filter((c) => c.corridors)
-    .map((c) => ({ c, states: corridorStates(c.corridors, now.value) }))
-    .sort((a, b) => a.c.name.localeCompare(b.c.name)),
-)
+    .map((c) => ({ c, states: corridorStates(c.corridors, now.value, offers.get(c.server) ?? null) }))
+    .sort((a, b) => a.c.name.localeCompare(b.c.name))
+})
 const corridorsToDo = computed(() => {
   const s = store.status
   if (!cfg.value.corridors || !s?.character || !s.server) return 0
   const mine = corridorRows.value.find((r) => r.c.server === s.server && r.c.name === s.character)
-  return mine ? mine.states.filter((x) => x !== 'done').length : 0
+  return mine ? corridorsLeft(mine.states) : 0
 })
 const toggleMute = (): void => void store.set('muted', !store.settings.muted)
 const openApp = (): void => void api.invoke('panel:open')
@@ -640,12 +645,14 @@ onBeforeUnmount(() => {
             <div class="mt-1.5 space-y-1">
               <div v-for="r in corridorRows" :key="r.c.name + r.c.server" class="flex items-center gap-2 whitespace-nowrap text-xs">
                 <CharName :name="r.c.name" :class-name="r.c.className" name-class="w-24 font-medium" />
+                <!-- A corridor not open this time: not shown. -->
+                <template v-for="(st, i) in r.states" :key="i">
                 <span
-                  v-for="(st, i) in r.states"
-                  :key="i"
+                  v-if="st !== 'closed'"
                   :class="['size-2.5 rounded-full', st === 'done' ? 'bg-light' : st === 'open' ? 'bg-orange' : 'border border-orange']"
                   :title="`${CORRIDORS[i]!.name}: ${st === 'done' ? t('done') : st === 'open' ? t('still to do') : t('not seen since the reset (likely still to do: enter the Abyss to check)')}`"
                 />
+                </template>
               </div>
             </div>
           </div>

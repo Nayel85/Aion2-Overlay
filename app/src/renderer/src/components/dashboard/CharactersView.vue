@@ -16,7 +16,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import { bridge } from '@/lib/bridge.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
-import { ASCENSION, characterId, lastRefill, SEASON_WEEK_MAX, WALLET_MORE, seasonWeekNow, SHUGO_MISSION, WEEKLY_RESET, CORRIDORS, corridorOffer, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
+import { ASCENSION, characterId, lastRefill, SEASON_WEEK_MAX, WALLET_MORE, seasonWeekNow, SHUGO_MISSION, WEEKLY_RESET, CORRIDORS, corridorOffer, corridorsLeft, corridorStates, counterNow, DAILY_DUNGEON, ENERGY, INVASION_KEYS, membershipsNow, nextCorridorReset, NIGHTMARE, sharedNow, SHUGO_KEYS, type CorridorState, type CounterNow, type Refill, type TrackedCharacter } from '@shared/characters.ts'
 import { formatKina } from '@shared/kina.ts'
 import { serverLabel } from '@shared/servers.ts'
 
@@ -164,7 +164,6 @@ const CORRIDOR: Record<CorridorState, string> = {
   unknown: 'not seen since the reset (likely still to do: enter the Abyss to check)',
   closed: 'not open this time (seen by a character of the server)',
 }
-const corridorsLeft = (list: CorridorState[]): number => list.filter((x) => x !== 'done' && x !== 'closed').length
 function corridorTitle(list: CorridorState[]): string {
   const lines = CORRIDORS.map((k, i) => `${k.name}: ${t(CORRIDOR[list[i]!])}`)
   lines.push(t('Back {when}', { when: stamp(nextCorridorReset(now.value)) }))
