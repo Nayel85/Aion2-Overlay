@@ -17,3 +17,6 @@ export const asItem = (d: ItemTuple): ForecastItem => ({ id: d[0], count: d[1], 
 
 /** An item's icon as the windows load it: questlog's (a path) through main, or one bundled with the app. */
 export const itemIcon = (icon: string | null | undefined): string | null => (icon ? (icon.includes('/') ? `itemicon://icon/${icon}.webp` : `items/loot/${icon}.webp`) : null)
+
+/** An item's name as shown: without "(Bound)" (whether it is is told apart where it matters). */
+export const plainName = (name: string): string => name.replace(' (Bound)', '')

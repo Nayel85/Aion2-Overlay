@@ -14,8 +14,7 @@ import { playSound } from '@/lib/sound.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import type { GatherForecast } from '@shared/gather.ts'
-import { itemIcon } from '@shared/itemRef.ts'
-import { plainName } from '@shared/sessions.ts'
+import { itemIcon, plainName } from '@shared/itemRef.ts'
 
 const store = useApp()
 // Measured, shown and placed as every overlay (lib/overlay.ts).

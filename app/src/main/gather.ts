@@ -37,6 +37,9 @@ const flow = gatherFlow({
 })
 
 let state: GatherForecast | null = null
+/** What each spot gave (by its object): the next gatherings on it know their item when its kind is not known. */
+const nodePlain = new Map<number, number>()
+let lastNode: number | null = null
 /** The last gathering shown, for its bonus told after it. */
 let last: GatherForecast | null = null
 let timer: NodeJS.Timeout | null = null
@@ -133,7 +136,9 @@ export function startGather(): void {
     const outcome = gatherOutcome(code, grade)
     if (![0, 1, 6, 7].includes(code)) log(`gathering: outcome ${code} (grade ${grade}) not known before`)
     const template = ev.template ?? null
-    const plain = gatherStore.plainOf(template) ?? undefined
+    // The spot's kind, else what this very spot gave last time (its kind not seen: it was there before the app started).
+    const plain = gatherStore.plainOf(template) ?? (ev.node != null ? nodePlain.get(ev.node) : undefined)
+    lastNode = ev.node ?? null
     const item = gatherItem(plain, outcome === 'fail' ? 1 : grade)
     // A grade that gives the plain item more times (a plant's x3) is no rank up.
     const base = plainItem(plain)
@@ -154,6 +159,7 @@ export function startGather(): void {
     const plain = item ? resourceOf(item) : undefined
     const result = { item, amount: ev.amount ?? 0, bonus: ev.bonus ?? 0, result: ev.result ?? 0 }
     const start = flow.gather(result, plain ?? null)
+    if (plain && lastNode !== null) nodePlain.set(lastNode, plain)
     const template = start?.template ?? null
     if (template !== null && plain && templates[String(template)] !== plain) {
       templates = { ...templates, [template]: plain }

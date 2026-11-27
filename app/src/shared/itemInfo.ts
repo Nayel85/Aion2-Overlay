@@ -5,7 +5,7 @@
  */
 import { GATHERABLES } from './gatherables.ts'
 import { ITEMS } from './items.ts'
-import { itemIcon, type ItemTuple } from './itemRef.ts'
+import { itemIcon, plainName, type ItemTuple } from './itemRef.ts'
 import { LOOT } from './loot.ts'
 import { RECIPES } from './recipes.ts'
 
@@ -26,8 +26,7 @@ export function itemInfo(id: string | number): ItemInfo | undefined {
   if (i) return { name: i[0], grade: i[1], icon: i[2], kind: i[3] === 'currency' ? 'currency' : i[3] === 'arcana' ? 'arcana' : 'item' }
   return MADE().get(Number(id))
 }
-/** An item's name as shown: without "(Bound)" (whether it is is told apart where it matters). */
-export const plainName = (name: string): string => name.replace(' (Bound)', '')
+export { plainName }
 /** An item as a row shows it: its name (its number when not known), grade (common when not) and icon. */
 export function itemRow(id: string | number): { name: string; grade: number; icon: string | null } {
   const info = itemInfo(id)
