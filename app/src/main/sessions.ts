@@ -21,7 +21,7 @@ import { onCrafted, onGathered } from './gather.ts'
 import { onArrival } from './inventory.ts'
 import { gatherBonus, recipeOf } from '../shared/gather.ts'
 import { BOSS_RUNS } from '../shared/bossRuns.ts'
-import { AP_ITEM, apSource, GATHER_FAILED, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
+import { AP_ITEM, apSource, newRun, GATHER_FAILED, resourceOf, dungeonOf, itemInfo, KINA_ITEM, kinaSource, NO_SESSIONS, notableLoot, noteGathering, QUEST_WITHIN_MS, questReward, RUN_COUNTERS, runIsNoise, type DungeonRun, type PlaySession, type RecentGain, type Sessions } from '../shared/sessions.ts'
 
 /** An arena's reward comes this long after its match, at most. */
 const ARENA_REWARD_MS = 30_000
@@ -74,13 +74,29 @@ let paidRun: DungeonRun | null = null
 /** The same dungeon again without leaving it: the run going on ends, a new one of it starts (`started`: under way at once). */
 function runAgain(s: PlaySession, run: DungeonRun, at: number, started = false): DungeonRun {
   closeRun(s, at)
-  const again: DungeonRun = { world: run.world, name: run.name, kind: run.kind, start: at, end: null, ap: 0, kina: 0, currencies: {}, deaths: 0, partyDeaths: 0 }
+  const again = newRun(run.world, run.name, run.kind, at)
   // The same instance, the same Nightmare's boss (not told again for a second entry, 2026-11-26); its level not known.
   if (run.boss !== undefined) again.boss = run.boss
   if (started) again.started = at
   s.runs = [...(s.runs ?? []), again]
   log(`session: ${run.name} again`)
   return again
+}
+
+/** An arena's mode: your group in it (a Co-op's five), at its most. */
+function arenaTeam(members: number): void {
+  const run = openRun()
+  if (run?.kind !== 'arena' || members <= (run.team ?? 0)) return
+  run.team = members
+  changed()
+}
+
+/** A run begun: the session's last, logged; an arena's group taken as it starts. */
+function enterRun(s: PlaySession, run: DungeonRun): DungeonRun {
+  s.runs = [...(s.runs ?? []), run]
+  log(`session: into ${run.name} (${run.kind})`)
+  if (run.kind === 'arena') arenaTeam(partyStore.all().members.length)
+  return run
 }
 
 /** The dungeon run going on in the current session, if any. */
@@ -231,9 +247,7 @@ export function startSessions(): void {
     if (dungeon) {
       const paid = counterDrop && at - counterDrop.at <= COUNTER_BEFORE_MS ? counterDrop.kind : null
       counterDrop = null
-      s.runs = [...(s.runs ?? []), { world, name: dungeon[0], kind: paid ?? dungeon[1], start: at, end: null, ap: 0, kina: 0, currencies: {}, deaths: 0, partyDeaths: 0 }]
-      if (dungeon[1] === 'arena') arenaTeam(partyStore.all().members.length)
-      log(`session: into ${dungeon[0]} (${paid ?? dungeon[1]})`)
+      enterRun(s, newRun(world, dungeon[0], paid ?? dungeon[1], at))
     }
     changed()
   })
@@ -260,10 +274,7 @@ export function startSessions(): void {
     const s = sessions.current
     if (s && arena?.[1] === 'arena' && run?.world !== ev.zone) {
       closeRun(s, Date.now())
-      run = { world: ev.zone, name: arena[0], kind: 'arena', start: Date.now(), end: null, ap: 0, kina: 0, currencies: {}, deaths: 0, partyDeaths: 0 }
-      s.runs = [...(s.runs ?? []), run]
-      log(`session: into ${arena[0]} (arena)`)
-      arenaTeam(partyStore.all().members.length)
+      run = enterRun(s, newRun(ev.zone, arena[0], 'arena', Date.now()))
     }
     if (!run || run.world !== ev.zone || !ev.at) return
     if (ev.state === 2) run.started = ev.at
@@ -273,13 +284,6 @@ export function startSessions(): void {
     } else return
     changed()
   })
-  // An arena's mode: your group in it (a Co-op's five), at its most.
-  const arenaTeam = (members: number): void => {
-    const run = openRun()
-    if (run?.kind !== 'arena' || members <= (run.team ?? 0)) return
-    run.team = members
-    changed()
-  }
   tracker.onEvent('party', (ev) => arenaTeam(ev.members?.length ?? 0))
   // The match's own teams (the party is not told there, 2026-11-27): yours, you among them.
   tracker.onEvent('arenaTeams', (ev) => arenaTeam(ev.mates?.length ?? 0))
