@@ -74,8 +74,9 @@ export const fieldBosses = {
   /** A list read from the game's map. */
   fromMap(zone: number, all: MapBoss[]): void {
     const seen = Date.now()
-    // Dead with no time (the Abyss's list has one): nothing to tell of it.
-    const list = all.filter((b) => b.up || b.at > 0)
+    // Dead with no time (the Abyss's list has one: Watcher Kaira, on a schedule): nothing to tell of
+    // it, unless it was up (killed since: Kaira stayed up, 2026-11-27).
+    const list = all.filter((b) => b.up || b.at > 0 || bosses[b.id]?.up)
     bosses = { ...bosses, ...Object.fromEntries(list.map((b) => [b.id, mapState(bosses[b.id], b, seen)])) }
     const g = bosses[101021]
     log(
@@ -97,7 +98,8 @@ function mapState(was: FieldBossState | undefined, b: MapBoss, seen: number): Fi
   const state: FieldBossState = { up: b.up, at: b.at, seen, source: 'map' }
   if (b.up) return state
   const spawned = !!was && (was.up || (was.at > 0 && was.at <= seen))
-  const killedAt = spawned && b.at > seen ? seen : was?.killedAt
+  // Its respawn to come, or none told (Kaira: its schedule's).
+  const killedAt = spawned && (b.at > seen || b.at === 0) ? seen : was?.killedAt
   return killedAt ? { ...state, killedAt } : state
 }
 
