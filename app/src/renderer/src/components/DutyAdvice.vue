@@ -1,14 +1,13 @@
 <script setup lang="ts">
 // The duty board's advice, as the dashboard's page and the window over the game show it: the
-// missions to take for your free slots, and whether a reroll is worth its cost.
-import { computed } from 'vue'
+// missions to take for your free slots, and whether a reroll is worth its cost. The advice worked
+// out by the page (shared/duty.ts dutyAdvice), once for its rows and this.
 import { plural, t } from '@/lib/i18n.ts'
 import { compact } from '@shared/format.ts'
-import { dutyAdvice, type DutyPricing, type DutyState, type DutyValues } from '@shared/duty.ts'
+import type { DutyAdvice, DutyState } from '@shared/duty.ts'
 import { questName } from '@shared/sessions.ts'
 
-const props = defineProps<{ state: DutyState; values: DutyValues; pricing?: DutyPricing }>()
-const advice = computed(() => dutyAdvice(props.state, props.values, props.pricing))
+defineProps<{ state: DutyState; advice: DutyAdvice | null }>()
 const kina = (n: number): string => compact(Math.round(n))
 </script>
 

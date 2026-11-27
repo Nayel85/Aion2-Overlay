@@ -40,7 +40,8 @@ const named = (ids: number[]): { id: number; name: string; icon: string | null }
 const excludedItems = computed(() => named(cfg.value.excluded))
 const priorityItems = computed(() => named(cfg.value.priority))
 const board = computed(() => state.value.board)
-const picked = computed(() => new Set(dutyAdvice(state.value, values.value, pricing.value)?.picks ?? []))
+const advice = computed(() => dutyAdvice(state.value, values.value, pricing.value))
+const picked = computed(() => new Set(advice.value?.picks ?? []))
 const rows = computed(() => dutyRows(state.value, values.value, pricing.value))
 
 const kina = (n: number): string => compact(Math.round(n))
@@ -60,7 +61,7 @@ const DUTY_EMPTY_HINT = "With the overlay open, open the duty board in game: tod
     <EmptyState v-if="!board" title="No duty board yet today." :hint="DUTY_EMPTY_HINT" />
 
     <template v-else>
-      <DutyAdvice :state="state" :values="values" :pricing="pricing" class="mb-4 text-sm" />
+      <DutyAdvice :state="state" :advice="advice" class="mb-4 text-sm" />
 
       <div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-darker">
         <span>{{ plural(board.rerolls, '{n} reroll today', '{n} rerolls today') }}</span>
