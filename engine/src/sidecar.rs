@@ -474,8 +474,10 @@ impl Sidecar {
                         buffs = Some(now);
                     }
                 }
-                // Your party's debuffs, for its frames: only in a party.
-                if ticks % BUFFS_EVERY == 0 && !me.meter.storage.get_party_members().is_empty() || party_debuffs != json!({}) {
+                // Your party's debuffs, for its frames: in a party, and once more after it (to clear them).
+                let in_party = !me.meter.storage.get_party_members().is_empty();
+                let had = party_debuffs.as_object().is_some_and(|m| !m.is_empty());
+                if (ticks % BUFFS_EVERY == 0 && in_party) || had {
                     let meter = me.meter.clone();
                     let enemies = me.tracker.lock().enemy_ids();
                     if let Ok(now) = tokio::task::spawn_blocking(move || meter.party_debuffs(&enemies)).await

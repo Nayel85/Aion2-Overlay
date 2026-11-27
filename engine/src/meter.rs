@@ -168,7 +168,7 @@ impl Meter {
     /// healed (themselves, fighting their own boss: a Nightmare's instance is shared) or got hit near it.
     fn involved(&self, hitters: impl Iterator<Item = i32>) -> HashSet<i32> {
         let mut ids: HashSet<i32> = hitters.collect();
-        if let Some(me) = self.storage.local_player_id().and_then(|id| i32::try_from(id).ok()) {
+        if let Some(me) = self.me_i32() {
             ids.insert(me);
         }
         ids.extend(self.storage.get_party_members().into_keys().filter_map(|name| self.storage.find_id_by_nickname(&name)));
@@ -196,12 +196,17 @@ impl Meter {
     /// when solo. Its `deaths` are upstream's: the player's, in the fight shown (their HP down to 0;
     /// a player's death sends no `42 36`). And `train`: your own damage on training
     /// dummies, whatever the meter follows, for timing training runs:
+    /// You, as the parser's rows know you (its entity id), if it knows you yet.
+    fn me_i32(&self) -> Option<i32> {
+        self.storage.local_player_id().and_then(|id| i32::try_from(id).ok())
+    }
+
     /// `{"damage", "target": the dummy you hit last, "lastHit": ms}` or null.
     pub fn dps(&self) -> serde_json::Value {
         let data = self.calculator.lock().get_dps();
         let mut out = serde_json::to_value(&data).unwrap_or_default();
         let party = self.storage.get_party_members();
-        let me = self.storage.local_player_id().and_then(|id| i32::try_from(id).ok());
+        let me = self.me_i32();
         let profile = self.storage.local_profile();
         // A row keeps the name known when it began: one told later (a player met as a run starts again,
         // the 2026-11-26 Fire Temples, rows left as their number) is the storage's, as a saved fight's.
@@ -234,7 +239,7 @@ impl Meter {
     /// Your damage (and your summons') on every training dummy fought since
     /// the combat data was last cleared, and the dummy you hit last.
     fn train(&self) -> serde_json::Value {
-        let Some(me) = self.storage.local_player_id().and_then(|id| i32::try_from(id).ok()) else {
+        let Some(me) = self.me_i32() else {
             return serde_json::Value::Null;
         };
         let generation = self.storage.damage_generation();
@@ -326,7 +331,7 @@ impl Meter {
     /// game's ids (`SkillAbnormal`). A debuff is one cast by someone who is not a
     /// player (a monster); players' are buffs, yours or your party's.
     pub fn my_buffs(&self) -> serde_json::Value {
-        let Some(me) = self.storage.local_player_id().and_then(|id| i32::try_from(id).ok()) else {
+        let Some(me) = self.me_i32() else {
             return serde_json::json!([]);
         };
         serde_json::Value::Array(self.buffs_of(&[me], &HashSet::new()).remove(&me).unwrap_or_default())
