@@ -1845,4 +1845,7 @@ export const FR: Record<string, string> = {
   'Enemies in the Abyss: other servers\' players too, whatever their side.': 'Ennemis dans les Abysses : les joueurs des autres serveurs aussi, quelle que soit leur faction.',
   'Watcher Kaira: shown dead once killed, in view or as the Abyss\'s list says.': 'Watcher Kaira : affiché mort une fois tué, que tu l\'aies vu mourir ou que la liste des Abysses le dise.',
   'DPS meter: starts over as you switch character.': 'Compteur DPS : repart à zéro quand tu changes de perso.',
+  'Updates: the newest version goes in at once, not one update after the other.': 'Mises à jour : la toute dernière version s\'installe d\'un coup, plus une mise à jour après l\'autre.',
+  'DPS meter: starts over as you enter a dungeon, with a row for each member of your group from the start.': 'Compteur DPS : repart à zéro à l\'entrée d\'un donjon, avec une ligne pour chaque membre du groupe dès le début.',
+  'Join requests: one you reject leaves the list.': 'Demandes pour rejoindre : une demande refusée quitte la liste.',
 }

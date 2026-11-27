@@ -11,6 +11,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.26',
+    items: [
+      "Updates: the newest version goes in at once, not one update after the other.",
+      "DPS meter: starts over as you enter a dungeon, with a row for each member of your group from the start.",
+      "Join requests: one you reject leaves the list.",
+    ],
+  },
+  {
     version: '0.3.25',
     items: [
       "PvP page: only the kills that concern you (yours, your deaths, those of players you fought, your legion's), each kill or assist with the Abyss Points it earned and the rank points it gave or took.",
