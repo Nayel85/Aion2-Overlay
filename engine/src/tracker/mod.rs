@@ -745,6 +745,9 @@ impl Tracker {
                         })
                         .collect();
                     tracing::info!("character list: {}", list.iter().map(|c| c.name.as_str()).collect::<Vec<_>>().join(", "));
+                    // Sent with everything a login sends, also as you leave the Shugo Festival or enter the
+                    // Abyss (your own character is not sent again then, 2026-11-27).
+                    self.logged_in_at = ts;
                     (self.emit)(json!({ "type": "characterList", "ts": ts, "characters": characters }));
                 }
             }
