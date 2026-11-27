@@ -162,6 +162,8 @@ const resetSize = (): void => set({ width: SETTINGS_DEFAULTS.meter.width, height
 const now = useNow(1000)
 const lastActive = ref(0)
 watch([total, () => meter.value.target?.id], () => (lastActive.value = Date.now()))
+// Into an instance: the meter starts over there with your group's rows, shown before the first hit.
+watch(() => store.inInstance, (inside) => inside && (lastActive.value = Date.now()), { immediate: true })
 // Never while the overlays are being placed: shown whole to place it, as every overlay.
 const idle = computed(() => cfg.value.hideIdle && !store.panelVisible && !live.value && now.value - lastActive.value >= cfg.value.idleSeconds * 1000)
 const moreModes = computed(() => !MAIN_TARGET_MODES.some((m) => m.id === cfg.value.targetMode))
