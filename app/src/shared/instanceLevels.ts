@@ -9,7 +9,8 @@
  * expeditions' and raids' come from the client's data (not out on the global client yet). Conquest Hard
  * of Urugugu Canyon and Vakron Sky Island: expcarry's alone. The trials' Insane and Hell: aion2builds'
  * six tiers; Doom (Forgotten Repository's and Chamber of the Dead's alone): NCSOFT's 4000, as gamers.wiki and
- * metabot.gg give it.
+ * metabot.gg give it. Checked again 2026-11-27 with NCSOFT's global patch notes (aion2.plaync.com) and
+ * aion2atlas.app's updates: Corroded Decontamination Facility 2100, Ludra 2800/3000 and its Easy.
  */
 export const REQUIRED_ILVL: Record<string, Record<string, number>> = {
   'Krao Cave': { easy: 200, normal: 700, advanced: 2600 },
@@ -30,8 +31,10 @@ export const REQUIRED_ILVL: Record<string, Record<string, number>> = {
   'Submerged Life Temple': { s1: 2400, s2: 2800, s3: 3200, s4: 3500 },
   'Mirror of Scarlet Desire': { s1: 3200, s2: 3500, s3: 3800, s4: 4000 },
   'Abyssal Horn Den': { s1: 3800, s2: 4100, s3: 4500, s4: 4800 },
-  'Abyssal Forge: Ludra': { normal: 2800, advanced: 3000 },
-  // The global client's (2026-11-26, the owner's word; the Korean's 3500).
+  // Its Easy mode came 2026-11-18, at 2800 (senseos.gg).
+  'Abyssal Forge: Ludra': { easy: 2800, normal: 2800, advanced: 3000 },
+  // The global client's event Sanctuary (NCSOFT's 2026-11-25 patch notes: 2100, 7 entries a week, until
+  // 2026-12-16; the Korean's 3500).
   'Corroded Decontamination Facility': { normal: 2100 },
   'Chalice of Muspel': { normal: 4300, advanced: 4500 },
 }
