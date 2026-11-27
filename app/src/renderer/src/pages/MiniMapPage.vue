@@ -20,7 +20,7 @@ import { clampTo, cornerResize } from '@/lib/cornerResize.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { gatherLayers, useGatherables } from '@/lib/gatherables.ts'
 import { displayName } from '@/lib/petDb.ts'
-import { currentWorld, nearbyPets, PET_COLORS, useSpawns } from '@/lib/spawns.ts'
+import { nearbyPets, PET_COLORS, useSpawns , useCurrentWorld } from '@/lib/spawns.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import { MINIMAP_HEIGHT, MINIMAP_WIDTH, SETTINGS_DEFAULTS, type Settings } from '@shared/settings.ts'
@@ -37,22 +37,13 @@ const cfg = computed(() => store.settings.minimap)
 const spawns = useSpawns()
 
 /** The zone you are in, else the last one known: a guess from the monsters around you comes and goes. */
-const lastWorld = ref<number | null>(null)
 /** Being placed with no zone known: Verteron, as a sample to place it by, as every overlay has. */
 const sampleWorld = computed(() => {
   const worlds = spawns.value?.worlds ?? {}
   const id = Object.keys(worlds).find((k) => worlds[k]!.name === 'Verteron') ?? Object.keys(worlds)[0]
   return id === undefined ? null : Number(id)
 })
-const worldId = computed(() =>
-  spawns.value ? (currentWorld(store.nearby, spawns.value) ?? lastWorld.value ?? (placing.value ? sampleWorld.value : null)) : null,
-)
-// The zone you were in is kept (never the sample).
-watch(
-  () => (spawns.value ? currentWorld(store.nearby, spawns.value) : null),
-  (id) => id !== null && (lastWorld.value = id),
-)
-const world = computed(() => (spawns.value && worldId.value !== null ? (spawns.value.worlds[worldId.value] ?? null) : null))
+const { worldId, world } = useCurrentWorld(() => store.nearby, () => (placing.value ? sampleWorld.value : null))
 
 /**
  * Tracked pets with spawns in this zone: pinned ones (all of them), then those whose soul monsters

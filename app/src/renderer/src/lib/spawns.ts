@@ -3,7 +3,7 @@
  * with the zone maps to draw them on. A questlog.gg snapshot (scripts/fetch-spawns.mjs, then
  * scripts/shrink-maps.py), loaded on first use: it is only needed when a pet's map is opened.
  */
-import { shallowRef } from 'vue'
+import { computed, ref, shallowRef, watch, type ComputedRef } from 'vue'
 import type { Nearby } from '@shared/tracker.ts'
 
 export interface World {
@@ -214,3 +214,18 @@ export function formatDistance(units: number): string {
 
 /** The tracked pets' colours on every map (Map, the map overlay, Map V2), in their order: the same pet, the same colour. */
 export const PET_COLORS = ['#f76b15', '#30a46c', '#0090ff', '#e54666', '#12a594', '#ab4aba', '#8e8c99', '#ffffff']
+
+/**
+ * Your zone as a page shows it: the one you are in, else the last one known (a loading screen, a
+ * moment with none), else `fallback`'s (a sample to place an overlay by); and its world.
+ */
+export function useCurrentWorld(near: () => Nearby, fallback: () => number | null = () => null): { worldId: ComputedRef<number | null>; world: ComputedRef<World | null> } {
+  const spawns = useSpawns()
+  const last = ref<number | null>(null)
+  const here = computed(() => (spawns.value ? currentWorld(near(), spawns.value) : null))
+  // The zone you were in is kept (never the fallback).
+  watch(here, (id) => id !== null && (last.value = id))
+  const worldId = computed(() => (spawns.value ? (here.value ?? last.value ?? fallback()) : null))
+  const world = computed(() => (spawns.value && worldId.value !== null ? (spawns.value.worlds[worldId.value] ?? null) : null))
+  return { worldId, world }
+}

@@ -7,7 +7,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { bridge } from '@/lib/bridge.ts'
 import { gatherLayers, useGatherables } from '@/lib/gatherables.ts'
-import { currentWorld, mapImage, nearbyPets, PET_COLORS, project, useSpawns } from '@/lib/spawns.ts'
+import { mapImage, nearbyPets, PET_COLORS, project, useSpawns , useCurrentWorld } from '@/lib/spawns.ts'
 import { useApp } from '@/stores/app.ts'
 import MapVision from '@/workers/mapVision.ts?worker'
 import { detailGroupAt, type GameMapState } from '@shared/gameMap.ts'
@@ -42,10 +42,7 @@ const cfg = computed(() => store.settings.gameMap)
 const canvas = ref<HTMLCanvasElement | null>(null)
 
 // The zone: yours, else the last one known.
-const lastWorld = ref<number | null>(null)
-const worldId = computed(() => (spawns.value ? (currentWorld(store.nearby, spawns.value) ?? lastWorld.value) : null))
-watch(worldId, (id) => id !== null && (lastWorld.value = id))
-const world = computed(() => (spawns.value && worldId.value !== null ? (spawns.value.worlds[worldId.value] ?? null) : null))
+const { worldId, world } = useCurrentWorld(() => store.nearby)
 
 // ---- vision ---------------------------------------------------------------------------------
 

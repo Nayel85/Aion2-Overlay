@@ -25,7 +25,7 @@ import { useEnemyAlarm } from '@/lib/enemyAlarm.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { panelStyle } from '@/lib/overlayLook.ts'
 import { displayName } from '@/lib/petDb.ts'
-import { currentWorld, nearbyPets, useSpawns } from '@/lib/spawns.ts'
+import { nearbyPets, useSpawns , useCurrentWorld } from '@/lib/spawns.ts'
 import { CLOCK_ICON, EVENT_ICONS } from '@/lib/timerView.ts'
 import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
@@ -242,10 +242,7 @@ const meterMax = computed(() => Math.max(1, ...meterTop.value.map((r) => r.value
 // ---- chips: a cube, enemies, your last death, a boss run -----------------------------------------
 
 const spawns = useSpawns()
-const lastWorld = ref<number | null>(null)
-const worldId = computed(() => (spawns.value ? (currentWorld(store.nearby, spawns.value) ?? lastWorld.value) : null))
-watch(worldId, (id) => id !== null && (lastWorld.value = id))
-const world = computed(() => (spawns.value && worldId.value !== null ? (spawns.value.worlds[worldId.value] ?? null) : null))
+const { worldId, world } = useCurrentWorld(() => store.nearby)
 const inAbyss = computed(() => world.value?.group === 'abyss')
 
 const cube = computed(() => (cfg.value.cubes ? (cubeBearings(store.cubes, store.nearby.position)[0] ?? null) : null))
