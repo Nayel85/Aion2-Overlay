@@ -6,6 +6,9 @@
  *
  * Kept across restarts in `<userData>/characters.json`.
  */
+import { mkdirSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import { portraitsDir } from './icons.ts'
 import { ABYSS_POINTS, SEASON_POINTS } from '../shared/sessions.ts'
 import { dataFile } from './dataFile.ts'
 import { broadcast } from './broadcast.ts'
@@ -32,6 +35,27 @@ const file = dataFile('characters.json')
 
 function load(): void {
   characters = (file.read() as { characters?: Characters } | null)?.characters ?? {}
+  // Portraits kept as images in the store (before 2026-11-27): to their files, the store only naming them.
+  let moved = 0
+  for (const [id, c] of Object.entries(characters)) {
+    const m = c.portrait && /^data:(image\/[\w+.-]+);base64,(.+)$/.exec(c.portrait)
+    if (!m) continue
+    c.portrait = keepPortrait(id, m[1]!, Buffer.from(m[2]!, 'base64'))
+    moved++
+  }
+  if (moved) {
+    log(`characters: ${moved} portraits moved to their files`)
+    file.save(() => ({ characters }))
+  }
+}
+
+/** A portrait kept as a file (`<userData>/portraits`), as the windows load it: its address, new each time (a new one shows). */
+function keepPortrait(id: string, type: string, bytes: Buffer): string {
+  const ext = type === 'image/png' ? 'png' : type === 'image/webp' ? 'webp' : 'jpg'
+  const name = `${Buffer.from(id).toString('hex')}.${ext}`
+  mkdirSync(portraitsDir(), { recursive: true })
+  writeFileSync(join(portraitsDir(), name), bytes)
+  return `itemicon://portrait/${name}?v=${Date.now()}`
 }
 
 function changed(): void {
@@ -83,7 +107,7 @@ async function fetchPortrait(c: TrackedCharacter): Promise<string | null> {
     log(`characters: ${c.name}'s portrait: HTTP ${res.status} ${type}`)
     return null
   }
-  return `data:${type};base64,${Buffer.from(await res.arrayBuffer()).toString('base64')}`
+  return keepPortrait(characterId(c.server, c.name), type.split(';')[0]!.trim(), Buffer.from(await res.arrayBuffer()))
 }
 
 /** Ask NCSoft about one character: its combat power and portrait, each kept when the other fails. */
