@@ -1825,4 +1825,5 @@ export const FR: Record<string, string> = {
   'Shugo': 'Shugo',
   'Kina (and bound Kina), Abyss Points, Oath Coins, Phantasmal Fragments and Centuryroot Tokens, as last seen': 'Kina (et Kina liés), points d\'Abysses, Oath Coins, Phantasmal Fragments et Centuryroot Tokens, tels que vus en dernier',
   'not open this time (seen by a character of the server)': 'pas ouvert cette fois (vu par un perso du serveur)',
+  'No run with these filters': 'Aucun run avec ces filtres',
 }

@@ -18,7 +18,7 @@ import Segmented from '@/components/ui/Segmented.vue'
 import SelectBox from '@/components/ui/SelectBox.vue'
 import { plural, t } from '@/lib/i18n.ts'
 import { formatKina } from '@shared/kina.ts'
-import { filterRuns, itemStats, lootChoices, lootRuns, luck, summaries, unitsOf, type ItemFamily, type LootSummary, type LootUnit } from '@shared/lootStats.ts'
+import { filterRuns, itemStats, lootChoices, lootRuns, luck, summaries, summarize, unitsOf, type ItemFamily, type LootSummary, type LootUnit } from '@shared/lootStats.ts'
 import { itemIcon, LOOT_KINDS } from '@shared/sessions.ts'
 import { ICON, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
 import { gradeClass } from '@/lib/grades.ts'
@@ -70,7 +70,17 @@ const worldOptions = computed(() => [
   ...choices.value.worlds.filter((w) => f.value.kind === null || w.kind === f.value.kind).map((w) => ({ id: w.id, label: `${w.label} (${w.count})` })),
 ])
 const runs = computed(() => filterRuns(all.value, { names: f.value.names, from: fromOf(f.value.period), kind: f.value.kind, world: f.value.world }))
-const rows = computed(() => summaries(runs.value))
+/**
+ * A line a character, the total last: the characters picked (all, when none is) each keep theirs, with
+ * no run where the filters leave them none (a dungeon only one of them did), so none seems to vanish.
+ */
+const rows = computed(() => {
+  const list = summaries(runs.value)
+  const shown = new Set(list.map((r) => r.name))
+  const picked = f.value.names.length ? f.value.names : characters.value
+  const none = picked.filter((n) => !shown.has(n)).map((n) => summarize(n, []))
+  return [...list.slice(0, -1), ...none, list.at(-1)!]
+})
 const total = computed(() => rows.value.at(-1)!)
 const items = computed(() => {
   const q = query.value.trim().toLowerCase()
@@ -136,7 +146,7 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
             </tr>
           </thead>
           <tbody>
-            <tr v-for="r in rows.length > 2 ? rows : rows.slice(-1)" :key="r.name" :class="['border-t border-card', !r.name && 'bg-card/40 font-semibold']">
+            <tr v-for="r in rows.length > 2 ? rows : rows.slice(-1)" :key="r.name" :class="['border-t border-card', !r.name && 'bg-card/40 font-semibold', r.name && !r.runs && 'opacity-40']" :title="r.name && !r.runs ? t('No run with these filters') : undefined">
               <td class="px-4 py-2">
                 <span class="flex items-center gap-2">
                   <CharName v-if="r.name" :name="r.name" :size="16" /><template v-else>{{ rows.length > 2 ? t('All characters') : rows[0]!.name }}</template>
