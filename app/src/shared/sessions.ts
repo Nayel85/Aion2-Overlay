@@ -216,6 +216,13 @@ export function itemInfo(id: string | number): ItemInfo | undefined {
   if (i) return { name: i[0], grade: i[1], icon: i[2], kind: i[3] === 'currency' ? 'currency' : i[3] === 'arcana' ? 'arcana' : 'item' }
   return MADE().get(Number(id))
 }
+/** An item's name as shown: without "(Bound)" (whether it is is told apart where it matters). */
+export const plainName = (name: string): string => name.replace(' (Bound)', '')
+/** An item as a row shows it: its name (its number when not known), grade (common when not) and icon. */
+export function itemRow(id: string | number): { name: string; grade: number; icon: string | null } {
+  const info = itemInfo(id)
+  return { name: plainName(info?.name ?? `#${id}`), grade: info?.grade ?? 11, icon: itemIcon(info?.icon) }
+}
 /** The items crafts make and gatherings give, by id: those the loot and item tables lack. Built once, when first needed. */
 let made: Map<number, ItemInfo> | null = null
 function MADE(): Map<number, ItemInfo> {
@@ -439,15 +446,14 @@ export function gatheredByResource(s: PlaySession): GatheredResource[] {
   const add = (plain: number): GatheredResource => {
     let r = by.get(plain)
     if (!r) {
-      const info = ITEMS[plain]
-      r = { item: plain, name: (info?.[0] ?? `#${plain}`).replace(' (Bound)', ''), icon: itemIcon(info?.[2]), grades: [], counts: s.gathering?.byResource?.[plain] ?? null }
+      const row = itemRow(plain)
+      r = { item: plain, name: row.name, icon: row.icon, grades: [], counts: s.gathering?.byResource?.[plain] ?? null }
       by.set(plain, r)
     }
     return r
   }
   for (const [id, n] of Object.entries(s.gathered ?? {})) {
-    const info = ITEMS[id]
-    add(resourceOf(id)).grades.push({ item: Number(id), name: (info?.[0] ?? `#${id}`).replace(' (Bound)', ''), grade: info?.[1] ?? 11, icon: itemIcon(info?.[2]), n })
+    add(resourceOf(id)).grades.push({ item: Number(id), ...itemRow(id), n })
   }
   // Those only failed so far.
   for (const plain of Object.keys(s.gathering?.byResource ?? {})) add(Number(plain))

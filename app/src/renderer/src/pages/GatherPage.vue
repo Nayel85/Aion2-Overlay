@@ -15,6 +15,7 @@ import { windowDrag } from '@/lib/windowDrag.ts'
 import { useApp } from '@/stores/app.ts'
 import type { GatherForecast } from '@shared/gather.ts'
 import { itemIcon } from '@shared/itemRef.ts'
+import { plainName } from '@shared/sessions.ts'
 
 const store = useApp()
 // Measured, shown and placed as every overlay (lib/overlay.ts).
@@ -44,7 +45,7 @@ const kindOf = (g: GatherForecast): Kind => (g.outcome === 'fail' ? 'fail' : g.o
 /** How many times the item comes: a plant's grade (x3) and the doubling (x2) multiply. */
 const timesOf = (g: GatherForecast): number => g.times * (g.doubled ? 2 : 1)
 const textOf = (g: GatherForecast): string => {
-  if (g.bonus) return t('Bonus: {name}', { name: g.bonus.name.replace(' (Bound)', '') })
+  if (g.bonus) return t('Bonus: {name}', { name: plainName(g.bonus.name) })
   if (g.kind === 'craft') return g.outcome === 'fail' ? t('Craft will fail') : g.outcome === 'proc' ? (g.doubled ? t('Craft procs, x2') : t('Craft procs')) : t('Plain craft')
   if (g.outcome === 'fail') return t('Gathering will fail')
   if (g.outcome === 'rankUp') return g.doubled ? t('Rank up, x2') : t('Rank up')

@@ -4,7 +4,7 @@ import { computed, onBeforeUnmount, onMounted, ref, type ComputedRef, type Ref }
 import { bridge } from '@/lib/bridge.ts'
 import { missionValue, NO_DUTY, unitValue, type DutyMission, type DutyPricing, type DutyState, type DutyValues } from '@shared/duty.ts'
 import { priceOf, type MarketPrices } from '@shared/market.ts'
-import { itemIcon, itemInfo, questName } from '@shared/sessions.ts'
+import { itemRow, questName } from '@shared/sessions.ts'
 
 /** The duty board's state, from main, as it changes. */
 export function useDuty(): Ref<DutyState> {
@@ -31,10 +31,9 @@ export function dutyRow(m: DutyMission, values: DutyValues, pricing?: DutyPricin
     name: questName(m.quest),
     value: missionValue(m, values, pricing),
     rewards: m.rewards.map((r, i) => {
-      const info = itemInfo(r.item)
       const unit = unitValue(r.item, values, pricing)
       const market = unit !== null && !!pricing?.prices && priceOf(pricing.prices, r.item) !== null
-      return { key: i, item: r.item, excluded: !!pricing?.excluded?.includes(r.item), priority: !!pricing?.priority?.includes(r.item), name: (info?.name ?? `#${r.item}`).replace(' (Bound)', ''), icon: itemIcon(info?.icon), grade: info?.grade ?? 11, amount: r.amount, chance: Math.round(r.chance * 100), counts: (unit ?? 0) > 0, unit, market }
+      return { key: i, item: r.item, excluded: !!pricing?.excluded?.includes(r.item), priority: !!pricing?.priority?.includes(r.item), ...itemRow(r.item), amount: r.amount, chance: Math.round(r.chance * 100), counts: (unit ?? 0) > 0, unit, market }
     }),
   }
 }

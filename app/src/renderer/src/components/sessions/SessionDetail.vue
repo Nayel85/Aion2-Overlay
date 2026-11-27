@@ -19,7 +19,7 @@ import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
-import { AP_ITEM, countedRuns, runMs, CURRENCY_LABELS, currencyIcon, KINA_ITEM, gatheredByResource, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsOneOff, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type GatheredResource, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
+import { AP_ITEM, countedRuns, CURRENCY_LABELS, currencyIcon, type DungeonRun, type DutyDone, gatheredByResource, type GatheredResource, itemIcon, itemRow, KINA_ITEM, LOOT_KINDS, lootCounts, mergeRuns, plainName, type PlaySession, questName, runCounts, runGroups, runIsOneOff, runIsTimed, runKindLabel, runMs, runName, runRewards, sourceLabel, type SupplyDone, supplyName } from '@shared/sessions.ts'
 import { recipeOf } from '@shared/gather.ts'
 
 const props = withDefaults(defineProps<{ session: PlaySession; live?: boolean; header?: boolean }>(), { live: false, header: true })
@@ -135,16 +135,14 @@ const craftProcs = computed(() => (props.session.crafts ?? []).filter((c) => c.p
 /** What a duty mission (or a supply request) gave, one by one: its name (without "(Bound)"), grade, icon and amount. */
 function dutyRewards(d: DutyDone | SupplyDone): { id: string; name: string; grade: number; icon: string | null; amount: number }[] {
   return Object.entries(d.rewards).map(([id, amount]) => {
-    const item = itemInfo(id)
-    return { id, name: (item?.name ?? `#${id}`).replace(' (Bound)', ''), grade: item?.grade ?? 11, icon: itemIcon(item?.icon), amount }
+    return { id, ...itemRow(id), amount }
   })
 }
 
 /** A duty mission's whole list, as shown: each reward's name, grade, icon, amount, chance and whether it came. */
 function offerRows(d: DutyDone): { name: string; grade: number; icon: string | null; amount: number; chance: number; got: boolean }[] {
   return (d.offered ?? []).map((o) => {
-    const item = itemInfo(o.item)
-    return { name: (item?.name ?? `#${o.item}`).replace(' (Bound)', ''), grade: item?.grade ?? 11, icon: itemIcon(item?.icon), amount: o.amount, chance: o.chance, got: o.got }
+    return { ...itemRow(o.item), amount: o.amount, chance: o.chance, got: o.got }
   })
 }
 /** The duty missions whose whole list is shown, by when. */
@@ -277,7 +275,7 @@ function toggle(r: DungeonRun): void {
         <span class="tabular-nums text-darker">{{ timeOfDay(r.start) }}</span>
         <span v-for="x in runRewards(r)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
           <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
-          <span :class="gradeClass(x.grade)">{{ x.name.replace(' (Bound)', '') }}</span> ×{{ x.amount }}
+          <span :class="gradeClass(x.grade)">{{ plainName(x.name) }}</span> ×{{ x.amount }}
         </span>
       </div>
     </div>
@@ -295,7 +293,7 @@ function toggle(r: DungeonRun): void {
           <span v-if="!runRewards(r).length" class="text-darker">{{ t('Nothing worth keeping') }}</span>
           <span v-for="x in runRewards(r).slice(0, CUBE_SHOWN)" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
             <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
-            <span :class="gradeClass(x.grade)">{{ x.name.replace(' (Bound)', '') }}</span> ×{{ x.amount }}
+            <span :class="gradeClass(x.grade)">{{ plainName(x.name) }}</span> ×{{ x.amount }}
           </span>
           <span v-if="runRewards(r).length > CUBE_SHOWN" class="text-darker">{{ t('+{n} more', { n: runRewards(r).length - CUBE_SHOWN }) }}</span>
           <svg v-if="runRewards(r).length" viewBox="0 0 16 16" :class="['ml-auto size-3 text-darker transition-transform', open.has(r.start) && 'rotate-90']" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path :d="ICON.chevron" /></svg>
@@ -405,7 +403,7 @@ function toggle(r: DungeonRun): void {
         <span class="text-darker">{{ t('Also found') }}</span>
         <span v-for="x in finds" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.name">
           <img v-if="x.icon" :src="x.icon" alt="" class="size-4 rounded-sm" draggable="false" />
-          <span :class="gradeClass(x.grade)">{{ x.name.replace(' (Bound)', '') }}</span> ×{{ x.amount }}
+          <span :class="gradeClass(x.grade)">{{ plainName(x.name) }}</span> ×{{ x.amount }}
         </span>
       </div>
     </div>

@@ -17,7 +17,7 @@ import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { compact } from '@shared/format.ts'
 import { DUTY_CATEGORIES, dutyAdvice, type DutyCategory } from '@shared/duty.ts'
-import { itemIcon, itemInfo } from '@shared/sessions.ts'
+import { itemRow } from '@shared/sessions.ts'
 
 const store = useApp()
 const state = useDuty()
@@ -36,7 +36,7 @@ function cycle(item: number): void {
 }
 /** Back to counted as worth it (a click in the lists). */
 const reset = (item: number): void => set({ priority: cfg.value.priority.filter((x) => x !== item), excluded: cfg.value.excluded.filter((x) => x !== item) })
-const named = (ids: number[]): { id: number; name: string; icon: string | null }[] => ids.map((id) => ({ id, name: (itemInfo(id)?.name ?? `#${id}`).replace(' (Bound)', ''), icon: itemIcon(itemInfo(id)?.icon) }))
+const named = (ids: number[]): { id: number; name: string; icon: string | null }[] => ids.map((id) => ({ id, ...itemRow(id) }))
 const excludedItems = computed(() => named(cfg.value.excluded))
 const priorityItems = computed(() => named(cfg.value.priority))
 const board = computed(() => state.value.board)

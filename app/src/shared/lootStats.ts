@@ -10,7 +10,7 @@
  */
 import { DROPS } from './drops.ts'
 import { DUNGEON_BOSSES } from './dungeonBosses.ts'
-import { goldKind, itemInfo, runCounts, runKindLabel, runName, type DungeonRun, type GoldKind, type LootCounts, type PlaySession, runMs } from './sessions.ts'
+import { type DungeonRun, goldKind, type GoldKind, itemInfo, type LootCounts, plainName, type PlaySession, runCounts, runKindLabel, runMs, runName } from './sessions.ts'
 
 /** Runs whose loot is not a dungeon's cubes. */
 const NOT_DUNGEON_KINDS = new Set(['shugo', 'invasion', 'fieldevent', 'fieldboss', 'hiddencube', 'arena'])
@@ -144,7 +144,7 @@ export function itemStats(runs: DungeonRun[]): ItemStat[] {
   const stat = (id: string): ItemStat | null => {
     const item = itemInfo(id)
     if (!item || item.kind === 'currency') return null
-    const s = by.get(id) ?? { id, name: item.name.replace(' (Bound)', ''), grade: item.grade, icon: item.icon, family: familyOf(id) ?? 'other', total: 0, runs: 0, expected: 0 }
+    const s = by.get(id) ?? { id, name: plainName(item.name), grade: item.grade, icon: item.icon, family: familyOf(id) ?? 'other', total: 0, runs: 0, expected: 0 }
     by.set(id, s)
     return s
   }

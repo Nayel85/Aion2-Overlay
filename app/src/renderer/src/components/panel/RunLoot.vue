@@ -4,7 +4,7 @@
 // colour, the best first.
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
-import { AP_ITEM, KINA_ITEM, runRewards, type DungeonRun, type RewardRow } from '@shared/sessions.ts'
+import { AP_ITEM, type DungeonRun, KINA_ITEM, plainName, type RewardRow, runRewards } from '@shared/sessions.ts'
 import { ICON } from './sessionIcons.ts'
 import { gradeClass } from '@/lib/grades.ts'
 
@@ -23,7 +23,7 @@ const colour = (r: RewardRow): string =>
       <img v-if="r.icon" :src="r.icon" alt="" class="size-4 shrink-0 rounded-sm" draggable="false" />
       <!-- No icon of its own (a usable item, a skin...): a box in its grade's colour. -->
       <svg v-else viewBox="0 0 16 16" :class="['size-4 shrink-0', colour(r)]" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path :d="ICON.box" /></svg>
-      <span :class="['min-w-0 flex-1 truncate', colour(r)]">{{ r.name.replace(' (Bound)', '') }}</span>
+      <span :class="['min-w-0 flex-1 truncate', colour(r)]">{{ plainName(r.name) }}</span>
       <span :class="['tabular-nums', r.currency ? colour(r) : 'text-dark']">{{ amount(r) }}</span>
     </li>
   </ul>

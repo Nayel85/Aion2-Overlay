@@ -19,7 +19,7 @@ import Segmented from '@/components/ui/Segmented.vue'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { ARRIVAL_SOURCES, PLACES, placeItems, placeSlots, whereIs, WORN_ARCANA, WORN_LAYOUT, type Arrival, type CharacterInventory, type Place, type SlotItem } from '@shared/inventory.ts'
-import { itemIcon, itemInfo } from '@shared/sessions.ts'
+import { itemIcon, itemInfo, itemRow, plainName } from '@shared/sessions.ts'
 import { arcanaStatLine, baseLines, skillLine, soulLine, soulRate, stoneLine, theostoneOf, type ItemDetails } from '@shared/equipment.ts'
 import { bridge } from '@/lib/bridge.ts'
 
@@ -77,7 +77,7 @@ const details = computed(() => {
   const base = bases.value.get(h.item.item) ?? null
   const enchant = h.item.enchant ?? 0
   return {
-    name: (info?.name ?? `#${h.item.item}`).replace(' (Bound)', ''),
+    name: plainName(info?.name ?? `#${h.item.item}`),
     bound: info?.name.includes('(Bound)') ?? false,
     grade,
     gradeName: gradeName(grade),
@@ -112,7 +112,7 @@ const found = computed(() => {
   return [...ids]
     .map((id) => ({ id, info: itemInfo(id), where: whereIs(store.inventories, id) }))
     .filter((f) => (f.info?.name ?? '').toLowerCase().includes(q))
-    .map((f) => ({ ...f, name: (f.info?.name ?? `#${f.id}`).replace(' (Bound)', ''), grade: f.info?.grade ?? 11, icon: itemIcon(f.info?.icon), total: f.where.reduce((n, w) => n + w[2], 0) }))
+    .map((f) => ({ ...f, ...itemRow(f.id), total: f.where.reduce((n, w) => n + w[2], 0) }))
     .sort((a, b) => b.grade - a.grade || a.name.localeCompare(b.name))
 })
 const placeLabel = (p: Place): string => t(PLACES.find((x) => x.id === p)!.label)
@@ -225,7 +225,7 @@ function cameText(a: Arrival): string {
             <span class="tabular-nums text-darker">{{ cameText(a) }}</span>
             <span v-for="x in a.list" :key="x.id" class="flex items-center gap-1 tabular-nums" :title="x.info?.name">
               <img v-if="itemIcon(x.info?.icon)" :src="itemIcon(x.info?.icon)!" alt="" class="size-4 rounded-sm" draggable="false" loading="lazy" />
-              <span :class="gradeClass(x.info?.grade ?? 11)">{{ (x.info?.name ?? `#${x.id}`).replace(' (Bound)', '') }}</span> ×{{ x.n }}
+              <span :class="gradeClass(x.info?.grade ?? 11)">{{ plainName(x.info?.name ?? `#${x.id}`) }}</span> ×{{ x.n }}
             </span>
           </div>
         </div>
