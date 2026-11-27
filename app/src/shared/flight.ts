@@ -14,22 +14,22 @@ export interface FlightPower {
 }
 
 /**
- * In the air the game sends a reading about every 0.1 s; with none for this long you have landed,
- * though the last reading still says flying (the next, on the ground, comes up to a second later).
- * Readings in the air come 0.1 s apart, at most 0.25 s (the owner's 2026-11-27 log).
+ * In the air: as the last reading says (main/flight.ts: until the ground's first one, a rise). Not by
+ * the time since it: the readings reach the app in bursts about a second apart (2026-11-27), and
+ * between two the timer took you for landed and flickered.
  */
-const LANDED_MS = 400
-
-/** In the air now: the last reading says so, and is recent. */
-export function airborne(fp: FlightPower, now: number): boolean {
-  return fp.flying && now - fp.atMs < LANDED_MS
+export function airborne(fp: FlightPower, _now: number): boolean {
+  return fp.flying
 }
+
+/** In the air, what it is now is drawn down from the last reading this long at most: then held (gliding uses another gauge). */
+const DRAIN_FOR_MS = 1_500
 
 /** What it is now, from the last reading: down while flying, up on the ground, within 0..max. */
 export function flightNow(fp: FlightPower, now: number): number {
   const s = Math.max(0, now - fp.atMs) / 1000
   // Landed: held where it was until the ground's first reading (the game waits a moment to refill).
-  const v = fp.flying ? fp.current - fp.drainPerS * Math.min(s, LANDED_MS / 1000) : fp.current + fp.ratePerS * s
+  const v = fp.flying ? fp.current - fp.drainPerS * Math.min(s, DRAIN_FOR_MS / 1000) : fp.current + fp.ratePerS * s
   return Math.max(0, fp.max !== null ? Math.min(fp.max, v) : v)
 }
 

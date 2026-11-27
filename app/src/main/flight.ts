@@ -38,6 +38,11 @@ export function startFlight(): void {
       maxes = { ...maxes, [who]: fp.max }
       maxFile.save(() => maxes)
     }
+    // None told since the app started: the one kept, else the highest seen (full, it is the maximum).
+    if (fp && fp.max == null && who && fp.current > (maxes[who] ?? 0)) {
+      maxes = { ...maxes, [who]: fp.current }
+      maxFile.save(() => maxes)
+    }
     const max = fp?.max ?? (who ? (maxes[who] ?? null) : null)
     if (!fp) {
       state = null
@@ -47,7 +52,8 @@ export function startFlight(): void {
       const at = Date.now()
       const fell = last !== null && fp.current < last.current
       const rose = last !== null && fp.current > last.current
-      const flying = rose ? false : fell ? fellAt > 0 && at - fellAt < IN_A_ROW_MS : (state?.flying ?? false)
+      // In the air until the ground's first reading (a rise); taken off on a second fall in a row.
+      const flying = rose ? false : fell ? (state?.flying ?? false) || (fellAt > 0 && at - fellAt < IN_A_ROW_MS) : (state?.flying ?? false)
       fellAt = fell ? at : 0
       last = { current: fp.current, gameAt: fp.atMs, at }
       state = { ...fp, max, atMs: at, flying }
