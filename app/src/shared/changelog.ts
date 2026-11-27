@@ -11,6 +11,12 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.24',
+    items: [
+      "Duty board window: no longer opened as you leave the Shugo Festival or enter the Abyss.",
+    ],
+  },
+  {
     version: '0.3.23',
     items: [
       "Duty board window: no longer opened as you log in or switch character.",
