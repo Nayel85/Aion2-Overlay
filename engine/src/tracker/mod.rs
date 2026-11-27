@@ -787,6 +787,21 @@ impl Tracker {
                     self.pending_subscriptions = Some((ts, list));
                 }
             }
+            p::OP_RANK_POINTS => {
+                if let Some(total) = p::rank_points(f) {
+                    let name = self.store.current.clone();
+                    // Against the character's last total: none yet, nothing to tell of the change.
+                    let change = name.as_ref().and_then(|n| {
+                        let entry = self.store.characters.entry(n.clone()).or_default();
+                        let change = entry.rank_points.map(|last| total as i64 - last as i64);
+                        entry.rank_points = Some(total);
+                        change
+                    });
+                    self.save();
+                    tracing::info!("rank points: {total} ({change:?})");
+                    (self.emit)(json!({ "type": "rankPoints", "ts": ts, "name": name, "total": total, "change": change }));
+                }
+            }
             p::OP_ABYSS_POINTS => {
                 if let Some((points, limit)) = p::abyss_points(f) {
                     // One still waiting: no login followed it, it was the character playing's.

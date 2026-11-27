@@ -64,6 +64,9 @@ pub const OP_CHARACTER_LIST: [u8; 2] = [0x15, 0x36];
 pub const OP_COUNTERS: [u8; 2] = [0x0B, 0x61];
 pub const OP_COUNTER: [u8; 2] = [0x0C, 0x61];
 pub const OP_ABYSS_POINTS: [u8; 2] = [0xAB, 0xFF];
+/// Your rank points' total, as it changes (`73 E2 00 <u64>`): 555429 after the 639 a kill gave,
+/// 555099 after the 330 a death took (the owner's 2026-11-27 Abyss logs). Not sent at a login.
+pub const OP_RANK_POINTS: [u8; 2] = [0x73, 0xE2];
 pub const OP_SUBSCRIPTIONS: [u8; 2] = [0x3B, 0xE3];
 pub const OP_ITEM_LIST: [u8; 2] = [0x11, 0x56];
 pub const OP_PROGRESS_LIST: [u8; 2] = [0x83, 0x56];
@@ -551,6 +554,13 @@ mod tests {
     fn you_come_with_your_class_level_and_gear_score() {
         let me = character(&frame(OP_SELF, &hex("c9445f81e32b37044b7369787e0506000000012d000000ac0a0000ac0a00002d000000"))).unwrap();
         assert_eq!((me.name.as_str(), me.server, me.class, me.level, me.gear_score), ("Ksix", 1406, Some(6), Some(45), Some(2732)));
+    }
+
+    #[test]
+    fn rank_points_a_total() {
+        assert_eq!(rank_points(&frame(OP_RANK_POINTS, &hex("00a579080000000000"))), Some(555_429));
+        assert_eq!(rank_points(&frame(OP_RANK_POINTS, &hex("005b78080000000000"))), Some(555_099));
+        assert_eq!(rank_points(&frame(OP_RANK_POINTS, &hex("00a5790800"))), None);
     }
 
     #[test]

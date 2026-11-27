@@ -18,7 +18,7 @@ import { bridge } from '@/lib/bridge.ts'
 import { plural, t } from '@/lib/i18n.ts'
 import { useApp } from '@/stores/app.ts'
 import { concernsYou, PVP_LIMIT, type PvpKill } from '@shared/tracker.ts'
-import { attributeGains, RIFT_MIN_POINTS as RIFT_MIN, RIFT_MS, type AbyssGain, type RiftFarm } from '@shared/abyss.ts'
+import { attributeGains, RIFT_MIN_POINTS as RIFT_MIN, RIFT_MS, type AbyssGain, type RankChange, type RiftFarm } from '@shared/abyss.ts'
 import { formatAmount } from '@shared/earnings.ts'
 
 const store = useApp()
@@ -38,7 +38,11 @@ const gains = shallowRef<AbyssGain[]>([])
 const loadGains = (): void => void api.invoke('abyss:gains').then((g) => (gains.value = g))
 loadGains()
 const offGains = api.on('tracker:rifts', loadGains)
-onBeforeUnmount(() => { offHistory(); offKill(); offGains() })
+// The rank points changes: a kill's or an assist's gain, a death's loss.
+const ranks = shallowRef<RankChange[]>([])
+void api.invoke('rank:changes').then((r) => (ranks.value = r))
+const offRanks = api.on('tracker:rank', (r) => (ranks.value = r))
+onBeforeUnmount(() => { offHistory(); offKill(); offGains(); offRanks() })
 
 /** Combat power as the game rounds it: 115485 → 115.4K. */
 const cp = combatPower
@@ -111,6 +115,15 @@ const allAp = computed(() => {
   return attributeGains(near, events).byEvent
 })
 const apOf = (k: PvpKill): number => (riftAp.value ?? { byEvent: allAp.value }).byEvent.get(k) ?? 0
+/** Each kill, assist or death of yours with the rank points it gave or took. */
+const rankByKill = computed(() => {
+  const events = history.value.filter((k) => k.mine || k.died || isAssist(k))
+  if (!events.length) return new Map<PvpKill, number>()
+  const from = events[0]!.at - 60_000
+  const near = ranks.value.filter(([at]) => at >= from).map(([at, change]): [number, number] => [at, change])
+  return attributeGains(near, events).byEvent
+})
+const rankOf = (k: PvpKill): number => rankByKill.value.get(k) ?? 0
 const total = computed(() => (filtered.value ?? history.value).length)
 const PAGE = 200
 const limit = ref(PAGE)
@@ -237,6 +250,7 @@ const toggleHud = (): void => void bridge().invoke(hudOpen.value ? 'killfeed:clo
           <div v-if="k.killer.guild" class="truncate text-[11px] text-darker">{{ k.killer.guild }}</div>
         </div>
         <span v-if="k.mine || isAssist(k)" :class="['shrink-0 text-[11px] font-semibold tabular-nums', apOf(k) ? 'text-blue' : 'text-darkest']" :title="t('Abyss Points this earned (the points that came in right after it)')">{{ apOf(k) ? `+${formatAmount(apOf(k))} AP` : '- AP' }}</span>
+        <span v-if="rankOf(k)" :class="['shrink-0 text-[11px] font-semibold tabular-nums', rankOf(k) > 0 ? 'text-yellow' : 'text-danger']" :title="t('Rank points this gave or took')">{{ rankOf(k) > 0 ? '+' : '−' }}{{ formatAmount(Math.abs(rankOf(k))) }} RP</span>
         <span v-if="k.fight && !k.mine && !k.died" class="shrink-0 rounded bg-accent/15 px-1.5 text-[10px] font-semibold text-accent" :title="t('You fought this player before someone else took the kill')">Assist</span>
         <span v-if="k.fight" class="shrink-0 text-[11px] font-medium text-accent">{{ t('Details') }} ›</span>
         <span class="shrink-0 text-[11px] tabular-nums text-darker" :title="timeOfDay(k.at)">{{ ago(k.at) }}</span>

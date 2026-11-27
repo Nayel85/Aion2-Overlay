@@ -19,7 +19,7 @@ import type { GameMapState, MapDetail } from './gameMap.ts'
 import type { DummyState } from './dummy.ts'
 import type { UpdateState } from './update.ts'
 import type { KinaSession } from './kina.ts'
-import type { AbyssGain, AbyssSession, RiftFarm } from './abyss.ts'
+import type { AbyssGain, AbyssSession, RankChange, RiftFarm } from './abyss.ts'
 import type { StorageId, StorageUsage } from './storage.ts'
 import type { DetailsSource, DetailsView, Encounter, FightSummary, FightYou, MeterData, NewBest, PacketLog, PersonalView, Recordings } from './meter.ts'
 import type { SyncResult } from './lokthar.ts'
@@ -163,6 +163,8 @@ export interface InvokeChannels {
   'storage:get': { args: []; result: StorageUsage }
   /** Every Abyss Points gain kept (90 days), oldest first: what each PvP kill earned. */
   'abyss:gains': { args: []; result: AbyssGain[] }
+  /** Every rank points change kept (90 days), oldest first. */
+  'rank:changes': { args: []; result: RankChange[] }
   'storage:clear': { args: [id: StorageId]; result: StorageUsage }
   'recordings:set': { args: [on: boolean]; result: void }
   'recordings:open': { args: []; result: void }
@@ -233,6 +235,8 @@ export interface EventChannels {
   'tracker:abyss': AbyssSession
   /** The rift farms (shared/abyss.ts), newest first, whenever a gain changes them. */
   'tracker:rifts': RiftFarm[]
+  /** Every rank points change kept, as one comes. */
+  'tracker:rank': RankChange[]
   /** The whole PvP log (a window opening, or a Clear); then each kill as it comes. */
   'tracker:pvp': PvpKill[]
   'tracker:pvpSummary': PvpSummary
@@ -318,10 +322,10 @@ export const INVOKE_CHANNELS: readonly InvokeChannel[] = [
   'meter:get', 'meter:reset', 
   
   'skills:get', 
-  'buffs:get', 'applicants:get', 'gather:get', 'flight:get', 'party:get', 'overlay:moveTo', 'overlay:dragEnd', 'overlay:resize', 'overlay:resetPosition', 'applicants:dismiss', 'applicants:clear', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'abyss:gains', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
+  'buffs:get', 'applicants:get', 'gather:get', 'flight:get', 'party:get', 'overlay:moveTo', 'overlay:dragEnd', 'overlay:resize', 'overlay:resetPosition', 'applicants:dismiss', 'applicants:clear', 'overlays:toggle', 'overlays:hidden', 'recordings:get', 'recordings:set', 'storage:get', 'storage:clear', 'abyss:gains', 'rank:changes', 'recordings:open', 'packets:get', 'packets:set', 'packets:mark', 'packets:show', 'sounds:pickCustom', 'sounds:custom', 'update:get', 'update:peek', 'update:check', 'update:download', 'update:install', 'dummy:get', 'dummy:start', 'dummy:stop', 'dummy:newGroup', 'dummy:delete',
   'details:open', 'details:get', 'details:view', 'details:close', 'details:moveTo', 'details:dragEnd', 'history:list', 'history:bests', 'history:delete',
 ]
 
 export const EVENT_CHANNELS: readonly EventChannel[] = [
   'inventory:arrival',
-  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'tracker:aggro', 'applicants:changed', 'party:changed', 'gather:changed', 'flight:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'duty:changed', 'market:changed', 'expeditions:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'panel:showCharacters', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'meter:personalBest', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', ]
+  'settings:changed', 'tracker:status', 'tracker:pets', 'tracker:pet', 'tracker:soul', 'tracker:nearby', 'tracker:cubes', 'tracker:enemies', 'tracker:aggro', 'applicants:changed', 'party:changed', 'gather:changed', 'flight:changed', 'tracker:target', 'tracker:combat', 'tracker:shop', 'tracker:kina', 'tracker:abyss', 'tracker:rifts', 'tracker:rank', 'tracker:fieldBosses', 'sessions:changed', 'inventory:changed', 'duty:changed', 'market:changed', 'expeditions:changed', 'characters:changed', 'gamemap:preview', 'gamemap:state', 'tracker:pvp', 'tracker:pvpSummary', 'tracker:pvpKill', 'panel:showPet', 'panel:showTimers', 'panel:showCharacters', 'timers:alert', 'timers:alerting', 'hud:editing', 'panel:visible', 'panel:maximized', 'meter:dps', 'details:source', 'history:changed', 'meter:personalBest', 'buffs:list', 'overlays:hidden', 'recordings:changed', 'packets:state', 'dummy:state', 'update:state', ]

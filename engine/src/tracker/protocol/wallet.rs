@@ -2,6 +2,15 @@
 
 use super::*;
 
+/// Your rank points' total (`73 E2 00 <u64>`).
+pub fn rank_points(frame: &[u8]) -> Option<u64> {
+    let b = body(frame, OP_RANK_POINTS)?;
+    if b.len() != 9 || b[0] != 0 {
+        return None;
+    }
+    u64_at(b, 1)
+}
+
 /// `AB FF <points u64> <limit u64>`: the week's Abyss Points and their weekly limit, at a login
 /// (just before the record naming the character) and with every gain. Since the game's 2026-10-29
 /// build (`A9 FF` before), read as A2Tools DPS Meter does (`1e4bd80`): 132456 of 2500000, then

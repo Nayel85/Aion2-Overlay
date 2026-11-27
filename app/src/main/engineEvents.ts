@@ -55,6 +55,7 @@ export type EngineEvents = {
   subscriptions: Login & { list: { id: number; end: number }[] }
   abyss: { ts?: number; name: string | null; points: number; limit: number; gained: number }
   abyssGain: { name: string | null; gained: number }
+  rankPoints: { name: string | null; total: number; change: number | null }
   shop: { tab: number; nextAt: number | null; items: ShopItem[] }
   fieldBosses: { world: number; bosses: { id: number; up: boolean; at: number }[] }
   bossKilled: { npc: number }

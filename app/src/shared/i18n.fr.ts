@@ -1840,4 +1840,5 @@ export const FR: Record<string, string> = {
   'Cleanup: what earlier updates left in the temp folder (hundreds of MB, old Lokthar names too) removed at every start; Lokthar\'s old data can be removed from Settings → Cache.': 'Nettoyage : ce que les anciennes mises à jour laissaient dans le dossier temporaire (des centaines de Mo, anciens noms de Lokthar compris) est effacé à chaque démarrage ; les anciennes données de Lokthar peuvent être supprimées depuis Réglages → Cache.',
   'Duty board window: no longer opened as you log in or switch character.': 'Fenêtre du tableau des duty : ne s\'ouvre plus à la connexion ni au changement de perso.',
   'Duty board window: no longer opened as you leave the Shugo Festival or enter the Abyss.': 'Fenêtre du tableau des duty : ne s\'ouvre plus à la sortie du Shugo Festival ni à l\'entrée dans les Abysses.',
+  'Rank points this gave or took': 'Points de rang gagnés ou perdus',
 }

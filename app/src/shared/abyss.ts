@@ -59,6 +59,8 @@ export function currentSeason(gains: readonly AbyssGain[]): AbyssSeason | null {
 /** One gain as kept: when, how much, whose (null: no character known yet), and in which zone (the
  *  world id; null or missing when not known: gains kept before zones were). */
 export type AbyssGain = [at: number, gained: number, name: string | null, world?: number | null]
+/** A rank points change: a kill's gain, a death's loss (main/rankPoints.ts). */
+export type RankChange = [at: number, change: number, name: string | null]
 
 /**
  * Where a Spacetime Rift is farmed: the continents' zones (Verteron, Eltnen, Altgard, Morheim: the

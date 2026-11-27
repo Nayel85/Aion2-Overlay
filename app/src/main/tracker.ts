@@ -28,6 +28,7 @@ import { bossKilled, fieldBosses } from './fieldBosses.ts'
 import type { FieldBosses } from '../shared/timers.ts'
 import { pvpLog } from './pvpLog.ts'
 import { abyss } from './abyss.ts'
+import { rankPoints } from './rankPoints.ts'
 import type { AbyssSession, RiftFarm } from '../shared/abyss.ts'
 import { serverFaction, serverRegion } from '../shared/servers.ts'
 import { concernsYou, GAME_ACTIVE_S, NO_NEARBY, type AggroMob, type Cube, type Enemy, type Nearby, type TargetPlayer, type Pet, type PvpKill, type ShopStock, type SoulToast, type TrackerStatus } from '../shared/tracker.ts'
@@ -334,6 +335,8 @@ function handleLine(line: string): void {
         // Not to the shop listeners: they open the merchant window, for a tab just opened.
         broadcast('tracker:shop', currentShop())
       }
+      // Another character's fights are not this one's: the DPS meter starts over.
+      if (msg.switched && name !== status.character) command({ cmd: 'dpsReset' })
       setStatus({ character: name, server: msg.server ?? null })
       learnServer(status.server)
       fieldBosses.setServer(msg.server ?? null)
@@ -474,6 +477,9 @@ function handleLine(line: string): void {
         points: msg.points,
         limit: msg.limit,
       })
+      break
+    case 'rankPoints':
+      rankPoints.read({ change: msg.change, name: msg.name ?? null })
       break
     case 'abyssGain':
       // Where: a rift's farm is the continents', not the Abyss's corridors at the same time.

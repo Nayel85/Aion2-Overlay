@@ -57,6 +57,9 @@ pub struct Character {
     /// The week's Abyss Points as the game last said: what its next total is a gain over.
     #[serde(default, rename = "abyssPoints", skip_serializing_if = "Option::is_none")]
     pub abyss_points: Option<u64>,
+    /// The rank points' total as the game last said: what its next total changes.
+    #[serde(default, rename = "rankPoints", skip_serializing_if = "Option::is_none")]
+    pub rank_points: Option<u64>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq)]
@@ -181,7 +184,7 @@ fn migrate(v1: &Value) -> Store {
     let current = v1["current"].as_str().map(str::to_string);
     let server_of = |name: &str| v1["characters"][name]["server"].as_u64().map(|s| s as u16);
     for (name, entry) in v1["characters"].as_object().into_iter().flatten() {
-        store.characters.insert(name.clone(), Character { server: server_of(name), legion: entry["guild"].as_str().map(str::to_string), abyss_points: None });
+        store.characters.insert(name.clone(), Character { server: server_of(name), legion: entry["guild"].as_str().map(str::to_string), abyss_points: None, rank_points: None });
     }
     let key = |name: Option<&str>| name.and_then(server_of).map_or_else(|| UNKNOWN_SERVER.to_string(), |s| s.to_string());
     let mut take = |key: String, pets: &Value| {
