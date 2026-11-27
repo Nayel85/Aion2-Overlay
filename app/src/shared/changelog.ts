@@ -11,6 +11,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.22',
+    items: [
+      "Updates from the menu: the app restarts on its own once the new files are copied (it closed and stayed closed). The update to this version still needs the step by hand: run nayel-install-update.ps1 from the %TEMP% folder once the app has closed.",
+      "Cleanup: what earlier updates left in the temp folder (hundreds of MB, old Lokthar names too) removed at every start; Lokthar's old data can be removed from Settings → Cache.",
+    ],
+  },
+  {
     version: '0.3.21',
     items: [
       "Duty board: its window opens with the Journal's Duty tab (learned once in its settings) and closes once your 5 missions are taken; each mission on one line with its rewards' icons; the advice weighs taking some then rerolling, at your server's market prices (questlog.gg), with rewards you can leave out or want first.",

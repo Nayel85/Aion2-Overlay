@@ -112,13 +112,29 @@ jobs:
           # latest.yml (and the blockmap) are what the app's updater reads: Settings → Updates.
           gh release create "$GITHUB_REF_NAME" "$EXE" "$EXE.sha256" "$EXE.blockmap" latest.yml "$ZIP" "$ZIP.sha256" "$INST" "$INST.sha256" Nayel-Overlay-installer.zip \
             --title "Nayel Overlay $GITHUB_REF_NAME" \
-            --notes "Nayel Overlay (Lokthar fork) from commit $GITHUB_SHA. No shared timers, no machine id. It goes online only for the optional Lokthar field boss sync (off by default) and when you check for updates (Settings → Updates).
+            --notes "Nayel Overlay (Lokthar fork) from commit $GITHUB_SHA. No shared timers, no machine id. It goes online only for the optional Lokthar field boss sync (off by default), the market prices, and when you check for updates (Settings → Updates).
 
-          Needs [Npcap](https://npcap.com) installed first. The installer is not code-signed: Windows may say \"Windows protected your PC\", choose More info → Run anyway.
+          Needs [Npcap](https://npcap.com) installed first.
+
+          **Windows warning:** the app is not code-signed, so Windows warns about a downloaded copy the first time (\"Windows protected your PC\"). Click **More info**, then **Run anyway**. For the zips: before unpacking, right-click the zip → Properties → tick **Unblock** → OK, and Windows asks nothing for the files in it. Updates from the app's menu are not downloaded by a browser and are not warned about.
 
           **Installer in a zip:** \`$INST\` holds the same \`$EXE\`, for browsers or chats that block downloading an .exe.
 
-          **Portable:** \`$ZIP\` is the same app without an installer: unpack it anywhere and run \`nayel-overlay.exe\`. To update it, unpack a newer zip over the folder (your settings and data are kept in %APPDATA%\\Nayel Overlay).
+          **Portable:** \`$ZIP\` is the same app without an installer: unpack it anywhere and run \`Nayel-Overlay.exe\`. To update it, use Settings → Updates, or unpack a newer zip over the folder (your settings and data are kept in %APPDATA%\\Nayel Overlay).
+
+          ---
+
+          **En français**
+
+          Il faut d'abord installer [Npcap](https://npcap.com).
+
+          **Avertissement de Windows :** l'app n'est pas signée, donc Windows prévient la première fois qu'on lance une copie téléchargée (« Windows a protégé votre ordinateur »). Clique sur **Informations complémentaires**, puis **Exécuter quand même**. Pour les zips : avant de décompresser, clic droit sur le zip → Propriétés → coche **Débloquer** → OK, et Windows ne demande plus rien pour les fichiers qu'il contient. Les mises à jour faites depuis le menu de l'app ne passent pas par un navigateur et ne déclenchent pas d'avertissement.
+
+          **Installeur dans un zip :** \`$INST\` contient le même \`$EXE\`, pour les navigateurs ou messageries qui bloquent le téléchargement d'un .exe.
+
+          **Portable :** \`$ZIP\` est la même app sans installeur : décompresse-la où tu veux et lance \`Nayel-Overlay.exe\`. Pour la mettre à jour, passe par Réglages → Mises à jour, ou décompresse un zip plus récent par-dessus le dossier (tes réglages et données restent dans %APPDATA%\\Nayel Overlay).
+
+          ---
 
           SHA-256 of \`$EXE\`: \`$HASH\`
           SHA-256 of \`$ZIP\`: \`$ZIPHASH\`
