@@ -11,6 +11,19 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.21',
+    items: [
+      "Duty board: its window opens with the Journal's Duty tab (learned once in its settings) and closes once your 5 missions are taken; each mission on one line with its rewards' icons; the advice weighs taking some then rerolling, at your server's market prices (questlog.gg), with rewards you can leave out or want first.",
+      "Arenas in the session: each match a run, Solo or Co-op, with your kills, deaths and assists; the other team your enemies, whatever their race.",
+      "Sessions: Hidden Cubes with all they gave, the Nightmares, arenas and Shugo games each one group to open, a gathering's bonus (a Poko's Skin Bundle) counted and shown beside its icon, the game's icons for Kina and the currencies.",
+      "Characters page: a wallet (Kina, Abyss Points, Oath Coins, Phantasmal Fragments, Centuryroot Tokens), the season's weekly bar, and the corridors open this time shared by the server's characters.",
+      "DPS meter: no other players' fights, no rows of 0, no more rows than your group in an instance, names that come late shown, and you known even when the app started mid-game.",
+      "Flight timer: steady in the air, refilling as soon as you land, even after the app restarted.",
+      "Personal bests: Corroded Decontamination Facility (2100) and the Hard modes' item levels.",
+      "Faster and lighter: much less work every second on several pages, portraits kept as files, a smaller app.",
+    ],
+  },
+  {
     version: '0.3.20',
     items: [
       "Duty board: its window opens each time you open the board in game, not only the first.",
