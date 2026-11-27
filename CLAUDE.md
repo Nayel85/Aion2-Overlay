@@ -8,7 +8,8 @@
   in its header.
 - Each table is read through its shared module, which builds what the app uses from it: `instances.ts` (the
   instances' catalogue: kinds, modes, worlds, bosses, item levels, chests, the Nightmares), `worlds.ts` (a
-  zone's name and type), `gather.ts` (recipes, gatherables), `sessions.ts`, `equipment.ts`, `servers.ts`...
+  zone's name and type), `gather.ts` (recipes, gatherables), `itemInfo.ts` (an item's name, grade, icon, kind; `itemRow` for a row),
+  `sessions.ts` (re-exporting it), `equipment.ts`, `servers.ts`...
 - Pages, components and the main process call those modules, never a table, and never write their own list
   of game content: a new list goes in a table (or a module built on one), so updating the data updates every
   page that shows it (tables, grids, filters). `app/tests/dataAccess.test.ts` checks the imports.
