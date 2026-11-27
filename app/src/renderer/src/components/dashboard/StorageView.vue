@@ -21,6 +21,7 @@ const ROWS: { id: StorageId; label: string; about: string }[] = [
   { id: 'updates', label: 'Update downloads', about: 'Installers of updates left in the temporary folder.' },
   { id: 'recordings', label: 'Packet recordings', about: 'The recordings you made of the game\'s traffic (Settings). Deleted for good.' },
   { id: 'fights', label: 'Saved fights', about: 'Your Combat history. Not a cache: delete fights one by one from that page.' },
+  { id: 'lokthar', label: "Lokthar's old data", about: "Lokthar's own folder, copied into this app at its first start. Remove it if you no longer use Lokthar." },
 ]
 const bytesOf = (id: StorageId): number => usage.value?.items.find((i) => i.id === id)?.bytes ?? 0
 /** The caches that are rebuilt (everything cleared but the recordings). */

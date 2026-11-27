@@ -29,6 +29,7 @@ import electronUpdater from 'electron-updater'
 import { promises as rawFs } from 'original-fs'
 import { broadcast } from './broadcast.ts'
 import { log } from './tracker.ts'
+import { clearUpdates } from './storage.ts'
 import { RELEASE_REPO, type UpdateState } from '../shared/update.ts'
 
 // electron-updater is CommonJS: its named exports sit on the default import in the ESM build.
@@ -166,6 +167,8 @@ const notesText = (notes: unknown): string | null =>
   typeof notes === 'string' ? notes : Array.isArray(notes) ? notes.map((n) => (n as { note?: string }).note ?? '').join('\n') : null
 
 export function startUpdater(): void {
+  // What earlier updates left in the temp folder (their downloads: 500 MB and more).
+  void clearUpdates()
   // What electron-builder's publish says (app-update.yml), said here too, with the token: the
   // releases are private.
   autoUpdater.setFeedURL({ provider: 'github', ...RELEASE_REPO, releaseType: 'release', private: true, token: UPDATE_TOKEN })

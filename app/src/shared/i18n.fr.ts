@@ -1834,4 +1834,6 @@ export const FR: Record<string, string> = {
   'Flight timer: steady in the air, refilling as soon as you land, even after the app restarted.': 'Compteur de vol : stable en vol, en recharge dès l\'atterrissage, même après un redémarrage de l\'app.',
   'Personal bests: Corroded Decontamination Facility (2100) and the Hard modes\' item levels.': 'Records : Corroded Decontamination Facility (2100) et les ilvl des modes Difficile.',
   'Faster and lighter: much less work every second on several pages, portraits kept as files, a smaller app.': 'Plus rapide et plus léger : beaucoup moins de calculs chaque seconde sur plusieurs pages, les portraits gardés en fichiers, une app plus petite.',
+  'Lokthar\'s old data': 'Anciennes données de Lokthar',
+  'Lokthar\'s own folder, copied into this app at its first start. Remove it if you no longer use Lokthar.': 'Le dossier de Lokthar, copié dans cette app à son premier lancement. Supprime-le si tu n\'utilises plus Lokthar.',
 }

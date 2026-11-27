@@ -1,11 +1,20 @@
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import test from 'node:test'
+import test, { after } from 'node:test'
 import { flushJsonFiles, jsonFile } from '../src/main/jsonFile.ts'
 
-const dir = (): string => mkdtempSync(join(tmpdir(), 'nayel-json-'))
+/** Each test's own folder, all removed once they ran (900 were left in the temp folder, 2026-11-27). */
+const made: string[] = []
+const dir = (): string => {
+  const d = mkdtempSync(join(tmpdir(), 'nayel-json-'))
+  made.push(d)
+  return d
+}
+after(() => {
+  for (const d of made) rmSync(d, { recursive: true, force: true })
+})
 
 test('a data file reads what it holds, or null when none or unreadable', () => {
   const d = dir()

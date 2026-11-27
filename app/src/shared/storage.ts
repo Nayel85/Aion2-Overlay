@@ -1,5 +1,5 @@
 /** What the app keeps on disk, for the Cache page: each kind with its size, and which can be cleared. */
-export type StorageId = 'tiles' | 'browser' | 'logs' | 'updates' | 'recordings' | 'fights'
+export type StorageId = 'tiles' | 'browser' | 'logs' | 'updates' | 'recordings' | 'fights' | 'lokthar'
 
 export interface StorageItem {
   id: StorageId
@@ -14,7 +14,7 @@ export interface StorageUsage {
   items: StorageItem[]
 }
 
-export const STORAGE_CLEARABLE: readonly StorageId[] = ['tiles', 'browser', 'logs', 'updates', 'recordings']
+export const STORAGE_CLEARABLE: readonly StorageId[] = ['tiles', 'browser', 'logs', 'updates', 'recordings', 'lokthar']
 
 /** 1536 → "1.5 KB". */
 export function formatBytes(n: number): string {
