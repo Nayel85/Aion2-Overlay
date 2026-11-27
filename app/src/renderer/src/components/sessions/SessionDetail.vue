@@ -19,17 +19,18 @@ import { useApp } from '@/stores/app.ts'
 import { characterId } from '@shared/characters.ts'
 import { formatAmount } from '@shared/earnings.ts'
 import { formatKina } from '@shared/kina.ts'
-import { AP_ITEM, countedRuns, CURRENCY_LABELS, currencyIcon, KINA_ITEM, gatheredByResource, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsOneOff, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type GatheredResource, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
+import { AP_ITEM, countedRuns, runMs, CURRENCY_LABELS, currencyIcon, KINA_ITEM, gatheredByResource, itemIcon, itemInfo, LOOT_KINDS, lootCounts, mergeRuns, runCounts, runGroups, runIsOneOff, runIsTimed, runKindLabel, runName, questName, runRewards, sourceLabel, type DungeonRun, type DutyDone, type GatheredResource, type PlaySession, type SupplyDone, supplyName } from '@shared/sessions.ts'
 import { recipeOf } from '@shared/gather.ts'
 
 const props = withDefaults(defineProps<{ session: PlaySession; live?: boolean; header?: boolean }>(), { live: false, header: true })
 /** The saved fights: each run's best (your DPS on a boss in it, a Nightmare's boss). */
 const fights = useFights()
-const runBest = (r: DungeonRun) => runFight(r, fights.value)
+/** Each run's best fight (yours, by DPS), found once per change of the runs or the fights: not per render. */
+const bests = computed(() => new Map((props.session.runs ?? []).map((r) => [r, runFight(r, fights.value)])))
+const runBest = (r: DungeonRun) => bests.value.get(r) ?? null
 const store = useApp()
 
 /** A run's time: its clear time once its last boss fell, else how long you were in it. */
-const runMs = (r: DungeonRun): number => (r.cleared !== undefined ? r.cleared - (r.started ?? r.start) : (r.end ?? r.start) - r.start)
 const className = computed(() => (props.session.server !== null ? (store.characters[characterId(props.session.server, props.session.name)]?.className ?? null) : null))
 const counts = computed(() => lootCounts(countedRuns(props.session)))
 const deaths = computed(() => (props.session.runs ?? []).reduce((n, r) => n + (r.deaths ?? 0), 0))

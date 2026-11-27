@@ -10,7 +10,7 @@
  */
 import { DROPS } from './drops.ts'
 import { DUNGEON_BOSSES } from './dungeonBosses.ts'
-import { goldKind, itemInfo, runCounts, runKindLabel, runName, type DungeonRun, type GoldKind, type LootCounts, type PlaySession } from './sessions.ts'
+import { goldKind, itemInfo, runCounts, runKindLabel, runName, type DungeonRun, type GoldKind, type LootCounts, type PlaySession, runMs } from './sessions.ts'
 
 /** Runs whose loot is not a dungeon's cubes. */
 const NOT_DUNGEON_KINDS = new Set(['shugo', 'invasion', 'fieldevent', 'fieldboss', 'hiddencube', 'arena'])
@@ -58,7 +58,6 @@ export function lootChoices(runs: NamedRun[]): { kinds: { id: string; label: str
 }
 
 /** How long a run was: in it (its clear time when it cleared). */
-const runMs = (r: DungeonRun): number => (r.cleared !== undefined ? r.cleared - (r.started ?? r.start) : (r.end ?? r.start) - r.start)
 /** A run's cubes: as recorded, else from its Kina (300,000 a cube in the runs before they were). */
 const KINA_A_CUBE = 300_000
 export const runCubes = (r: DungeonRun): number => r.cubes ?? Math.max(1, Math.round((r.loot?.['930100031'] ?? r.kina) / KINA_A_CUBE))

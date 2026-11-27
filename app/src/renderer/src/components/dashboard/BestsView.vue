@@ -13,7 +13,7 @@ import EmptyState from '@/components/ui/EmptyState.vue'
 import { useArmed } from '@/lib/confirm.ts'
 import CharacterChips from '@/components/CharacterChips.vue'
 import { shortDate } from '@/lib/format.ts'
-import { provideFightOpener, runClearFight } from '@/lib/fights.ts'
+import { fightDps, provideFightOpener, runClearFight } from '@/lib/fights.ts'
 import FightLink from '@/components/FightLink.vue'
 import CharName from '@/components/CharName.vue'
 import { onHistory } from '@/lib/history.ts'
@@ -27,7 +27,7 @@ import { t } from '@/lib/i18n.ts'
 import { useStored } from '@/lib/now.ts'
 import { useApp } from '@/stores/app.ts'
 import type { Best, Encounter, FightSummary, FightYou } from '@shared/meter.ts'
-import { runKindLabel, zoneMode } from '@shared/sessions.ts'
+import { clearMs, runKindLabel, zoneMode } from '@shared/sessions.ts'
 import { CONTENT, INSTANCES, NIGHTMARES, NIGHTMARE_LEVELS, NIGHTMARE_ZONE, CONTENT_ORDER, instanceAt, instanceIlvl, nightmareIlvl, type ContentKind, type NightmareGrade } from '@shared/instances.ts'
 import { knownZone, zoneName, zoneType } from '@shared/worlds.ts'
 
@@ -124,11 +124,10 @@ const fastest = computed(() => {
     if (kindOf(r.world) !== kind.value || !mine(r.character)) continue
     const key = `${r.world}|${r.character}`
     const was = best.get(key)
-    if (!was || r.cleared! - r.started! < was.cleared! - was.started!) best.set(key, r)
+    if (!was || clearMs(r) < clearMs(was)) best.set(key, r)
   }
   return [...best.values()].sort((a, b) => a.world - b.world || a.cleared! - a.started! - (b.cleared! - b.started!))
 })
-const clearMs = (r: { started?: number; cleared?: number }): number => r.cleared! - r.started!
 
 // ---- the fixed grids: the catalogue's instances (shared/instances.ts), a mode per column ---------------------
 
@@ -201,7 +200,6 @@ const fixed = computed(() => {
 // ---- Nightmares: a boss's row, a level's column ------------------------------------------------------------
 
 const LEVELS = NIGHTMARE_LEVELS
-const dpsOf = (f: FightSummary): number => (f.myDamage ?? 0) / Math.max(1, f.durationMs / 1000)
 type NightmareFight = (typeof nightmareFights.value)[number]
 const grid = computed(() => {
   // By boss, by level, by character: their best.
@@ -211,7 +209,7 @@ const grid = computed(() => {
     const row = rows.get(f.bossName) ?? new Map<number, Map<string, NightmareFight>>()
     const cell = row.get(f.level) ?? new Map<string, NightmareFight>()
     const was = cell.get(f.myName)
-    if (!was || (metric.value === 'dps' ? dpsOf(f) > dpsOf(was) : f.durationMs < was.durationMs)) cell.set(f.myName, f)
+    if (!was || (metric.value === 'dps' ? fightDps(f) > fightDps(was) : f.durationMs < was.durationMs)) cell.set(f.myName, f)
     row.set(f.level, cell)
     rows.set(f.bossName, row)
   }
@@ -326,7 +324,7 @@ onHistory(load)
                         <span class="group/cell inline-flex items-center gap-0.5">
                           <FightLink
                             :as="metric === 'dps' ? 'dps' : 'time'"
-                            :value="metric === 'dps' ? dpsOf(r.cells.get(l)!.get(who)!) : r.cells.get(l)!.get(who)!.durationMs"
+                            :value="metric === 'dps' ? fightDps(r.cells.get(l)!.get(who)!) : r.cells.get(l)!.get(who)!.durationMs"
                             :fight="r.cells.get(l)!.get(who)!.id"
                             :title="[who, shortDate(r.cells.get(l)!.get(who)!.startTimeMs), gear(r.cells.get(l)!.get(who)!.id)].filter(Boolean).join(' · ')"
                           />

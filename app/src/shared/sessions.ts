@@ -191,6 +191,10 @@ export function sessionDigest(s: PlaySession, tr: Translate = untranslated): str
 /** Done at once, with what it gave: a field boss's chest, a Hidden Cube opened. Not a dungeon. */
 export const runIsOneOff = (run: DungeonRun): boolean => run.kind === 'fieldboss' || run.kind === 'hiddencube'
 /** A field boss is killed, not cleared, a cube opened: no clear time, just when. */
+/** A run's time: from the game letting you in to its last boss (cleared), else in it to out. */
+export const runMs = (r: DungeonRun): number => (r.cleared !== undefined ? r.cleared - (r.started ?? r.start) : (r.end ?? r.start) - r.start)
+/** A cleared run's clear time, the game's (let in to the last boss): for runs with both. */
+export const clearMs = (r: { started?: number; cleared?: number }): number => r.cleared! - r.started!
 export const runIsTimed = (run: DungeonRun): boolean => !runIsOneOff(run)
 
 /** questlog's item grades: Unique (gold) and up are counted, to 61; 71 (Soul Codex, Silentium) is no colour. */
