@@ -3,6 +3,33 @@
 
 use super::*;
 
+/// A duty mission's rewards: `<count u8>`, then each `<item u32> <amount varint> 00 <chance u32,
+/// of 100,000,000> 00 00 00 00`. The owner's 2026-11-23 Safe Hiking: Kina (Bound) x10,000 sure,
+/// Yggdrasil Log 50%, Small Odyle Energy 33% and 25%, Cogni Soul Crystal x200 10%. Its rewards (item,
+/// amount, chance) and where they end; None unless all read.
+pub type DutyReward = (u32, u32, u32);
+/// A duty mission: its quest, its place on the board, its rewards.
+pub type DutyMission = (u32, u32, Vec<DutyReward>);
+
+/// An entry's two lists of items from `at`: its items and where they end; None unless all read as
+/// items, at least one (a player part's bytes can read as two empty lists).
+fn board_lists(b: &[u8], mut at: usize) -> Option<(Vec<(u32, u32)>, usize)> {
+    let mut items = Vec::new();
+    for _ in 0..2 {
+        let n = *b.get(at)? as usize;
+        at += 1;
+        for _ in 0..n {
+            let (item, amount) = (u32_at(b, at)?, u32_at(b, at + 4)?);
+            if !(100_000_000..1_000_000_000).contains(&item) || amount == 0 || amount > 100_000_000 {
+                return None;
+            }
+            items.push((item, amount));
+            at += 8;
+        }
+    }
+    (!items.is_empty()).then_some((items, at))
+}
+
 /// Each expedition's cubes opened toward its guaranteed chest (`12 57 <count u8> (<world u32> <cubes u8>
 /// <u8>)*`), sent as you log in: the owner's 2026-11-22 login, Draupnir (600032, Conquest) at 3, which
 /// the game shows as 3 of 14. (world, cubes, the last byte: 1 on some Explorations, not yet understood).
