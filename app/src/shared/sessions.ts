@@ -168,7 +168,12 @@ export function mergeRuns(runs: DungeonRun[]): DungeonRun & { count: number } {
 export function runGroups(runs: DungeonRun[]): DungeonRun[][] {
   const by = new Map<string, DungeonRun[]>()
   // By zone and its name as shown (an arena's Solo and Co-op apart).
-  for (const r of runs) by.set(`${r.world}:${runName(r)}`, [...(by.get(`${r.world}:${runName(r)}`) ?? []), r])
+  for (const r of runs) {
+    const key = `${r.world}:${runName(r)}`
+    const group = by.get(key)
+    if (group) group.push(r)
+    else by.set(key, [r])
+  }
   return [...by.values()]
 }
 /**
