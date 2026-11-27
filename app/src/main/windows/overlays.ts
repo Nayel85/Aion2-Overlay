@@ -68,6 +68,8 @@ export function measuredOverlay(o: {
 }) {
   let win: BrowserWindow | null = null
   let size = { width: 0, height: 0 }
+  /** Opened only to be placed (a `manual` one, with the overlays being placed): closed once they are. */
+  let toPlace = false
   const position = (): Point => {
     if (o.corner) {
       const c = o.corner()
@@ -102,6 +104,7 @@ export function measuredOverlay(o: {
     bounds: (): Rectangle | null => (alive(win) && win.isVisible() ? win.getBounds() : null),
     /** Open it, unless it is turned off. It shows once its page has measured itself. */
     create(): void {
+      toPlace = false
       if (!o.enabled() || alive(win)) return
       const p = position()
       const w = overlayWindow({ x: p.x, y: p.y, width: 300, height: 120, ...(o.clickThrough ? { focusable: false } : {}) })
@@ -119,6 +122,17 @@ export function measuredOverlay(o: {
     close(): void {
       if (alive(win)) win.destroy()
       win = null
+    },
+    /** A `manual` one opened to be placed (not by its module). */
+    openToPlace(): void {
+      if (alive(win)) return
+      this.create()
+      toPlace = alive(win)
+    },
+    /** The overlays placed: one opened only for that goes (a new duty board must not show it, 2026-11-27). */
+    closePlaced(): void {
+      if (toPlace) this.close()
+      toPlace = false
     },
     refresh,
     /** The dashboard came up (it can be moved) or went down (clicks pass through). */

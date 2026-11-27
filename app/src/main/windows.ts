@@ -315,8 +315,9 @@ function applyArranging(on: boolean): void {
   // never catches a click meant for the game.
   setHudEditing(on, false)
   for (const m of MEASURED) m.panelUp(on)
-  // The ones opened by their module (the merchant with the shop) open now too, to be placed.
-  if (on) for (const m of MEASURED) if (m.manual && m.placeable) m.create()
+  // The ones opened by their module (the merchant with the shop) open now too, to be placed, and
+  // close once placed unless their module opened them meanwhile.
+  for (const m of MEASURED) if (m.manual && m.placeable) on ? m.openToPlace() : m.closePlaced()
 }
 // Focus moving between the app's windows (a drag starts on an overlay) and the game: a moment
 // later, once the window taking it has it.
