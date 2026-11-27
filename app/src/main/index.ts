@@ -144,7 +144,8 @@ if (!app.requestSingleInstanceLock()) {
     }
     const leftAll = (why: string): void => SCREENS.forEach((id) => left(id, why))
     tracker.onShop(() => openedBy('merchant'))
-    tracker.onEvent('dutyBoard', (ev) => ev.opened === true && openedBy('duty'))
+    // Not a board past its time: the day before's, sent as you log in or switch character.
+    tracker.onEvent('dutyBoard', (ev) => ev.opened === true && (ev.expires === null || ev.expires > Date.now()) && openedBy('duty'))
     tracker.onEvent('dutyTaken', () => openedBy('duty'))
     // The board opened again, its board already loaded: the game says nothing then (its `41 8D` comes
     // as it closes), so the Journal's Duty tab is looked for on the screen, once learned.

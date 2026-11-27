@@ -196,6 +196,8 @@ pub struct Tracker {
     /// When you last opened the duty board, rerolled it or took or handed in a mission: the board after
     /// it is one you are looking at (not the one sent as you log in).
     duty_opened_at: i64,
+    /// When you last logged in or switched character: the game sends its duty messages then too.
+    logged_in_at: i64,
     /// An arena's players by id, and its last kill (its score update names who assisted).
     arena_players: std::collections::HashMap<u32, String>,
     arena_kill: Option<(i64, u32, u32)>,
@@ -302,6 +304,7 @@ impl Tracker {
             duty: HashMap::new(),
             duty_pending: Vec::new(),
             duty_opened_at: i64::MIN,
+            logged_in_at: i64::MIN,
             arena_players: std::collections::HashMap::new(),
             arena_kill: None,
             arena_foes: std::collections::HashSet::new(),
@@ -634,6 +637,7 @@ impl Tracker {
             p::OP_SELF => {
                 if let Some(who) = p::character(f) {
                     self.self_entity = Some(who.entity);
+                    self.logged_in_at = ts;
                     self.character_seen(ts, who);
                 }
             }

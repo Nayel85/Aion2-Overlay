@@ -3,6 +3,9 @@
 
 use super::*;
 
+/// After a login or a character switch, this long without a board taken as opened by you.
+const LOGIN_QUIET_MS: i64 = 15_000;
+
 impl Tracker {
     /// Handles `op` if it is one of these messages: false when it is not.
     pub(super) fn rewards_frame(&mut self, op: [u8; 2], ts: i64, f: &[u8]) -> bool {
@@ -88,8 +91,9 @@ impl Tracker {
                             json!({ "quest": quest, "place": place, "rewards": rewards })
                         })
                         .collect();
-                    // Looked at: right after you opened it, rerolled it or took a mission; not the one sent as you log in.
-                    let opened = ts - self.duty_opened_at <= 2000;
+                    // Looked at: right after you opened it, rerolled it or took a mission; not the one sent as you log in
+                    // or switch character (the window opened at a switch, 2026-11-27).
+                    let opened = ts - self.duty_opened_at <= 2000 && ts - self.logged_in_at > LOGIN_QUIET_MS;
                     (self.emit)(json!({ "type": "dutyBoard", "ts": ts, "opened": opened, "rerolls": board.rerolls, "expires": board.expires_ms, "missions": missions }));
                 }
             }
