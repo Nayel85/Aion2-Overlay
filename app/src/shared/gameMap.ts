@@ -57,3 +57,18 @@ export function detailTiles(cols: number, rows: number, col: number, row: number
   }
   return tiles
 }
+
+/** A report that tells something (its status, zone, map, mode, capture or error; its match moving by more than a little), not just a new picture's timing. */
+export function gameMapChanged(next: GameMapState, was: GameMapState | null): boolean {
+  if (!was) return true
+  return (
+    next.status !== was.status ||
+    next.world !== was.world ||
+    next.detail !== was.detail ||
+    next.mode !== was.mode ||
+    next.capture !== was.capture ||
+    next.error?.at !== was.error?.at ||
+    Math.abs(next.inliers - was.inliers) > 3 ||
+    Math.abs((next.score ?? 0) - (was.score ?? 0)) > 3
+  )
+}

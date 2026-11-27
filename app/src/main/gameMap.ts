@@ -15,7 +15,7 @@ import { broadcast, send } from './broadcast.ts'
 import { settings } from './settings.ts'
 import { gameMapLogPath, glog } from './gameMapLog.ts'
 import { load, gameMapHidden, panelVisible } from './windows.ts'
-import type { GameMapState } from '../shared/gameMap.ts'
+import { gameMapChanged, type GameMapState } from '../shared/gameMap.ts'
 import type { Rect } from '../shared/settings.ts'
 
 let overlay: BrowserWindow | null = null
@@ -223,7 +223,7 @@ export const gameMap = {
     if (next.status !== state.status || next.detail !== state.detail || next.capture !== state.capture) glog(`${next.status}, capture ${next.capture ?? '?'}, ${next.detail ?? '?'} map${next.world ? `, zone ${next.world}` : ''}`)
     if (next.error && next.error.at !== state.error?.at) glog(`${next.error.text}`)
     const merged = { ...next, preview: next.preview === undefined ? state.preview : next.preview }
-    const changed = next.status !== state.status || next.world !== state.world || next.detail !== state.detail || next.mode !== state.mode || next.capture !== state.capture || next.error?.at !== state.error?.at || Math.abs(next.inliers - state.inliers) > 3 || Math.abs((next.score ?? 0) - (state.score ?? 0)) > 3
+    const changed = gameMapChanged(next, state)
     if (changed || next.preview !== undefined) setState(merged, next.preview !== undefined)
     else state = merged
   },

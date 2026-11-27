@@ -10,7 +10,7 @@ import { gatherLayers, useGatherables } from '@/lib/gatherables.ts'
 import { mapImage, nearbyPets, PET_COLORS, project, useSpawns , useCurrentWorld } from '@/lib/spawns.ts'
 import { useApp } from '@/stores/app.ts'
 import MapVision from '@/workers/mapVision.ts?worker'
-import { detailGroupAt, type GameMapState } from '@shared/gameMap.ts'
+import { gameMapChanged, detailGroupAt, type GameMapState } from '@shared/gameMap.ts'
 import type { InvokeResult } from '@shared/ipc.ts'
 import { canAttack } from '@shared/tracker.ts'
 import { drawSkull } from '@/lib/skull.ts'
@@ -565,7 +565,10 @@ watch([() => placed.value?.m, found, gatherables, pets, () => store.cubes, () =>
 
 // ---- the loop, and what the Map page shows ------------------------------------------------------
 
-let reported = ''
+let reported: GameMapState | null = null
+let reportedAt = 0
+/** The timings (ms, pictures) sent this often at least, for the Map page. */
+const TIMINGS_EVERY_MS = 2_000
 function report(): void {
   const state: GameMapState = {
     status: !world.value ? 'nomap' : found.value ? 'found' : 'searching',
@@ -580,11 +583,13 @@ function report(): void {
     capture: capture.value,
     pictures,
   }
-  const key = JSON.stringify(state)
-  // The dashboard requests the preview only while inspecting this map.
+  // The dashboard requests the preview only while inspecting this map. Otherwise only what tells
+  // something (main's own test), and the timings every few seconds: not each picture, 4 a second.
   const withPreview = preview !== null
-  if (key === reported && !withPreview) return
-  reported = key
+  const now = Date.now()
+  if (!withPreview && !gameMapChanged(state, reported) && now - reportedAt < TIMINGS_EVERY_MS) return
+  reported = state
+  reportedAt = now
 
   api.invoke('gamemap:report', withPreview ? { ...state, preview } : state).catch((err: unknown) => {
     // Said once: Map V2 shows nothing new while this fails.
