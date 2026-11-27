@@ -621,6 +621,16 @@ impl Tracker {
                     }
                 }
             }
+            // Your own resources: who you are, for the meter when it does not know yet (the app started
+            // in the middle of a game: it learns it at a login or a new zone, 2026-11-27).
+            p::OP_RESOURCES => {
+                if self.storage.local_player_id().is_none()
+                    && let Some(me) = p::resources_owner(f)
+                {
+                    self.storage.set_local_player_id(Some(i64::from(me)));
+                    tracing::info!("meter: you are {me}, from your resources");
+                }
+            }
             p::OP_SELF => {
                 if let Some(who) = p::character(f) {
                     self.self_entity = Some(who.entity);

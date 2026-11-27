@@ -103,6 +103,9 @@ pub const OP_DUTY_REOPEN: [u8; 2] = [0x41, 0x8D];
 /// <server u16> <name len u8> <name>`...), each kill (`25 E3`: the killer's `<id u32> 00 00 <server
 /// u16>`, the victim's), and the score of those it changed (`26 E3`: right after a kill, the killer,
 /// the victim and those who assisted).
+/// Your resources as they change (`00 8D <entity varint> ...`: HP, flight power...): the game sends them
+/// for you alone, so its entity is yours (A2Tools reads its flight power from it).
+pub const OP_RESOURCES: [u8; 2] = [0x00, 0x8D];
 pub const OP_ARENA_PLAYERS: [u8; 2] = [0x19, 0xE3];
 pub const OP_ARENA_KILL: [u8; 2] = [0x25, 0xE3];
 pub const OP_ARENA_SCORE: [u8; 2] = [0x26, 0xE3];
@@ -134,6 +137,12 @@ pub(super) fn u64_at(b: &[u8], at: usize) -> Option<u64> {
 
 pub(super) fn f32_at(b: &[u8], at: usize) -> Option<f32> {
     Some(f32::from_le_bytes(b.get(at..at + 4)?.try_into().ok()?))
+}
+
+/// Whose resources a `00 8D` tells: yours.
+pub fn resources_owner(frame: &[u8]) -> Option<u32> {
+    let b = body(frame, OP_RESOURCES)?;
+    varint(b, 0).map(|(v, _)| v).filter(|&v| v > 0)
 }
 
 /// The frame's opcode.
@@ -542,6 +551,13 @@ mod tests {
     fn you_come_with_your_class_level_and_gear_score() {
         let me = character(&frame(OP_SELF, &hex("c9445f81e32b37044b7369787e0506000000012d000000ac0a0000ac0a00002d000000"))).unwrap();
         assert_eq!((me.name.as_str(), me.server, me.class, me.level, me.gear_score), ("Ksix", 1406, Some(6), Some(45), Some(2732)));
+    }
+
+    #[test]
+    fn your_resources_say_who_you_are() {
+        // The owner's 2026-11-27 flight readings: entity 12360 (c8 60), one entry, FP.
+        assert_eq!(resources_owner(&frame(OP_RESOURCES, &hex("c86001010668370800"))), Some(12_360));
+        assert_eq!(resources_owner(&frame(OP_SELF, &hex("c86001010668370800"))), None);
     }
 
     #[test]
