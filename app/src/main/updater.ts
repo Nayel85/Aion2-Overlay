@@ -75,6 +75,8 @@ let state: UpdateState = {
 
 /** The Updates page looks the newest release up when opened, this often at most. */
 const PEEK_EVERY_MS = 10 * 60_000
+/** A lookup older than this is done again before an install: a newer version may be out since. */
+const FRESH_MS = 60_000
 /** Looked up by itself too (the bubble's "!" badge): a while after the app starts, then every half hour. */
 const LOOK_AFTER_MS = 30_000
 const LOOK_EVERY_MS = 30 * 60_000
@@ -210,7 +212,7 @@ export const updater = {
    * download links name the newest version's files). Not again within a few minutes.
    */
   peek(): void {
-    if (!['idle', 'current', 'error'].includes(state.status)) return
+    if (!['idle', 'current', 'available', 'error'].includes(state.status)) return
     if (state.checkedAt && Date.now() - state.checkedAt < PEEK_EVERY_MS) return
     andInstall = false
     void autoUpdater.checkForUpdates().catch((err: unknown) => set({ status: 'error', error: String(err) }))
@@ -223,6 +225,9 @@ export const updater = {
   },
   download(): void {
     if (state.status !== 'available' && state.status !== 'error') return
+    // The version looked up a while ago may no longer be the newest (another came out since): looked
+    // up again first, so the newest goes in at once, not one update after the other.
+    if (!state.checkedAt || Date.now() - state.checkedAt > FRESH_MS) return updater.check()
     // Asked for (Check, or Retry after an error): it goes all the way, as Check does.
     andInstall = true
     set({ status: 'downloading', percent: 0, error: null })
