@@ -12,8 +12,10 @@ function pages(): Map<string, string> {
 }
 
 test('every overlay is declared once in main, opened, shown and placed alike (OVERLAYS)', () => {
+  // The overlays in windows/overlays.ts, the other windows in windows.ts.
   const windows = read('main/windows.ts')
-  const registry = windows.slice(windows.indexOf('const OVERLAYS: Record<OverlayId'), windows.indexOf('const MEASURED ='))
+  const overlays = read('main/windows/overlays.ts')
+  const registry = overlays.slice(overlays.indexOf('const OVERLAYS: Record<OverlayId'), overlays.indexOf('const MEASURED ='))
   for (const id of OVERLAY_IDS) assert.match(registry, new RegExp(`\\b${id}: \\w+Overlay,`), id)
   // No window of its own besides them: only the bubble, the dashboard, the details and the map's.
   const own = [...windows.matchAll(/^let (\w+): BrowserWindow \| null = null/gm)].map((m) => m[1])

@@ -43,5 +43,11 @@
 - A table the engine and the app both need is one file in `app/src/shared` (the buffs, the field bosses'
   monster codes, the pets, the spawns), the engine reading it with `include_str!`; questlog's dungeon data
   comes from one script, `app/scripts/fetch-loot.mjs` (drops, cube bosses, guaranteed chests).
-- The engine's packet readers share `tracker/protocol.rs`'s helpers (`u16_at`, `u32_at`, `varint`...).
+- The engine's packet readers share `tracker/protocol.rs`'s helpers (`u16_at`, `u32_at`, `varint`...); each
+  domain's readers are in `tracker/protocol/<domain>.rs`, re-exported (`p::...` everywhere).
+- `Tracker`'s methods go in the file of their domain (`tracker/pets.rs`, `players.rs`, `login.rs`, `monsters.rs`,
+  `rewards.rs`...: `impl Tracker` there); `tracker/mod.rs` keeps the state and `frame`'s dispatch.
+- The main process's windows: `main/windows/frame.ts` makes and places any window, `main/windows/overlays.ts`
+  holds every overlay (`measuredOverlay`, `OVERLAYS`), `main/windows.ts` the bubble, the dashboard, the details
+  and the game in front, re-exporting the rest: import from `./windows.ts`.
   The files copied from A2Tools DPS Meter stay as copied, to follow upstream.
