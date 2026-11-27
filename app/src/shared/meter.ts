@@ -120,6 +120,12 @@ export function meterRows(
     .sort((a, b) => b.value - a.value || a.id - b.id)
 }
 
+/**
+ * A fight of yours: you or your party hit its target. The meter's boss mode follows any boss hit
+ * around you, someone farming beside you too (2026-11-27): one of theirs is not shown.
+ */
+export const yourFight = (m: MeterData): boolean => m.rows.some((r) => (r.you || r.party) && r.damage > 0)
+
 /** How long until the target dies at the damage per second it takes now; null when not a boss or not known. */
 export function timeToKill(m: MeterData): number | null {
   const t = m.target

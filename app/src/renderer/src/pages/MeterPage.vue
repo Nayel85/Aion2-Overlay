@@ -27,6 +27,7 @@ import {
   METER_STATS,
   meterRows,
   NO_METER,
+  yourFight,
   TARGET_MODE_LABELS,
   timeToKill,
   type MeterData,
@@ -177,7 +178,8 @@ const bestGain = computed(() => (newBest.value && newBest.value.before > 0 ? Mat
 const shortDps = (n: number): string => (n >= 1e6 ? `${(n / 1e6).toFixed(2)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}k` : String(n))
 
 onMounted(async () => {
-  offs.push(api.on('meter:dps', (m) => (meter.value = m)))
+  // Someone else's fight (a boss they farm beside you) left out, but with every player shown.
+  offs.push(api.on('meter:dps', (m) => (!m.target || cfg.value.players === 'all' || yourFight(m)) && (meter.value = m)))
   offs.push(
     api.on('meter:personalBest', (b) => {
       newBest.value = b
