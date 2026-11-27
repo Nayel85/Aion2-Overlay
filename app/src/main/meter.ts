@@ -11,11 +11,14 @@ import { command, tracker } from './tracker.ts'
 import type { Buff, BuffTrack, FightBuffs } from '../shared/buffs.ts'
 import { pveInstance } from '../shared/sessions.ts'
 import { zoneType } from '../shared/worlds.ts'
-import { CLASS_NAMES, detailsView, meterData, NO_METER, unmaskName, type DetailsActor, type DetailsDefense, type DetailsSkill, type DetailsSource, type DetailsView, type DpsEvent, type FightRecord, type FightSummary, type MeterData, type PersonalView, type TargetDetails, NO_PERSONAL, NO_RECORDINGS, type Recordings, type TargetMode, type Encounter, type NewBest, listedFight, type FightYou } from '../shared/meter.ts'
+import type { PartyMember } from '../shared/party.ts'
+import { CLASS_NAMES, detailsView, meterData, NO_METER, withParty, unmaskName, type DetailsActor, type DetailsDefense, type DetailsSkill, type DetailsSource, type DetailsView, type DpsEvent, type FightRecord, type FightSummary, type MeterData, type PersonalView, type TargetDetails, NO_PERSONAL, NO_RECORDINGS, type Recordings, type TargetMode, type Encounter, type NewBest, listedFight, type FightYou } from '../shared/meter.ts'
 
 const ASK_TIMEOUT_MS = 5000
 
 let meter: MeterData = NO_METER
+/** Your party, as the engine last said: in an instance each member has a row from its start. */
+let members: PartyMember[] = []
 let ping: number | null = null
 let buffs: Buff[] = []
 let recordings: Recordings = NO_RECORDINGS
@@ -86,8 +89,22 @@ export function startMeter(): void {
   tracker.onEvent('dps', (ev) => {
     meter = meterData(ev as unknown as DpsEvent, Date.now(), ping)
     for (const r of meter.rows) if (!r.name.includes('*') && !r.name.startsWith('#')) knownNames.add(r.name)
-    broadcast('meter:dps', meter, ['panel', 'meter', 'unified'])
+    send()
     for (const fn of meterListeners) fn(meter)
+  })
+  tracker.onEvent('party', (ev) => {
+    members = ev.members ?? []
+    send()
+  })
+  // Into a PvE instance (from a known zone: not the app starting in one): the meter starts over,
+  // its rows your group's.
+  tracker.onEvent('nearby', (ev) => {
+    const was = tracker.nearby().world
+    const world = ev.world ?? null
+    if (was === null || world === was || !pveInstance(world)) return
+    command({ cmd: 'dpsReset' })
+    meter = { ...NO_METER, at: Date.now(), ping, meKnown: meter.meKnown, me: meter.me }
+    send(world)
   })
   // A player selected (or let go): the meter's target follows.
   let mode = ''
@@ -105,7 +122,7 @@ export function startMeter(): void {
   tracker.onEvent('ping', (ev) => {
     ping = ev.ms ?? null
     meter = { ...meter, ping }
-    broadcast('meter:dps', meter, ['panel', 'meter', 'unified'])
+    send()
   })
   tracker.onEvent('buffs', (ev) => {
     buffs = ev.buffs ?? []
@@ -125,6 +142,12 @@ export function startMeter(): void {
     applySettings()
   })
 }
+
+/** The meter to the windows: in a PvE instance with your whole group (`world`: the zone it is in, when the tracker has not kept it yet). */
+function send(world = tracker.nearby().world): void {
+  broadcast('meter:dps', shown(world), ['panel', 'meter', 'unified'])
+}
+const shown = (world = tracker.nearby().world): MeterData => (pveInstance(world) ? withParty(meter, members, tracker.status().character) : meter)
 
 /** Player names seen on the live meter this session: they restore the names the parser masked in fights saved earlier. */
 const knownNames = new Set<string>()
@@ -206,7 +229,7 @@ async function pvpDetails(source: Extract<DetailsSource, { kind: 'pvp' }>): Prom
 }
 
 export const meterState = {
-  meter: (): MeterData => meter,
+  meter: (): MeterData => shown(),
   /** Start the fight over: no target, no damage (the engine saves the fights on it first). */
   reset(): void {
     command({ cmd: 'dpsReset' })

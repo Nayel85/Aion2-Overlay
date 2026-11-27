@@ -3,6 +3,7 @@
  * what the meter window shows of it. The wire format is documented in engine/src/sidecar.rs; the
  * fields are A2Tools DPS Meter's `DpsData`.
  */
+import type { PartyMember } from './party.ts'
 import type { BuffTrack, FightBuffs } from './buffs.ts'
 
 /** One row of the meter: a player (or the Others row on an open-world boss). */
@@ -118,6 +119,37 @@ export function meterRows(
     // keeping its size), and their healing or damage taken only when there is some.
     .filter((r) => r.value > 0 || (stat === 'damage' && (r.you || r.party)))
     .sort((a, b) => b.value - a.value || a.id - b.id)
+}
+
+/**
+ * The meter with a row of nothing for each member of your party it has none for yet (by name, or by
+ * entity once seen): in an instance the whole group shows from its start, not as each one hits.
+ */
+export function withParty(m: MeterData, members: readonly PartyMember[], character: string | null): MeterData {
+  const names = new Set(m.rows.map((r) => r.name))
+  const ids = new Set(m.rows.map((r) => r.id))
+  const add = members
+    .filter((p) => !names.has(p.name) && !(p.entity !== null && ids.has(p.entity)))
+    .map((p): MeterRow => ({
+      // Not seen in this zone yet: a number of its own, never an entity's.
+      id: p.entity ?? -(p.slot + 1),
+      name: p.name,
+      className: p.className,
+      dps: 0,
+      damage: 0,
+      share: 0,
+      hps: 0,
+      heal: 0,
+      taken: 0,
+      critRate: 0,
+      combatPower: p.combatPower,
+      gearScore: 0,
+      deaths: 0,
+      you: (p.entity !== null && p.entity === m.me) || p.name === character,
+      party: true,
+      others: false,
+    }))
+  return add.length ? { ...m, rows: [...m.rows, ...add] } : m
 }
 
 /**
