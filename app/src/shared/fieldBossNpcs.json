@@ -58,5 +58,9 @@
     "111022": 2400853,
     "111023": 2400854,
     "111024": 2400855
-  }
+  },
+  "also": {
+    "2600099": 2002
+  },
+  "alsoAbout": "More monster codes for a boss, by monster code: the game has two Watcher Kairas (A2Tools' names), the one killed in view 2026-11-27 not questlog's. Kept by scripts/fetch-boss-icons.mjs."
 }

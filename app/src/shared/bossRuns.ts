@@ -18,7 +18,11 @@ import table from './fieldBossNpcs.json' with { type: 'json' }
 /** Every field boss's monster code, by its id in the map's list: Verteron's, Altgard's (111001 on), the Abyss's. */
 const NPCS = (table as { npcs: Record<string, number> }).npcs
 const npcOf = (boss: number): number | undefined => NPCS[String(boss)]
-const BOSS_OF_NPC = new Map(Object.entries(NPCS).map(([boss, npc]) => [npc, Number(boss)]))
+/** Each monster code's boss: the table's, and the bosses' other codes (`also`: the game has two Watcher Kairas). */
+const BOSS_OF_NPC = new Map([
+  ...Object.entries(NPCS).map(([boss, npc]): [number, number] => [npc, Number(boss)]),
+  ...Object.entries((table as { also?: Record<string, number> }).also ?? {}).map(([npc, boss]): [number, number] => [Number(npc), boss]),
+])
 
 export interface BossRun {
   /** The boss's id in the map's list (shared/timers.ts FIELD_BOSSES). */

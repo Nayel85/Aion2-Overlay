@@ -53,7 +53,10 @@ pub fn field_boss_npcs() -> &'static std::collections::HashSet<u32> {
     static DATA: OnceLock<std::collections::HashSet<u32>> = OnceLock::new();
     DATA.get_or_init(|| {
         let table: serde_json::Value = serde_json::from_str(FIELD_BOSS_NPCS).unwrap_or_default();
-        table["npcs"].as_object().into_iter().flatten().filter_map(|(_, npc)| u32::try_from(npc.as_u64()?).ok()).collect()
+        let main = table["npcs"].as_object().into_iter().flatten().filter_map(|(_, npc)| u32::try_from(npc.as_u64()?).ok());
+        // More codes for a boss (`also`, by code: the second Watcher Kaira).
+        let also = table["also"].as_object().into_iter().flatten().filter_map(|(npc, _)| npc.parse().ok());
+        main.chain(also).collect()
     })
 }
 
@@ -71,8 +74,9 @@ mod tests {
     #[test]
     fn the_field_bosses_are_the_apps_table() {
         let npcs = super::field_boss_npcs();
-        // Verteron's 24, Altgard's 24, the Abyss's 8.
-        assert_eq!(npcs.len(), 56);
+        assert!(npcs.contains(&2_600_089) && npcs.contains(&2_600_099), "both Watcher Kairas");
+        // Verteron's 24, Altgard's 24, the Abyss's 8, and the second Watcher Kaira.
+        assert_eq!(npcs.len(), 57);
         assert!(npcs.contains(&2_100_003) && npcs.contains(&2_400_017) && npcs.contains(&2_600_068));
     }
 }

@@ -69,5 +69,7 @@ for (const b of bosses) {
   writeFileSync(file, Buffer.from(await res.arrayBuffer()))
   console.log(`  ${b.boss} ${b.name} (monster ${m.dbId})`)
 }
-writeFileSync(NPCS, JSON.stringify({ source: 'https://questlog.gg/aion-2/en/map', fetched: new Date().toISOString().slice(0, 10), npcs }, null, 2) + '\n')
+// The bosses' other codes (`also`, written by hand) kept.
+const kept = existsSync(NPCS) ? JSON.parse(readFileSync(NPCS, 'utf8')) : {}
+writeFileSync(NPCS, JSON.stringify({ source: 'https://questlog.gg/aion-2/en/map', fetched: new Date().toISOString().slice(0, 10), npcs, also: kept.also, alsoAbout: kept.alsoAbout }, null, 2) + '\n')
 console.log(`${Object.keys(npcs).length}/${bosses.length} matched`)
