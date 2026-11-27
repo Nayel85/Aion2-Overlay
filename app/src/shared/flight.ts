@@ -16,9 +16,9 @@ export interface FlightPower {
 /**
  * In the air the game sends a reading about every 0.1 s; with none for this long you have landed,
  * though the last reading still says flying (the next, on the ground, comes up to a second later).
- * 250 ms flickered between flying and refilling when readings came less often (2026-11-27).
+ * Readings in the air come 0.1 s apart, at most 0.25 s (the owner's 2026-11-27 log).
  */
-const LANDED_MS = 600
+const LANDED_MS = 400
 
 /** In the air now: the last reading says so, and is recent. */
 export function airborne(fp: FlightPower, now: number): boolean {
