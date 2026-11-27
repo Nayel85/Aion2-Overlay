@@ -96,6 +96,7 @@ export type EngineEvents = {
   targetClear: Record<string, never>
   applicant: { character: number; name: string; server: number | null; className: string | null; level: number | null; gearScore: number | null; combatPower: number | null }
   applicantGone: { character: number }
+  applicantAnswered: Record<string, never>
   ping: { ms: number | null }
   buffs: { buffs?: Buff[] }
   focus: { game?: boolean; app?: boolean }

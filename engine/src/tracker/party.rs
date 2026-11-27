@@ -25,6 +25,11 @@ impl Tracker {
                     (self.emit)(json!({ "type": "applicantGone", "ts": ts, "character": character }));
                 }
             }
+            p::OP_APPLICATION_ANSWERED => {
+                if p::application_answered(f) {
+                    (self.emit)(json!({ "type": "applicantAnswered", "ts": ts }));
+                }
+            }
             p::OP_MEMBER_JOINED => {
                 if let Some(character) = p::member_joined(f) {
                     (self.emit)(json!({ "type": "applicantGone", "ts": ts, "character": character }));

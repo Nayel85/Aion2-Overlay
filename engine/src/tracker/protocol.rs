@@ -58,6 +58,9 @@ pub const OP_PLAYER_CARD: [u8; 2] = [0x30, 0x97];
 pub const OP_APPLICANT: [u8; 2] = [0x07, 0x97];
 pub const OP_APPLICANT_GONE: [u8; 2] = [0x25, 0x97];
 pub const OP_MEMBER_JOINED: [u8; 2] = [0x0B, 0x97];
+/// `09 97 00 00`: your answer to a join request taken (a reject or an accept, no name in it; an accept's
+/// join follows at once). The owner's 2026-11-27 log: one reject, then one accept.
+pub const OP_APPLICATION_ANSWERED: [u8; 2] = [0x09, 0x97];
 pub const OP_TARGET_INFO: [u8; 2] = [0x50, 0x36];
 pub const OP_PVP_SWITCH: [u8; 2] = [0x54, 0x36];
 pub const OP_CHARACTER_LIST: [u8; 2] = [0x15, 0x36];
@@ -288,6 +291,8 @@ mod tests {
         assert_eq!(applicant_gone(&frame(OP_APPLICANT_GONE, &hex("33480500 0001 7905"))), None);
         assert_eq!(member_joined(&frame(OP_MEMBER_JOINED, &hex("0c03 504e0400 0000 6409 08 6956656c6c617269"))), Some(0x44e50));
         assert_eq!(member_joined(&frame(OP_MEMBER_JOINED, &hex("0d03 504e0400"))), None);
+        assert!(application_answered(&frame(OP_APPLICATION_ANSWERED, &hex("0000"))));
+        assert!(!application_answered(&frame(OP_APPLICATION_ANSWERED, &hex("0001"))));
     }
 
     #[test]

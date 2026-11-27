@@ -161,6 +161,11 @@ pub fn applicant_gone(frame: &[u8]) -> Option<u32> {
     (b.len() == 8 && u16_at(b, 4)? == 0 && (1000..=9999).contains(&u16_at(b, 6)?)).then(|| u32_at(b, 0))?
 }
 
+/// `09 97 00 00`: your answer to a join request taken.
+pub fn application_answered(frame: &[u8]) -> bool {
+    body(frame, OP_APPLICATION_ANSWERED) == Some(&[0, 0][..])
+}
+
 /// `0B 97 0C <slot u8> <character u32> ...`: a member who joined your party (the same character
 /// id an application carries).
 pub fn member_joined(frame: &[u8]) -> Option<u32> {

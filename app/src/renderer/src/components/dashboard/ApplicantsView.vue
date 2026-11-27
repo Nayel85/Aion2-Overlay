@@ -40,7 +40,7 @@ const choices = computed(() => [...new Set([...HIDE, cfg.value.hideAfter])].sort
 
     <Section title="Good to know">
       <p class="px-4 py-3 text-[13px] leading-relaxed text-dark">
-        {{ t('A person leaves the list when they join your party or cancel. The game sends nothing when you reject someone, so a rejected request stays until the time above passes, or until you remove it with its X.') }}
+        {{ t('A person leaves the list when they join your party, cancel, or you reject them. Their request also goes after the time above, or with its X.') }}
       </p>
     </Section>
   </div>

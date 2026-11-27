@@ -1,7 +1,8 @@
 // Join requests to your party (shared/applicants.ts): the engine's `applicant` events add one, a
 // join or a cancelled request (`applicantGone`) takes one out, and a while after the last
-// application (the setting) the list is cleared and the widget goes away. Rejecting someone sends
-// the game's reply with no name in it, so a rejected or silently cancelled one waits for that.
+// application (the setting) the list is cleared and the widget goes away. Your answer to one comes
+// with no name in it (`applicantAnswered`): an accept's join follows at once, so with none a moment
+// later it was a reject, of the one the game showed, the oldest.
 import { broadcast } from './broadcast.ts'
 import { settings } from './settings.ts'
 import { log, tracker } from './tracker.ts'
@@ -10,6 +11,8 @@ import { NO_APPLICANTS, type Applicant, type Applicants } from '../shared/applic
 
 let state: Applicants = NO_APPLICANTS
 let timer: NodeJS.Timeout | null = null
+/** How long an accept's join may come after the answer (the same message in the 2026-11-27 log). */
+const JOIN_AFTER_MS = 1500
 
 function changed(): void {
   broadcast('applicants:changed', state)
@@ -65,5 +68,21 @@ export function startApplicants(): void {
     rearm()
     changed()
   })
-  tracker.onEvent('applicantGone', (ev) => applicantStore.dismiss(ev.character))
+  let answered: NodeJS.Timeout | null = null
+  tracker.onEvent('applicantGone', (ev) => {
+    // The answer was an accept: this one joined.
+    if (answered) clearTimeout(answered)
+    answered = null
+    applicantStore.dismiss(ev.character)
+  })
+  tracker.onEvent('applicantAnswered', () => {
+    if (answered) clearTimeout(answered)
+    answered = setTimeout(() => {
+      answered = null
+      const first = state.list[0]
+      if (!first) return
+      log(`applicant: ${first.name} rejected`)
+      applicantStore.dismiss(first.character)
+    }, JOIN_AFTER_MS)
+  })
 }
