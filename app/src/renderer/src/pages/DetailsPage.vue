@@ -5,6 +5,7 @@
 // landed), Buffs (A2Tools DPS Meter's buff timeline, as its Details does) and Healing. From A2Tools
 // DPS Meter's parser. Opened on the live target from a meter row (it follows the fight, redrawn
 // every second), or on a saved fight from the History page. Moved by its header; its X closes it.
+import CharName from '@/components/CharName.vue'
 import { classIconUrl, weekdayTime } from '@/lib/format.ts'
 import { compact, duration } from '@shared/format.ts'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
@@ -249,9 +250,7 @@ onBeforeUnmount(() => {
               <div class="absolute inset-y-0 left-0 opacity-40" :style="{ width: `${(a.damage / top) * 100}%`, background: color(a.className) }" />
               <div class="relative flex items-center gap-1.5 px-1.5 py-0.5 text-xs">
                 <span class="w-4 text-right text-[10px] tabular-nums text-darker">{{ i + 1 }}</span>
-                <img v-if="icon(a.className)" :src="icon(a.className)!" class="size-4 shrink-0" alt="" />
-                <span v-else class="size-4 shrink-0" />
-                <span :class="['min-w-0 flex-1 truncate font-medium', a.you ? 'text-accent' : a.enemy ? 'text-red' : 'text-default']">{{ a.name }}</span>
+                <CharName :name="a.name" :class-name="a.className" :size="16" class="flex-1" :name-class="['font-medium', a.you ? 'text-accent' : a.enemy ? 'text-red' : 'text-default']" />
                 <template v-if="pvp">
                   <span class="w-14 text-right font-semibold tabular-nums">{{ a.damage ? compact(a.damage) : '-' }}</span>
                   <span class="w-14 text-right tabular-nums text-dark" :title="t('Damage taken')">{{ takenOf(a.id) ? compact(takenOf(a.id)) : '-' }}</span>
@@ -384,8 +383,7 @@ onBeforeUnmount(() => {
             <div v-for="r in takenRanked" :key="r.a.id" class="relative mb-0.5 overflow-hidden rounded-md bg-dark">
               <div class="absolute inset-y-0 left-0 opacity-40" :style="{ width: `${(r.taken / takenTop) * 100}%`, background: color(r.a.className) }" />
               <div class="relative flex items-center gap-1.5 px-1.5 py-0.5">
-                <img v-if="icon(r.a.className)" :src="icon(r.a.className)!" class="size-4 shrink-0" alt="" />
-                <span :class="['min-w-0 flex-1 truncate', r.a.id === actor?.id ? 'font-semibold text-accent' : 'text-default']">{{ r.a.name }}</span>
+                <CharName :name="r.a.name" :class-name="r.a.className" :size="16" class="flex-1" :name-class="r.a.id === actor?.id ? 'font-semibold text-accent' : 'text-default'" />
                 <span class="tabular-nums">{{ compact(r.taken) }}</span>
               </div>
             </div>
