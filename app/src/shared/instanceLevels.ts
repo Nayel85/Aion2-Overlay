@@ -17,8 +17,9 @@ export const REQUIRED_ILVL: Record<string, Record<string, number>> = {
   Draupnir: { easy: 700, normal: 700, advanced: 2600 },
   'Urugugu Canyon': { easy: 300, normal: 1400, advanced: 2700 },
   'Vakron Sky Island': { easy: 1400, normal: 1400, advanced: 2700 },
-  'Fire Temple': { easy: 500, normal: 2100 },
-  'Ferocious Horn Den': { easy: 2100, normal: 2100 },
+  // Their Hard modes came 2026-11-11, at 2800 (metammo.com's patch history, after NCSOFT's notes).
+  'Fire Temple': { easy: 500, normal: 2100, advanced: 2800 },
+  'Ferocious Horn Den': { easy: 2100, normal: 2100, advanced: 2800 },
   "Dying Dramata's Nest": { normal: 2800, advanced: 3000 },
   'Cradle of Nihility': { normal: 2800, advanced: 3000 },
   'Hall of Illusion': { normal: 3000, advanced: 3500 },
