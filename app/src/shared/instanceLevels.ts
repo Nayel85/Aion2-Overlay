@@ -31,7 +31,8 @@ export const REQUIRED_ILVL: Record<string, Record<string, number>> = {
   'Mirror of Scarlet Desire': { s1: 3200, s2: 3500, s3: 3800, s4: 4000 },
   'Abyssal Horn Den': { s1: 3800, s2: 4100, s3: 4500, s4: 4800 },
   'Abyssal Forge: Ludra': { normal: 2800, advanced: 3000 },
-  'Corroded Decontamination Facility': { normal: 3500 },
+  // The global client's (2026-11-26, the owner's word; the Korean's 3500).
+  'Corroded Decontamination Facility': { normal: 2100 },
   'Chalice of Muspel': { normal: 4300, advanced: 4500 },
 }
 

@@ -79,7 +79,8 @@ const ORDER: Record<ContentKind, { all: string[]; open: string[] }> = {
     all: ['Nightmare Altar', "Tyrant's Hideout", 'Sanctum of Loathing', 'Depository of Fates', 'Forgotten Repository', 'Chamber of the Dead'],
     open: ['Nightmare Altar', 'Sanctum of Loathing'],
   },
-  raid: { all: Object.keys(DUNGEONS.sanctuary), open: ['Abyssal Forge: Ludra'] },
+  // Corroded Decontamination Facility out on the global client 2026-11-26 (the owner's word).
+  raid: { all: Object.keys(DUNGEONS.sanctuary), open: ['Abyssal Forge: Ludra', 'Corroded Decontamination Facility'] },
 }
 /** The bosses' order in a run where dungeons.ts's is not (aion2pilot's Conquest route). */
 const RUN_ORDER: Record<string, string[]> = { 'Urugugu Canyon': ['Judge Urahum', 'Guardian Captain Raur', 'Divine Auldor'] }
