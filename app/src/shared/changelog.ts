@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.25',
+    items: [
+      "PvP page: only the kills that concern you (yours, your deaths, those of players you fought, your legion's), each kill or assist with the Abyss Points it earned and the rank points it gave or took.",
+      "Enemies in the Abyss: other servers' players too, whatever their side.",
+      "Watcher Kaira: shown dead once killed, in view or as the Abyss's list says.",
+      "DPS meter: starts over as you switch character.",
+    ],
+  },
+  {
     version: '0.3.24',
     items: [
       "Duty board window: no longer opened as you leave the Shugo Festival or enter the Abyss.",

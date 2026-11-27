@@ -1841,4 +1841,8 @@ export const FR: Record<string, string> = {
   'Duty board window: no longer opened as you log in or switch character.': 'Fenêtre du tableau des duty : ne s\'ouvre plus à la connexion ni au changement de perso.',
   'Duty board window: no longer opened as you leave the Shugo Festival or enter the Abyss.': 'Fenêtre du tableau des duty : ne s\'ouvre plus à la sortie du Shugo Festival ni à l\'entrée dans les Abysses.',
   'Rank points this gave or took': 'Points de rang gagnés ou perdus',
+  'PvP page: only the kills that concern you (yours, your deaths, those of players you fought, your legion\'s), each kill or assist with the Abyss Points it earned and the rank points it gave or took.': 'Page PvP : seulement les kills qui te concernent (les tiens, tes morts, ceux des joueurs que tu as combattus, ceux de ta légion), chaque kill ou assistance avec les points d\'Abysses gagnés et les points de rang gagnés ou perdus.',
+  'Enemies in the Abyss: other servers\' players too, whatever their side.': 'Ennemis dans les Abysses : les joueurs des autres serveurs aussi, quelle que soit leur faction.',
+  'Watcher Kaira: shown dead once killed, in view or as the Abyss\'s list says.': 'Watcher Kaira : affiché mort une fois tué, que tu l\'aies vu mourir ou que la liste des Abysses le dise.',
+  'DPS meter: starts over as you switch character.': 'Compteur DPS : repart à zéro quand tu changes de perso.',
 }

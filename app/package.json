@@ -1,7 +1,7 @@
 {
   "name": "aion2-drop-tracker",
   "productName": "Nayel Overlay",
-  "version": "0.3.24",
+  "version": "0.3.25",
   "description": "Nayel Overlay: an Aion 2 overlay (pet souls, DPS meter, party frames, timers, sessions and records).",
   "private": true,
   "main": "./out/main/index.js",
