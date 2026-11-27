@@ -69,10 +69,7 @@ function markBought(item: number): boolean {
     s.bought = [...(s.bought ?? []), item]
     marked = true
   }
-  if (marked) {
-    broadcast('tracker:shop', currentShop())
-    for (const fn of shopListeners) fn(currentShop())
-  }
+  if (marked) shopChanged()
   return marked
 }
 /** Kina earned since the app started (or the last reset). */
@@ -84,6 +81,19 @@ function setKina(next: KinaSession): void {
 const soulListeners = new Set<(toast: SoulToast) => void>()
 const statusListeners = new Set<(status: TrackerStatus) => void>()
 const shopListeners = new Set<(stock: ShopStock[]) => void>()
+/** A pet as the log names it: its id, and its name when known. */
+const petLabel = (pet: { id: number; name?: string | null }): string => `pet ${pet.id}${pet.name ? ` (${pet.name})` : ''}`
+/** A soul or crystal's toast: to the windows and the modules listening. */
+function soulToast(toast: SoulToast): void {
+  broadcast('tracker:soul', toast)
+  for (const fn of soulListeners) fn(toast)
+}
+/** The shop's stock changed: to the windows and the modules listening, read once. */
+function shopChanged(): void {
+  const stock = currentShop()
+  broadcast('tracker:shop', stock)
+  for (const fn of shopListeners) fn(stock)
+}
 /** Other modules' handlers for the engine's events, by type (the meter's, the kill feed's). */
 const eventListeners = new Map<string, Set<(ev: Record<string, unknown>) => void>>()
 
@@ -359,7 +369,7 @@ function handleLine(line: string): void {
       updatePet(pet)
       // Every soul, with the running totals: what to compare against when counts look wrong.
       const sessionTotal = [...pets.values()].reduce((n, p) => n + p.session, 0)
-      log(`soul: +${msg.amount} pet ${pet.id}${pet.name ? ` (${pet.name})` : ''} -> ${pet.souls} souls; session ${pet.session} for this pet, ${sessionTotal} in all`)
+      log(`soul: +${msg.amount} ${petLabel(pet)} -> ${pet.souls} souls; session ${pet.session} for this pet, ${sessionTotal} in all`)
       const toast: SoulToast = {
         pet,
         amount: msg.amount,
@@ -367,9 +377,8 @@ function handleLine(line: string): void {
         levelUp: msg.levelUp === true,
         crystal: false,
       }
-      if (toast.levelUp) log(`level up: pet ${pet.id}${pet.name ? ` (${pet.name})` : ''} is now Lv${pet.level}`)
-      broadcast('tracker:soul', toast)
-      for (const fn of soulListeners) fn(toast)
+      if (toast.levelUp) log(`level up: ${petLabel(pet)} is now Lv${pet.level}`)
+      soulToast(toast)
       break
     }
     case 'crystal': {
@@ -380,13 +389,12 @@ function handleLine(line: string): void {
       const considered = kills.length
         ? kills.map((k) => `${k.name ?? `monster ${k.npc ?? '?'}`}${k.pet ? ` (pet ${k.pet})` : ' (no pet)'} ${k.ago}s before`).join(', ')
         : 'no kill just before'
-      log(`crystal: +${msg.amount} ${msg.genus ?? 'unknown genus'} ${pet ? `pet ${pet.id}${pet.name ? ` (${pet.name})` : ''} -> ${pet.crystals} crystals` : `credited to no pet; kills: ${considered}`} [${msg.raw}]`)
-      if (msg.levelCorrected === true && pet) log(`level: pet ${pet.id}${pet.name ? ` (${pet.name})` : ''} is at Lv${pet.level} in game (it gets crystals): corrected`)
+      log(`crystal: +${msg.amount} ${msg.genus ?? 'unknown genus'} ${pet ? `${petLabel(pet)} -> ${pet.crystals} crystals` : `credited to no pet; kills: ${considered}`} [${msg.raw}]`)
+      if (msg.levelCorrected === true && pet) log(`level: ${petLabel(pet)} is at Lv${pet.level} in game (it gets crystals): corrected`)
       if (!pet) break
       updatePet(pet)
       const toast: SoulToast = { pet, amount: msg.amount, at: Date.now(), levelUp: false, crystal: true }
-      broadcast('tracker:soul', toast)
-      for (const fn of soulListeners) fn(toast)
+      soulToast(toast)
       break
     }
     case 'combat':
@@ -482,8 +490,7 @@ function handleLine(line: string): void {
       shopTabs.set(stock.tab, stock)
       const restock = stock.nextAt ? new Date(stock.nextAt).toISOString().slice(11, 16) + ' UTC' : 'unknown'
       log(`merchant: tab ${stock.tab}, ${stock.items.length} items (${stock.items.map((i) => `${i.item}@${i.price}`).join(' ')}); restocks ${restock}`)
-      broadcast('tracker:shop', currentShop())
-      for (const fn of shopListeners) fn(currentShop())
+      shopChanged()
       break
     }
     case 'item':
