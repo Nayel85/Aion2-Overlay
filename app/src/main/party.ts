@@ -3,7 +3,7 @@
 // twice a second, all members together).
 import { broadcast } from './broadcast.ts'
 import { settings } from './settings.ts'
-import { tracker } from './tracker.ts'
+import { log, tracker } from './tracker.ts'
 import { createParty } from './windows.ts'
 import { NO_PARTY, type Party } from '../shared/party.ts'
 
@@ -26,6 +26,9 @@ export const partyStore = {
 export function startParty(): void {
   tracker.onEvent('party', (ev) => {
     const members = ev.members ?? []
+    // In the log, so a party the game never said you left can be traced (2026-11-28).
+    const names = members.map((m) => m.name).join(', ')
+    if (names !== state.members.map((m) => m.name).join(', ')) log(`party: ${members.length ? names : 'none'}`)
     // The vitals of those still in it.
     const keep = new Set(members.map((m) => m.entity).filter((e): e is number => e !== null))
     state = { ...state, members, vitals: Object.fromEntries(Object.entries(state.vitals).filter(([e]) => keep.has(Number(e)))) }
