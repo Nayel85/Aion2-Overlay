@@ -1856,8 +1856,9 @@ export const FR: Record<string, string> = {
   'Luckier than {n}% of players over the same {what}': 'Plus chanceux que {n} % des joueurs sur les mêmes {what}',
   'crafts': 'crafts',
   'gatherings': 'récoltes',
-  'Your gold equipment, gold materials, wings and artworks and Arcana cards against what the drop rates make of your cubes': 'Ton équipement or, tes matériaux or, tes ailes et œuvres et tes cartes Arcana face à ce que les taux de drop donnent de tes cubes',
+  'Your gold equipment, gold materials, wings and artworks and Arcana cards against what the drop rates make of your cubes, of the items that drop one at a time': 'Ton équipement or, tes matériaux or, tes ailes et œuvres et tes cartes Arcana face à ce que les taux de drop donnent de tes cubes, pour les objets qui tombent un par un',
   'Your procs against what the game\'s proc chances make of your crafts': 'Tes procs face à ce que les chances de proc du jeu donnent de tes crafts',
   'Your doublings against what Plentiful Harvest\'s chance makes of your gatherings': 'Tes doublements face à ce que la chance de Plentiful Harvest donne de tes récoltes',
   'dungeon runs': 'donjons',
+  'It comes several at once: the drop rates do not say how many, so what it makes expected is a guess, left out of your luck': 'Il tombe par plusieurs : les taux de drop ne disent pas combien, donc l\'attendu est une estimation, laissée hors de ta chance',
 }

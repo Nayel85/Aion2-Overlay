@@ -78,6 +78,17 @@ export function expectedOf(run: DungeonRun, id: string): number {
   const perCube = chance >= 1 ? (fewest + most) / 2 : bosses * (1 - (1 - chance) ** (1 / bosses)) * fewest
   return perCube * runCubes(run)
 }
+/**
+ * Whether an item's drops say something of your luck in a dungeon: those that come one at a time
+ * (questlog's fewest and most both 1). Those that come several at once (Amplify Stone Fragments, 1 to
+ * 5) do not: questlog's range does not say whether it is a drop's or a cube's, so what they make
+ * expected is a guess (from 77 to 183 fragments over the owner's 129 cubes of 2026-11-28, 126 got),
+ * and a few big drops would pass for luck.
+ */
+export function tellsLuck(world: number, id: string): boolean {
+  const d = DROPS[world]?.[id]
+  return !!d && d[0] < 1 && d[1] === 1 && d[2] === 1
+}
 /** The family a count of an item goes to, or null. */
 const familyOf = (id: string): keyof LootCounts | null => (itemInfo(id)?.kind === 'arcana' ? 'cards' : goldKind(id))
 
@@ -92,9 +103,11 @@ export interface LootSummary extends LootCounts {
   clearMs: number | null
   kina: number
   expected: LootCounts
+  /** Of the items that tell your luck (tellsLuck), what came and what the game's rates make of the cubes. */
+  luck: { got: LootCounts; expected: LootCounts }
 }
 export function summarize(name: string, runs: DungeonRun[]): LootSummary {
-  const out: LootSummary = { name, runs: runs.length, cubes: 0, ms: 0, clearMs: null, kina: 0, equipment: 0, craft: 0, wings: 0, cards: 0, expected: { equipment: 0, craft: 0, wings: 0, cards: 0 } }
+  const out: LootSummary = { name, runs: runs.length, cubes: 0, ms: 0, clearMs: null, kina: 0, equipment: 0, craft: 0, wings: 0, cards: 0, expected: { equipment: 0, craft: 0, wings: 0, cards: 0 }, luck: { got: { equipment: 0, craft: 0, wings: 0, cards: 0 }, expected: { equipment: 0, craft: 0, wings: 0, cards: 0 } } }
   let clears = 0
   let clearSum = 0
   for (const r of runs) {
@@ -108,10 +121,13 @@ export function summarize(name: string, runs: DungeonRun[]): LootSummary {
     for (const [id, n] of Object.entries(r.loot ?? {})) {
       const family = familyOf(id)
       if (family) out[family] += n
+      if (family && tellsLuck(r.world, id)) out.luck.got[family] += n
     }
     for (const id of Object.keys(DROPS[r.world] ?? {})) {
       const family = familyOf(id)
-      if (family) out.expected[family] += expectedOf(r, id)
+      if (!family) continue
+      out.expected[family] += expectedOf(r, id)
+      if (tellsLuck(r.world, id)) out.luck.expected[family] += expectedOf(r, id)
     }
   }
   out.clearMs = clears ? clearSum / clears : null
@@ -138,13 +154,15 @@ export interface ItemStat {
   total: number
   runs: number
   expected: number
+  /** Its drops tell nothing of your luck (tellsLuck): it comes several at once somewhere in these runs. */
+  noLuck: boolean
 }
 export function itemStats(runs: DungeonRun[]): ItemStat[] {
   const by = new Map<string, ItemStat>()
   const stat = (id: string): ItemStat | null => {
     const item = itemInfo(id)
     if (!item || item.kind === 'currency') return null
-    const s = by.get(id) ?? { id, name: plainName(item.name), grade: item.grade, icon: item.icon, family: familyOf(id) ?? 'other', total: 0, runs: 0, expected: 0 }
+    const s = by.get(id) ?? { id, name: plainName(item.name), grade: item.grade, icon: item.icon, family: familyOf(id) ?? 'other', total: 0, runs: 0, expected: 0, noLuck: false }
     by.set(id, s)
     return s
   }
@@ -157,7 +175,9 @@ export function itemStats(runs: DungeonRun[]): ItemStat[] {
     }
     for (const id of Object.keys(DROPS[r.world] ?? {})) {
       const s = stat(id)
-      if (s) s.expected += expectedOf(r, id)
+      if (!s) continue
+      s.expected += expectedOf(r, id)
+      if (!tellsLuck(r.world, id)) s.noLuck = true
     }
   }
   return [...by.values()].sort((a, b) => b.grade - a.grade || b.runs - a.runs || b.expected - a.expected || a.name.localeCompare(b.name))

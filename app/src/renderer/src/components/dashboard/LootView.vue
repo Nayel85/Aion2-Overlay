@@ -84,8 +84,8 @@ const rows = computed(() => {
   return [...list.slice(0, -1), ...none, list.at(-1)!]
 })
 const total = computed(() => rows.value.at(-1)!)
-/** The luck of the characters picked over these runs: their gold drops and cards against the drop rates. */
-const verdict = computed(() => luckVerdict(LOOT_KINDS.map((k) => [total.value[k.key], total.value.expected[k.key]] as const)))
+/** The luck of the characters picked over these runs: their gold drops and cards against the drop rates, of the items that tell it. */
+const verdict = computed(() => luckVerdict(LOOT_KINDS.map((k) => [total.value.luck.got[k.key], total.value.luck.expected[k.key]] as const)))
 const items = computed(() => {
   const q = query.value.trim().toLowerCase()
   return itemStats(runs.value.map((r) => r.run)).filter((i) => (f.value.family === 'all' || (f.value.family === 'gold' ? i.family !== 'other' : i.family === f.value.family)) && (!q || i.name.toLowerCase().includes(q)))
@@ -131,7 +131,7 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
     <EmptyState v-if="!total.runs" :title="all.length ? 'No runs match.' : 'No dungeon loot yet.'" hint="A run counts once the overlay has seen its cube opened." />
 
     <template v-else>
-      <LuckVerdict :verdict="verdict" what="dungeon runs" about="Your gold equipment, gold materials, wings and artworks and Arcana cards against what the drop rates make of your cubes" />
+      <LuckVerdict :verdict="verdict" what="dungeon runs" about="Your gold equipment, gold materials, wings and artworks and Arcana cards against what the drop rates make of your cubes, of the items that drop one at a time" />
       <!-- By character, then all of them. -->
       <div class="mb-5 overflow-x-auto rounded-xl border border-card">
         <table class="w-full text-sm tabular-nums">
@@ -169,8 +169,8 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
               <td v-for="k in LOOT_KINDS" :key="k.key" class="px-3 py-2 text-center" :title="t('{n} in all; expected from the drop rates: {e}', { n: r[k.key], e: r.expected[k.key].toFixed(1) })">
                 <span :class="!r[k.key] ? 'text-darker' : LOOT_KIND_STYLE[k.key]!.class">{{ rate(r, r[k.key]) }}</span>
                 <span class="ml-1 text-[11px] font-normal text-darker">({{ r[k.key] }})</span>
-                <span v-if="details && luckOf(r[k.key], r.expected[k.key])" :class="['ml-1 text-[11px] font-normal', luckOf(r[k.key], r.expected[k.key])!.class]">{{ luckOf(r[k.key], r.expected[k.key])!.text }}</span>
-                <LuckVerdict compact :verdict="luckVerdict([[r[k.key], r.expected[k.key]]])" what="dungeon runs" about="" />
+                <span v-if="details && luckOf(r.luck.got[k.key], r.luck.expected[k.key])" :class="['ml-1 text-[11px] font-normal', luckOf(r.luck.got[k.key], r.luck.expected[k.key])!.class]">{{ luckOf(r.luck.got[k.key], r.luck.expected[k.key])!.text }}</span>
+                <LuckVerdict compact :verdict="luckVerdict([[r.luck.got[k.key], r.luck.expected[k.key]]])" what="dungeon runs" about="" />
               </td>
             </tr>
           </tbody>
@@ -220,7 +220,8 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
               <template v-if="details">
                 <td class="px-3 py-1.5 text-center text-dark">{{ i.expected ? i.expected.toFixed(1) : '–' }}</td>
                 <td class="px-3 py-1.5 text-center">
-                  <span v-if="luckOf(i.total, i.expected)" :class="luckOf(i.total, i.expected)!.class">{{ luckOf(i.total, i.expected)!.text }}</span>
+                  <span v-if="i.noLuck && i.expected" class="text-darker" :title="t('It comes several at once: the drop rates do not say how many, so what it makes expected is a guess, left out of your luck')">?</span>
+                  <span v-else-if="luckOf(i.total, i.expected)" :class="luckOf(i.total, i.expected)!.class">{{ luckOf(i.total, i.expected)!.text }}</span>
                   <template v-else>–</template>
                 </td>
                 <td class="px-3 py-1.5 text-center text-dark">{{ i.runs }} / {{ total.runs }}</td>
