@@ -11,6 +11,15 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '0.3.27',
+    items: [
+      "Stats: how lucky you were for the filters picked, from no luck at all to very lucky, overall and for each loot category.",
+      "HUD: the corridors left count the closed ones out, as the Characters page does.",
+      "Enemies: every window and the alarm tell the same threats, the Abyss's other servers included.",
+      "DPS meter: shows as you enter a dungeon, even when hidden while idle.",
+    ],
+  },
+  {
     version: '0.3.26',
     items: [
       "Updates: the newest version goes in at once, not one update after the other.",
