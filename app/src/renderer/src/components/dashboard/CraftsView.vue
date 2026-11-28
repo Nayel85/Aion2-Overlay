@@ -18,6 +18,8 @@ import { gradeClass } from '@/lib/grades.ts'
 import { allCrafts, craftKinds, craftSummaries, filterCrafts, recipeStats, type CraftSummary } from '@shared/craftStats.ts'
 import { luck } from '@shared/lootStats.ts'
 import { itemIcon } from '@shared/sessions.ts'
+import LuckVerdict from '@/components/LuckVerdict.vue'
+import { luckVerdict } from '@shared/luck.ts'
 
 /** Inside the Stats page (StatsView): its header is the page's. */
 /** `details`: what the game's chances make expected, your luck, the crafts that can proc. */
@@ -63,6 +65,8 @@ const kindOptions = computed(() => [{ id: '', label: t('All crafts') }, ...kinds
 const crafts = computed(() => filterCrafts(all.value, { names: f.value.names, from: fromOf(f.value.period), kind: f.value.kind }))
 const rows = computed(() => craftSummaries(crafts.value))
 const total = computed(() => rows.value.at(-1)!)
+/** The luck of the characters picked over these crafts: their procs against the game's chances. */
+const verdict = computed(() => luckVerdict([[total.value.procs, total.value.expected]]))
 const recipes = computed(() => {
   const q = query.value.trim().toLowerCase()
   return recipeStats(crafts.value).filter(
@@ -102,6 +106,7 @@ function luckOf(got: number, expected: number): { text: string; class: string } 
     <EmptyState v-if="!total.crafts" :title="all.length ? 'No crafts match.' : 'No crafts yet.'" hint="Each craft counts once the overlay has seen it done." />
 
     <template v-else>
+      <LuckVerdict :verdict="verdict" what="crafts" about="Your procs against what the game's proc chances make of your crafts" />
       <!-- By character, then all of them. -->
       <div class="mb-5 overflow-x-auto rounded-xl border border-card">
         <table class="w-full text-sm tabular-nums">

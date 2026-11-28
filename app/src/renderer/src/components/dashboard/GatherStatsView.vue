@@ -15,6 +15,8 @@ import { t } from '@/lib/i18n.ts'
 import { allGatherings, filterGatherings, gatherResources, gatherRows, gatherTotal } from '@shared/gatherStats.ts'
 import { luck } from '@shared/lootStats.ts'
 import { itemIcon } from '@shared/sessions.ts'
+import LuckVerdict from '@/components/LuckVerdict.vue'
+import { luckVerdict } from '@shared/luck.ts'
 
 /** `details`: the x2 Plentiful Harvest makes expected, your luck, Lady Luck's triggers, the skills seen. */
 defineProps<{ details?: boolean }>()
@@ -36,6 +38,8 @@ const resourceOptions = computed(() => [{ id: 0, label: t('All resources') }, ..
 const picked = computed(() => filterGatherings(all.value, { names: f.value.names, from: fromOf(f.value.period), resource: f.value.resource }))
 const rows = computed(() => gatherRows(picked.value))
 const total = computed(() => gatherTotal(picked.value))
+/** The luck of the characters picked over these gatherings: their doublings against Plentiful Harvest's chance, each character and resource. */
+const verdict = computed(() => luckVerdict(rows.value.map((r) => [r.doubled, r.expectedDoubled] as const)))
 
 
 const pct = (n: number, of: number): string => (of ? `${Math.round((n / of) * 100)}%` : '–')
@@ -55,6 +59,7 @@ function luckOf(got: number, expected: number | null): { text: string; class: st
       </FilterRow>
     </StatsFilters>
 
+    <LuckVerdict v-if="total.done" :verdict="verdict" what="gatherings" about="Your doublings against what Plentiful Harvest's chance makes of your gatherings" />
     <EmptyState v-if="!total.done" :title="all.length ? 'No gatherings match.' : 'No gatherings yet.'" hint="Each gathering counts once the overlay has seen it, from this version on." />
 
     <div v-else class="overflow-x-auto rounded-xl border border-card">

@@ -22,6 +22,8 @@ import { filterRuns, itemStats, lootChoices, lootRuns, luck, summaries, summariz
 import { itemIcon, LOOT_KINDS } from '@shared/sessions.ts'
 import { ICON, LOOT_KIND_STYLE } from '@/components/panel/sessionIcons.ts'
 import { gradeClass } from '@/lib/grades.ts'
+import LuckVerdict from '@/components/LuckVerdict.vue'
+import { luckVerdict } from '@shared/luck.ts'
 
 /** Inside the Stats page (StatsView): its header is the page's. */
 /** `details`: what the drop rates make expected, your luck, the runs with an item. */
@@ -82,6 +84,8 @@ const rows = computed(() => {
   return [...list.slice(0, -1), ...none, list.at(-1)!]
 })
 const total = computed(() => rows.value.at(-1)!)
+/** The luck of the characters picked over these runs: their gold drops and cards against the drop rates. */
+const verdict = computed(() => luckVerdict(LOOT_KINDS.map((k) => [total.value[k.key], total.value.expected[k.key]] as const)))
 const items = computed(() => {
   const q = query.value.trim().toLowerCase()
   return itemStats(runs.value.map((r) => r.run)).filter((i) => (f.value.family === 'all' || (f.value.family === 'gold' ? i.family !== 'other' : i.family === f.value.family)) && (!q || i.name.toLowerCase().includes(q)))
@@ -127,6 +131,7 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
     <EmptyState v-if="!total.runs" :title="all.length ? 'No runs match.' : 'No dungeon loot yet.'" hint="A run counts once the overlay has seen its cube opened." />
 
     <template v-else>
+      <LuckVerdict :verdict="verdict" what="dungeon runs" about="Your gold equipment, gold materials, wings and artworks and Arcana cards against what the drop rates make of your cubes" />
       <!-- By character, then all of them. -->
       <div class="mb-5 overflow-x-auto rounded-xl border border-card">
         <table class="w-full text-sm tabular-nums">
