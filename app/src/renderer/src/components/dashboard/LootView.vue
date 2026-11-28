@@ -170,6 +170,7 @@ const oneIn = (chance: number): string => (chance > 0 ? (1 / chance < 1.05 ? t('
                 <span :class="!r[k.key] ? 'text-darker' : LOOT_KIND_STYLE[k.key]!.class">{{ rate(r, r[k.key]) }}</span>
                 <span class="ml-1 text-[11px] font-normal text-darker">({{ r[k.key] }})</span>
                 <span v-if="details && luckOf(r[k.key], r.expected[k.key])" :class="['ml-1 text-[11px] font-normal', luckOf(r[k.key], r.expected[k.key])!.class]">{{ luckOf(r[k.key], r.expected[k.key])!.text }}</span>
+                <LuckVerdict compact :verdict="luckVerdict([[r[k.key], r.expected[k.key]]])" what="dungeon runs" about="" />
               </td>
             </tr>
           </tbody>
