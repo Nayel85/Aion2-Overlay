@@ -1862,7 +1862,7 @@ export const FR: Record<string, string> = {
   'dungeon runs': 'donjons',
   'It comes several at once: the drop rates do not say how many, so what it makes expected is a guess, left out of your luck': 'Il tombe par plusieurs : les taux de drop ne disent pas combien, donc l\'attendu est une estimation, laissée hors de ta chance',
   'Stats: how lucky you were for the filters picked, from no luck at all to very lucky, overall and for each loot category.': 'Stats : ta chance selon les filtres choisis, de pas de chance du tout à vraiment chanceux, en tout et pour chaque catégorie de loot.',
-  'HUD: the corridors left count the closed ones out, as the Characters page does.': 'HUD : les couloirs restants ne comptent plus ceux qui sont fermés, comme la page Persos.',
+  'HUD: the corridors left count the closed ones out, as the Characters page does.': 'HUD : les couloirs restants ne comptent plus ceux qui sont fermés, comme la page Personnages.',
   'Enemies: every window and the alarm tell the same threats, the Abyss\'s other servers included.': 'Ennemis : toutes les fenêtres et l\'alarme montrent les mêmes menaces, autres serveurs de l\'Abysse compris.',
   'DPS meter: shows as you enter a dungeon, even when hidden while idle.': 'Compteur DPS : s\'affiche à l\'entrée d\'un donjon, même masqué pendant l\'inactivité.',
 }
